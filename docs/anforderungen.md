@@ -106,8 +106,8 @@ Personen gehören zu Einheiten der Hierarchie Verband → Bund → (Ring) → St
 | ORG-02 | Mitglieder melden sich ausschließlich per Single Sign-on über den Keycloak des DPV an. | Muss |
 | ORG-03 | Keycloak ist führend für Identität und Login (Name, Mail, Account). Das Tool ist führend für alles, was Keycloak nicht kennt (eigene Kreise, verwaltete Personen, Veranstaltungs- und Anmeldedaten, Ernährung). | Muss |
 | ORG-04 | Ändert eine Person ihre Stammdaten (z. B. Name, Geburtsdatum), kommt die Änderung auch in Keycloak an. Variante A: Das Tool schreibt direkt zurück (falls der DPV Schreibrechte vergibt). Variante B: Weiterleitung zum Keycloak-Profil, Übernahme beim nächsten Login. | Soll |
-| ORG-05 | Die Zuordnung einer Person zur Organisationsstruktur wird im Tool mindestens angezeigt. Quelle (Keycloak oder Tool) siehe OP-1. | Muss |
-| ORG-06 | Liefert Keycloak die Struktur nicht, pflegt das Tool sie selbst: Einheiten legt die nächsthöhere Ebene an, bearbeitet und löscht sie: die Bundesleitung Ringe und Stämme, die Ringleitung Stämme in ihrem Ring, die Stammesleitung Gruppen. Hat diese Ebene keine Leitung mit Account, kann die Ebene darüber einspringen. | Muss |
+| ORG-05 | Die Zuordnung einer Person zur Organisationsstruktur wird im Tool mindestens angezeigt. Quelle: das Tool (OP-1, entschieden am 20.10.2026). | Muss |
+| ORG-06 | Das Tool pflegt die Struktur selbst (OP-1): Einheiten legt die nächsthöhere Ebene an, bearbeitet und löscht sie: die Bundesleitung Ringe und Stämme, die Ringleitung Stämme in ihrem Ring, die Stammesleitung Gruppen. Hat diese Ebene keine Leitung mit Account, kann die Ebene darüber einspringen. | Muss |
 | ORG-07 | Beim Löschen einer Einheit zeigt das Tool eine Zusammenfassung (Untereinheiten, Personen, laufende Anmeldungen). Verwaltete Personen werden wahlweise in eine andere Einheit verschoben (Fusion, Teilung) oder gelöscht. Personen mit Account werden nie gelöscht, sie verlieren nur Zuordnung und Rolle. Bestätigung durch Eintippen des Einheitennamens. | Muss |
 | ORG-08 | Gelöschte Einheiten liegen 30 Tage im Papierkorb und können wiederhergestellt werden. | Soll |
 | ORG-09 | Jeder Stamm hat eine Adresse (z. B. Stammesheim), gepflegt von der Stammesleitung. Sie ist Grundlage für entfernungsabhängige Preise. | Soll |
@@ -459,10 +459,10 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 
 ### Offene Punkte
 
-- [ ] **OP-1 Keycloak:** Welche Daten liefert Keycloak (Zugehörigkeit zu Bund/Stamm/Gruppe, Rollen)? Vergibt der DPV Schreibrechte für ORG-04 Variante A? Ab welchem Alter gibt es Accounts? Das Tool geht davon aus, dass Personen mit Account selbst einwilligen dürfen. Klärung mit den Keycloak-Verantwortlichen.
+- [ ] **OP-1 Keycloak:** Entschieden am 20.10.2026: Struktur, Rollen und Kreise pflegt das Tool selbst; Keycloak dient nur dazu, Personen zu verifizieren. Ein Lesekonto gibt es nicht. Offen: Test-Client, Meldung gelöschter und gesperrter Konten, später Schreibrechte für ORG-04 Variante A. Ab welchem Alter es Accounts gibt, gehört zur Prüfung, ob Personen mit Account selbst einwilligen dürfen (OP-2). Klärung mit den Keycloak-Verantwortlichen.
 - [ ] **OP-2 Datenschutz:** Rechtliche Prüfung des Einwilligungsmodells (DSG-01, DSG-02) und der Speicherung von Gesundheitsdaten; Vertrag zur Auftragsverarbeitung mit dem DPV. Ansprechperson bzw. Datenschutzbeauftragte im DPV klären. Klären, wer datenschutzrechtlich verantwortlich ist (DPV, Bund oder veranstaltende Person). Zu prüfen sind auch die Annahmen: stellvertretende Bestätigung durch die anmeldende Leitung (DSG-01) und Fortgeltung der Einwilligung nach Volljährigkeit (DSG-02). Voraussichtlich nötig: eine Datenschutz-Folgenabschätzung (Art. 35 DSGVO) vor dem Bau des Gesundheitsblocks, ein Verzeichnis der Verarbeitungen und ein Meldeweg für Datenpannen (72 Stunden).
 - [ ] **OP-3 Ausgabentool:** Welches Ausgabentool nutzt der DPV, und hat es eine Schnittstelle (FIN-06)?
-- [ ] **OP-4 Betrieb:** Mit der DPV-IT Serverstandort, Mailversand (eigener Mailserver oder Dienstleister, Limits für Massenmails), Backups (verschlüsselt, an einem zweiten Ort, Zurückspielen geübt, Aufbewahrung passend zur 6-Monats-Anonymisierung) und eine Ansprechperson für den Betrieb klären.
+- [ ] **OP-4 Betrieb:** Mit der DPV-IT Serverstandort, Mailversand (über das Google Workspace des DPV, wenn technisch möglich; Limits für Massenmails), Backups (verschlüsselt, an einem zweiten Ort, Zurückspielen geübt, Aufbewahrung passend zur 6-Monats-Anonymisierung) und eine Ansprechperson für den Betrieb klären.
 - [ ] **OP-5 Optik:** Optische Planung von Dashboard, Einladungsseite und Formular-Baukasten.
 - [ ] **OP-6 Prioritäten prüfen:** Prioritäten, die im Interview nicht ausdrücklich festgelegt wurden (u. a. ORG-04, ORG-08, PER-04 bis PER-06, VER-06, VER-10, PRE-02 bis PRE-04, DSH-02, DSH-07), werden nach Abschluss der Muss-Anforderungen neu bewertet. Dabei auch prüfen: ROL-04 früh einplanen; FRM-12 vorziehen, falls das Verbandslager kostenpflichtige Optionen anbietet.
 - [ ] **OP-7 Benachrichtigungen:** Genaue Ausgestaltung von BEN-01 bis BEN-03: Ereignisse, Inhalte (ohne Gesundheitsdaten) und Kanäle.
@@ -473,7 +473,7 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 | --- | --- | --- |
 | Eine Person trägt Entwicklung und Betrieb | Ausfall oder Burnout gefährdet das Tool, wie beim Biber | zweiter Admin, Dokumentation (NFA-08), strenge Priorisierung |
 | Umfang wächst zum Großprojekt | Muss-Funktionen werden nicht rechtzeitig fertig | Muss/Soll/Kann konsequent einhalten; nach Abschluss der Muss-Anforderungen Soll und Kann neu bewerten und schrittweise umsetzen |
-| Keycloak liefert Struktur und Rollen nicht | Tool muss die ganze Organisationsstruktur selbst pflegen | ORG-06 ist bereits als Muss eingeplant |
+| Tool pflegt Struktur und Rollen selbst (OP-1, entschieden am 20.10.2026) | Mehr Pflegeaufwand für Leitungen und Admins | ORG-06 ist als Muss eingeplant |
 | Leitungen ohne Account | Einheiten können nicht selbst anmelden | nächsthöhere Ebene springt ein (PER-07) |
 | Sensible Daten von Minderjährigen | Rechtliche und vertrauensbezogene Folgen bei Fehlern | OP-2, Gesundheitsdaten pro Anmeldung und nie im Profil verwalteter Personen, Protokollierung, Anonymisierung, keine Echtdaten lokal |
 | Erster Großeinsatz mit 5.000 Personen | Fehler treffen viele Menschen | Generalproben bei den Vorbereitungstreffen, Pilotphase mit mehreren Veranstaltungstypen |
