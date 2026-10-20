@@ -6,6 +6,18 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-20 · Klärungen zu OP-1 und OP-4, Gesundheitsdaten im Anforderungsdokument
+
+**Entscheidung** (Sebastian):
+
+- OP-1: Struktur, Rollen und Kreise verwaltet das Tool selbst (ORG-06). Der Keycloak-Login dient nur dazu, Personen zu verifizieren; mehr aus Keycloak kann später nachgeholt werden. Ein Lesekonto gibt es nicht. Personen mit Account dürfen selbst einwilligen. Test-Client und Meldung gelöschter oder gesperrter Konten klärt Sebastian.
+- OP-4: Ansprechperson für den Betrieb und Testserver klärt Sebastian. Mails gehen über das Google Workspace des DPV, wenn die Anbindung technisch möglich ist.
+- Anforderungsdokument: Die drei Sätze zu Gesundheitsdaten (Einleitung und Verarbeitungen im Abschnitt Datenschutz, Risikotabelle) sind an FRM-04 angepasst (Vorschläge der KI, von Sebastian angenommen).
+
+**Begründung:** Die Abhängigkeit vom Verbands-Keycloak bleibt so klein wie möglich (ORG-03). Den Google Workspace nutzt der DPV bereits. Hinweise der KI: Ohne Lesekonto findet das Tool nur Personen, die sich schon einmal angemeldet haben. Ein Konto in Google Workspace darf laut Google 2.000 Mails pro Tag senden; bei Überschreitung ist der Versand bis zu 24 Stunden gesperrt, deshalb verteilt der Postausgang den Versand. Ob Jugendliche mit Account selbst einwilligen können, hängt am Alter (in Deutschland in der Regel 16 Jahre für Einwilligungen bei Online-Diensten, Art. 8 DSGVO; keine Rechtsberatung) und wird unter OP-2 mitgeprüft.
+
+**Umsetzung:** `docs/anforderungen.md`, `docs/fahrplan.md` (Planungsgrundlagen, P5, OP-Tabelle, Risiken).
+
 ## 2026-10-20 · Kein Hitobito, eigenes Tool
 
 **Entscheidung** (Sebastian): Statt Hitobito einzusetzen, wird das eigene Tool gebaut.

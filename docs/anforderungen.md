@@ -403,9 +403,9 @@ Aus einer einfachen Adresseingabe soll schrittweise ein gemeinsames Verzeichnis 
 
 ## Datenschutz, Aufbewahrung und Löschung
 
-Ein großer Teil der Daten betrifft Minderjährige und Gesundheitsangaben. Deshalb gilt: Einwilligung dokumentieren, Gesundheitsdaten nur pro Anmeldung speichern, Anmeldedaten 6 Monate nach der Veranstaltung anonymisieren, inaktive Profile regelmäßig prüfen.
+Ein großer Teil der Daten betrifft Minderjährige und Gesundheitsangaben. Deshalb gilt: Einwilligung dokumentieren, Gesundheitsdaten pro Anmeldung speichern (im eigenen Profil nur freiwillig, siehe FRM-04), Anmeldedaten 6 Monate nach der Veranstaltung anonymisieren, inaktive Profile regelmäßig prüfen.
 
-Das Tool unterscheidet zwei Verarbeitungen: die **Anmeldung zu einer Veranstaltung** (abgedeckt durch die Datenschutzerklärung der Veranstaltung, gelöscht nach 6 Monaten) und die **dauerhafte Speicherung im Profil** einer Einheit (abgedeckt durch eine separate Einwilligung, z. B. über den Mitgliedsantrag des Stammes).
+Das Tool unterscheidet zwei Verarbeitungen: die **Anmeldung zu einer Veranstaltung** (abgedeckt durch die Datenschutzerklärung der Veranstaltung, gelöscht nach 6 Monaten) und die **dauerhafte Speicherung im Profil** einer Einheit (abgedeckt durch eine separate Einwilligung, z. B. über den Mitgliedsantrag des Stammes). Hinzu kommt die freiwillige Speicherung eigener Gesundheitsangaben im Profil einer Person mit Account (FRM-04); ob ihre eigene Einwilligung dafür genügt, prüft OP-2.
 
 | ID | Anforderung | Priorität |
 | --- | --- | --- |
@@ -475,7 +475,7 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 | Umfang wächst zum Großprojekt | Muss-Funktionen werden nicht rechtzeitig fertig | Muss/Soll/Kann konsequent einhalten; nach Abschluss der Muss-Anforderungen Soll und Kann neu bewerten und schrittweise umsetzen |
 | Keycloak liefert Struktur und Rollen nicht | Tool muss die ganze Organisationsstruktur selbst pflegen | ORG-06 ist bereits als Muss eingeplant |
 | Leitungen ohne Account | Einheiten können nicht selbst anmelden | nächsthöhere Ebene springt ein (PER-07) |
-| Sensible Daten von Minderjährigen | Rechtliche und vertrauensbezogene Folgen bei Fehlern | OP-2, Gesundheitsdaten nur pro Anmeldung, Protokollierung, Anonymisierung, keine Echtdaten lokal |
+| Sensible Daten von Minderjährigen | Rechtliche und vertrauensbezogene Folgen bei Fehlern | OP-2, Gesundheitsdaten pro Anmeldung und nie im Profil verwalteter Personen, Protokollierung, Anonymisierung, keine Echtdaten lokal |
 | Erster Großeinsatz mit 5.000 Personen | Fehler treffen viele Menschen | Generalproben bei den Vorbereitungstreffen, Pilotphase mit mehreren Veranstaltungstypen |
 | Bis TEAM-02 sieht jede Veranstaltungsleitung Gesundheitsdaten | Bei großen Lagern sehen viele Personen sensible Daten | Leitungsteam klein halten, Küchenliste statt Vollzugriff (LIS-04) |
 | Rollenvergaben sind bis ROL-04 nicht nachvollziehbar | Unbemerkter Zugriff auf Daten von Kindern | Vertrauensprinzip; ROL-04 bei der Neubewertung früh einplanen |
