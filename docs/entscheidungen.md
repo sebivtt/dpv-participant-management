@@ -13,7 +13,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 1. Die Stundenschwelle an E1 wird nicht weiter geklärt. Der Plan rechnet mit rund 7,5 Stunden je Woche, E1 verlangt 8, die Risikotabelle warnt unter 30 Stunden im Monat. Der Unterschied bleibt so stehen. Das Stundenkontingent soll das Projekt nicht weiter belasten. Der Fahrplan bleibt dafür unverändert.
 2. Die Go/No-Go-Kriterien und die Betriebsspur aus dem Doc „Fahrplan Neubau“ kommen nicht ins Repo. Sie werden nicht mehr betrachtet.
 3. Die fehlenden Diagramme hat Sebastian lokal. Das Diagramm zum Lebenszyklus einer Veranstaltung ergänzt er, wenn ein Issue den Lebenszyklus berührt. Damit das nicht vergessen wird, fragt `grill-me` dann danach.
-4. Das Repo bleibt privat, bis das Tool in einen echten Test geht. Dann veröffentlicht Sebastian es.
+4. Das Repo bleibt privat, bis das Tool in einen echten Test geht. Dann veröffentlicht Sebastian es. Dafür ändert sich keine Datei.
 
 **Begründung:** Zu 2: Der Weg des Neubaus ist geklärt. Die Prüffragen von E1 stehen im Fahrplan selbst, den Betrieb regeln P6 und das Betriebshandbuch (Einschätzung der KI). Zu 4: Die EUPL wirkt erst, wenn das Repo veröffentlicht oder weitergegeben wird (Hinweis der KI).
 
