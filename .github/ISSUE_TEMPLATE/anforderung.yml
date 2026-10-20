@@ -1,0 +1,76 @@
+name: Neue Anforderung
+description: Das Tool soll etwas können, was bisher nicht vorgesehen ist.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Eine Anforderung pro Issue. Tut das Tool etwas Falsches oder Unerwartetes, bitte die Vorlage **Fehler melden** nehmen.
+
+        Der graue Text in den Feldern ist nur ein Beispiel und wird nicht übernommen.
+
+  - type: input
+    id: anforderungs_id
+    attributes:
+      label: Anforderungs-ID
+      description: Optional. Steht die Anforderung schon in `docs/anforderungen.md`? Dann die ID, sonst leer lassen.
+      placeholder: KAP-01
+
+  - type: textarea
+    id: wunsch
+    attributes:
+      label: Anforderung
+      description: Wer möchte was, und wozu? Am besten in der Form „Als … möchte ich …, damit …“.
+      placeholder: Als Veranstaltungsleitung möchte ich eine Obergrenze für Teilnehmende festlegen, damit nicht mehr Personen kommen, als Platz haben.
+    validations:
+      required: true
+
+  - type: textarea
+    id: beispiel
+    attributes:
+      label: Beispiel
+      description: Optional. Ein konkreter Fall macht die Anforderung eindeutig.
+      placeholder: Obergrenze 40, 34 angemeldet. Eine Sammelanmeldung mit 10 Personen wird abgelehnt, mit 6 geht sie durch.
+
+  - type: textarea
+    id: kriterien
+    attributes:
+      label: Akzeptanzkriterien
+      description: Woran erkennt man, dass die Anforderung erfüllt ist? Jedes Kriterium sollte sich durch Ausprobieren prüfen lassen.
+      placeholder: |
+        - [ ] Die Veranstaltungsleitung kann eine Obergrenze eintragen.
+        - [ ] Passt eine Sammelanmeldung nicht mehr hinein, erscheint der Hinweis mit der Zahl freier Plätze, und nichts wird gespeichert.
+    validations:
+      required: true
+
+  - type: textarea
+    id: verboten
+    attributes:
+      label: Wer darf das nicht?
+      description: Optional, aber wichtig, sobald Personendaten, Gesundheitsdaten oder Rechte betroffen sind. Wer darf das ausdrücklich nicht sehen oder tun? Daraus entsteht der Test für den verbotenen Fall.
+      placeholder: Die Stammesleitung der Zugvögel sieht die Anmeldungen von Stamm Walhall nicht, auch nicht über die direkte Adresse.
+
+  - type: textarea
+    id: abgrenzung
+    attributes:
+      label: Nicht Teil dieser Anforderung
+      description: Optional. Was ausdrücklich nicht dazugehört, damit der Umfang klar bleibt.
+
+  - type: textarea
+    id: offene_fragen
+    attributes:
+      label: Offene Fragen
+      description: Optional. Was ist fachlich noch zu entscheiden, bevor jemand loslegen kann?
+
+  - type: dropdown
+    id: prioritaet
+    attributes:
+      label: Priorität
+      description: Wie im Anforderungsdokument.
+      options:
+        - Muss (vor der Generalprobe)
+        - Soll (vor dem Verbandslager)
+        - Kann (danach)
+        - Weiß nicht
+    validations:
+      required: true

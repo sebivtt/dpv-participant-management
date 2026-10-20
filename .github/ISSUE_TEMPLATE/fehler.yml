@@ -1,0 +1,85 @@
+name: Fehler melden
+description: Das Tool tut etwas Falsches oder Unerwartetes.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ein Fehler pro Issue. Faustregel: **Fehler** heißt, das Tool tut etwas Falsches oder Unerwartetes. Soll es etwas können, was bisher nicht vorgesehen ist, bitte die Vorlage **Neue Anforderung** nehmen.
+
+        **Keine echten Personendaten** in Beschreibung, Fehlermeldungen oder Bildschirmfotos (DSG-08). Namen und Daten unkenntlich machen oder den Fehler mit erfundenen Testdaten nachstellen.
+
+        Der graue Text in den Feldern ist nur ein Beispiel und wird nicht übernommen.
+
+  - type: textarea
+    id: verhalten
+    attributes:
+      label: Verhalten
+      description: Was passiert? Fehlermeldungen bitte wörtlich abschreiben.
+      placeholder: In der Anmeldung zum Beispiellager passiert nach Klick auf „weiter“ nichts, nachdem eine Rückreise eingetragen wurde.
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte zum Nachstellen
+      description: So genau, dass jemand anderes den Fehler damit selbst sieht.
+      placeholder: |
+        1. Anmeldung zum Beispiellager öffnen
+        2. Ausfüllen bis zum Schritt „An- und Abreise“
+        3. Rückreise eintragen
+        4. „weiter“ klicken → nichts passiert
+    validations:
+      required: true
+
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was hätte stattdessen passieren sollen?
+      placeholder: |
+        - Fehlen Pflichtangaben, erscheint eine Fehlermeldung.
+        - Sonst geht es zum nächsten Schritt.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rolle
+    attributes:
+      label: Rolle
+      description: Als wer eingeloggt war der Fehler zu sehen?
+      options:
+        - Mitglied
+        - Gruppen-, Stammes-, Ring- oder Bundesleitung
+        - Veranstaltungsleitung
+        - Verbandsleitung oder DPV-Veranstaltungsteam
+        - Admin
+        - Gast oder ohne Login
+        - Andere oder weiß nicht
+    validations:
+      required: true
+
+  - type: dropdown
+    id: auswirkung
+    attributes:
+      label: Auswirkung
+      options:
+        - Blockiert – ein wichtiger Ablauf ist nicht möglich
+        - Störend – es gibt einen Umweg
+        - Schönheitsfehler
+    validations:
+      required: true
+
+  - type: input
+    id: umgebung
+    attributes:
+      label: Wo getestet
+      description: Optional. Wo und mit welchem Browser?
+      placeholder: lokal auf dem Mac, Safari
+
+  - type: textarea
+    id: anhaenge
+    attributes:
+      label: Bildschirmfotos und Hinweise
+      description: Optional. Bilder einfach hier hineinziehen, ohne echte Personendaten.

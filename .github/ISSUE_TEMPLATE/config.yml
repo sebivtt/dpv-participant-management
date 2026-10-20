@@ -1,0 +1,5 @@
+# Ohne Schreibrecht gibt es auf GitHub nur die beiden Vorlagen, damit Fehler
+# und Anforderungen immer gleich aufgebaut sind. Mit Schreibrecht bleibt
+# „Blank issue“ sichtbar (GitHub-Verhalten). Über die Schnittstelle angelegte Issues
+# (z. B. von der KI) betrifft das nicht, sie folgen den Vorlagen von Hand.
+blank_issues_enabled: false

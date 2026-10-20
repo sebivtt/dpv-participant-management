@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Umgebungsdateien mit Zugangsdaten (NFA-10). Ins Repo kommen nur Vorlagen
+# mit erkennbar erfundenen Werten, z. B. .env.example.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.env
+!*.env.example
+
+# Lokale Datenbanken, Sicherungen und Exporte können Personendaten enthalten
+# (DSG-08). Lokale Sicherungen und Exporte gehören in den Ordner lokal/.
+# Tabellen-Vorlagen, die ins Repo gehören, einzeln mit ! freigeben.
+*.sqlite3
+*.sqlite3-journal
+*.dump
+*.sql.gz
+*.csv
+*.xlsx
+/lokal/
+/media/
+*.log
+
+# Schlüssel und gespeicherte Login-Sitzungen
+*.pem
+*.key
+rauchtests/.auth/
+
+# Node (Rauchtests ab P1)
+node_modules/
+
+# Betriebssystem und Editoren
+.DS_Store
+.idea/
+.vscode/
