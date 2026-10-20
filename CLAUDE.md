@@ -5,7 +5,7 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 ## Verbindlich
 
 - `CONTRIBUTING.md`: die Regeln für jede Änderung. Sie gelten für jedes Werkzeug; hier steht nur, was zusätzlich für KI gilt.
-- `docs/fahrplan.md`: Phasen, Abschlusskriterien und Reihenfolge. Was als Nächstes dran ist, steht dort.
+- `docs/fahrplan.md`: Phasen, Abschlusskriterien und Reihenfolge. Was als Nächstes dran ist, steht dort; die laufende Phase steht im `README.md` unter „Stand“ und wird beim Phasenwechsel fortgeschrieben.
 - `docs/anforderungen.md`: was das Tool können muss. Anforderungs-IDs (z. B. BER-06) und Prioritäten sind verbindlich und werden nie still neu gedeutet.
 - `docs/entscheidungen.md`: Was dort steht, ist entschieden. Widerspricht eine Anfrage einer Entscheidung, nachfragen statt still ändern. Neue Entscheidungen dort mit Datum eintragen.
 - Maßgeblich sind die Dateien in `docs/`, nicht die früheren Docs in Claude. Diese sind aus der Arbeitssitzung nicht immer lesbar (am 20.10.2026 zweimal kein Zugriff).
@@ -22,12 +22,19 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 
 1. **Eng fassen:** eine Anforderung oder ein Fehler je Aufgabe, als Issue (Skill `issue-anlegen`). Umgesetzt wird nur ein Issue mit dem Label `geklärt` (Skill `grill-me`), und erst, wenn es laut `docs/fahrplan.md` dran ist.
 2. **Erst lesen und planen:** betroffene Dateien, Risiken, offene Annahmen und Testfälle nennen, bevor Code entsteht.
-3. **Szenarien vor Code:** Sebastian schreibt oder bestätigt die fachlichen Szenarien. Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund. Erst dann kommt der Code.
+3. **Szenarien vor Code:** Sebastian schreibt die fachlichen Szenarien; die KI schlägt fehlende Fälle vor, er entscheidet. Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund (`CONTRIBUTING.md`, Abschnitt 3). Erst dann kommt der Code.
 4. **Tatsächlich prüfen:** Tests, ruff und die übrigen Prüfungen lokal ausführen. Im Bericht trennen, was ausgeführt wurde und was nur empfohlen ist.
 5. **Unabhängige Prüfung** vor jedem Pull Request (siehe unten).
 6. **Pull Request** nach der Vorlage. Erst alles hochladen, dann den Link schicken.
 
-Taucht beim Umsetzen eine fachliche Frage auf, anhalten, Sebastian fragen und die Antwort ins Issue übernehmen.
+Für die Umsetzung gilt außerdem:
+
+- Direkt vor dem Start die Abhängigkeiten des Issues erneut prüfen. Ist ein blockierendes Issue noch offen, nicht anfangen, sondern Sebastian fragen.
+- Ein Issue ergibt einen Pull Request mit eigenem Test. Die Beschreibung nennt „Closes #<nummer>“.
+- Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist.
+- Kommt zu einem geklärten Issue neuer Inhalt dazu, das Label `geklärt` entfernen und `grill-me` nur für den neuen Teil durchlaufen.
+- Ein Sammel-Issue wird geschlossen, wenn sein letztes Unter-Issue erledigt ist.
+- Taucht beim Umsetzen eine fachliche Frage auf, anhalten, Sebastian fragen und die Antwort ins Issue übernehmen.
 
 ## Unabhängige Prüfung
 
@@ -44,9 +51,9 @@ Für jeden Befund: Datei und Zeile, konkreter Fehlerfall, kleinste Korrektur und
 
 ## Was die KI nie allein entscheidet oder tut
 
-- Rechtsfragen (Datenschutz, Lizenzen), die Freigabe echter Daten (Tor E3) und die Inbetriebnahme.
+- Rechtsfragen (Datenschutz, Lizenzen), die Freigabe echter Daten (Tor E3) und die Inbetriebnahme. Ausnahme: die Einordnung neuer Pakete nach `CONTRIBUTING.md`, Abschnitt 6; Zweifelsfälle gehen an Sebastian.
 - Änderungen an Produktionsdaten oder am Produktivserver.
-- Änderungen an `docs/anforderungen.md`, `docs/fahrplan.md` oder `docs/entscheidungen.md` ohne Sebastians Zustimmung.
+- Änderungen an `docs/anforderungen.md` oder `docs/fahrplan.md` ohne Sebastians Zustimmung. In `docs/entscheidungen.md` werden bestehende Einträge nie geändert; neue kommen im Pull Request dazu und werden in der Beschreibung genannt.
 - Neue Pakete ohne Begründung (`CONTRIBUTING.md`, Abschnitt 6).
 - Änderungen am Verbands-Keycloak voraussetzen. Das Tool läuft mit einem normalen Login-Client und der Standard-Konfiguration von Keycloak.
 - Bekannte Fehler stillschweigend „mitbeheben“, ohne Test und ohne Erwähnung im Pull Request.

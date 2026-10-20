@@ -13,18 +13,27 @@ htmlcov/
 .env
 .env.*
 !.env.example
+!.env.*.example
 *.env
 !*.env.example
 
 # Lokale Datenbanken, Sicherungen und Exporte können Personendaten enthalten
-# (DSG-08). Vorlagen, die ins Repo gehören, einzeln mit ! freigeben.
+# (DSG-08). Lokale Sicherungen und Exporte gehören in den Ordner lokal/.
+# Tabellen-Vorlagen, die ins Repo gehören, einzeln mit ! freigeben.
 *.sqlite3
+*.sqlite3-journal
 *.dump
 *.sql.gz
 *.csv
 *.xlsx
-backups/
-exports/
+/lokal/
+/media/
+*.log
+
+# Schlüssel und gespeicherte Login-Sitzungen
+*.pem
+*.key
+rauchtests/.auth/
 
 # Node (Rauchtests ab P1)
 node_modules/

@@ -8,8 +8,8 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 
 - **Code auf Englisch:** Namen von Variablen, Funktionen, Klassen, Dateien und Feldern.
 - **Erklärungen auf Deutsch:** Kommentare, Docstrings, Dokumentation, Commit-Nachrichten, Pull Requests, Meldungen für Nutzende.
-- Fachbegriffe folgen dem Glossar am Ende von `docs/anforderungen.md`: im Code `registration`, im Text „Anmeldung“.
-- Oberflächentexte und Mailvorlagen sind gendersensibel formuliert (NFA-09) und stehen nicht fest im Code, sondern in übersetzbaren Texten (NFA-02). (Review; ab P1 automatisch für die Übersetzbarkeit)
+- Fachbegriffe folgen dem Glossar am Ende von `docs/anforderungen.md`: im Code `registration`, im Text „Anmeldung“. Das Glossar nennt keine Code-Namen; wer einen Fachbegriff zum ersten Mal im Code verwendet, hält den englischen Namen in `docs/entscheidungen.md` fest, damit alle denselben nehmen. (Review)
+- Oberflächentexte und Mailvorlagen sind gendersensibel formuliert (NFA-09) und stehen nicht fest im Code, sondern in übersetzbaren Texten (NFA-02). (Review)
 
 ## 2. Verständlichkeit
 
@@ -19,12 +19,12 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 - **Kein auskommentierter Code.** Alte Fassungen stehen in der Git-Historie. (Review)
 - **Kein `print()`** im Anwendungscode, stattdessen `logging`. Ausnahme: Verwaltungsbefehle (`manage.py`). (automatisch ab P1, `ruff` T20)
 - Fehler werden gezielt abgefangen, nie pauschal (`except:` oder `except Exception: pass`). (automatisch für `except:`, sonst Review)
-- `# noqa` nur mit Regelnummer und Begründung nach `--`, und nur mit einem Test, der anschlägt, wenn die Zeile fehlt. Sonst keine Ausnahmen. (automatisch ab P1, `ruff` PGH004 und RUF100; Begründung und Test: Review)
+- `# noqa` nur mit Regelnummer und Begründung nach `--`. Braucht eine Zeile die Ausnahme, weil ihr Fehlen still etwas kaputt machen würde (z. B. ein Import, der etwas anmeldet), bekommt sie einen Test, der das bemerkt. (automatisch ab P1, `ruff` PGH004 und RUF100; Begründung und Test: Review)
 
 ## 3. Korrektheit und Tests
 
 - **Jede fachliche Regel hat einen Test**, der sie in Alltagssprache benennt, z. B. `test_nach_anmeldeschluss_keine_neue_anmeldung`. (Review)
-- **Erst der Test, dann der Code.** Ein neuer Test muss vor der Änderung fehlschlagen, und zwar aus dem richtigen Grund, nicht nur, weil die Adresse oder Funktion noch fehlt. Jeder behobene Fehler bekommt einen Test, der ohne die Behebung fehlschlägt. (Review)
+- **Erst der Test, dann der Code.** Ein neuer Test muss vor der Änderung fehlschlagen, und zwar aus dem richtigen Grund. Bei neuen Funktionen entsteht dafür zuerst ein leeres Gerüst (Adresse, Funktion), damit der Test an der fachlichen Regel scheitert und nicht daran, dass etwas fehlt. Jeder behobene Fehler bekommt einen Test, der ohne die Behebung fehlschlägt. (Review)
 - **Bestehende Tests werden nur geändert oder gelöscht, wenn sich die zugehörige Anforderung geändert hat.** Der Pull Request nennt das ausdrücklich. Schlägt ein alter Test fehl, wird der Code repariert, nicht der Test. (Review)
 - Bekannte, noch offene Fehler werden als `@pytest.mark.xfail(strict=True, raises=..., reason=...)` festgehalten. `raises` nennt genau die erwartete Fehlerart. Wird einer behoben, meldet der Testlauf das, und die Markierung muss weg. (automatisch ab P1, außer `raises`: Review)
 - Bekannte unsichere Muster (abgeschaltete Zertifikatsprüfung, Passwörter im Code, verschluckte Fehler, unsichere Aufrufe) meldet ruff. (automatisch ab P1, `ruff` S)

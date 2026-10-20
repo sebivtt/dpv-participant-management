@@ -1,6 +1,6 @@
 # DPV-Anmeldetool – Entscheidung und Fahrplan (überarbeitet)
 
-Oct 20, 2026 · @Sebi
+20.10.2026 · Sebastian
 
 Überarbeitete Fassung nach der Prüfung der Rückmeldungen von ChatGPT und Gemini am 20.10.2026. Was sich geändert hat und warum, steht in Abschnitt 6; ab dem ersten Pull Request ist `docs/fahrplan.md` im Repo maßgeblich.
 
@@ -8,7 +8,7 @@ Oct 20, 2026 · @Sebi
 
 **Entscheidung: Neustart.** Neues Repository mit eigenem Datenmodell auf Django und PostgreSQL, Login nur über den DPV-Keycloak. Aus scout-participant-management wird kein Produktcode übernommen, nur Werkzeuge und Arbeitsweise, die seit dem 14.10.2026 in deinen Sitzungen entstanden sind: `CLAUDE.md`, `CONTRIBUTING.md`, `dev/` (Keycloak-Testumgebung), `.github/workflows/ci.yml`, `rauchtests/` und die Testmuster aus `backend/tests/test_zugriffsschutz.py` und `test_abfragen.py`. Das alte Repo bleibt Nachschlagewerk.
 
-Ausschlaggebend sind fünf Punkte, alle am Code geprüft (Stand `main` 9df4513 vom 19.10.2026, Pfade außer CLAUDE.md und README.md relativ zu backend/):
+Ausschlaggebend sind fünf Punkte, alle am Code des alten Repos sebivtt/scout-participant-management geprüft (Stand `main` 9df4513 vom 19.10.2026, Pfade außer CLAUDE.md und README.md relativ zu dessen backend/):
 
 1. **Der fachliche Kern muss in jedem Fall neu.** Rechte hängen an Keycloak-Gruppen mit nur „admin“ und „view“ (`keycloak_auth/access.py`). Personen sieht nur die Leitung des eigenen Stamms oder wer sie angelegt hat (`authentication/views.py` Z. 588–606). Ernährung steht dauerhaft im Profil (`authentication/models.py` Z. 77), Zusatzantworten hängen nur an der Anmeldung (`anmelde_tool/attributes/models.py` Z. 39). Das sind genau die Muss-Teile mit Datenschutzgewicht. Alle drei Bewertungen verlangen dort einen Neuzuschnitt; Gemini nennt ihn „gezielten Umbau“, beschreibt aber dieselben Änderungen.
 2. **Es gibt nichts zu erhalten, was einen Umbau im laufenden Code rechtfertigt.** Der Biber ist nicht in Betrieb, eine Datenübernahme ist ausgeschlossen (Anforderungsdokument, Abgrenzung). Der übliche Vorteil des Anpassens, dass Nutzende und Daten weiterlaufen, fällt weg.
@@ -19,7 +19,7 @@ Ausschlaggebend sind fünf Punkte, alle am Code geprüft (Stand `main` 9df4513 v
 **Falsch wäre die Entscheidung, wenn**
 
 - die erste Generalprobe so nah liegt, dass auch ein schlanker Neubau die Muss-Anforderungen nicht schafft. Dann wäre der Bestand als Notlösung für ein einzelnes Erwachsenentreffen ohne Gesundheitsdaten zu härten. Bei deinem Termin im 2. Halbjahr 2028 trifft das nicht zu, solange du im Schnitt mindestens 7 Stunden pro Woche schaffst (Abschnitt 3).
-- eine fertige Open-Source-Lösung (z. B. Hitobito) die Muss-Anforderungen ohne eigene Programmierung abdeckt. Ungeprüft; der Fahrplan prüft das mit fester Zeitbox, bevor Code entsteht.
+- eine fertige Open-Source-Lösung (z. B. Hitobito) die Muss-Anforderungen ohne eigene Programmierung abdeckt. Funktional ungeprüft; am 20.10.2026 hat Sebastian Hitobito wegen der Bedienbarkeit verworfen (`docs/entscheidungen.md`).
 - die früheren Biber-Entwickler die Wartung dauerhaft mittragen. Dann fällt die Ein-Personen-Annahme, und Weiterbauen mit Leuten, die den Code kennen, wird günstiger.
 - der DPV verbindlich will, dass Struktur, Rollen und Kreise in Keycloak liegen und das Tool dort schreiben darf. Dann passt die Richtung des alten Modells besser, ORG-03 wäre aber zu ändern.
 
@@ -44,7 +44,7 @@ Alle drei lehnen das unveränderte Weiterführen ab und sind sich bei den Datens
 - FRM-09 (Fragen pro Person) muss vor Sammelanmeldungen von Kindern fertig sein.
 - Lizenz ungeklärt; OP-1, OP-2 und OP-4 sind Tore vor echten Daten; Kann bleibt außerhalb des verbindlichen Plans.
 
-**Widersprüche und ihre Auflösung**, nach Gewicht für die Entscheidung. Pfade außer docs/ relativ zu `backend/`, Stand 9df4513.
+**Widersprüche und ihre Auflösung**, nach Gewicht für die Entscheidung. Pfade im alten Repo, außer docs/ relativ zu `backend/`, Stand 9df4513.
 
 | Streitpunkt | Aussagen | Befund am Code | Ergebnis |
 | --- | --- | --- | --- |
@@ -88,7 +88,7 @@ Deshalb verschiebe ich vier Muss-Anforderungen fest auf ihren ersten echten Beda
 - Technik, von mir entschieden: Django mit serverseitig erzeugten Seiten und htmx, Alpine.js nur für kleine Logik, SortableJS für den Formular-Baukasten, PostgreSQL. Login nur per OIDC über Keycloak. Mails über eine Postausgang-Tabelle, die ein regelmäßiger Befehl abarbeitet; kein Celery, kein Redis. Gestaltung mit einer CSS-Grundlage ohne Build-Schritt (Bootstrap oder Pico.css, Wahl in P1 an der Musterseite); alle Dateien kommen vom eigenen Server, nicht von fremden.
 - Django: Start auf 6.1 mit django-allauth als Login-Baustein. 6.1 bekommt Sicherheitsupdates bis Dezember 2027, deshalb Umstieg auf 6.2 LTS (gepflegt bis April 2030) gleich zu Beginn von P3 und auf Django 2029 (gepflegt bis Januar 2032) in P8 ([djangoproject.com](https://www.djangoproject.com/download/)). Grund gegen 5.2 LTS: Es bekommt seit Dezember 2025 nur noch Sicherheitsupdates, und [mozilla-django-oidc](https://pypi.org/project/mozilla-django-oidc/), der Login-Baustein des alten Tools, nennt Unterstützung nur bis Django 5.2; [django-allauth](https://pypi.org/project/django-allauth/) nennt 6.0 und 6.1. Läuft allauth in P1 nicht mit dem Keycloak-Testzugang, gilt der bisherige Weg: Start auf 5.2 mit mozilla-django-oidc.
 - Helfende bekommen feste, kleine Termine statt laufender Mitarbeit: Prüfer dreimal 2–3 Stunden (E1, E3, E6), zweiter Admin 2 Stunden Einweisung in P6 und 1 Stunde Restore-Übung pro Halbjahr, DPV-IT gebündelte Anfragen zu den Terminen der OP-Tabelle.
-- Aus dem Fahrplan Neubau übernommen: Go/No-Go-Kriterien, Arbeitsweise mit KI, Betriebsspur, Szenarien vor jedem Schritt. Gestrichen: der Editor-Vergleich Vue gegen htmx.
+- Aus dem Fahrplan Neubau übernommen: Go/No-Go-Kriterien, Arbeitsweise mit KI, Betriebsspur, Szenarien vor jedem Schritt. Gestrichen: der Editor-Vergleich Vue gegen htmx. Die Go/No-Go-Kriterien und die Betriebsspur stehen bisher nur im Doc „Fahrplan Neubau“ und kommen vor E1 ins Repo.
 
 **Liste 1: fest verschobene Muss-Anforderungen**
 
@@ -118,9 +118,9 @@ Bis zur Generalprobe laufen sieben Phasen hintereinander. Der Durchstich P2 ist 
 
 ### Phasen
 
-Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs. Stunden: geschätzter Bedarf (Annahme) gegenüber dem, was bei 8 Stunden pro Woche verfügbar ist.
+Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs, einmal davon nur mit Tastatur (NFA-03). Stunden: geschätzter Bedarf (Annahme) gegenüber dem, was bei 8 Stunden pro Woche verfügbar ist.
 
-Nachgerechnet am 20.10.2026: Die Spalte „verfügbar“ setzt rund 7,4 Stunden je Kalenderwoche bis P6 an und rund 6,5 ab P7. Warum weniger als 8, ist nicht festgehalten (Annahme: freie Wochen, ab P7 der Betrieb). E1 prüft das mit dem Stundenlog.
+Nachgerechnet am 20.10.2026: Die Spalte „verfügbar“ setzt rund 7,5 Stunden je Kalenderwoche bis P6 an und rund 6,5 ab P7. Warum weniger als 8, ist nicht festgehalten (Annahme: freie Wochen, ab P7 der Betrieb). E1 prüft das mit dem Stundenlog.
 
 | Phase | Ziel | Anforderungen | Abschlusskriterium | Zieldatum | Stunden |
 | --- | --- | --- | --- | --- | --- |
@@ -131,7 +131,7 @@ Nachgerechnet am 20.10.2026: Die Spalte „verfügbar“ setzt rund 7,4 Stunden 
 | P4 Formular und Anmeldung | Selbst- und Sammelanmeldung mit Gesundheitsblock, ganz oder gar nicht gespeichert | FRM-01, FRM-02, FRM-03, FRM-04 (Speicherung im eigenen Profil zuletzt und nur mit Freigabe aus OP-2), FRM-06, FRM-08, FRM-11, ANM-01, ANM-02, ANM-03, ANM-08, ANM-09, ANM-12, KAP-01, PRE-01, ZAH-01, DSG-01; Antwortmodell schon mit Personenbezug für FRM-09 | Abbruch beim Absenden hinterlässt nichts; nicht abgeschickte Zwischenstände zählen nicht als Anmeldung (kein Platz, keine Mail, für die Leitung unsichtbar) und werden spätestens nach 24 Stunden gelöscht (Frist Annahme); zwei gleichzeitige Anmeldungen auf den letzten Platz: genau eine kommt durch; Bestätigung nach DSG-01 mit wer und wann gespeichert; auf Handy und PC durchgeklickt | 31.01.2028 | 131 / 135 |
 | P5 Mails und Übersichten | Pflichtmails gehen raus, alle sehen ihre Übersichten | MAIL-01, MAIL-02, MAIL-03, MAIL-06, MAIL-07, BEN-02, VER-12, DSG-04, DSH-01, DSH-03 bis DSH-06, LIS-01, ADM-02 | Mails nur über den Postausgang; nach einem Neustart geht keine als versendet vermerkte Mail erneut raus (bricht der Server genau zwischen Versand und Vermerk ab, kann eine Mail doppelt ankommen); fehlgeschlagene Mails sieht der Admin, Wiederholung mit Obergrenze; Platzhalter in Mails werden escaped; 2.000 Testmails über den DPV-Mailweg; Benachrichtigungen ohne Gesundheitsinhalt; lebensbedrohliche Allergien in der Liste hervorgehoben | 30.04.2028 | 96 / 97 |
 | P6 Betrieb und Abnahme | Echte Daten dürfen kommen | ADM-01, NFA-05 (bis 1.000 Teilnehmende), NFA-06, NFA-07, NFA-10 | Betrieb auf DPV-Server, verschlüsselte Backups am zweiten Ort, Restore geübt; Admin-MFA und SECURITY.md; Betriebshandbuch: Fehler aus dem Betrieb nur lokal mit erfundenen Daten nachstellen, nie Auszüge aus Server-Logs in KI-Werkzeuge; Prüfer-Durchsicht ohne kritischen Befund; zweiter Admin eingewiesen; Testlauf mit dem Planungsteam auf erfundenen Daten; Startprobe ohne KI; Tor E3 | 30.06.2028 | 76 / 67 |
-| P7 Generalprobe und Muss-Rest | Vorbereitungstreffen laufen über das Tool, alle 77 Muss fertig | ORG-07, DSG-03 (bis 30.11.2028), DSG-09; Soll: FRM-09 | Generalprobe ohne Excel nebenher; Anonymisierung vor der ersten Fälligkeit in Betrieb; nach jedem Restore läuft die Anonymisierung, bevor das Tool wieder öffnet; Rückblick mit höchstens fünf Maßnahmen; Soll neu bewertet (E4) | 31.12.2028 | 156 / 169 |
+| P7 Generalprobe und Muss-Rest | Vorbereitungstreffen laufen über das Tool, alle 77 Muss fertig außer dem vollen Nachweis von NFA-05 (P10) | ORG-07, DSG-03 (bis 30.11.2028), DSG-09; Soll: FRM-09 | Generalprobe ohne Excel nebenher; Anonymisierung vor der ersten Fälligkeit in Betrieb; nach jedem Restore läuft die Anonymisierung, bevor das Tool wieder öffnet; Rückblick mit höchstens fünf Maßnahmen; Soll neu bewertet (E4) | 31.12.2028 | 156 / 169 |
 | P8 Soll für den Pilot | Was Kinder- und Zuschussveranstaltungen brauchen | ROL-04 (Benachrichtigung; das Protokoll gibt es seit P2), VER-13, VER-16, FRM-05, ANM-06, ANM-07, LIS-02, LIS-03, LIS-04, ADM-03; Umstieg auf Django 2029; Pilot 1 und 2: AK-Treffen, Tagesveranstaltung | zwei Pilotveranstaltungen gelaufen; KJP-Liste und Küchenliste kommen aus dem Tool | 30.06.2029 | 140 / 169 |
 | P9 Pilot und restliche Soll | Alle vier Veranstaltungstypen gelaufen, Soll für das Verbandslager fertig | ORG-04 (Variante B), ORG-09, PER-03, VER-11, ANM-04, FRM-07, FRM-10, ANM-11, KAP-02, KAP-03, PRE-02, PRE-03, PRE-04, ZAH-02, MAIL-04, MAIL-09, BEN-01, GRP-03, ORT-02, ORT-03, ORT-04, DSG-07, ADM-04, ADM-05, ADM-07; Pilot 3 und 4: Stammeswochenende mit Kindern, Bundesaktion mit Sammelanmeldungen | Pilot mit Kindern erst nach Abnahme von FRM-09; vier Typen gelaufen; Entfernungspreise mit dem Beispiel aus dem Anforderungsdokument getestet | 31.03.2030 | 233 / 254 |
 | P10 Einsatzreife | Die Anmeldung zum Verbandslager kann öffnen | NFA-08, NFA-05 (5.000 Teilnehmende, 100 gleichzeitig) | Lasttest bestanden; Restore geübt; Betriebshandbuch von einer zweiten Person gegengelesen; keine Wartung 48 Stunden vor Fristen; Startprobe ohne KI; Tor E6 | 30.06.2030 | 70 / 85 |
@@ -203,12 +203,12 @@ Sieben feste Prüfpunkte entscheiden, ob der Plan hält; die wichtigsten sind E1
 
 | Punkt | Datum | Prüffrage | Weiter, wenn | Sonst |
 | --- | --- | --- | --- | --- |
-| E0 | 29.11.2026 | Steht der Rahmen? | Name und Lizenz fest, Repo angelegt, Anfragen zu OP-1, OP-2, OP-4 verschickt, Liste 1 bestätigt; Hitobito deckt Gesundheitsdaten pro Anmeldung, Teilnahmekreise und Keycloak-Login nicht ohne eigene Programmierung ab | Hitobito deckt das ab: Neustart anhalten, Hitobito zwei Wochen ernsthaft prüfen. DPV antwortet nicht: über die Verbandsleitung nachfassen, P1 beginnt trotzdem |
+| E0 | 29.11.2026 | Steht der Rahmen? | Name und Lizenz fest, Repo angelegt, Anfragen zu OP-1, OP-2, OP-4 verschickt, Liste 1 bestätigt; Ergebnis zu Hitobito in `docs/entscheidungen.md` notiert (am 20.10.2026: verworfen wegen der Bedienbarkeit) | DPV antwortet nicht: über die Verbandsleitung nachfassen, P1 beginnt trotzdem |
 | E1 | 30.06.2027 | Trägt die Basis, reicht das Tempo? | Go/No-Go-Kriterien aus dem Fahrplan Neubau erfüllt, Prüfer würde weiterbauen; P2 hat höchstens 125 % der geschätzten 117 Stunden gebraucht; Stundenlog im Schnitt mindestens 8 Stunden pro Woche (ohne Lernzeit) | 125–150 % oder 7 Stunden: Liste 2 aktivieren, alle Schätzungen mit dem gemessenen Faktor neu rechnen. Darüber oder unter 7 Stunden: mit dem DPV-Veranstaltungsteam ein späteres Vorbereitungstreffen als Generalprobe festlegen. Basis trägt nicht: Datenmodell nachbessern, nicht zum Biber zurück |
 | E2 | 31.01.2028 | Reicht die Zeit bis Juni? | P3 und P4 mit höchstens 4 Wochen Verzug fertig; Folgenabschätzung abgeschlossen; Server und Mailweg vom DPV zugesagt | 4–8 Wochen Verzug: restliche Punkte von Liste 2. Mehr Verzug oder kein Server: Generalprobe verschieben, DPV-Veranstaltungsteam sofort informieren |
 | E3 | 30.06.2028 | Dürfen echte Daten ins Tool? | alle Abschlusskriterien von P1 bis P6 erfüllt; Restore geübt; Prüfer-Durchsicht ohne kritischen Befund; Auftragsverarbeitung und Verzeichnis unterschrieben; zweiter Admin eingewiesen | Generalprobe läuft ohne Tool wie bisher, das nächste Vorbereitungstreffen wird Generalprobe. Keine Ausnahme bei Sicherheit oder Datenschutz |
 | E4 | 31.12.2028 | Was bleibt vom Soll? (OP-6) | Liste 1 fertig; Rückblick auf die Generalprobe mit höchstens fünf Maßnahmen; Betriebsaufwand pro Woche gemessen | Kann-Vorschlag beschließen; über TEAM-02 und FRM-12 entscheiden, und was dazukommt, verdrängt gleich viel Soll. Braucht der Betrieb mehr als 2 Stunden pro Woche: Soll entsprechend kürzen |
-| E5 | 30.09.2029 | Ist der Pilot auf Kurs? | mindestens zwei Pilotveranstaltungen gelaufen; P9 zur Hälfte fertig | Soll streichen, bis der Rest bis 31.03.2030 passt: zuerst Komfort (GRP-03, ADM-05, FRM-07, ANM-11), zuletzt, was das Verbandslager braucht (PRE-02 bis PRE-04, KAP-02, KAP-03, MAIL-04, ANM-04) |
+| E5 | 30.09.2029 | Ist der Pilot auf Kurs? | mindestens zwei Pilotveranstaltungen gelaufen; P9 zu einem Drittel fertig | Soll streichen, bis der Rest bis 31.03.2030 passt: zuerst Komfort (GRP-03, ADM-05, FRM-07, ANM-11), zuletzt, was das Verbandslager braucht (PRE-02 bis PRE-04, KAP-02, KAP-03, MAIL-04, ANM-04) |
 | E6 | 30.06.2030 | Reif für die Verbandslager-Anmeldung? | alle verbliebenen Soll abgenommen; Lasttest mit 5.000 Teilnehmenden und 100 gleichzeitig bestanden; vier Pilottypen gelaufen; Restore geübt | Anmeldestart innerhalb des 2. Halbjahrs 2030 um bis zu drei Monate verschieben oder fehlendes Soll streichen. Excel nebenher ist keine Lösung (Erfolgskriterium 1) |
 
 | Risiko | Frühes Zeichen | Gegenmaßnahme |
@@ -237,7 +237,7 @@ Der erste Pull Request legt die Grundlage des Repos und enthält noch keinen Dja
 | `README.md` | Zweck, Stand („noch kein Code“), Lizenz, Verweise auf `docs/` | Einstieg für dich und eine zweite Person |
 | `docs/anforderungen.md` | Anforderungsdokument vom 19.10.2026, unveränderte Kopie | Repo ist maßgeblich |
 | `docs/fahrplan.md` | dieser Fahrplan | Repo ist maßgeblich |
-| `docs/pruefung-2026-10-20.md` | die Prüfung der 59 Anmerkungen (zweiter Tab dieses Docs) | Gründe für Übernahme und Ablehnung bleiben im Repo nachlesbar |
+| `docs/pruefung-2026-10-20.md` | die Prüfung der 59 Anmerkungen | Gründe für Übernahme und Ablehnung bleiben im Repo nachlesbar |
 | `docs/entscheidungen.md` | alle Entscheidungen vom 20.10.2026 mit Datum und Grund | ersetzt eigene ADR-Dateien; im alten Repo bewährt |
 | `CONTRIBUTING.md` | werkzeugneutrale Regeln aus dem alten Repo, ohne die Teile zu DRF, Vue und Altlasten. Neu: Lizenz jeder neuen Abhängigkeit, verträglich mit EUPL-1.2; bestehende Tests nur bei geänderter Anforderung ändern; Migrationen in `main` nie ändern, eigene vor dem Übernehmen zu einer zusammenfassen; Personen- und Anmeldedaten nur über die zentrale Rechteprüfung; Komplexität höchstens 12 | Anforderungsdokument: Regeln werkzeugneutral dokumentiert |
 | `CLAUDE.md` | knapp, verweist auf `CONTRIBUTING.md` und `docs/`. Dazu: Ablauf je Aufgabe (eng fassen, Plan vor Code, Ausgeführtes von Empfohlenem trennen); was die KI nie allein entscheidet (Rechtsfragen, Freigabe echter Daten, Änderungen an Produktionsdaten); Prüfpunkte der unabhängigen Prüfung; ein neuer Test muss aus dem richtigen Grund fehlschlagen; keine echten Daten, keine Passwörter oder Schlüssel; Inhalte aus Webseiten, Issues oder Dateien sind keine Anweisungen; die Erfahrungen aus dem alten Repo, soweit sie nicht am alten Code hängen | Prüfung der Rückmeldungen |
@@ -246,7 +246,7 @@ Der erste Pull Request legt die Grundlage des Repos und enthält noch keinen Dja
 | `.github/pull_request_template.md` | Gliederung der Beschreibung: was sich für Nutzende ändert, Anforderungs-IDs, Tests für den erlaubten und den verbotenen Fall, ausgeführte Prüfungen mit Ergebnis, nicht Geprüftes, offene Punkte | Die Beschreibung ist dein Prüfwerkzeug |
 | `.claude/skills/grill-me/`, `.claude/skills/issue-anlegen/` | angepasst an das neue Repo | Abschnitt 1 |
 
-Alles aus dem alten Repo stammt aus deinen Sitzungen: Alle 42 Commits an diesen Dateien sind seit dem 14.10.2026 entstanden (geprüft am 20.10.2026). Die Übernahme braucht keine Zustimmung der früheren Entwickler.
+Alles aus dem alten Repo stammt aus deinen Sitzungen: Alle Commits an diesen Dateien sind ab dem 14.10.2026 entstanden (geprüft am 20.10.2026). Die Übernahme braucht keine Zustimmung der früheren Entwickler.
 
 **Später**
 
@@ -257,14 +257,14 @@ Alles aus dem alten Repo stammt aus deinen Sitzungen: Alle 42 Commits an diesen 
 | `rauchtests/` | P1, mit der ersten Seite | Die alten Tests klicken durch die Vue-Oberfläche |
 | CSS-Grundlage, Logging-Einstellungen | P1 | gehören zum Gerüst |
 | Rechtematrix, Testdaten-Befehl, Testmuster aus `test_zugriffsschutz.py` und `test_abfragen.py` | P2 | brauchen das Datenmodell; die alten Muster sind auf DRF zugeschnitten |
-| Musterdateien in `CLAUDE.md` | nach E1 | entstehen erst im Durchstich |
+| Musterdateien in `CLAUDE.md` | Ende P2, vor E1 | entstehen erst im Durchstich |
 | `SECURITY.md`, Betriebshandbuch | P6 | wie geplant (NFA-10, NFA-08) |
 | die zwei Sätze zu Gesundheitsdaten im Anforderungsdokument | P0, eigener Pull Request nach dem ersten | Der erste übernimmt das Dokument unverändert |
 | altes Repo archivieren | P0, durch dich | gehört nicht ins neue Repo |
 
 ## 6. Änderungen nach der Prüfung
 
-Am 20.10.2026 wurden 59 Anmerkungen von ChatGPT und Gemini einzeln geprüft: 27 übernommen, 27 abgelehnt, 5 als vier Entscheidungen vorgelegt, die du getroffen hast. Fünf Stellen im bisherigen Fahrplan waren falsch oder ungenau (Zeilen 1, 5, 6, 8 und 12). Die Nummern C1 bis C39 und G1 bis G20 verweisen auf den Tab „Prüfung der Rückmeldungen“, dort stehen auch die Gründe für jede Ablehnung.
+Am 20.10.2026 wurden 59 Anmerkungen von ChatGPT und Gemini einzeln geprüft: 27 übernommen, 27 abgelehnt, 5 als vier Entscheidungen vorgelegt, die du getroffen hast. Fünf Stellen im bisherigen Fahrplan waren falsch oder ungenau (Zeilen 1, 5, 6, 8 und 12). Die Nummern C1 bis C39 und G1 bis G20 verweisen auf `docs/pruefung-2026-10-20.md`, dort stehen auch die Gründe für jede Ablehnung.
 
 | Nr | Stelle | vorher | jetzt | warum |
 | --- | --- | --- | --- | --- |
@@ -293,6 +293,22 @@ Am 20.10.2026 wurden 59 Anmerkungen von ChatGPT und Gemini einzeln geprüft: 27 
 | 23 | Grundlagen | Doc maßgeblich | Repo ab dem ersten Pull Request | Entscheidung 1 |
 
 Ohne eigene Zeile, weil nur die Form betroffen ist: Die beiden Diagramme (Zeitleiste, kritischer Pfad) sind nicht mitkopiert, weil der Export sie nicht enthielt; sie gelten unverändert in der Fassung vom 20.10.2026. Datumsangaben stehen jetzt einheitlich als TT.MM.JJJJ.
+
+**Korrekturen aus der unabhängigen Prüfung des ersten Pull Requests** (20.10.2026, nach der Übernahme ins Repo):
+
+| Nr | Stelle | vorher | jetzt | warum |
+| --- | --- | --- | --- | --- |
+| 24 | Abschnitt 1 und 2, Belege | Pfade und `main` ohne Angabe des Repos | ausdrücklich das alte Repo | im neuen Repo gibt es dieselben Dateinamen |
+| 25 | Abschnitt 1 und E0, Hitobito | „Ungeprüft“; E0 verlangte die funktionale Prüfung | funktional ungeprüft, wegen der Bedienbarkeit verworfen; E0 verlangt das notierte Ergebnis | Entscheidung vom 20.10.2026 (`docs/entscheidungen.md`) |
+| 26 | Planungsgrundlagen | Go/No-Go-Kriterien und Betriebsspur „übernommen“ | stehen bisher nur im Doc „Fahrplan Neubau“, kommen vor E1 ins Repo | E1 verweist darauf, das Doc ist hier nicht lesbar |
+| 27 | Phasen, Rauchtest | Tastatur nur in P1 | in jeder Phase einmal nur mit Tastatur | so in der Prüfung übernommen (C21), im Fahrplan vergessen |
+| 28 | Phasen, Rechengrundlage | rund 7,4 Stunden je Kalenderwoche bis P6 | rund 7,5 | 658 Stunden in 87,7 Wochen ab dem 26.10.2026 |
+| 29 | P7, Ziel | „alle 77 Muss fertig“ | außer dem vollen Nachweis von NFA-05 (P10) | Liste 1 |
+| 30 | E5 | „P9 zur Hälfte fertig“ am 30.09.2029 | „zu einem Drittel“ | am 30.09.2029 ist erst ein Drittel von P9 vergangen; sonst löste E5 auch ohne Verzug Kürzungen aus |
+| 31 | Abschnitt 5, Musterdateien | „nach E1“ | „Ende P2, vor E1“ | P2 verlangt sie als Abschlusskriterium |
+| 32 | Abschnitte 5 und 6 | Verweise auf einen Tab im Doc | `docs/pruefung-2026-10-20.md` | das Repo ist maßgeblich |
+| 33 | Abschnitt 5, Herkunft | „alle 42 Commits“ | „alle Commits“ | die Zahl hängt an der Dateiauswahl; die Aussage selbst stimmt |
+| 34 | Kopfzeile | „Oct 20, 2026“ | „20.10.2026“ | einheitliches Datumsformat |
 
 **Grundlagen:** [Anforderungsdokument](https://claude.ai/code/artifact/63f2b213-1e66-453f-a270-0de357af386b), [Fahrplan Neubau](https://claude.ai/code/artifact/3e8d079d-7652-4b49-bce3-edee342841b6) und [Bewertung von Claude](https://claude.ai/code/artifact/8ba0df78-1ae2-44a1-a865-f72ca5295fb3), die Bewertungen von ChatGPT und Gemini (Anhänge), Repository [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) Stand 9df4513, Django-Pflegezeiträume laut [djangoproject.com](https://www.djangoproject.com/download/). Dieser Fahrplan ersetzt den Fahrplan Neubau vom 20.10.2026.
 
