@@ -17,7 +17,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Begründung:** Zu 2: Der Weg des Neubaus ist geklärt. Die Prüffragen von E1 stehen im Fahrplan selbst, den Betrieb regeln P6 und das Betriebshandbuch (Einschätzung der KI). Zu 4: Die EUPL wirkt erst, wenn das Repo veröffentlicht oder weitergegeben wird (Hinweis der KI).
 
-**Umsetzung:** `docs/fahrplan.md` (Planungsgrundlagen, P2, E1, Abschnitt 6 Nr. 35 bis 38), `.claude/skills/grill-me/SKILL.md` (Abschnitt 1). Dazu Vorschläge der KI, denen Sebastian mit dem Übernehmen des Pull Requests zustimmt: `docs/anforderungen.md`, OP-6 und Risikotabelle bei ROL-04 auf den Stand der Entscheidung vom 20.10.2026 gebracht (Protokoll in P2, Benachrichtigung in P8); Abschnitt 6 Nr. 7 im Fahrplan mit einem erklärenden Hinweis.
+**Umsetzung:** `docs/fahrplan.md` (Planungsgrundlagen, P2, E1, Abschnitt 6 Nr. 35 bis 38), `.claude/skills/grill-me/SKILL.md` (Abschnitt 1). Dazu Vorschläge der KI, denen Sebastian mit dem Übernehmen des Pull Requests zustimmt: `docs/anforderungen.md`, OP-6 und Risikotabelle bei ROL-04 auf den Stand der Entscheidung vom 20.10.2026 gebracht (Protokoll in P2, Benachrichtigung in P8); Abschnitt 6 Nr. 7 und Nr. 26 im Fahrplan mit je einem erklärenden Hinweis.
 
 ## 2026-10-20 · Code aus dem alten Repo darf übernommen werden
 
