@@ -26,6 +26,10 @@
 
 <!-- Wofür, warum nicht selbst gelöst, wird es gepflegt, welche Lizenz (verträglich mit EUPL-1.2)? Sonst „keine“. -->
 
+## Aus dem alten Repo übernommen
+
+<!-- Datei und Commit im alten Repo (sebivtt/scout-participant-management), was angepasst wurde und warum Übernehmen sinnvoller war als neu schreiben. Sonst „nichts“. -->
+
 ## Nicht geprüft und offen
 
 <!-- Was nicht getestet wurde, offene Risiken, was Sebastian selbst ausprobieren sollte. -->
