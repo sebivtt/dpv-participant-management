@@ -14,7 +14,7 @@ Gesprochen wird mit Sebastian deutsch, in Alltagssprache, ohne Fachjargon. Er is
 - **Fehler** (Label `bug`): Das Tool tut etwas Falsches oder Unerwartetes. Vorlage `.github/ISSUE_TEMPLATE/fehler.yml`.
 - **Anforderung** (Label `enhancement`): Das Tool soll etwas können, was bisher nicht vorgesehen ist. Vorlage `.github/ISSUE_TEMPLATE/anforderung.yml`.
 - Ein Thema pro Issue. Stecken mehrere Themen in einer Meldung, mehrere Issues vorschlagen.
-- Dazu das Label der Phase (`P1` bis `P10`), in die das Issue laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Ist es erst später dran, zusätzlich `vorgemerkt` (`CLAUDE.md`, „Für Phasen und Vorgemerktes gilt“).
+- Dazu das Label der Phase (`P0` bis `P10`), in die das Issue laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Wird es auf später verschoben oder ungeklärt für eine spätere Phase angelegt, zusätzlich `vorgemerkt` (`CLAUDE.md`, „Für Phasen und Vorgemerktes gilt“).
 
 ## 2. Inhalt aufbauen
 

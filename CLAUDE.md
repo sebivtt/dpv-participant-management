@@ -30,8 +30,8 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 
 Für Phasen und Vorgemerktes gilt:
 
-- **Labels:** Jedes Issue trägt das Label seiner Phase (`P1` bis `P10`), soweit sie feststeht. Was erst später dran ist, trägt zusätzlich `vorgemerkt`. Das Phasen-Label ist nur Orientierung, nie ein Filter.
-- **Vor Beginn jeder Phase** alle offenen Issues mit `vorgemerkt` durchsehen, nicht nur die mit dem Label dieser Phase, und die Phasen-Labels bei Bedarf korrigieren. Issues ohne Phasen-Label sind bewusst offen, nicht vergessen.
+- **Labels:** Jedes Issue trägt das Label der Phase (`P0` bis `P10`), in die es laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Was beim Klären auf später verschoben oder noch ungeklärt für eine spätere Phase angelegt wird, trägt zusätzlich `vorgemerkt`. Das Phasen-Label ist nur Orientierung, nie ein Filter.
+- **Vor Beginn jeder Phase** alle offenen Issues mit `vorgemerkt` oder ohne Phasen-Label durchsehen, nicht nur die mit dem Label dieser Phase, und die Phasen-Labels bei Bedarf korrigieren. Issues ohne Phasen-Label sind bewusst offen, nicht vergessen.
 - **Was beim Klären auf später verschoben wird,** bekommt ein eigenes Issue mit `vorgemerkt` und Verweis auf das Protokoll, aus dem es stammt. Ein Vermerk nur unter „Nicht Teil dieser Anforderung“ geht verloren, sobald das Issue geschlossen ist.
 
 Für die Umsetzung gilt außerdem:
