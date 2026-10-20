@@ -171,7 +171,7 @@ OP-1, OP-2 und OP-4 liegen auf dem kritischen Pfad; ihre Termine sind hart. OP-3
 | OP-1 | Admin-MFA, Produktiv-Client | Keycloak-Verantwortliche | 30.09.2027 | 31.03.2028 | Tor E3 |
 | OP-1 | Schreibrechte für ORG-04 Variante A | Keycloak-Verantwortliche | 30.09.2028 | 31.12.2028 | nichts: sonst Variante B, die eingeplant ist |
 | OP-2 | Ansprechperson für Datenschutz | DPV | 15.11.2026 | 31.12.2026 | alle weiteren OP-2-Schritte |
-| OP-2 | Datenschutz-Folgenabschätzung für Gesundheitsdaten, auch für die freiwillige Speicherung im eigenen Profil (FRM-04); Einwilligungsmodell DSG-01/02 mit stellvertretender Bestätigung und Fortgeltung nach Volljährigkeit | Datenschutzperson | Entwurf von dir bis 31.01.2027 | 31.05.2027 | Gesundheitsblock im Durchstich; sonst rückt er an den Anfang von P4 |
+| OP-2 | Datenschutz-Folgenabschätzung für Gesundheitsdaten, auch für die freiwillige Speicherung im eigenen Profil (FRM-04); Einwilligungsmodell DSG-01/02 mit stellvertretender Bestätigung und Fortgeltung nach Volljährigkeit; ab welchem Alter Personen mit Account selbst einwilligen können. Deine Arbeitsannahme vom 20.10.2026: alles zulässig, bis die Datenschutzperson es bestätigt oder verwirft | Datenschutzperson | Entwurf von dir bis 31.01.2027 | 31.05.2027 | Gesundheitsblock im Durchstich; sonst rückt er an den Anfang von P4 |
 | OP-2 | Verantwortlichkeit, Vertrag zur Auftragsverarbeitung, Verzeichnis der Verarbeitungen, Ablauf bei Datenpannen | DPV | 30.09.2027 | 31.03.2028 | Tor E3, also die Generalprobe |
 | OP-3 | Ausgabentool und Schnittstelle | DPV | – | nicht vor E6 | nur FIN-06 (Kann) |
 | OP-4 | Ansprechperson Betrieb; Testserver nur mit erfundenen Daten | DPV-IT | 15.11.2026 | 28.02.2027 | Ende P1; sonst übergangsweise eigener Testserver |
