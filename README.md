@@ -23,7 +23,7 @@ Django mit serverseitig erzeugten Seiten und htmx, PostgreSQL, Login per OIDC ü
 
 ## Vorgänger
 
-Das Tool ist ein Neustart. Das frühere Repo [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) bleibt Nachschlagewerk. Aus ihm wird kein Programmcode übernommen, nur Regeln und Werkzeuge, die seit dem 14.10.2026 dort entstanden sind.
+Das Tool ist ein Neustart. Das frühere Repo [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) bleibt Nachschlagewerk. Übernommen sind Regeln und Werkzeuge, die seit dem 14.10.2026 dort entstanden sind. Einzelne Teile des alten Programmcodes dürfen mit Erlaubnis übernommen werden, wo sie zum neuen Datenmodell passen (`CONTRIBUTING.md`, Abschnitt 10).
 
 ## Lizenz
 

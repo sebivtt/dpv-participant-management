@@ -6,7 +6,7 @@
 
 ## 1. Entscheidung und Begründung
 
-**Entscheidung: Neustart.** Neues Repository mit eigenem Datenmodell auf Django und PostgreSQL, Login nur über den DPV-Keycloak. Aus scout-participant-management wird kein Produktcode übernommen, nur Werkzeuge und Arbeitsweise, die seit dem 14.10.2026 in deinen Sitzungen entstanden sind: `CLAUDE.md`, `CONTRIBUTING.md`, `dev/` (Keycloak-Testumgebung), `.github/workflows/ci.yml`, `rauchtests/` und die Testmuster aus `backend/tests/test_zugriffsschutz.py` und `test_abfragen.py`. Das alte Repo bleibt Nachschlagewerk.
+**Entscheidung: Neustart.** Neues Repository mit eigenem Datenmodell auf Django und PostgreSQL, Login nur über den DPV-Keycloak. Aus scout-participant-management wird kein Produktcode übernommen, nur Werkzeuge und Arbeitsweise, die seit dem 14.10.2026 in deinen Sitzungen entstanden sind: `CLAUDE.md`, `CONTRIBUTING.md`, `dev/` (Keycloak-Testumgebung), `.github/workflows/ci.yml`, `rauchtests/` und die Testmuster aus `backend/tests/test_zugriffsschutz.py` und `test_abfragen.py`. Das alte Repo bleibt Nachschlagewerk. Nachtrag vom 20.10.2026: Sebastian hat die Erlaubnis, Code und Codeschnipsel aus dem alten Repo zu übernehmen. Einzelne Teile kommen mit, wo sie ohne grundlegenden Umbau zum neuen Datenmodell passen (`CONTRIBUTING.md`, Abschnitt 10); am Neustart ändert das nichts.
 
 Ausschlaggebend sind fünf Punkte, alle am Code des alten Repos sebivtt/scout-participant-management geprüft (Stand `main` 9df4513 vom 19.10.2026, Pfade außer CLAUDE.md und README.md relativ zu dessen backend/):
 
@@ -187,7 +187,7 @@ OP-1, OP-2 und OP-4 liegen auf dem kritischen Pfad; ihre Termine sind hart. OP-3
 ### Was ausdrücklich nicht gemacht wird
 
 - Keine Arbeit mehr am alten Repo außer dem Archivieren. Dessen eigener Fahrplan (Pinia-, vue-router- und Tailwind-Sprünge, eslint, N+1) endet.
-- Kein Produktcode aus dem Biber. Die KJP-Generatoren nur mit Zustimmung der früheren Entwickler; sonst wird LIS-03 neu gebaut.
+- Kein Weiterbau des Biber-Codes. Einzelne Teile nur, wo sie ohne grundlegenden Umbau passen, mit Herkunftsangabe (Erlaubnis seit 20.10.2026, `CONTRIBUTING.md`, Abschnitt 10). Erster Kandidat sind die KJP-Generatoren mit ihrer Vorlage für LIS-03.
 - Keine Vue- oder andere Single-Page-Oberfläche, keine App, kein Celery und Redis, keine AWS-Dienste, keine Microservices.
 - Keine Schreibzugriffe auf den Verbands-Keycloak. ORG-04 nur als Variante B, außer OP-1 erlaubt Variante A.
 - Kein Kann vor E6, auch nicht „schnell nebenbei“: kein Finanzmodul, keine Feinrollen im Leitungsteam (außer E4 entscheidet anders), keine automatische Warteliste, keine Stornogebühren, Rechnungen oder Zahlungsstatus, kein Check-in, keine Statistiken, keine Push- oder Messenger-Kanäle, keine bedingten Fragen, keine mehreren Anmeldestrecken, keine Lagerplatzdatenbank, keine formale WCAG-Prüfung.

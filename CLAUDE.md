@@ -8,6 +8,7 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 - `docs/fahrplan.md`: Phasen, Abschlusskriterien und Reihenfolge. Was als Nächstes dran ist, steht dort; die laufende Phase steht im `README.md` unter „Stand“ und wird beim Phasenwechsel fortgeschrieben.
 - `docs/anforderungen.md`: was das Tool können muss. Anforderungs-IDs (z. B. BER-06) und Prioritäten sind verbindlich und werden nie still neu gedeutet.
 - `docs/entscheidungen.md`: Was dort steht, ist entschieden. Widerspricht eine Anfrage einer Entscheidung, nachfragen statt still ändern. Neue Entscheidungen dort mit Datum eintragen.
+- Code aus dem alten Repo (`sebivtt/scout-participant-management`) nur nach `CONTRIBUTING.md`, Abschnitt 10.
 - Maßgeblich sind die Dateien in `docs/`, nicht die früheren Docs in Claude. Diese sind aus der Arbeitssitzung nicht immer lesbar (am 20.10.2026 zweimal kein Zugriff).
 
 ## Zusammenarbeit mit Sebastian

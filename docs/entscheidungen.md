@@ -6,6 +6,16 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-20 · Code aus dem alten Repo darf übernommen werden
+
+**Entscheidung** (Sebastian): Code und Codeschnipsel aus dem alten Repo dürfen übernommen werden, wenn es dafür logische und sinnvolle Anwendungsfälle gibt. Sebastian hat dafür die Erlaubnis.
+
+**Begründung:** Der Fahrplan nannte die ungeklärte Lizenz als Hürde für jede Codeübernahme (Abschnitt 1, Punkt 5); die Erlaubnis räumt sie aus. Der Neustart bleibt, weil er vor allem am Datenmodell hängt (Punkte 1 bis 4) und laut Abschnitt 2 kein Baustein ohne Umbau passt. Sinnvoll sind deshalb vor allem kleine, in sich geschlossene Teile, etwa die KJP-Generatoren für LIS-03 (Einschätzung der KI).
+
+**Offen:** Von wem die Erlaubnis stammt, wann und in welcher Form, ist hier noch einzutragen. Hinweis der KI (keine Rechtsberatung): Weil das neue Repo unter der EUPL-1.2 steht, sollte die Erlaubnis schriftlich vorliegen, alle beteiligten früheren Entwickler umfassen und die Weitergabe unter der EUPL-1.2 einschließen.
+
+**Umsetzung:** `CONTRIBUTING.md` (Abschnitt 10), `CLAUDE.md`, `README.md`, `.github/pull_request_template.md`, `docs/fahrplan.md` (Abschnitt 1, „Was ausdrücklich nicht gemacht wird“).
+
 ## 2026-10-20 · Klärungen zu OP-1, OP-2 und OP-4, Gesundheitsdaten im Anforderungsdokument
 
 **Entscheidung** (Sebastian):

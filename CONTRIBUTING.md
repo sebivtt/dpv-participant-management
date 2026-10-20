@@ -78,3 +78,13 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 > Hinterlasse den Code besser, als du ihn vorgefunden hast.
 
 Wer eine bestehende Funktion ändert, ergänzt dabei ihren Docstring, entfernt toten Code daneben und schreibt einen Test, falls keiner existiert.
+
+## 10. Übernahme aus dem alten Repo
+
+Seit dem 20.10.2026 dürfen Code und Codeschnipsel aus dem alten Repo `sebivtt/scout-participant-management` übernommen werden (`docs/entscheidungen.md`).
+
+- **Nur, wo es sinnvoll ist:** wenn ein Teil ohne grundlegenden Umbau zum neuen Datenmodell passt und Übernehmen einfacher ist als neu schreiben. (Review)
+- **Herkunft angeben:** Commit-Nachricht und Pull-Request-Beschreibung nennen Datei und Commit im alten Repo. (Review)
+- **Gleiche Regeln:** Übernommener Code erfüllt dieselben Regeln wie neuer, mit Tests, Docstrings und Rechteprüfung. Er bekommt keine Ausnahmen. (automatisch ab P1, sonst Review)
+- **Nicht übernommen** werden die Teile, die der Fahrplan in Abschnitt 2 als fehlerhaft belegt: die Rechteprüfung über Keycloak-Gruppen, die Personensicht, das Rendern von Mailvorlagen ohne Escaping und die Anmeldung ohne Prüfung des Teilnahmekreises. (Review)
+- **Fremde Lizenzen:** Teile, die im alten Repo unter einer eigenen Lizenz stehen (z. B. `backend/notifications/` mit BSD-Lizenz), kommen nur mit ihrem Lizenzhinweis mit. Die Erlaubnis der früheren Entwickler gilt dafür nicht. (Review)
