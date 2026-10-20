@@ -16,7 +16,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Begründung:** Zu 1: Die Auskünfte betreffen OP-1 schon jetzt, nicht erst mit dem Pull Request zu #5. Zu 2 und 3: Verschobene Punkte standen nur unter „Nicht Teil dieser Anforderung“ und wären mit dem Schließen des Issues aus dem Blick geraten (Hinweis der KI). Phasen-Labels geben die Übersicht; weil sich eine Zuordnung als falsch erweisen kann, sieht jede Phase alle vorgemerkten Issues und alle ohne Phasen-Label durch, und ein Fehler fällt spätestens beim nächsten Phasenbeginn auf.
 
-**Umsetzung:** `CLAUDE.md` („Für Phasen und Vorgemerktes gilt“), `.claude/skills/issue-anlegen/SKILL.md` und `.claude/skills/grill-me/SKILL.md`, Labels `vorgemerkt` und `P0` bis `P10` auf GitHub, Issues #8 bis #16. Dazu Vorschläge der KI, denen Sebastian mit dem Übernehmen des Pull Requests zustimmt: OP-1 in `docs/fahrplan.md` (OP-Tabelle, Abschnitt 6 Nr. 39) und in `docs/anforderungen.md` (Offene Punkte) um die Auskunft aus Punkt 1 ergänzt.
+**Umsetzung:** `CLAUDE.md` („Für Phasen und Vorgemerktes gilt“), `.claude/skills/issue-anlegen/SKILL.md` und `.claude/skills/grill-me/SKILL.md`, Labels `vorgemerkt` und `P0` bis `P10` auf GitHub, Issues #8 bis #17. Dazu Vorschläge der KI, denen Sebastian mit dem Übernehmen des Pull Requests zustimmt: OP-1 in `docs/fahrplan.md` (OP-Tabelle, Abschnitt 6 Nr. 39) und in `docs/anforderungen.md` (Offene Punkte) um die Auskunft aus Punkt 1 ergänzt.
 
 ## 2026-10-20 · Offene Punkte aus der Bestandsaufnahme
 
