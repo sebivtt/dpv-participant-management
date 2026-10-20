@@ -1,0 +1,31 @@
+<!-- In Alltagssprache schreiben. Sebastian liest den Code nicht; diese Beschreibung ist seine Prüfgrundlage (CONTRIBUTING.md, Abschnitt 8). -->
+
+## Was sich für Nutzende ändert
+
+
+
+## Anforderungen und Entscheidungen
+
+<!-- IDs aus docs/anforderungen.md, das Issue mit „Closes #…“, neue Einträge in docs/entscheidungen.md -->
+
+## Wie geprüft wurde
+
+<!-- Nur, was tatsächlich ausgeführt wurde, mit Ergebnis. Was nur empfohlen ist, gehört unter „Nicht geprüft und offen“. -->
+
+- Test für den erlaubten Fall:
+- Test für den verbotenen Fall (wer darf das nicht?):
+- Lokal ausgeführte Prüfungen und Ergebnis:
+- Rauchtest des Hauptablaufs:
+- Unabhängige Prüfung: Befunde und was daraus wurde:
+
+## Datenmodell oder Rechte
+
+<!-- Nur ausfüllen, wenn Modelle, Migrationen oder die Rechteprüfung geändert sind: welche Dateien, damit sie sich nachlesen lassen. Sonst „nicht betroffen“. -->
+
+## Neue Pakete
+
+<!-- Wofür, warum nicht selbst gelöst, wird es gepflegt, welche Lizenz (verträglich mit EUPL-1.2)? Sonst „keine“. -->
+
+## Nicht geprüft und offen
+
+<!-- Was nicht getestet wurde, offene Risiken, was Sebastian selbst ausprobieren sollte. -->
