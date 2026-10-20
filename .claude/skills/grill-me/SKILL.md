@@ -28,6 +28,7 @@ Erst alles lesen, was die KI selbst nachsehen kann. Sebastian wird nie etwas gef
   gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/dependencies/blocking --jq '.[] | "#\(.number) \(.state)"'
   ```
 - `docs/entscheidungen.md` (widerspricht das Issue einer Entscheidung?), `docs/anforderungen.md` (betroffene Anforderungen, Glossar am Ende), `docs/fahrplan.md` (in welche Phase gehört es?).
+- **Fehlendes Diagramm zum Lebenszyklus:** In `docs/anforderungen.md` steht unter „Veranstaltung planen“, „Lebenszyklus“ nur ein Platzhalter für das Diagramm „Lebenszyklus einer Veranstaltung · 8 Zustände“. Sebastian hat es lokal. Berührt das Issue den Lebenszyklus (Zustände einer Veranstaltung wie „Anmeldung offen“ oder „Geschlossen“, Wechsel zwischen ihnen, Fristen, Veröffentlichen, Löschen), Sebastian in der Übersicht (Abschnitt 2) danach fragen und es mit seiner Zustimmung an der Stelle des Platzhalters ergänzen. Ist es ergänzt, diesen Punkt hier streichen.
 - Den betroffenen Code: welche Seiten, Schritte im Anmeldeablauf, Dialoge, Schnittstellen und Rechte berührt sind, wie oft etwas vorkommt (z. B. wie viele Dialoge es gibt), was bestehende Daten betrifft. Die Erfahrungen in `CLAUDE.md` beachten (Adressen mit mehreren Aufrufern, Rechte).
 
 ## 2. Übersicht zeigen

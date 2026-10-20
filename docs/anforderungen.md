@@ -464,7 +464,7 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 - [ ] **OP-3 Ausgabentool:** Welches Ausgabentool nutzt der DPV, und hat es eine Schnittstelle (FIN-06)?
 - [ ] **OP-4 Betrieb:** Mit der DPV-IT Serverstandort, Mailversand (über das Google Workspace des DPV, wenn technisch möglich; Limits für Massenmails), Backups (verschlüsselt, an einem zweiten Ort, Zurückspielen geübt, Aufbewahrung passend zur 6-Monats-Anonymisierung) und eine Ansprechperson für den Betrieb klären.
 - [ ] **OP-5 Optik:** Optische Planung von Dashboard, Einladungsseite und Formular-Baukasten.
-- [ ] **OP-6 Prioritäten prüfen:** Prioritäten, die im Interview nicht ausdrücklich festgelegt wurden (u. a. ORG-04, ORG-08, PER-04 bis PER-06, VER-06, VER-10, PRE-02 bis PRE-04, DSH-02, DSH-07), werden nach Abschluss der Muss-Anforderungen neu bewertet. Dabei auch prüfen: ROL-04 früh einplanen; FRM-12 vorziehen, falls das Verbandslager kostenpflichtige Optionen anbietet.
+- [ ] **OP-6 Prioritäten prüfen:** Prioritäten, die im Interview nicht ausdrücklich festgelegt wurden (u. a. ORG-04, ORG-08, PER-04 bis PER-06, VER-06, VER-10, PRE-02 bis PRE-04, DSH-02, DSH-07), werden nach Abschluss der Muss-Anforderungen neu bewertet. Dabei auch prüfen: ROL-04 früh einplanen (entschieden am 20.10.2026: das Protokoll in P2, die Benachrichtigung in P8); FRM-12 vorziehen, falls das Verbandslager kostenpflichtige Optionen anbietet.
 - [ ] **OP-7 Benachrichtigungen:** Genaue Ausgestaltung von BEN-01 bis BEN-03: Ereignisse, Inhalte (ohne Gesundheitsdaten) und Kanäle.
 
 ### Risiken
@@ -478,7 +478,7 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 | Sensible Daten von Minderjährigen | Rechtliche und vertrauensbezogene Folgen bei Fehlern | OP-2, Gesundheitsdaten pro Anmeldung und nie im Profil verwalteter Personen, Protokollierung, Anonymisierung, keine Echtdaten lokal |
 | Erster Großeinsatz mit 5.000 Personen | Fehler treffen viele Menschen | Generalproben bei den Vorbereitungstreffen, Pilotphase mit mehreren Veranstaltungstypen |
 | Bis TEAM-02 sieht jede Veranstaltungsleitung Gesundheitsdaten | Bei großen Lagern sehen viele Personen sensible Daten | Leitungsteam klein halten, Küchenliste statt Vollzugriff (LIS-04) |
-| Rollenvergaben sind bis ROL-04 nicht nachvollziehbar | Unbemerkter Zugriff auf Daten von Kindern | Vertrauensprinzip; ROL-04 bei der Neubewertung früh einplanen |
+| Rollenvergaben sind bis ROL-04 nicht nachvollziehbar | Unbemerkter Zugriff auf Daten von Kindern | Vertrauensprinzip; das Protokoll der Rollenänderungen (ROL-04) kommt in P2, vor echten Daten (entschieden am 20.10.2026) |
 | Abhängigkeit von KI-Werkzeugen | Werkzeug wird teurer, ändert sich oder fällt weg; Fehler werden nicht erkannt | Regeln werkzeugneutral dokumentiert, Projekt ohne KI start- und testbar, menschliche Prüfung kritischer Änderungen, Lernpfad |
 | Kein äußerer Termindruck bis zur Generalprobe | Projekt zerfasert, Soll und Kann rutschen vor die Muss-Anforderungen | selbst gesetzte Meilensteine mit echten Veranstaltungen; erst alle Muss, dann Soll und Kann neu bewerten |
 
