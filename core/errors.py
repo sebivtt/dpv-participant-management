@@ -121,13 +121,15 @@ def server_error(request: HttpRequest) -> HttpResponse:
 
 
 class ClientErrorLogMiddleware:
-    """Vermerkt „nicht gefunden“ und „kein Zugriff“ als kurze Zeile im Log, ohne Fehlernummer und Konto.
+    """Vermerkt „nicht gefunden“, „kein Zugriff“ und „ungültige Anfrage“ als kurze Zeile im Log.
 
-    Ersetzt Djangos eigene Zeilen dazu, die die echte Adresse enthalten. Viele „kein Zugriff“
-    können ab P2 ein Zeichen sein, dass jemand fremde Daten sucht.
+    Ohne Fehlernummer und Konto. Ersetzt Djangos eigene Zeilen dazu, die die echte Adresse
+    oder frei gewählten Text enthalten. Viele „kein Zugriff“ können ab P2 ein Zeichen sein,
+    dass jemand fremde Daten sucht. „Ungültige Anfrage“ zeigt z. B. einen falsch eingestellten
+    Servernamen, bei dem das Tool jede Anfrage ablehnt.
     """
 
-    MESSAGES = {404: "Nicht gefunden", 403: "Kein Zugriff"}
+    MESSAGES = {400: "Ungültige Anfrage", 403: "Kein Zugriff", 404: "Nicht gefunden"}
 
     def __init__(self, get_response):
         self.get_response = get_response

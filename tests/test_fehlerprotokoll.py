@@ -257,6 +257,7 @@ def test_verdaechtige_anfrage_schreibt_keinen_frei_gewaehlten_text_ins_log(clien
 
     assert response.status_code == 400
     log = log_output()
+    assert "Ungültige Anfrage: /" in log
     assert "erika" not in log.lower()
     assert "allergie" not in log.lower()
 
