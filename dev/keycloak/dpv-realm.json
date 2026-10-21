@@ -1,0 +1,129 @@
+{
+  "realm": "dpv",
+  "displayName": "DPV (nur lokale Testumgebung)",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "de"
+  ],
+  "defaultLocale": "de",
+  "clients": [
+    {
+      "clientId": "dpv-anmeldetool",
+      "name": "DPV Anmeldetool (lokal)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "nur-lokal-nicht-geheim",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:8000/anmelden/keycloak/zurueck/",
+        "http://localhost:8000/anmelden/keycloak/zurueck/"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://127.0.0.1:8000/anmelden/##http://localhost:8000/anmelden/",
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "erika.testfrau",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-erika",
+          "temporary": false
+        }
+      ],
+      "email": "erika.testfrau@example.org",
+      "firstName": "Erika",
+      "lastName": "Testfrau"
+    },
+    {
+      "username": "max.testmann",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-max",
+          "temporary": false
+        }
+      ],
+      "email": "max.testmann@example.org",
+      "firstName": "Max",
+      "lastName": "Testmann"
+    },
+    {
+      "username": "ohne.name",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-ohne-name",
+          "temporary": false
+        }
+      ],
+      "email": "ohne.name@example.org"
+    },
+    {
+      "username": "ohne.nachname",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-ohne-nachname",
+          "temporary": false
+        }
+      ],
+      "email": "ohne.nachname@example.org",
+      "firstName": "Erika"
+    },
+    {
+      "username": "ohne.mail",
+      "enabled": true,
+      "emailVerified": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-ohne-mail",
+          "temporary": false
+        }
+      ],
+      "firstName": "Olaf",
+      "lastName": "Ohnemail"
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}}, {\"name\": \"email\", \"displayName\": \"${email}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}], \"groups\": []}"
+          ]
+        }
+      }
+    ]
+  }
+}

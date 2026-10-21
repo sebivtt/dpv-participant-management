@@ -7,7 +7,16 @@
 </head>
 <body>
   <main>
-    <h1>{% translate "Das DPV Anmeldetool läuft" %}</h1>
+    <h1>{% if user.first_name %}{% blocktranslate with first_name=user.first_name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}</h1>
+    {% if name_incomplete %}
+      <p role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
+    {% endif %}
+    <p>{% if user.get_full_name %}{{ user.get_full_name }}<br>{% endif %}{{ user.email }}</p>
+    <p>{% translate "Hier entsteht das DPV Anmeldetool" %}</p>
+    <form method="post" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      <button type="submit">{% translate "Abmelden" %}</button>
+    </form>
   </main>
 </body>
 </html>

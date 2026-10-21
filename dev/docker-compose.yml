@@ -1,10 +1,14 @@
-# Hilfsdienste für die lokale Entwicklung. Vorerst nur die Datenbank; Keycloak kommt
-# mit #5 dazu. Das Tool selbst läuft direkt auf dem Rechner (README.md).
+# Hilfsdienste für die lokale Entwicklung: Datenbank und Keycloak. Das Tool selbst läuft
+# direkt auf dem Rechner (README.md).
 # NICHT für den Echtbetrieb verwenden: Die Zugangsdaten sind erfunden und öffentlich.
 #
 # Übernommen aus sebivtt/scout-participant-management, dev/docker-compose.yml, Stand 9df4513.
-# Angepasst: ohne Redis (der Plan nutzt es nicht) und vorerst ohne Keycloak; PostgreSQL 18
-# statt 16; nur vom eigenen Rechner aus erreichbar; meldet, wann die Datenbank bereit ist.
+# Angepasst: ohne Redis (der Plan nutzt es nicht); PostgreSQL 18 statt 16; nur vom eigenen
+# Rechner aus erreichbar; meldet, wann die Dienste bereit sind. Keycloak (#5) nutzt anders
+# als dort seine eingebaute Entwicklungsdatenbank und liest Realm, Login-Client und
+# erfundene Konten bei jedem Start aus dev/keycloak/dpv-realm.json. So entsteht die
+# Testumgebung immer gleich, auch bei einer schon bestehenden Datenbank, und das
+# Einrichtungsskript aus dem alten Repo entfällt.
 name: dpv-dev
 
 services:
@@ -25,6 +29,26 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+
+  keycloak:
+    # Die Reihe 26.7 nutzte der DPV laut altem Repo im Juli 2026; 26.7.5 ist ihre neueste Fassung.
+    image: quay.io/keycloak/keycloak:26.7.5
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: nur-lokal-nicht-geheim
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/dpv-realm.json:/opt/keycloak/data/import/dpv-realm.json:ro
+    ports:
+      # Nur 127.0.0.1, wie bei der Datenbank.
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      # Das Image enthält kein curl; bash kann über /dev/tcp selbst eine Verbindung öffnen.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
 
 volumes:
   pgdata:

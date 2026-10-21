@@ -27,13 +27,6 @@ def _load_settings(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_startseite_zeigt_dass_das_tool_laeuft(client):
-    response = client.get("/")
-
-    assert response.status_code == 200
-    assert "Das DPV Anmeldetool läuft" in response.content.decode()
-
-
 @pytest.mark.django_db
 def test_tests_laufen_gegen_postgresql():
     # Läuft ein Test still gegen eine andere Datenbank, fallen Fehler erst im Betrieb auf.

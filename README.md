@@ -42,7 +42,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    ```bash
    cp .env.example .env
    ```
-   Danach: keine Ausgabe.
+   Danach: keine Ausgabe. Wer schon eine `.env` hat und nach einer Änderung an `.env.example` eine Meldung wie `Die Umgebungsvariable KEYCLOAK_REALM_URL fehlt` sieht, wiederholt diesen Schritt; die Datei enthält nur erfundene Werte.
 5. Python und Pakete installieren.
    ```bash
    uv sync
@@ -52,11 +52,11 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
 **Bei jedem Start** (zuerst Schritt 3)
 
 6. Die App „Docker“ öffnen und warten, bis unten links „Engine running“ steht.
-7. Die Datenbank starten.
+7. Die Datenbank und Keycloak starten. Keycloak ist hier eine eigene Testumgebung mit erfundenen Konten, nicht der Keycloak des DPV.
    ```bash
    docker compose -f dev/docker-compose.yml up -d --wait
    ```
-   Danach: `Container dpv-dev-postgres-1 Healthy`. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6.
+   Danach: `Container dpv-dev-postgres-1 Healthy` und `Container dpv-dev-keycloak-1 Healthy`. Beim ersten Mal lädt Docker vorher Keycloak herunter, und der Start dauert bis zu zwei Minuten. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6.
 8. Die Datenbank auf den neuesten Stand bringen.
    ```bash
    uv run --env-file .env python manage.py migrate
@@ -66,9 +66,21 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    ```bash
    uv run --env-file .env python manage.py runserver
    ```
-   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Dort steht „Das DPV Anmeldetool läuft“. Beenden mit `ctrl` + `C` im Terminal.
+   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Es erscheint die Login-Seite mit „Mit DPV-Konto anmelden“. Anmelden mit einem der erfundenen Konten aus der Tabelle unten; danach steht dort „Hallo Erika!“. Beenden mit `ctrl` + `C` im Terminal.
 
-**Prüfungen laufen lassen** (zuerst Schritt 3, 6 und 7)
+   Erfundene Konten der Keycloak-Testumgebung (`dev/keycloak/dpv-realm.json`):
+
+   | Benutzername | Passwort | Wofür |
+   | --- | --- | --- |
+   | `erika.testfrau` | `testpasswort-erika` | normales Konto mit Name und Mail |
+   | `max.testmann` | `testpasswort-max` | zweites Konto, z. B. zum Wechseln am selben Gerät |
+   | `ohne.name` | `testpasswort-ohne-name` | ohne Vor- und Nachnamen |
+   | `ohne.nachname` | `testpasswort-ohne-nachname` | nur mit Vornamen |
+   | `ohne.mail` | `testpasswort-ohne-mail` | ohne Mail; der Login wird abgelehnt |
+
+   Über „Noch kein Konto? Registrieren“ lassen sich weitere Konten anlegen. Die Verwaltung von Keycloak liegt unter http://localhost:8080/admin/ (Benutzername `admin`, Passwort `nur-lokal-nicht-geheim`).
+
+**Prüfungen laufen lassen** (zuerst Schritt 3, 6 und 7; einige Tests melden sich wirklich bei der Keycloak-Testumgebung an)
 
 10. Alle automatischen Prüfungen starten, dieselben wie auf GitHub.
     ```bash
@@ -78,11 +90,11 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
 
 **Aufhören**
 
-11. Die Datenbank anhalten. Die Daten bleiben erhalten.
+11. Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten. Keycloak beginnt beim nächsten Start wieder mit den Konten aus der Tabelle; selbst registrierte Konten sind dann weg.
     ```bash
     docker compose -f dev/docker-compose.yml down
     ```
-    Danach: `Container dpv-dev-postgres-1 Removed`.
+    Danach: `Container dpv-dev-postgres-1 Removed` und `Container dpv-dev-keycloak-1 Removed`.
 
 ## Technik (geplant)
 

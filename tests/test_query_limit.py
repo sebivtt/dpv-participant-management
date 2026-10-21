@@ -1,9 +1,13 @@
 """Tests für den Abfragegrenzen-Baustein, am Beispiel einer Liste von Konten mit ihren Gruppen."""
 
 import pytest
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 
 from tests.query_limit import assert_queries_do_not_grow
+
+# Seit #5 hat das Tool ein eigenes Kontenmodell; Djangos Standardmodell gibt es nicht mehr.
+User = get_user_model()
 
 
 def _create_account_with_group(number: int) -> None:
