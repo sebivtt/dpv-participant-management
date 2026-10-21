@@ -1,0 +1,5 @@
+# Fremde Bibliotheken bleiben aus der ZIP-Datei für das externe Review heraus
+# (docs/review-leitfaden.md): Sie sind nicht unser Code, und die Modelle sollen ihre
+# Zeit auf das Tool verwenden. Im Repo bleiben sie unverändert.
+core/static/core/bootstrap/ export-ignore
+tests/vendor/ export-ignore
