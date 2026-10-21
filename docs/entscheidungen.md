@@ -10,7 +10,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Auskünfte** des Admins des DPV vom 21.10.2026, von Sebastian weitergegeben:
 
-- Er legt einen Keycloak-Client an und richtet eine Testdomain ein. Der Keycloak des DPV läuft in der aktuellsten Fassung.
+- Er kann einen Keycloak-Client anlegen oder Sebastian zum Admin machen, und er kann eine Testdomain anlegen. Der Keycloak des DPV läuft in der aktuellsten Fassung.
 - Ob ein Konto gelöscht oder gesperrt ist, merkt das Tool wahrscheinlich daran, dass der Login bei Keycloak scheitert. Eine Meldung dafür kennt er nicht.
 - Keycloak erhebt kein Alter.
 - Einen Testserver gibt es nicht mehr. Der Produktivserver läuft mit Docker Compose bei Azure und kann beliebige Container betreiben; PostgreSQL läuft dort schon.
@@ -20,17 +20,20 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 **Entscheidung** (Sebastian, 21.10.2026):
 
 1. **Eigener Test-Realm:** Der Test-Client kommt in einen eigenen Realm des DPV-Keycloak mit erfundenen Konten, nicht in den Realm der Mitglieder. Ein Realm ist ein abgeschlossener Bereich in Keycloak mit eigenen Konten.
-2. **Keycloak-Fassung:** Sebastian nimmt an, dass der DPV dieselbe Fassung nutzt wie die Keycloak-Testumgebung (26.7.5), weil er sie aus aktiven Repos des DPV übernommen hat (Annahme). Belegt wird das mit dem Login über den Test-Client (#38).
+2. **Keycloak-Fassung:** Sebastian nimmt an, dass der DPV dieselbe Fassung nutzt wie die Keycloak-Testumgebung (26.7.5), weil er sie aus aktiven Repos des DPV übernommen hat (Annahme). „Die aktuellste“ kann auch neuer sein als 26.7.5. Die genaue Fassung sieht Sebastian mit seinem Admin-Konto nach; dass das Tool mit ihr läuft, zeigt der Login über den Test-Client (#38).
 3. **Testumgebung auf dem Produktivserver:** Sie läuft als eigener Container auf dem Produktivserver des DPV, mit eigener Datenbank, eigenem Datenbank-Zugang, der Testdomain und nur erfundenen Daten. Gewählt gegen einen eigenen, kostenpflichtigen Server. Die Einzelheiten klärt #37.
 4. **Eigene Admin-Konten für Sebastian:** Sebastian lässt sich vom Admin ein Admin-Konto für Keycloak geben, voraussichtlich auch für Azure und weitere Dienste, um Fragen selbst nachsehen zu können. Mit diesen Konten meldet er sich nie im Tool an.
 
-**Was unverändert gilt** (`CLAUDE.md`): Das Tool bekommt im Keycloak des DPV keine Admin-Rechte und kein Service-Konto und schreibt nichts in Keycloak. Die KI bekommt keinen der Admin-Zugänge und ändert nichts am Produktivserver; Einrichtung und Aktualisierung der Testumgebung dort machen Sebastian oder der Admin nach einer Anleitung ohne KI (#37).
+**Was unverändert gilt** (`CLAUDE.md`, `docs/fahrplan.md`): Das Tool bekommt im Keycloak des DPV keine Admin-Rechte und kein Service-Konto und schreibt nicht in Keycloak; ORG-04 Variante A nur, wenn OP-1 es erlaubt. Die KI ändert nichts am Produktivserver.
+
+**Folge daraus** (Vorschlag der KI, Sebastian stimmt mit dem Übernehmen des Pull Requests zu): Die KI bekommt keinen von Sebastians Admin-Zugängen. Einrichtung und Aktualisierung der Testumgebung auf dem Produktivserver machen Sebastian oder der Admin nach einer Anleitung, die ohne KI funktioniert (#37).
 
 **Begründung:** Zu 1: Im Realm der Mitglieder meldeten sich echte Personen auf dem Testserver an, und ihre echten Namen und Mails kämen ins Tool; vor E3 gibt es keine echten Personendaten (DSG-08, `docs/fahrplan.md`). Zu 3: Der Server ist schon da und kostet nichts; die Testumgebung läuft dort so wie später das Tool. Die eigene Datenbank mit eigenem Zugang hält die erfundenen Testdaten von allen echten Daten auf dem Server getrennt (Empfehlung der KI). Zu 4: Sebastian kann Fragen zu Keycloak und Server selbst nachsehen, statt jedes Mal den Admin zu fragen.
 
 **Hinweise der KI:**
 
-- Mit den Admin-Konten sieht Sebastian echte Daten aller Mitglieder. Auszüge daraus, auch Bildschirmfotos oder Logzeilen, gehören nie in KI-Werkzeuge (DSG-08).
+- Mit den Admin-Konten sieht Sebastian echte Daten aller Mitglieder. Auszüge daraus, auch Bildschirmfotos oder Logzeilen, gehören nie in KI-Werkzeuge (DSG-08). Für die Admin-Konten empfiehlt sich eine Anmeldung mit zweitem Faktor.
+- Damit vor E3 keine echten Daten in die Testumgebung kommen, gehören drei Punkte in die Klärung von #37 und #38: Im Test-Realm ist die Selbstregistrierung aus, sonst könnten sich echte Personen mit echtem Namen und echter Mail registrieren. Die Testumgebung schickt keine Mails über das echte SMTP-Relay an echte Adressen. Sie ist von den übrigen Containern getrennt: eigenes Netz, eigene Zugangsdaten, keine gemeinsamen Ablagen.
 - Gesperrte oder gelöschte Konten: Wer im Tool schon angemeldet ist, bleibt es, bis 2 Stunden lang kein Klick kam oder die Person sich abmeldet (Entscheidung zu #5). Ob das reicht, klärt #8.
 - Keycloak kennt kein Alter. Der Satz in `docs/anforderungen.md` (Abgrenzung), die Altersprüfung sei Aufgabe von Keycloak, stimmte damit nicht mehr. Ob und wie das Alter für die Einwilligung von Personen mit Account zählt, ist eine Rechtsfrage für OP-2.
 
