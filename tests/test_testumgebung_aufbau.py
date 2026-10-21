@@ -18,6 +18,14 @@ DOCKERFILE = BASE_DIR / "Dockerfile"
 DOCKERIGNORE = BASE_DIR / ".dockerignore"
 START = BASE_DIR / "docker" / "start.sh"
 ENV_EXAMPLE = BASE_DIR / "testumgebung" / ".env.example"
+GUNICORN = BASE_DIR / "docker" / "gunicorn.conf.py"
+
+
+def _gunicorn_settings() -> dict:
+    """Liest die Einstellungsdatei von gunicorn so, wie gunicorn sie liest: als Python-Datei."""
+    namespace: dict = {}
+    exec(compile(GUNICORN.read_text(), str(GUNICORN), "exec"), namespace)  # noqa: S102 -- eigene Datei aus dem Repo
+    return namespace
 
 
 def _compose() -> dict:
@@ -90,6 +98,15 @@ def test_daten_der_testumgebung_liegen_in_einer_eigenen_ablage():
     assert any(source in (_compose().get("volumes") or {}) for source in _volume_sources(database))
 
 
+def test_datenbank_bekommt_nur_ihre_eigenen_zugangsdaten():
+    # Die Datenbank braucht nur Name, Benutzer und Passwort, nicht die Schlüssel des Tools
+    # oder den Zugang zu Keycloak (unabhängige Prüfung zu #58).
+    database = _services()["datenbank"]
+
+    assert "env_file" not in database
+    assert set(_environment(database)) == {"POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"}
+
+
 # ---------- Szenarien 1 und 4: Testumgebung eingeschaltet, Fehleranzeige nicht durchgereicht ----------
 
 
@@ -121,10 +138,41 @@ def test_vorlage_der_umgebungsdatei_hat_nur_erfundene_werte():
 # ---------- Abbild ----------
 
 
-def test_abbild_enthaelt_keine_umgebungsdatei_und_kein_git():
-    ignored = {line.strip() for line in DOCKERIGNORE.read_text().splitlines()}
+def _dockerignore() -> list[str]:
+    return [line.strip() for line in DOCKERIGNORE.read_text().splitlines() if line.strip() and not line.startswith("#")]
 
-    assert {".env", "**/.env", ".git"} <= ignored
+
+def test_ins_abbild_kommt_nur_was_ausdruecklich_erlaubt_ist():
+    # Das Abbild entsteht aus dem Arbeitsordner, nicht aus dem Stand auf GitHub. Dort können
+    # Dateien liegen, die .gitignore bewusst fernhält (Zugangsdaten, Exporte, lokale Datenbanken).
+    # Deshalb erst alles ausschließen und nur das Nötige freigeben (unabhängige Prüfung zu #58).
+    lines = _dockerignore()
+    allowed = {line[1:] for line in lines if line.startswith("!")}
+
+    assert lines[0] == "*"
+    assert allowed == {
+        "accounts",
+        "config",
+        "core",
+        "docker",
+        "manage.py",
+        "pyproject.toml",
+        "uv.lock",
+        ".python-version",
+        "README.md",
+        "LICENSE",
+    }
+
+
+def test_auch_in_freigegebenen_ordnern_keine_zugangsdaten_und_keine_daten():
+    lines = _dockerignore()
+    last_allowed = max(i for i, line in enumerate(lines) if line.startswith("!"))
+    excluded_afterwards = set(lines[last_allowed + 1 :])
+
+    for pattern in ("**/.env", "**/.env.*", "**/*.env", "**/*.pem", "**/*.key", "**/*.csv", "**/*.xlsx"):
+        assert pattern in excluded_afterwards, pattern
+    for pattern in ("**/*.dump", "**/*.sql.gz", "**/*.sqlite3", "**/*.log", "**/__pycache__"):
+        assert pattern in excluded_afterwards, pattern
     assert ".env" not in DOCKERFILE.read_text().replace(".env.example", "")
 
 
@@ -148,17 +196,23 @@ def test_start_bringt_erst_die_datenbank_auf_stand_dann_den_webserver():
     assert "set -e" in script
 
 
+def test_webserver_startet_mit_der_einstellungsdatei():
+    assert "-c docker/gunicorn.conf.py" in START.read_text()
+
+
 def test_webserver_schreibt_kein_zugriffsprotokoll_mit_echten_adressen():
     # Entscheidung zu #6: Im Log steht nie die echte Adresse mit Nummern und Parametern.
     # Ein Zugriffsprotokoll des Webservers enthielte genau das; ob es eins braucht, klärt #11.
-    script = START.read_text()
+    # Das übrige Log von gunicorn prüft tests/test_webserver_log.py.
+    settings = _gunicorn_settings()
 
-    assert "--access-logfile" not in script
-    assert "--access-log" not in script
+    assert settings.get("accesslog") is None
+    assert "--access-log" not in START.read_text()
+    assert settings["logger_class"] == "core.gunicorn_log.SafeLogger"
 
 
 def test_webserver_hat_keinen_steuerzugang():
     # gunicorn legt sonst einen Steuerzugang im Benutzerordner an, über den sich der laufende
     # Webserver bedienen lässt. Gebraucht wird er nicht, und der Benutzer im Abbild hat
     # absichtlich keinen eigenen Ordner.
-    assert "--no-control-socket" in START.read_text()
+    assert _gunicorn_settings()["control_socket_disable"] is True

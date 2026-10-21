@@ -2,8 +2,8 @@
 
 Die Nummern verweisen auf die Szenarien im Kommentar „Szenarien für die Umsetzung“ in #58.
 Angemeldet wird wirklich bei der Keycloak-Testumgebung, mit einem erfundenen Konto aus
-dev/keycloak/dpv-realm.json. Die Tests laufen in der Reihenfolge der Datei: Szenario 10
-prüft, dass das Konto aus Szenario 1 nach dem Aktualisieren noch da ist.
+dev/keycloak/dpv-realm.json. Jeder Test steht für sich; Szenario 10
+meldet sich dafür selbst an und prüft, dass das Konto nach dem Aktualisieren noch da ist.
 """
 
 import html
@@ -96,6 +96,8 @@ def test_datenbank_hat_keinen_zugang_von_aussen(testumgebung):
 
 # Szenario 10
 def test_daten_bleiben_nach_dem_aktualisieren_erhalten(testumgebung):
+    # Eigenes Konto anlegen, damit der Test nicht vom Login-Test davor abhängt.
+    _login(requests.Session(), ERIKA)
     before = _number_of_accounts(testumgebung)
     assert before >= 1
 

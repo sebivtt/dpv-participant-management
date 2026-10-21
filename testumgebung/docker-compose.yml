@@ -12,7 +12,12 @@ services:
   datenbank:
     # Gleiche Fassung wie lokal und in der Prüfung auf GitHub; unabhängig vom PostgreSQL des Servers.
     image: postgres:18
-    env_file: ${TESTUMGEBUNG_ENV_FILE:-.env}
+    # Nur die drei Angaben, die die Datenbank braucht, nicht die übrigen Zugangsdaten aus der
+    # Umgebungsdatei. Docker Compose liest sie dafür aus testumgebung/.env.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB fehlt in testumgebung/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER fehlt in testumgebung/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in testumgebung/.env}
     volumes:
       # Ab PostgreSQL 18 gehört der Speicherort eine Ebene höher als bei 16.
       - daten:/var/lib/postgresql

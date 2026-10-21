@@ -36,6 +36,9 @@ def compose(*arguments: str, env_file: Path, check: bool = True) -> subprocess.C
         str(COMPOSE_FILE),
         "--profile",
         "lokal",
+        # Dieselbe Datei für die Angaben der Datenbank in der Compose-Datei wie für das Tool.
+        "--env-file",
+        str(env_file),
         *arguments,
     ]
     return subprocess.run(  # noqa: S603 -- fester Befehl, die Angaben stammen aus diesem Repo
