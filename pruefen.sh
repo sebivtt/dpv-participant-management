@@ -8,10 +8,12 @@ set -u
 cd "$(dirname "$0")"
 
 # Lokal kommen die Zugangsdaten aus .env, auf GitHub aus dem Prüfablauf selbst.
+# --locked: uv run würde uv.lock sonst still an pyproject.toml angleichen, und ein
+# rotes „uv lock --check“ wäre beim nächsten Lauf unbemerkt grün.
 if [ -f .env ]; then
-    run="uv run --env-file .env"
+    run="uv run --locked --env-file .env"
 else
-    run="uv run"
+    run="uv run --locked"
 fi
 
 failed=""

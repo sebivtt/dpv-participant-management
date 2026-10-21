@@ -14,6 +14,9 @@ def assert_queries_do_not_grow(create_entry: Callable[[int], object], load_list:
     Abfrage in eine Liste umwandeln; eine nur vorbereitete Abfrage fragt die Datenbank nie.
     """
     create_entry(1)
+    # Ein Aufruf vorab, ohne zu zählen: Einmalige Abfragen beim allerersten Aufruf (z. B. ein
+    # Zwischenspeicher wird gefüllt) würden sonst ein Wachstum der Liste verdecken.
+    load_list()
     with CaptureQueriesContext(connection) as with_one:
         load_list()
 

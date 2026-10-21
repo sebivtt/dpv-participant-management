@@ -46,8 +46,34 @@ def test_es_laufen_python_313_und_django_61():
     assert django.VERSION[:2] == (6, 1)
 
 
-def test_bekannte_fehler_die_ploetzlich_bestehen_machen_den_lauf_rot(pytestconfig):
-    assert pytestconfig.getini("xfail_strict") is True
+def test_bekannte_fehler_die_ploetzlich_bestehen_machen_den_lauf_rot(pytester):
+    # Ein eigener pytest-Lauf mit den Einstellungen dieses Projekts: Ein als bekannter
+    # Fehler markierter Test, der besteht, muss den Lauf rot machen.
+    test_file = pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.xfail(reason="bekannter Fehler, inzwischen behoben")
+        def test_ploetzlich_behoben():
+            assert True
+        """
+    )
+
+    result = pytester.runpytest_subprocess("-c", str(BASE_DIR / "pyproject.toml"), "-p", "no:django", test_file)
+
+    result.assert_outcomes(failed=1)
+
+
+def test_jede_eigene_app_hat_einen_migrationsordner():
+    # Ohne Migrationsordner übersieht die Prüfung auf fehlende Migrationen jedes neue
+    # Datenmodell dieser App und bleibt grün.
+    from django.apps import apps
+
+    own_apps = [app for app in apps.get_app_configs() if Path(app.path).is_relative_to(BASE_DIR)]
+
+    assert own_apps
+    for app in own_apps:
+        assert (Path(app.path) / "migrations" / "__init__.py").is_file(), app.label
 
 
 def test_ohne_geheimen_schluessel_startet_das_projekt_nicht():

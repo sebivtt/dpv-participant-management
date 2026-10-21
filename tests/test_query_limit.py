@@ -27,5 +27,23 @@ def test_liste_mit_abfrage_pro_eintrag_wird_gemeldet():
 
 
 @pytest.mark.django_db
+def test_einmalige_abfragen_beim_ersten_aufruf_verdecken_kein_wachstum():
+    # Manche Seiten fragen beim allerersten Aufruf einmalig mehr (z. B. um einen
+    # Zwischenspeicher zu füllen). Das darf ein Wachstum der Liste nicht verdecken.
+    calls = []
+
+    def list_with_warmup_and_growth() -> None:
+        accounts = list(User.objects.all())
+        if not calls:
+            Group.objects.count()  # einmalige Abfrage nur beim ersten Aufruf
+        calls.append(1)
+        if len(accounts) > 1:
+            Group.objects.count()  # eine zusätzliche Abfrage, sobald die Liste wächst
+
+    with pytest.raises(AssertionError, match="1 Eintrag: 1 Abfragen, 10 Einträge: 2 Abfragen"):
+        assert_queries_do_not_grow(_create_account_with_group, list_with_warmup_and_growth)
+
+
+@pytest.mark.django_db
 def test_vorab_geladene_liste_besteht():
     assert_queries_do_not_grow(_create_account_with_group, _list_prefetched)
