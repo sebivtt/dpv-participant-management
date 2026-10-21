@@ -11,6 +11,7 @@ import re
 import pytest
 from django.contrib.auth.models import User
 from django.db import OperationalError, connection
+from django.test import Client
 
 pytestmark = pytest.mark.urls("tests.urls")
 
@@ -231,3 +232,45 @@ def test_text_in_einer_unbekannten_adresse_kommt_nicht_ins_log(client, log_outpu
     assert "Nicht gefunden: unbekannte Adresse" in log
     assert "erika" not in log.lower()
     assert "allergie" not in log.lower()
+
+
+# Befunde der unabhängigen Prüfung
+@pytest.mark.django_db
+def test_kein_zugriff_wegen_fehlendem_formularschutz_ohne_echte_adresse(log_output):
+    # Djangos Schutz gegen untergeschobene Formulare (CSRF) lehnt in einem Baustein vor der
+    # Seite ab. Auch dann steht nur die kurze Zeile mit dem Muster im Log.
+    browser = Client(enforce_csrf_checks=True)
+    browser.force_login(User.objects.create(id=ACCOUNT_NUMBER, username="erika.testfrau"))
+
+    response = browser.post(f"/test/{NUMBER_IN_ADDRESS}/verboten/?suche=Erika", {"allergie": "Testallergie Erdnuss"})
+
+    assert response.status_code == 403
+    log = log_output()
+    assert "Kein Zugriff: /test/<int:number>/verboten/" in log
+    _assert_nothing_personal(log)
+
+
+@pytest.mark.django_db
+def test_verdaechtige_anfrage_schreibt_keinen_frei_gewaehlten_text_ins_log(client, log_output):
+    # Den Namen des Servers (Host) bestimmt, wer die Anfrage schickt.
+    response = client.get("/", HTTP_HOST="erika-testfrau-allergie.example")
+
+    assert response.status_code == 400
+    log = log_output()
+    assert "erika" not in log.lower()
+    assert "allergie" not in log.lower()
+
+
+def test_fehler_im_fehlerprotokoll_verhindert_die_fehlerseite_nicht(client, erika, log_output, monkeypatch):
+    def broken(request):
+        raise RuntimeError("Testfehler im Fehlerprotokoll")
+
+    monkeypatch.setattr("core.errors.address_pattern", broken)
+
+    response = _trigger_error(client)
+
+    assert response.status_code == 500
+    number = _error_number_on_page(response)
+    log = log_output()
+    assert f"Fehler {number}" in log
+    _assert_nothing_personal(log)

@@ -92,12 +92,16 @@ def log_uncaught_exception(sender, request: HttpRequest, **kwargs) -> None:
     """
     error_type, _error, tb = sys.exc_info()
     request.error_number = new_error_number()
-    logger.error(
-        "Fehler %s bei %s: %s",
-        request.error_number,
-        address_pattern(request),
-        describe_exception(error_type, tb) if error_type else "unbekannt",
-    )
+    try:
+        pattern = address_pattern(request)
+        description = describe_exception(error_type, tb) if error_type else "unbekannt"
+    except Exception as failure:
+        # Bewusst breit: Scheitert das Protokoll selbst, bricht Django sonst die ganze
+        # Fehlerbehandlung ab, und der Webserver protokolliert den Fehler samt Meldungstext.
+        # Nummer und Fehlerseite bleiben so erhalten; vermerkt wird nur die Art des Problems.
+        pattern = UNKNOWN_ADDRESS
+        description = f"nicht beschreibbar ({type(failure).__qualname__})"
+    logger.error("Fehler %s bei %s: %s", request.error_number, pattern, description)
 
 
 def connect_error_log() -> None:
