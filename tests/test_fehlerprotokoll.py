@@ -5,9 +5,13 @@ Django übergeben wird. Alle Daten sind erfunden.
 """
 
 import logging
+import os
 import re
+import subprocess
+import sys
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection
 from django.test import Client
@@ -249,44 +253,33 @@ def test_fehler_im_fehlerprotokoll_verhindert_die_fehlerseite_nicht(client, erik
     _assert_nothing_personal(log)
 
 
-# #25: Djangos eigene Zeilen kamen über Pythons Notausgabe doch ins Log.
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("request_kind", "django_text"),
-    [
-        ("unbekannte Adresse", "Not Found"),
-        ("verdächtiger Servername", "Invalid HTTP_HOST"),
-        ("fehlender Formularschutz", "Forbidden"),
-    ],
-)
-def test_djangos_eigene_zeilen_erscheinen_auch_nicht_ueber_die_notausgabe(log_output, request_kind, django_text):
-    browser = Client(enforce_csrf_checks=True)
-    if request_kind == "unbekannte Adresse":
-        response = browser.get("/Erika-Testfrau-Allergie/")
-    elif request_kind == "verdächtiger Servername":
-        response = browser.get("/", HTTP_HOST="erika-testfrau-allergie.example")
-    else:
-        response = browser.post(
-            f"/test/{NUMBER_IN_ADDRESS}/verboten/?suche=Erika", {"allergie": "Testallergie Erdnuss"}
-        )
+# #25: Djangos eigene Zeilen kamen über Pythons Notausgabe doch ins Log. In pytest selbst ist
+# das nicht zu sehen: Seit pytest 9.1.0 hängt pytest bei jedem Testschritt eigene Aufzeichnungen
+# an alle Logger, die nichts weitergeben, und verdeckt so die Notausgabe. Deshalb laufen die
+# Anfragen hier in einem eigenen Python-Prozess ohne pytest, wie im Betrieb.
+def test_djangos_eigene_zeilen_erscheinen_auch_nicht_ueber_die_notausgabe():
+    command = [sys.executable, "-m", "tests.anfragen_ohne_pytest"]
+    result = subprocess.run(  # noqa: S603 -- fester Befehl mit dem eigenen Python, keine Eingaben von außen
+        command,
+        cwd=settings.BASE_DIR,
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path), "DJANGO_SETTINGS_MODULE": "config.settings"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    log = result.stderr
 
-    assert response.status_code in (400, 403, 404)
-    log = log_output()
-    assert django_text not in log, f"Djangos eigene Zeile steht im Log:\n{log}"
+    # Die drei Anfragen wurden wirklich abgelehnt, und die eigenen kurzen Zeilen stehen im Log.
+    assert result.returncode == 0, log
+    assert result.stdout.split() == ["404", "400", "403"]
+    assert "Nicht gefunden: unbekannte Adresse" in log
+    assert "Ungültige Anfrage: /" in log
+    assert "Kein Zugriff: /test/<int:number>/verboten/" in log
+    # Djangos eigene Zeilen fehlen, auch über die Notausgabe.
+    for django_text in ["Not Found", "Invalid HTTP_HOST", "Forbidden"]:
+        assert django_text not in log, f"Djangos eigene Zeile steht im Log:\n{log}"
     assert "allergie" not in log.lower()
     _assert_nothing_personal(log)
-
-
-def test_das_abfangen_des_logs_sieht_auch_die_notausgabe(log_output):
-    # Sichert das Prüfwerkzeug selbst ab: Ohne diesen Test bliebe unbemerkt, wenn eine neue
-    # Fassung von pytest die Notausgabe wieder verdeckt (so geschehen bei pytest 9.1.0, #25).
-    logger = logging.getLogger("tests.ohne_ausgabe")
-    logger.propagate = False
-    try:
-        logger.warning("Testzeile aus der Notausgabe")
-        assert "Testzeile aus der Notausgabe" in log_output()
-    finally:
-        logger.propagate = True
 
 
 def test_pythons_notausgabe_bleibt_an():

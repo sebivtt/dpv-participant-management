@@ -6,57 +6,35 @@ import logging
 import pytest
 
 
-def _is_from_pytest(handler: logging.Handler) -> bool:
-    """Erkennt die Aufzeichnungen, die pytest selbst an Logger hängt; die gehören nicht zum Tool."""
-    return type(handler).__module__.startswith("_pytest")
-
-
-def _all_loggers() -> list[logging.Logger]:
-    return [
-        logging.getLogger(),
-        *(logger for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)),
-    ]
-
-
 @pytest.fixture
 def log_output(capsys):
     """Fängt alles ab, was die eingestellten Log-Ausgaben schreiben, und gibt es als Text zurück.
 
     Die Ausgaben des Tools werden beim Start eingerichtet und schreiben dann an ihr festes Ziel.
-    Deshalb wird ihr Ziel für die Dauer des Tests umgelenkt. Was ohne eingerichtete Ausgabe
-    trotzdem erscheint (Pythons Notausgabe), fängt capsys ab.
+    Deshalb wird ihr Ziel für die Dauer des Tests umgelenkt. Die Aufzeichnung von pytest
+    selbst bleibt außen vor; sie gibt es im Betrieb nicht.
 
-    Seit pytest 9.1.0 hängt pytest seine Aufzeichnungen auch an Logger, die nichts
-    weitergeben. Dann hat jeder Logger während der Tests eine Ausgabe, und die Notausgabe
-    springt nie an; genau deshalb blieb #25 unbemerkt. Für die Dauer des Tests werden diese
-    Aufzeichnungen deshalb von allen Loggern außer dem obersten abgehängt, damit der Test
-    sieht, was im Betrieb erscheint.
+    Pythons Notausgabe sieht dieses Werkzeug nicht: Seit pytest 9.1.0 hängt pytest bei jedem
+    Testschritt eigene Aufzeichnungen an alle Logger, die nichts weitergeben, und dann springt
+    die Notausgabe nie an. Deshalb blieb #25 unbemerkt. Die Notausgabe prüft ein eigener
+    Prozess ohne pytest (tests/anfragen_ohne_pytest.py).
     """
     buffer = io.StringIO()
-    loggers = _all_loggers()
+    loggers = [logging.getLogger(), *logging.Logger.manager.loggerDict.values()]
     handlers = {
         handler
         for logger in loggers
+        if isinstance(logger, logging.Logger)
         for handler in logger.handlers
-        if isinstance(handler, logging.StreamHandler) and not _is_from_pytest(handler)
+        # pytest hängt eigene Aufzeichnungen an; die gehören nicht zum Tool.
+        if isinstance(handler, logging.StreamHandler) and not type(handler).__module__.startswith("_pytest")
     }
     previous = {handler: handler.setStream(buffer) for handler in handlers}
-    detached = [
-        (logger, handler)
-        for logger in loggers
-        if logger is not logging.getLogger()
-        for handler in logger.handlers
-        if _is_from_pytest(handler)
-    ]
-    for logger, handler in detached:
-        logger.removeHandler(handler)
 
     def read() -> str:
         captured = capsys.readouterr()
         return buffer.getvalue() + captured.out + captured.err
 
     yield read
-    for logger, handler in detached:
-        logger.addHandler(handler)
     for handler, stream in previous.items():
         handler.setStream(stream)
