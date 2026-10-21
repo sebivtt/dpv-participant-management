@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 import pytest
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection
 from django.test import Client
@@ -261,22 +261,24 @@ def test_djangos_eigene_zeilen_erscheinen_auch_nicht_ueber_die_notausgabe():
     command = [sys.executable, "-m", "tests.anfragen_ohne_pytest"]
     result = subprocess.run(  # noqa: S603 -- fester Befehl mit dem eigenen Python, keine Eingaben von außen
         command,
-        cwd=settings.BASE_DIR,
+        cwd=django_settings.BASE_DIR,
         env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path), "DJANGO_SETTINGS_MODULE": "config.settings"},
         capture_output=True,
         text=True,
         check=False,
+        timeout=60,
     )
     log = result.stderr
 
-    # Die drei Anfragen wurden wirklich abgelehnt, und die eigenen kurzen Zeilen stehen im Log.
+    # Die vier Anfragen wurden wirklich abgelehnt, und die eigenen kurzen Zeilen stehen im Log.
     assert result.returncode == 0, log
-    assert result.stdout.split() == ["404", "400", "403"]
+    assert result.stdout.split() == ["404", "400", "403", "500"]
     assert "Nicht gefunden: unbekannte Adresse" in log
     assert "Ungültige Anfrage: /" in log
     assert "Kein Zugriff: /test/<int:number>/verboten/" in log
+    assert ERROR_NUMBER.search(log), log
     # Djangos eigene Zeilen fehlen, auch über die Notausgabe.
-    for django_text in ["Not Found", "Invalid HTTP_HOST", "Forbidden"]:
+    for django_text in ["Not Found", "Invalid HTTP_HOST", "Forbidden", "Internal Server Error"]:
         assert django_text not in log, f"Djangos eigene Zeile steht im Log:\n{log}"
     assert "allergie" not in log.lower()
     _assert_nothing_personal(log)
