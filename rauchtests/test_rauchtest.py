@@ -81,8 +81,8 @@ def _tab_to(page: Page, text: str, steps: int = 25) -> list[dict]:
 
 
 def _all_visible(stations: list[dict]) -> None:
-    hidden = [s for s in stations if not s["sichtbar"]]
-    assert not hidden, f"Fokus nicht zu sehen bei: {hidden}"
+    hidden = [s for s in stations if not s["sichtbar"] or s["kontrast"] < 3]
+    assert not hidden, f"Fokus nicht oder zu schwach zu sehen bei: {hidden}"
 
 
 # Szenario 4, am PC
@@ -126,6 +126,49 @@ def test_nur_mit_der_tastatur_am_handy_menue_auf_und_zu(handy):
     handy.keyboard.press("Enter")
 
     _on_login_page(handy)
+
+
+# Szenario 4, Musterseite: auch Bausteine wie „Veranstaltung erstellen“ zeigen den Fokus deutlich
+def test_nur_mit_der_tastatur_auf_der_musterseite(pc):
+    login(pc)
+    pc.goto(f"{BASE}/muster/")
+
+    stations = _tab_to(pc, "Zum Inhalt springen", steps=1) + _tab_to(pc, "Veranstaltung erstellen", steps=30)
+
+    _all_visible(stations)
+
+
+# Szenario 3: Menü schließt auch per Knopf und beim Antippen daneben
+def test_handy_menue_schliesst_per_knopf_und_beim_antippen_daneben(handy):
+    login(handy)
+    menu = handy.get_by_role("dialog", name="Menü")
+
+    handy.get_by_role("button", name="Menü").click()
+    menu.get_by_role("button", name="Menü schließen").click()
+    expect(menu).to_be_hidden()
+
+    handy.get_by_role("button", name="Menü").click()
+    expect(menu).to_be_visible()
+    width = menu.bounding_box()["width"]
+    handy.mouse.click(width + 20, 400)
+    expect(menu).to_be_hidden()
+
+
+# Blöcke: ein Klick irgendwo auf den Block führt zum Ziel
+def test_klick_irgendwo_auf_einen_block_fuehrt_zum_ziel(pc):
+    login(pc)
+    pc.goto(f"{BASE}/muster/")
+
+    # Wie eine Person auf die Stelle klicken: Über dem Block liegt absichtlich die Klickfläche des Links.
+    def click_on(locator) -> None:
+        box = locator.bounding_box()
+        pc.mouse.click(box["x"] + 5, box["y"] + box["height"] / 2)
+
+    click_on(pc.locator(".a-event").first.locator(".a-meta"))
+    pc.wait_for_url(f"{BASE}/muster/#inhalt")
+    pc.goto(f"{BASE}/muster/")
+    click_on(pc.locator(".a-meldungen li").first.locator("span").first)
+    pc.wait_for_url(f"{BASE}/muster/#h-kommend", timeout=3000)
 
 
 # Szenario 5

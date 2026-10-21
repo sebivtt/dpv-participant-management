@@ -14,7 +14,7 @@
   --flaeche: #ffffff;      /* Flächen und Leisten */
   --linie: #dbe2ea;        /* Trennlinien */
   --text: #1b2532;
-  --text-leise: #566375;   /* Nebentexte; Kontrast auf --grund rund 5,7 : 1 */
+  --text-leise: #566375;   /* Nebentexte; Kontrast auf --grund rund 5,6 : 1 */
   --fokus: #1a4b7e;        /* Fokusrahmen */
   --ok-text: #245c3d;      --ok-grund: #e1f0e6;
   --warte-text: #74500c;   --warte-grund: #fbefd5;
@@ -55,12 +55,13 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .table thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-leise); }
 .alert { border-radius: var(--radius-klein); }
 
-/* ---------- Fokus: immer sichtbar (NFA-03) ---------- */
+/* ---------- Fokus: immer sichtbar (NFA-03) ----------
+   DPV-Blau hat auf Weiß und auf dem Grund mehr als 8 : 1. Sonnengelb dort nur rund 2 : 1,
+   deshalb nie als Fokusrahmen. */
 :focus-visible,
 .btn:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
 .a-sprung { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: var(--radius-klein); background: var(--dpv); color: #fff; font-weight: 700; text-decoration: none; }
 .a-sprung:focus { top: 12px; color: #fff; }
-.a-sprung:focus-visible { outline-color: var(--akzent); }
 
 /* ---------- Kleinteile ---------- */
 .ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -117,7 +118,10 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 /* Statusmeldungen unter der Begrüßung */
 .a-meldungen { margin: 0 0 32px; }
 .a-meldungen ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.a-meldungen li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-klein); background: var(--dpv-hauch); }
+.a-meldungen li { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-klein); background: var(--dpv-hauch); border: 1px solid transparent; transition: border-color .15s; }
+.a-meldungen li:hover { border-color: #b9cbe0; }
+/* Ein Klick irgendwo auf die Meldung führt zum Ziel, wie bei den Veranstaltungen. */
+.a-meldungen a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-klein); }
 .a-meldungen li > .ic { color: var(--dpv); }
 .a-meldungen li > span { flex: 1 1 220px; min-width: 0; }
 .a-meldungen a { font-weight: 700; }
@@ -185,7 +189,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-kachel.ist-haupt small { color: #d5e1ee; }
 .a-kachel.ist-haupt .a-kachel-ic { background: var(--akzent); color: var(--akzent-text); }
 .a-kachel.ist-haupt:hover { background: var(--dpv-tief); color: #fff; }
-.a-kachel.ist-haupt:focus-visible { outline-color: var(--akzent); }
 @media (prefers-reduced-motion: no-preference) { .a-kachel:hover { transform: translateY(-1px); } }
 
 /* Fortschrittsanzeige */

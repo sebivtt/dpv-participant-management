@@ -16,8 +16,9 @@ import socket
 import sys
 from pathlib import Path
 
+import urllib.request
+
 import pytest
-import requests
 from django.conf import settings
 from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
@@ -45,9 +46,10 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture(scope="session", autouse=True)
 def _vorbedingungen():
     """Bricht mit einer verständlichen Meldung ab, wenn Keycloak fehlt oder Port 8000 belegt ist."""
+    address = f"{settings.KEYCLOAK_REALM_URL}/.well-known/openid-configuration"
     try:
-        requests.get(f"{settings.KEYCLOAK_REALM_URL}/.well-known/openid-configuration", timeout=5).raise_for_status()
-    except requests.RequestException as error:
+        urllib.request.urlopen(address, timeout=5).close()  # noqa: S310 -- feste Adresse aus .env, nicht von außen
+    except OSError as error:
         pytest.fail(
             f"Keycloak unter {settings.KEYCLOAK_REALM_URL} nicht erreichbar ({type(error).__name__}). "
             "Erst die Keycloak-Testumgebung starten (README.md, „Projekt starten“, Schritt 7)."
@@ -140,15 +142,28 @@ def run_axe(page: Page) -> list[str]:
 
 
 def focus_visible(page: Page) -> dict:
-    """Beschreibt das Element, auf dem gerade der Fokus liegt, und ob man das sieht."""
+    """Beschreibt das Element, auf dem gerade der Fokus liegt, und ob man das sieht.
+
+    Ein Fokusrahmen braucht mindestens 3 : 1 Kontrast zu dem, was um ihn herum liegt
+    (WCAG 1.4.11). Liegt er mit Abstand außen, ist das der Hintergrund des nächsten Elements
+    mit eigener Farbe darüber, meist die Seite selbst.
+    """
     return page.evaluate(
         """() => {
             const el = document.activeElement;
             const s = getComputedStyle(el);
             const box = el.getBoundingClientRect();
+            const rgb = c => (c.match(/[\\d.]+/g) || []).slice(0, 4).map(Number);
+            const lum = ([r, g, b]) => [r, g, b].map(v => v / 255)
+                .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+                .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+            let behind = s.outlineOffset && parseFloat(s.outlineOffset) < 0 ? el : el.parentElement;
+            while (behind && (rgb(getComputedStyle(behind).backgroundColor)[3] === 0)) behind = behind.parentElement;
+            const ground = rgb(getComputedStyle(behind || document.body).backgroundColor);
             const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
-            const shadow = s.boxShadow && s.boxShadow !== 'none';
-            return {text: (el.innerText || el.value || el.getAttribute('aria-label') || '').trim(),
-                    tag: el.tagName, sichtbar: (outline || shadow) && box.width > 1 && box.height > 1};
+            const [a, b] = [lum(rgb(s.outlineColor)), lum(ground)].sort((x, y) => y - x);
+            return {text: (el.innerText || el.value || el.getAttribute('aria-label') || '').trim().split('\\n')[0],
+                    tag: el.tagName, kontrast: Math.round((a + 0.05) / (b + 0.05) * 100) / 100,
+                    sichtbar: outline && box.width > 1 && box.height > 1};
         }"""
     )
