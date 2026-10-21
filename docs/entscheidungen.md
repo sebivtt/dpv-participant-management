@@ -6,6 +6,21 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Fehlerprotokoll ohne Personendaten
+
+**Entscheidung** (Sebastian, Klärung von #6 am 20.10.2026 und Nachklärung am 21.10.2026):
+
+1. **Fehlernummer:** Bei einem unerwarteten Fehler zeigt die Fehlerseite einen kurzen Hinweis in der Du-Form und eine zufällige Fehlernummer (z. B. `7F3K-92QA`). Dieselbe Nummer steht im Log. Wer einen Fehler meldet, nennt die Nummer.
+2. **Kein Bezug zum Konto im Log,** auch keine interne Kontonummer. Ob das Log doch einen braucht, klärt Sebastian mit der Datenschutzperson (OP-2, vorgemerkt in #11).
+3. **Muster statt echter Adresse:** Im Log steht das Muster der Adresse (z. B. `/anmeldungen/<int:pk>/`), nie die echte Adresse mit Nummern und nie angehängte Parameter. Passt eine Adresse zu keinem Muster, steht dort „unbekannte Adresse“.
+4. **Kein Meldungstext im Log:** Von einem Fehler kommen nur seine Art (z. B. `ValueError`) und die Stellen im Code ins Log, nie sein Meldungstext. Das gilt für alle Log-Einträge, auch aus fremden Paketen.
+5. **„Nicht gefunden“, „kein Zugriff“ und „ungültige Anfrage“** stehen als kurze Zeile im Log: Zeitpunkt, Art und Muster der Adresse, ohne Fehlernummer, ohne Bezug zum Konto und ohne frei gewählten Text aus der Anfrage. Djangos eigene Zeilen dazu sind abgeschaltet.
+6. **Keine Fehlerberichte per Mail.** Djangos eingebaute Funktion dafür ist abgeschaltet.
+
+**Begründung:** DSG-08: Echte Personendaten gelangen nie in KI-Werkzeuge, auch nicht zur Fehlersuche; Logs werden dafür leicht kopiert, sind schlechter geschützt als die Datenbank und werden länger aufbewahrt. Auch eine Kontonummer ist ein Personendatum. Schon eine Adresse wie `/konto/17/` kann sie enthalten, und Meldungstexte enthalten oft genau die eingegebenen Daten (z. B. „Mail … existiert schon“). Die Fehlernummer genügt für den häufigsten Fall, dass sich jemand meldet. Folge: Ein Fehler ist ohne Meldungstext schwerer zu finden; er wird lokal mit erfundenen Daten nachgestellt. Viele „kein Zugriff“ können ab P2 zeigen, dass jemand fremde Daten sucht, deshalb bleiben diese Zeilen. „Ungültige Anfrage“ (Nachtrag vom 21.10.2026 nach der unabhängigen Prüfung) zeigt z. B. einen falsch eingestellten Servernamen, bei dem das Tool jede Anfrage ablehnt. Der Fahrplan nennt Fehlerberichte per Mail mit Anfragedaten als Fehler des alten Tools (Abschnitt 6, Nr. 8).
+
+**Umsetzung:** `core/errors.py`, `config/settings.py` (`LOGGING`, `ADMINS`, `MIDDLEWARE`), `config/urls.py`, `core/templates/500.html`, Tests in `tests/test_fehlerprotokoll.py`. Nicht Teil: freundliche Seiten für „nicht gefunden“ und „kein Zugriff“ (#21), Aufbewahrung der Logs und Zugriffsprotokoll des Webservers im Betrieb (#11).
+
 ## 2026-10-21 · Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen
 
 **Entscheidung:**
