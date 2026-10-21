@@ -42,6 +42,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Ganz außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
+    "core.errors.ClientErrorLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
