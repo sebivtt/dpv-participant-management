@@ -14,6 +14,7 @@ Gesprochen wird mit Sebastian deutsch, in Alltagssprache, ohne Fachjargon. Er is
 - **Fehler** (Label `bug`): Das Tool tut etwas Falsches oder Unerwartetes. Vorlage `.github/ISSUE_TEMPLATE/fehler.yml`.
 - **Anforderung** (Label `enhancement`): Das Tool soll etwas können, was bisher nicht vorgesehen ist. Vorlage `.github/ISSUE_TEMPLATE/anforderung.yml`.
 - Ein Thema pro Issue. Stecken mehrere Themen in einer Meldung, mehrere Issues vorschlagen.
+- Dazu das Label der Phase (`P0` bis `P10`), in die das Issue laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Wird es auf später verschoben oder ungeklärt für eine spätere Phase angelegt, zusätzlich `vorgemerkt` (`CLAUDE.md`, „Für Phasen und Vorgemerktes gilt“).
 
 ## 2. Inhalt aufbauen
 
@@ -47,7 +48,7 @@ Erst den fertigen Text Sebastian zeigen und sein Okay abwarten. Dann:
 
 ```bash
 gh api repos/sebivtt/dpv-participant-management/issues \
-  -f title='…' -F body=@<datei.md> -f 'labels[]=bug'   # bzw. enhancement
+  -f title='…' -F body=@<datei.md> -f 'labels[]=bug' -f 'labels[]=P2'   # bzw. enhancement, Phase und ggf. vorgemerkt
 ```
 
 Abhängigkeiten über die eingebaute Funktion von GitHub eintragen. Sie braucht die interne `id` des anderen Issues, nicht seine Nummer:

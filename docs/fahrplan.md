@@ -167,7 +167,7 @@ OP-1, OP-2 und OP-4 liegen auf dem kritischen Pfad; ihre Termine sind hart. OP-3
 
 | OP | Was geklärt sein muss | Mit wem | Anfrage bis | Spätestens geklärt | Was sonst blockiert |
 | --- | --- | --- | --- | --- | --- |
-| OP-1 | Test-Client; Meldung gelöschter und gesperrter Konten. Entschieden am 20.10.2026: Das Tool pflegt Struktur, Rollen und Kreise selbst (ORG-06), der Login dient nur dazu, Personen zu verifizieren. Ein Lesekonto gibt es nicht | Keycloak-Verantwortliche | 15.11.2026 | 31.01.2027 | Login auf dem Testserver (P1); sonst übergangsweise gegen ein eigenes Keycloak der Testumgebung, spätestens mit dem Produktiv-Client vor E3 gegen den DPV-Keycloak getestet. Ohne Lesekonto findet das Tool nur Personen, die sich schon einmal angemeldet haben |
+| OP-1 | Test-Client; Meldung gelöschter und gesperrter Konten. Entschieden am 20.10.2026: Das Tool pflegt Struktur, Rollen und Kreise selbst (ORG-06), der Login dient nur dazu, Personen zu verifizieren. Ein Lesekonto gibt es nicht. Auskunft von Sebastian vom 20.10.2026: Die Selbstregistrierung ist erlaubt; Benutzername und Mail sind bei jedem Konto vorhanden und ändern sich nicht, Vor- und Nachname können fehlen oder sich ändern | Keycloak-Verantwortliche | 15.11.2026 | 31.01.2027 | Login auf dem Testserver (P1); sonst übergangsweise gegen ein eigenes Keycloak der Testumgebung, spätestens mit dem Produktiv-Client vor E3 gegen den DPV-Keycloak getestet. Ohne Lesekonto findet das Tool nur Personen, die sich schon einmal angemeldet haben |
 | OP-1 | Admin-MFA, Produktiv-Client | Keycloak-Verantwortliche | 30.09.2027 | 31.03.2028 | Tor E3 |
 | OP-1 | Schreibrechte für ORG-04 Variante A | Keycloak-Verantwortliche | 30.09.2028 | 31.12.2028 | nichts: sonst Variante B, die eingeplant ist |
 | OP-2 | Ansprechperson für Datenschutz | DPV | 15.11.2026 | 31.12.2026 | alle weiteren OP-2-Schritte |
@@ -319,6 +319,12 @@ Ohne eigene Zeile, weil nur die Form betroffen ist: Die beiden Diagramme (Zeitle
 | 36 | P2, Abschlusskriterium | „Go/No-Go erfüllt (E1)“ | „Prüfer würde weiterbauen (E1)“ | Folge aus Nr. 35; bewusst nicht „E1 bestanden“, weil E1 auch das Tempo prüft und bei Verzug Weiterbauen mit Liste 2 erlaubt |
 | 37 | E1, Weiter wenn | „Go/No-Go-Kriterien aus dem Fahrplan Neubau erfüllt“ | gestrichen, die übrigen Bedingungen bleiben | Folge aus Nr. 35 |
 | 38 | Abschnitt 6, Nr. 7 und Nr. 26 | Nr. 7: „zwei Sätze“; Nr. 26: „kommen vor E1 ins Repo“ | Nr. 7: Hinweis, dass es mit dem zweiten Pull Request drei wurden; Nr. 26: Hinweis „überholt durch Nr. 35“ | Beide Einträge zeigen den damaligen Stand und bleiben; die Hinweise verhindern, dass sie wieder als Widerspruch auffallen |
+
+**Änderungen nach der Klärung der P1-Issues vom 20.10.2026** (vierter Pull Request):
+
+| Nr | Stelle | vorher | jetzt | warum |
+| --- | --- | --- | --- | --- |
+| 39 | OP-Tabelle, OP-1 (Test-Client) | ohne diese Auskunft | Auskunft: Selbstregistrierung erlaubt; Benutzername und Mail bei jedem Konto vorhanden und fest; Vor- und Nachname können fehlen oder sich ändern | Sebastian bei der Klärung von #5; ergibt den Registrierungslink in #5 |
 
 **Grundlagen:** [Anforderungsdokument](https://claude.ai/code/artifact/63f2b213-1e66-453f-a270-0de357af386b), [Fahrplan Neubau](https://claude.ai/code/artifact/3e8d079d-7652-4b49-bce3-edee342841b6) und [Bewertung von Claude](https://claude.ai/code/artifact/8ba0df78-1ae2-44a1-a865-f72ca5295fb3), die Bewertungen von ChatGPT und Gemini (Anhänge), Repository [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) Stand 9df4513, Django-Pflegezeiträume laut [djangoproject.com](https://www.djangoproject.com/download/). Dieser Fahrplan ersetzt den Fahrplan Neubau vom 20.10.2026.
 
