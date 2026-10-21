@@ -15,6 +15,7 @@ import pytest
 from django.core import mail
 from django.test import Client
 
+from core.mail import LogOnlyEmailBackend
 from tests.keycloak_fake import keycloak_parameters, login, start_login
 
 pytestmark = pytest.mark.django_db
@@ -104,6 +105,15 @@ def test_ohne_schalter_kein_band(settings, client, keycloak):
     assert BAND not in client.get("/").content.decode()
 
 
+def test_musterseite_zeigt_das_band_als_baustein_auch_ohne_schalter(settings, client, keycloak):
+    # Neue Bausteine stehen zuerst auf der Musterseite (CLAUDE.md); dort prüft auch der Rauchtest
+    # die Barrierefreiheit, z. B. den Kontrast des Bands.
+    settings.TEST_ENVIRONMENT = False
+    login(client)
+
+    assert BAND in client.get("/muster/").content.decode()
+
+
 def test_testumgebung_ist_nur_mit_ausdruecklichem_schalter_an():
     assert _setting("settings.TEST_ENVIRONMENT", {}) == "False"
     assert _setting("settings.TEST_ENVIRONMENT", {"TEST_ENVIRONMENT": "ja"}) == "False"
@@ -126,21 +136,23 @@ def test_auf_dem_eigenen_rechner_laesst_sich_die_fehleranzeige_weiter_einschalte
 
 
 def test_eingestellter_mailweg_schreibt_nur_ins_log():
-    assert _setting("settings.EMAIL_BACKEND", {"TEST_ENVIRONMENT": "1"}) == "'core.mail.LogOnlyEmailBackend'"
+    backend = "settings.MAILERS['default']['BACKEND']"
+
+    assert _setting(backend, {"TEST_ENVIRONMENT": "1"}) == "'core.mail.LogOnlyEmailBackend'"
+    # Nur ein Mailweg: Es gibt keinen zweiten, über den eine Mail doch an einen Mailserver ginge.
+    assert _setting("list(settings.MAILERS)", {"TEST_ENVIRONMENT": "1"}) == "['default']"
 
 
 def test_mail_geht_nur_als_hinweis_ins_log_ohne_empfaenger_und_inhalt(log_output):
-    connection = mail.get_connection("core.mail.LogOnlyEmailBackend")
     message = mail.EmailMessage(
         subject="Betreff mit Allergie Erdnuss",
         body="Inhalt mit Allergie Erdnuss",
         from_email="absender@example.org",
         to=["erika.testfrau@example.org"],
         cc=["max.testmann@example.org"],
-        connection=connection,
     )
 
-    sent = message.send()
+    sent = LogOnlyEmailBackend().send_messages([message])
 
     log = log_output()
     assert "Mail nicht verschickt (nur Log)" in log
@@ -155,9 +167,9 @@ def test_mailweg_baut_keine_verbindung_zu_einem_mailserver_auf(monkeypatch, log_
         raise AssertionError("Verbindung zu einem Mailserver versucht")
 
     monkeypatch.setattr("smtplib.SMTP.connect", no_network)
-    connection = mail.get_connection("core.mail.LogOnlyEmailBackend")
+    message = mail.EmailMessage("Betreff", "Inhalt", "absender@example.org", ["erika.testfrau@example.org"])
 
-    mail.send_mail("Betreff", "Inhalt", "absender@example.org", ["erika.testfrau@example.org"], connection=connection)
+    LogOnlyEmailBackend().send_messages([message])
 
     assert "Mail nicht verschickt (nur Log)" in log_output()
 

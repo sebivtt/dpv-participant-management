@@ -43,8 +43,10 @@ report_on_github() {
     # am Prüflauf („annotations“). Die lassen sich auch ohne Zugriff auf das volle Protokoll
     # lesen. Die Tests arbeiten nur mit erfundenen Daten.
     [ -n "${GITHUB_ACTIONS:-}" ] || return 0
+    # GitHub zeigt je Schritt höchstens zehn Fehler und zehn Warnungen. Deshalb je Prüfung eine
+    # Zeile als Fehler und die roten Tests als Warnungen, damit jede rote Prüfung sichtbar bleibt.
     echo "::error title=ROT::$1"
-    grep -E '^(FAILED|ERROR) ' "$2" | head -n 20 | cut -c1-300 | sed 's/^/::error title=Test::/'
+    grep -E '^(FAILED|ERROR) [A-Za-z_]+/' "$2" | head -n 5 | cut -c1-300 | sed 's/^/::warning title=Test::/'
 }
 
 audit_packages() {
