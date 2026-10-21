@@ -7,6 +7,7 @@ Umsetzung“ und „Nachklärung und Szenarien“). Alle Daten sind erfunden.
 
 import subprocess
 import sys
+import threading
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -15,6 +16,7 @@ import pytest
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.models import Session
+from django.db import connection
 from django.test import Client
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
@@ -396,10 +398,13 @@ def test_fremde_seite_kann_niemanden_heimlich_abmelden(client, keycloak):
     assert browser.get("/").status_code == 200
 
 
-def test_login_startet_nur_mit_formular_nicht_ueber_einen_blossen_link(client, keycloak):
-    response = client.get("/anmelden/keycloak/start/")
+@pytest.mark.parametrize("query", ["", "?process=connect"])
+def test_login_startet_nur_mit_formular_nicht_ueber_einen_blossen_link(client, keycloak, query):
+    # Ein bloßer Link zeigte sonst eine ungestaltete Bestätigungsseite von allauth.
+    response = client.get(f"/anmelden/keycloak/start/{query}")
 
-    assert response.status_code != 302 or not response["Location"].startswith(keycloak.realm)
+    assert response.status_code == 302
+    assert response["Location"] == "/anmelden/"
 
 
 # Szenario 18
@@ -469,3 +474,98 @@ def test_ohne_keycloak_angaben_startet_das_tool_nicht():
     assert result.returncode != 0
     for name in ["KEYCLOAK_REALM_URL", "KEYCLOAK_CLIENT_ID", "KEYCLOAK_CLIENT_SECRET"]:
         assert name in result.stderr
+
+
+# Befunde der unabhängigen Prüfung
+@pytest.mark.django_db(transaction=True)
+def test_zwei_gleichzeitige_erste_logins_ohne_fehlerseite_und_ohne_verwaistes_konto(client, keycloak, monkeypatch):
+    # Doppelklick oder zwei Tabs: Während die Rückkehr von A läuft, ist die von B schon fertig.
+    # B läuft wie im Betrieb über eine eigene Datenbankverbindung (eigener Thread).
+    from accounts.adapter import SocialAccountAdapter
+
+    other = Client()
+    state_a = keycloak_parameters(start_login(client))["state"]
+    state_b = keycloak_parameters(start_login(other))["state"]
+    original = SocialAccountAdapter.pre_social_login
+    calls = []
+
+    def b_finishes_first(self, request, sociallogin):
+        calls.append(1)
+        if len(calls) == 1:
+            thread = threading.Thread(target=_return_in_own_connection, args=(other, state_b))
+            thread.start()
+            thread.join()
+        return original(self, request, sociallogin)
+
+    monkeypatch.setattr(SocialAccountAdapter, "pre_social_login", b_finishes_first)
+
+    response = client.get(RETURN, {"state": state_a, "code": "code-nur-test"})
+
+    assert response.status_code == 302
+    assert User.objects.count() == 1
+    assert SocialAccount.objects.count() == 1
+
+
+def _return_in_own_connection(browser, state: str) -> None:
+    try:
+        browser.get(RETURN, {"state": state, "code": "code-nur-test"})
+    finally:
+        connection.close()
+
+
+def test_sehr_langer_name_aus_keycloak_fuehrt_nicht_zur_fehlerseite(client, keycloak):
+    keycloak.person["given_name"] = "E" * 255
+    keycloak.person["family_name"] = "T" * 255
+    keycloak.person["preferred_username"] = "u" * 255
+
+    response = login(client)
+
+    assert response["Location"] == "/"
+    erika = User.objects.get()
+    assert erika.first_name == "E" * 150
+    assert erika.last_name == "T" * 150
+
+
+def test_sehr_lange_mail_aus_keycloak_fuehrt_nicht_zur_fehlerseite(client, keycloak):
+    keycloak.person["email"] = "e" * 250 + "@example.org"
+
+    response = login(client)
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+    assert not User.objects.exists()
+
+
+def test_im_tool_gesperrtes_konto_fuehrt_nicht_zur_fehlerseite(client, keycloak):
+    login(client)
+    client.post("/abmelden/")
+    User.objects.update(is_active=False)
+
+    response = login(client)
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+    assert client.get("/").status_code == 302
+
+
+@pytest.mark.parametrize(
+    "auth_params",
+    ["redirect_uri=http://localhost:8000/x", "state=fremd", "prompt=none", "prompt=create&login_hint=erika"],
+)
+def test_nur_die_registrierung_darf_zusaetzliche_angaben_an_keycloak_schicken(client, keycloak, auth_params):
+    response = start_login(client, auth_params=auth_params)
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+
+
+def test_umfang_der_angaben_von_keycloak_laesst_sich_nicht_aendern(client, keycloak):
+    response = client.post("/anmelden/keycloak/start/?scope=openid+offline_access")
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+
+
+def test_falsche_keycloak_adresse_ohne_fehlerseite(client, keycloak):
+    # Antwortet unter der eingestellten Adresse etwas anderes als Keycloak, fehlen die Angaben.
+    keycloak.endpoints = {"issuer": keycloak.realm}
+
+    response = start_login(client)
+
+    _assert_lands_on_login_page_with(client, response, HINT_UNREACHABLE)

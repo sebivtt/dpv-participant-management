@@ -14,6 +14,7 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialLogin
 from allauth.socialaccount.providers.base import AuthProcess
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import resolve_url
 from requests import RequestException
@@ -27,6 +28,11 @@ def back_to_login_page(request: HttpRequest, hint: str) -> ImmediateHttpResponse
     """Bricht den Login ab und führt mit dem Hinweis zurück zur Login-Seite."""
     messages.warning(request, hint)
     return ImmediateHttpResponse(HttpResponseRedirect(resolve_url("account_login")))
+
+
+def _max_length(field: str) -> int:
+    """Höchstlänge eines Feldes im Kontenmodell."""
+    return get_user_model()._meta.get_field(field).max_length
 
 
 def keycloak_data(sociallogin: SocialLogin) -> dict:
@@ -55,6 +61,9 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         - Nur der Login selbst ist erlaubt. allauth kann auch ein weiteres Keycloak-Konto an
           ein bestehendes Konto hängen („connect“); das Tool verknüpft genau eines.
         - Ohne Mail kein Login. Ins Log kommt nur eine kurze Zeile ohne Personendaten (#6).
+          Ebenso bei einer Mail, die länger ist, als das Tool speichern kann.
+        - Ein im Tool gesperrtes Konto meldet sich nicht an. allauth zeigte sonst eine eigene
+          Seite, die das Tool nicht hat; wie gesperrte Konten aussehen, klärt #8.
         - Bei einem bestehenden Konto kommen Name und Mail bei jedem Login neu aus Keycloak
           (ORG-03); allauth übernimmt sie sonst nur beim ersten Login.
         """
@@ -65,6 +74,12 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         if not data.get("email"):
             logger.warning("Login abgelehnt: Keycloak liefert keine Mail")
             raise back_to_login_page(request, texts.no_mail())
+        if len(data["email"]) > _max_length("email"):
+            logger.warning("Login abgelehnt: Mail aus Keycloak zu lang")
+            raise back_to_login_page(request, texts.LOGIN_CANCELLED)
+        if sociallogin.is_existing and not sociallogin.user.is_active:
+            logger.warning("Login abgelehnt: Konto im Tool gesperrt")
+            raise back_to_login_page(request, texts.LOGIN_CANCELLED)
         if sociallogin.is_existing:
             user = sociallogin.user
             self.populate_user(request, sociallogin, data)
@@ -76,14 +91,15 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         Anders als allauths Grundeinstellung nur aus den getrennten Feldern für Vor- und
         Nachname. allauth teilt sonst den ganzen Namen am ersten Leerzeichen; fehlt in
         Keycloak der Vorname, stünde der Nachname dann als Vorname da („Hallo Testfrau!“).
-        Den Benutzernamen setzt allauth nur bei neuen Konten.
+        Den Benutzernamen setzt allauth nur bei neuen Konten. Keycloak erlaubt längere Namen,
+        als das Tool speichert; sie werden gekürzt statt mit einem Fehler abgewiesen.
         """
         user = sociallogin.user
         if not sociallogin.is_existing:
-            user.username = data.get("username") or ""
+            user.username = (data.get("username") or "")[: _max_length("username")]
         user.email = data.get("email") or ""
-        user.first_name = data.get("first_name") or ""
-        user.last_name = data.get("last_name") or ""
+        user.first_name = (data.get("first_name") or "")[: _max_length("first_name")]
+        user.last_name = (data.get("last_name") or "")[: _max_length("last_name")]
         return user
 
     def is_auto_signup_allowed(self, request: HttpRequest, sociallogin: SocialLogin) -> bool:

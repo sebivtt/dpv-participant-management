@@ -14,6 +14,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.decorators import login_not_required
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -53,7 +54,15 @@ def login_page(request: HttpRequest) -> HttpResponse:
     return response
 
 
-def _keycloak_unreachable(request: HttpRequest, error: RequestException) -> HttpResponse:
+# Fehler, wenn Keycloak nicht antwortet oder unter der eingestellten Adresse etwas anderes
+# antwortet als Keycloak; dann fehlen in den Einstellungen des Realms Angaben (KeyError).
+KEYCLOAK_FAILURES = (RequestException, KeyError)
+
+# Die einzige zusätzliche Angabe, die beim Start an Keycloak gehen darf: Registrierung statt Login.
+ALLOWED_START_QUERIES = [{}, {"auth_params": "prompt=create"}]
+
+
+def _keycloak_unreachable(request: HttpRequest, error: Exception) -> HttpResponse:
     """Zurück zur Login-Seite mit Hinweis, wenn Keycloak nicht antwortet; im Log nur die Art des Fehlers."""
     logger.warning("Login nicht möglich: Keycloak nicht erreichbar (%s)", type(error).__name__)
     messages.warning(request, texts.KEYCLOAK_UNREACHABLE)
@@ -62,10 +71,22 @@ def _keycloak_unreachable(request: HttpRequest, error: RequestException) -> Http
 
 @login_not_required
 def keycloak_login(request: HttpRequest, provider_id: str) -> HttpResponse:
-    """Startet den Login: leitet zu Keycloak weiter. Ist Keycloak nicht erreichbar, zurück zur Login-Seite."""
+    """Startet den Login: leitet zu Keycloak weiter. Ist Keycloak nicht erreichbar, zurück zur Login-Seite.
+
+    Nur per Formular (POST); ein bloßer Link führt zur Login-Seite, statt eine Seite von
+    allauth zu zeigen. allauth reicht Angaben aus der Adresse (auth_params, scope) an Keycloak
+    weiter, auch solche, die den Login verändern (z. B. eine andere Rückkehradresse). Erlaubt
+    ist deshalb nur die Registrierung.
+    """
+    if request.method != "POST":
+        return redirect("account_login")
+    if request.GET.dict() not in ALLOWED_START_QUERIES:
+        logger.warning("Login abgelehnt: unzulässige Angaben beim Start")
+        messages.warning(request, texts.LOGIN_CANCELLED)
+        return redirect("account_login")
     try:
         return allauth_login(request, provider_id)
-    except RequestException as error:
+    except KEYCLOAK_FAILURES as error:
         return _keycloak_unreachable(request, error)
 
 
@@ -89,13 +110,23 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
 
     Fehler beim Austausch mit Keycloak fängt meist allauth ab; die Einstellungen des Realms
     fragt allauth aber vorher ab, ohne Fehler abzufangen. Deshalb auch hier der Hinweis.
+
+    Alles läuft in einer Transaktion: Kommen zwei Rückkehren für dasselbe neue Konto fast
+    gleichzeitig (Doppelklick, zwei Tabs), legt die zweite sonst ein Konto ohne Verknüpfung
+    an und endet mit einem Fehler. So wird sie ganz zurückgenommen und führt zur Login-Seite;
+    der nächste Klick auf „Anmelden“ findet das Konto der ersten.
     """
     try:
-        view = OAuth2CallbackView.adapter_view(KeycloakAdapter(request, provider_id))
-        return view(request)
+        with transaction.atomic():
+            view = OAuth2CallbackView.adapter_view(KeycloakAdapter(request, provider_id))
+            return view(request)
     except SocialApp.DoesNotExist as error:
         raise Http404 from error
-    except RequestException as error:
+    except IntegrityError:
+        logger.warning("Login nicht abgeschlossen: gleichzeitiger Login mit demselben Konto")
+        messages.warning(request, texts.LOGIN_CANCELLED)
+        return redirect("account_login")
+    except KEYCLOAK_FAILURES as error:
         return _keycloak_unreachable(request, error)
 
 

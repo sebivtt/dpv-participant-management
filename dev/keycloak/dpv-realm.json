@@ -28,14 +28,14 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://127.0.0.1:8000/*",
-        "http://localhost:8000/*"
+        "http://127.0.0.1:8000/anmelden/keycloak/zurueck/",
+        "http://localhost:8000/anmelden/keycloak/zurueck/"
       ],
       "webOrigins": [
         "+"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1:8000/*##http://localhost:8000/*",
+        "post.logout.redirect.uris": "http://127.0.0.1:8000/anmelden/##http://localhost:8000/anmelden/",
         "pkce.code.challenge.method": "S256"
       }
     }
