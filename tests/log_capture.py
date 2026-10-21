@@ -1,4 +1,4 @@
-"""Fängt die tatsächliche Ausgabe des Logs ab, für Tests ohne Personendaten im Log (#6, #5)."""
+"""Fängt die tatsächliche Ausgabe des Logs ab, für Tests ohne Personendaten im Log (#6, #5, #25)."""
 
 import io
 import logging
@@ -11,9 +11,13 @@ def log_output(capsys):
     """Fängt alles ab, was die eingestellten Log-Ausgaben schreiben, und gibt es als Text zurück.
 
     Die Ausgaben des Tools werden beim Start eingerichtet und schreiben dann an ihr festes Ziel.
-    Deshalb wird ihr Ziel für die Dauer des Tests umgelenkt. Was ohne eingerichtete Ausgabe
-    trotzdem erscheint (Pythons Notausgabe), fängt capsys ab. Die Aufzeichnung von pytest
+    Deshalb wird ihr Ziel für die Dauer des Tests umgelenkt. Die Aufzeichnung von pytest
     selbst bleibt außen vor; sie gibt es im Betrieb nicht.
+
+    Pythons Notausgabe sieht dieses Werkzeug nicht: Seit pytest 9.1.0 hängt pytest bei jedem
+    Testschritt eigene Aufzeichnungen an alle Logger, die nichts weitergeben, und dann springt
+    die Notausgabe nie an. Deshalb blieb #25 unbemerkt. Die Notausgabe prüft ein eigener
+    Prozess ohne pytest (tests/anfragen_ohne_pytest.py).
     """
     buffer = io.StringIO()
     loggers = [logging.getLogger(), *logging.Logger.manager.loggerDict.values()]
