@@ -96,3 +96,36 @@ TIME_ZONE = "Europe/Berlin"
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# Fehlerprotokoll ohne Personendaten (DSG-08, #6). Alles geht in die Ausgabe des Servers;
+# wo und wie lange es aufbewahrt wird, klärt #11 (P6). Ersetzt Djangos Grundeinstellung
+# vollständig, auch deren Fehlerbericht per Mail.
+ADMINS = []
+MANAGERS = []
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        # Zeigt bei Fehlern nur Art und Stellen im Code, nie den Meldungstext (core/errors.py).
+        "safe": {
+            "()": "core.errors.SafeFormatter",
+            "format": "{asctime} {levelname} {name} {message}",
+            "datefmt": "%Y-%m-%d %H:%M:%S %z",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "safe"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        # Djangos eigene Zeilen zu Fehlern, „nicht gefunden“ und „kein Zugriff“ enthalten die
+        # echte Adresse. Sie sind abgeschaltet; core.errors schreibt stattdessen eigene Zeilen.
+        "django.request": {"handlers": [], "propagate": False},
+        # Der Testserver auf dem eigenen Rechner (runserver) zeigt Adressen mit Parametern.
+        # Er läuft nur lokal mit erfundenen Daten; der Webserver im Betrieb kommt mit #11.
+        "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "core": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

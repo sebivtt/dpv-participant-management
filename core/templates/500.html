@@ -1,0 +1,17 @@
+{% load i18n %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% translate "Fehler · DPV Anmeldetool" %}</title>
+</head>
+<body>
+  {# Ohne Anfrage gerendert: kein Name, keine Sitzung, keine Datenbank (core/errors.py). Gestaltung kommt mit #7. #}
+  <main>
+    <h1>{% translate "Da ist etwas schiefgelaufen." %}</h1>
+    {% if error_number %}
+      <p>{% blocktranslate %}Wenn du dich meldest, nenne bitte diese Nummer: {{ error_number }}{% endblocktranslate %}</p>
+    {% endif %}
+  </main>
+</body>
+</html>
