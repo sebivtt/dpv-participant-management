@@ -86,5 +86,6 @@ Diese Fehler sind dort tatsächlich passiert. Sie wiederholen sich leicht.
 - **Eingabefelder auch wie am Handy prüfen,** mit Autokorrektur und Wortvorschlägen. Ein Rauchtest, der nur wie am Laptop tippt, übersah einmal verschwindenden Text.
 - **Fehler, die nur auf Sebastians Mac auftreten:** zuerst die dort installierten Pakete prüfen.
 - **Pull Requests nicht aufeinander aufbauen.** Ein aufgebauter Pull Request landete nach der Übernahme im falschen Branch.
+- **Rauchtests im Browser mehrmals laufen lassen** (21.10.2026): Ein Test mit echtem Browser und echtem Keycloak war bei der KI und auf GitHub grün, bei Sebastian rot. Er tippte, bevor Keycloak fertig geladen hatte (#33). Neue oder geänderte Rauchtests vor dem Pull Request mehrmals hintereinander laufen lassen und erst tippen, wenn die Seite steht.
 
 Weitere Erfahrungen hier mit Datum ergänzen.

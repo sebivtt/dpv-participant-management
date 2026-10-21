@@ -90,8 +90,12 @@ def test_nur_mit_der_tastatur_am_pc(pc):
     pc.goto(f"{BASE}/")
     stations = _tab_to(pc, "Mit DPV-Konto anmelden")
     pc.keyboard.press("Enter")
+    # Erst tippen, wenn Keycloak seine Seite fertig geladen hat, wie eine Person auch. Sonst
+    # ging in WebKit manchmal der erste Buchstabe verloren (#33).
     pc.locator("#username").wait_for()
+    pc.wait_for_load_state("load")
     pc.keyboard.type("erika.testfrau")
+    expect(pc.locator("#username"), "Benutzername nicht vollständig im Feld").to_have_value("erika.testfrau")
     pc.keyboard.press(_tab_key(pc))
     pc.keyboard.type("testpasswort-erika")
     pc.keyboard.press("Enter")
