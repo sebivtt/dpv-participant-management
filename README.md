@@ -2,7 +2,7 @@
 
 Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmeldungen einzeln und gesammelt annehmen, Teilnehmendenlisten führen. Login über den Keycloak des DPV. Ehrenamtlich entwickelt, gepflegt und betrieben.
 
-**Stand:** Laufende Phase P0 „Klären und festlegen“ (bis 29.11.2026). Grundlage des Repos, noch kein Programmcode. Der erste Code entsteht in Phase P1 (Gerüst) ab dem 30.11.2026.
+**Stand:** Laufende Phase P1 „Gerüst“, seit dem 21.10.2026 (Zieldatum 28.02.2027, `docs/fahrplan.md`). Noch kein Programmcode; der erste entsteht mit dem Grundgerüst (#4). Parallel laufen die Restpunkte von P0 „Klären und festlegen“ bis zum Prüfpunkt E0 am 29.11.2026 (`docs/entscheidungen.md`, 21.10.2026).
 
 ## Wo was steht
 

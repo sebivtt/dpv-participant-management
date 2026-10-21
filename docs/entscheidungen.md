@@ -6,6 +6,14 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · P1 beginnt früher, Restpunkte von P0 laufen parallel
+
+**Entscheidung** (Sebastian): Phase P1 „Gerüst“ beginnt am 21.10.2026 statt wie bisher vorgesehen am 30.11.2026. Die Restpunkte von P0 erledigt Sebastian parallel: Anfragen zu OP-1, OP-2 und OP-4 verschicken (bis 15.11.2026), Liste 1 dem DPV mitteilen (OP-6, bis 29.11.2026), altes Repo archivieren, Stundenlog führen. Prüfpunkt E0 bleibt am 29.11.2026; die Zieldaten im Fahrplan bleiben unverändert.
+
+**Begründung:** Die P1-Issues #4 bis #7 sind geklärt und haben keine offenen Fragen. Die Klärungen mit dem DPV werden erst gegen Ende von P1 gebraucht (Test-Client bis 31.01.2027, Testserver bis 28.02.2027) und haben laut OP-Tabelle Übergangslösungen: ein eigenes Keycloak der Testumgebung und ein eigener Testserver. Ein früherer Beginn verschiebt keinen Termin nach hinten, sondern schafft Reserve (Einschätzung der KI). Die Restpunkte von P0 sind Sebastians eigene Aufgaben und keine Programmierarbeit; der Grundsatz „zwei Phasen parallel geht für eine Person nicht“ (`docs/fahrplan.md`, Kritischer Pfad) betrifft das Bauen und bleibt unberührt.
+
+**Umsetzung:** `README.md` („Stand“). Vor dem Beginn hat die KI nach `CLAUDE.md` alle offenen Issues mit `vorgemerkt` oder ohne Phasen-Label durchgesehen (#8 bis #17); keines gehört nach P1, kein Label war zu korrigieren.
+
 ## 2026-10-20 · Auskünfte zum Keycloak des DPV, Phasen-Labels und vorgemerkte Issues
 
 **Entscheidung** (Sebastian):
