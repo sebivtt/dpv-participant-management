@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{# Schlichte Seite ohne Seitenleiste, ruhig und mittig: Login-Seite und Fehlerseite (#7). #}
+{% load layout %}
+{% block body %}
+  <main class="a-einfach-main" id="inhalt">
+    <div class="a-einfach-karte">
+      <div class="a-einfach-marke">{% include "core/lilie.svg" %}</div>
+      {% block content %}{% endblock %}
+    </div>
+    {% fussbereich %}
+  </main>
+{% endblock %}

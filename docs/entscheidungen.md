@@ -6,6 +6,35 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Grundgestaltung: Bootstrap, Farben, Aufbau, Sprache und Prüfung im Browser
+
+**Entscheidung** (Sebastian, Klärung von #7 am 20.10.2026 und drei Nachklärungen am 21.10.2026; Protokolle in #7):
+
+1. **CSS-Grundlage: Bootstrap** (5.3.8). Sebastian hat beide Varianten der Musterseite, Bootstrap und Pico.css, am Handy und am PC verglichen. Pico.css kommt nicht ins Repo.
+2. **Farbpalette:** DPV-Blau `#1a4b7e` trägt die Gestaltung, dazu Weiß und kühle Grautöne. Eine Akzentfarbe, Sonnengelb `#f0ad2c`, sparsam eingesetzt (gewählt gegen Terrakotta); Sonnengelb trägt nie Text auf Weiß. Statusfarben sind gedeckt und stehen immer mit Wort und Symbol. Alle Farben stehen in `core/static/core/app.css`; vorerst nur heller Modus, dunkler vorbereitet (#15). Schrift: die Systemschrift des Geräts (gewählt gegen Nunito Sans).
+3. **Aufbau:** am PC eine feste Seitenleiste links ohne Kopfzeile über dem Inhalt; am Handy eine schmale Leiste mit „Menü“, Lilie und Profilkreis, „Abmelden“ im Menü mit Symbol und Wort. Login- und Fehlerseite ohne Seitenleiste. Fußbereich als flache Zeile: Impressum und Datenschutz links, Copyright rechts.
+4. **Regel für Navigationspunkte:** Die Navigation zeigt nur, was es gibt, und nur Personen, die es nutzen dürfen. Keine leeren Platzhalter und keine Seiten „im Aufbau“. Ausblenden ersetzt nie die Rechteprüfung auf dem Server.
+5. **Regel für Menüs:** Menüs öffnen am PC beim Darüberfahren und zusätzlich per Klick, Antippen und Tastatur; sie schließen mit kurzer Verzögerung. Gilt für alle späteren Menüs.
+6. **Regel für gendersensible Sprache** (NFA-09): neutrale Wörter („Teilnehmende“, „Leitung“, „Person“); wo es keine gibt, beide Formen ausschreiben oder umformulieren. Kein Sternchen, kein Doppelpunkt. Die Texte duzen.
+7. **Unterstützte Browser:** die gängigen der letzten rund zwei Jahre: Safari auf iPhone und Mac, Chrome und Samsung Internet auf Android, Chrome, Firefox und Edge am PC. Ältere nur bei Bedarf (#17).
+8. **Logo:** Die Lilie liegt im Repo mit dem Hinweis „Das Logo ist Eigentum des DPV und nicht Teil der EUPL-Lizenz.“ im `README.md` und in `core/templates/core/LOGO-HINWEIS.md`.
+9. **Leitlinie:** Sebastians Gestaltungskonzept vom 21.10.2026 steht in `docs/gestaltung.md`, zusammen mit dem, was bei #7 konkret festgelegt wurde. Spätere Seiten bauen danach.
+
+**Technische Wahl** (KI):
+
+- **Gestaltung vom eigenen Server mit WhiteNoise 6.12** (MIT). Ohne ein solches Paket liefert Django CSS und Skripte nur bei eingeschalteter Fehleranzeige für Entwickler aus, und die ist bewusst aus (Entscheidung zu #4). WhiteNoise liest die Dateien direkt aus `core/static/` (`WHITENOISE_USE_FINDERS`), ein Einsammeln mit `collectstatic` ist bis P6 nicht nötig. Gestaltung und Skript sind ohne Login abrufbar, weil die Login-Seite sie braucht; sie enthalten keine Daten.
+- **Bootstrap ohne sein Skript:** Nur die CSS-Datei, unverändert aus dem offiziellen Paket (`npm` bootstrap 5.3.8), mit Lizenz in `core/static/core/bootstrap/`. Das Handy-Menü ist ein `dialog`-Element des Browsers mit wenigen Zeilen eigenem Skript (`core/static/core/app.js`); es hält den Fokus im Menü und schließt mit Escape.
+- **Symbole:** eigene, einfache Zeichnungen in `core/templates/core/_symbole.svg` (EUPL wie das Tool), kein fremdes Symbolpaket.
+- **Fachbegriffe im Code** (CONTRIBUTING.md, Abschnitt 1): Veranstaltung = `event`, Teilnehmende = `participant`. Bisher nur in den Beispieldaten der Musterseite.
+- **Rauchtest mit Playwright 1.64** (Apache-2.0) in Python, nur zum Prüfen. Playwright bringt greenlet (MIT und PSF-2.0), pyee (MIT) und typing-extensions (PSF-2.0) mit. Ohne `pytest-playwright`, das zwei weitere Pakete mitbrächte; die wenigen Helfer stehen in `rauchtests/conftest.py`. Der Rauchtest läuft in Chromium, Firefox und WebKit, meldet sich wirklich bei der Keycloak-Testumgebung an und braucht dafür Port 8000. Er läuft in einem eigenen pytest-Lauf in `pruefen.sh`, weil Playwright eine Ereignisschleife betreibt, neben der Django Datenbankzugriffe abbricht; nur dort ist `DJANGO_ALLOW_ASYNC_UNSAFE` gesetzt.
+- **axe-core 4.14.0** (MPL-2.0, mit der EUPL verträglich) für die Prüfung auf Barrierefreiheit liegt als Datei in `tests/vendor/axe-core/`, mit Lizenz; Prüfsumme gegen die von axe-core veröffentlichte geprüft. Gewählt statt des Python-Pakets `axe-playwright-python`, für das PyPI keine Lizenz nennt. Geprüft wird nach WCAG 2.2 A und AA.
+- **Firefox auf dem Mac:** Firefox von Playwright startet unter macOS 27.0.1 nicht („Could not find profile folder“, auf Sebastians Mac auch im eigenen Terminal belegt). Der Rauchtest überspringt Firefox nur genau dann, sichtbar im Ergebnis; auf GitHub läuft Firefox immer mit.
+- **WebKit auf dem Mac:** Ohne die Mac-Einstellung „Tastaturnavigation“ springt WebKit wie Safari mit Tab nur zwischen Eingabefeldern; der Tastatur-Rauchtest nutzt dort Wahltaste und Tab.
+
+**Begründung:** Zu 1 bis 9: Protokolle in #7. Zu Bootstrap: laut Sebastian „sieht wesentlich ordentlicher aus“. Zur Technik: Gestaltung ohne Build-Schritt und vom eigenen Server (Entscheidung vom 20.10.2026, CONTRIBUTING.md, Abschnitt 6); jedes Paket weniger ist ein Paket weniger zu pflegen.
+
+**Umsetzung:** `core/templates/base.html`, `base_app.html`, `base_einfach.html`, `core/templates/core/` (Musterseite, Bausteine, Lilie, Symbole), `core/static/core/`, `core/navigation.py`, `core/templatetags/layout.py`, `core/views.py`, `config/settings.py`, `config/urls.py`, `accounts/templates/accounts/login.html`, `core/templates/500.html`, `docs/gestaltung.md`, `README.md`, `pruefen.sh`, `.github/workflows/ci.yml`, Tests in `tests/test_gestaltung.py`, `tests/test_texte.py` und `rauchtests/`.
+
 ## 2026-10-21 · Login über Keycloak: Abmelden, Sitzung, Anrede und Technik
 
 **Entscheidung** (Sebastian, Klärung von #5 am 20.10.2026 und Nachklärung am 21.10.2026):

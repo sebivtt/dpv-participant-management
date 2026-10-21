@@ -50,6 +50,10 @@ MIDDLEWARE = [
     # Ganz außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
     "core.errors.ClientErrorLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Liefert Gestaltung und Skripte vom eigenen Server (#7, CONTRIBUTING.md, Abschnitt 6),
+    # auch ohne Fehleranzeige für Entwickler und vor der Login-Pflicht: Die Login-Seite
+    # braucht sie schon, bevor jemand angemeldet ist.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -75,6 +79,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.navigation.navigation",
             ],
         },
     },
@@ -105,6 +110,18 @@ TIME_ZONE = "Europe/Berlin"
 USE_TZ = True
 
 STATIC_URL = "static/"
+# WhiteNoise liest die Dateien direkt aus den Ordnern static/ der Apps. Ein eigener Schritt
+# zum Einsammeln (collectstatic, braucht STATIC_ROOT) ist so weder lokal noch in der Prüfung
+# nötig; für den Betrieb wird das in P6 neu bewertet.
+WHITENOISE_USE_FINDERS = True
+
+# Fußbereich jeder Seite (#7). Die Ziele zeigen vorerst auf die Seiten des DPV; ob die
+# reichen, klärt Sebastian mit der Datenschutzperson (OP-2, #12).
+IMPRESSUM_URL = os.environ.get("IMPRESSUM_URL", "https://dpvonline.de/impressum/")
+DATENSCHUTZ_URL = os.environ.get("DATENSCHUTZ_URL", "https://dpvonline.de/datenschutz/")
+COPYRIGHT_HOLDER = os.environ.get("COPYRIGHT_HOLDER", "DPV e.V.")
+# Ab diesem Jahr zählt der Copyright-Hinweis, z. B. „2026–2027“.
+COPYRIGHT_START_YEAR = 2026
 
 # Login nur über den Keycloak des DPV (#5, ORG-02). Das Tool nutzt einen normalen
 # Login-Client und schreibt nichts nach Keycloak.

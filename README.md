@@ -66,7 +66,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    ```bash
    uv run --env-file .env python manage.py runserver
    ```
-   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Es erscheint die Login-Seite mit „Mit DPV-Konto anmelden“. Anmelden mit einem der erfundenen Konten aus der Tabelle unten; danach steht dort „Hallo Erika!“. Beenden mit `ctrl` + `C` im Terminal.
+   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Es erscheint die Login-Seite mit „Mit DPV-Konto anmelden“. Anmelden mit einem der erfundenen Konten aus der Tabelle unten; danach steht dort „Hallo Erika!“. Die Musterseite mit allen Bausteinen der Gestaltung liegt unter http://127.0.0.1:8000/muster/. Beenden mit `ctrl` + `C` im Terminal.
 
    Erfundene Konten der Keycloak-Testumgebung (`dev/keycloak/dpv-realm.json`):
 
@@ -82,15 +82,20 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
 
 **Prüfungen laufen lassen** (zuerst Schritt 3, 6 und 7; einige Tests melden sich wirklich bei der Keycloak-Testumgebung an)
 
-10. Alle automatischen Prüfungen starten, dieselben wie auf GitHub.
+10. Nur einmal und nach einer neuen Fassung von Playwright: die drei Browser für den Rauchtest installieren (Chromium, Firefox und WebKit, die Technik hinter Safari). Sie liegen getrennt von deinen eigenen Browsern und brauchen zusammen rund 500 MB.
+    ```bash
+    uv run playwright install chromium firefox webkit
+    ```
+    Danach: je Browser eine Zeile `... downloaded to ...`; ist ein Browser schon da, erscheint für ihn nichts.
+11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Vorher das Tool beenden, falls es aus Schritt 9 noch läuft: Der Rauchtest braucht dieselbe Adresse (Port 8000).
     ```bash
     ./pruefen.sh
     ```
-    Danach: Für jede Prüfung eine Zeile `--> grün: ...`, ganz unten `Alle Prüfungen grün.` Ist etwas rot, steht unten `Nicht bestanden:` mit der Liste.
+    Danach: Für jede Prüfung eine Zeile `--> grün: ...`, ganz unten `Alle Prüfungen grün.` Ist etwas rot, steht unten `Nicht bestanden:` mit der Liste. Auf einem Mac mit macOS 27 steht beim Rauchtest zusätzlich `SKIPPED ... Firefox startet unter macOS 27 nicht`: Firefox von Playwright startet dort nicht; auf GitHub läuft Firefox mit.
 
 **Aufhören**
 
-11. Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten. Keycloak beginnt beim nächsten Start wieder mit den Konten aus der Tabelle; selbst registrierte Konten sind dann weg.
+12. Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten. Keycloak beginnt beim nächsten Start wieder mit den Konten aus der Tabelle; selbst registrierte Konten sind dann weg.
     ```bash
     docker compose -f dev/docker-compose.yml down
     ```
@@ -107,3 +112,5 @@ Das Tool ist ein Neustart. Das frühere Repo [sebivtt/scout-participant-manageme
 ## Lizenz
 
 [EUPL-1.2](LICENSE)
+
+Das Logo ist Eigentum des DPV und nicht Teil der EUPL-Lizenz. Gemeint ist die Lilie in `core/templates/core/lilie.svg` (Hinweis daneben in `LOGO-HINWEIS.md`). Fremde Dateien mit eigener Lizenz liegen mit ihrem Lizenztext im Repo: Bootstrap (MIT) in `core/static/core/bootstrap/`, axe-core (MPL-2.0) für die Prüfung auf Barrierefreiheit in `tests/vendor/axe-core/`.

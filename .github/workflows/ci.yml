@@ -25,7 +25,7 @@ jobs:
   pruefen:
     name: Alle Prüfungen (pruefen.sh)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:18
@@ -73,6 +73,10 @@ jobs:
             quay.io/keycloak/keycloak:26.7.5 start-dev --import-realm
       - name: Python und Pakete aus uv.lock installieren
         run: uv sync --locked
+      # Browser für den Rauchtest (#7) in der Fassung, die zu Playwright aus uv.lock gehört,
+      # samt den Systembibliotheken, die sie unter Linux brauchen.
+      - name: Browser für den Rauchtest installieren
+        run: uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Warten, bis Keycloak bereit ist
         run: |
           for attempt in $(seq 1 90); do

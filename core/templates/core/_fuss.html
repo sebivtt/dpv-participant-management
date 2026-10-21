@@ -1,0 +1,7 @@
+{% load i18n %}<footer class="a-fuss">
+  <nav aria-label="{% translate "Rechtliches" %}">
+    <a href="{{ impressum_url }}">{% translate "Impressum" %}</a>
+    <a href="{{ datenschutz_url }}">{% translate "Datenschutz" %}</a>
+  </nav>
+  <span>{% blocktranslate %}© {{ holder }} · Anmeldetool {{ years }}{% endblocktranslate %}</span>
+</footer>
