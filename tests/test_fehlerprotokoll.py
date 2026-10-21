@@ -247,3 +247,68 @@ def test_fehler_im_fehlerprotokoll_verhindert_die_fehlerseite_nicht(client, erik
     log = log_output()
     assert f"Fehler {number}" in log
     _assert_nothing_personal(log)
+
+
+# #25: Djangos eigene Zeilen kamen über Pythons Notausgabe doch ins Log.
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("request_kind", "django_text"),
+    [
+        ("unbekannte Adresse", "Not Found"),
+        ("verdächtiger Servername", "Invalid HTTP_HOST"),
+        ("fehlender Formularschutz", "Forbidden"),
+    ],
+)
+def test_djangos_eigene_zeilen_erscheinen_auch_nicht_ueber_die_notausgabe(log_output, request_kind, django_text):
+    browser = Client(enforce_csrf_checks=True)
+    if request_kind == "unbekannte Adresse":
+        response = browser.get("/Erika-Testfrau-Allergie/")
+    elif request_kind == "verdächtiger Servername":
+        response = browser.get("/", HTTP_HOST="erika-testfrau-allergie.example")
+    else:
+        response = browser.post(
+            f"/test/{NUMBER_IN_ADDRESS}/verboten/?suche=Erika", {"allergie": "Testallergie Erdnuss"}
+        )
+
+    assert response.status_code in (400, 403, 404)
+    log = log_output()
+    assert django_text not in log, f"Djangos eigene Zeile steht im Log:\n{log}"
+    assert "allergie" not in log.lower()
+    _assert_nothing_personal(log)
+
+
+def test_das_abfangen_des_logs_sieht_auch_die_notausgabe(log_output):
+    # Sichert das Prüfwerkzeug selbst ab: Ohne diesen Test bliebe unbemerkt, wenn eine neue
+    # Fassung von pytest die Notausgabe wieder verdeckt (so geschehen bei pytest 9.1.0, #25).
+    logger = logging.getLogger("tests.ohne_ausgabe")
+    logger.propagate = False
+    try:
+        logger.warning("Testzeile aus der Notausgabe")
+        assert "Testzeile aus der Notausgabe" in log_output()
+    finally:
+        logger.propagate = True
+
+
+def test_pythons_notausgabe_bleibt_an():
+    # Unvorhergesehene Fehler aus falsch eingestellten Loggern sollen nicht still verschwinden.
+    assert logging.lastResort is not None
+
+
+def test_jeder_logger_ohne_weitergabe_hat_eine_ausgabe(settings):
+    # Wache: Ein Logger ohne Ausgabe, der nichts weitergibt, landet in Pythons Notausgabe.
+    # Gilt für die Einstellungen und für Logger aus Paketen. Die Aufzeichnungen von pytest
+    # zählen nicht, weil es sie im Betrieb nicht gibt.
+    in_settings = [
+        name
+        for name, config in settings.LOGGING.get("loggers", {}).items()
+        if config.get("propagate", True) is False and not config.get("handlers")
+    ]
+    live = [
+        name
+        for name, logger in logging.Logger.manager.loggerDict.items()
+        if isinstance(logger, logging.Logger)
+        and not logger.propagate
+        and not [handler for handler in logger.handlers if not type(handler).__module__.startswith("_pytest")]
+    ]
+    assert in_settings == [], f"Ohne Ausgabe in den Einstellungen: {in_settings}"
+    assert live == [], f"Ohne Ausgabe beim Start: {sorted(live)}"
