@@ -69,7 +69,13 @@ def test_jede_eigene_app_hat_einen_migrationsordner():
     # Datenmodell dieser App und bleibt grün.
     from django.apps import apps
 
-    own_apps = [app for app in apps.get_app_configs() if Path(app.path).is_relative_to(BASE_DIR)]
+    # Eigene Apps liegen im Projektordner, aber nicht bei den installierten Paketen; die
+    # liegen je nach Rechner ebenfalls darin (.venv).
+    own_apps = [
+        app
+        for app in apps.get_app_configs()
+        if Path(app.path).is_relative_to(BASE_DIR) and "site-packages" not in Path(app.path).parts
+    ]
 
     assert own_apps
     for app in own_apps:
