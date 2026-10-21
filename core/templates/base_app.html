@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{# Seite mit Login (#7): feste Seitenleiste links am PC, schmale Leiste mit Menü am Handy. Keine Kopfzeile über dem Inhalt. #}
+{% load i18n layout %}
+{% block body %}
+  <aside class="a-sidebar" aria-label="{% translate "Seitenleiste" %}">
+    {% include "core/_marke.html" %}
+    {% include "core/_navigation.html" %}
+    {% include "core/_konto.html" %}
+  </aside>
+  <header class="a-topbar">
+    <button type="button" class="a-menueknopf" id="menue-auf" aria-haspopup="dialog" aria-controls="menue">{% icon "menue" %}{% translate "Menü" %}</button>
+    {% include "core/_marke.html" %}
+    {% include "core/_profilkreis.html" with label_only=True %}
+  </header>
+  <dialog class="a-drawer" id="menue" aria-label="{% translate "Menü" %}">
+    <div class="a-drawer-innen">
+      <div class="a-drawer-kopf">
+        {% include "core/_marke.html" %}
+        <button type="button" class="a-schliessen" id="menue-zu" autofocus>{% icon "schliessen" %}<span class="sr-nur">{% translate "Menü schließen" %}</span></button>
+      </div>
+      {% include "core/_navigation.html" %}
+      {% include "core/_konto.html" %}
+    </div>
+  </dialog>
+  <main class="a-main" id="inhalt">
+    {% block content %}{% endblock %}
+    {% fussbereich %}
+  </main>
+{% endblock %}

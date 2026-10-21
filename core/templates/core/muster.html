@@ -1,0 +1,116 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{# Musterseite (#7): alle Bausteine mit erfundenen Beispielen. Oben der Aufbau des späteren Dashboards (#28). #}
+{% block title %}{% translate "Musterseite · DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  <div class="a-kopf">
+    <h1>{% if user.first_name %}{% blocktranslate with first_name=user.first_name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}</h1>
+    <p>{% translate "Das ist die Musterseite mit allen Bausteinen, gefüllt mit erfundenen Beispielen." %}</p>
+  </div>
+
+  <section class="a-meldungen" aria-labelledby="h-meldungen">
+    <h2 id="h-meldungen" class="sr-nur">{% translate "Statusmeldungen" %}</h2>
+    <ul>
+      <li>{% icon "glocke" %}<span>{% blocktranslate %}<strong>2 neue Anmeldungen</strong> zum Pfingstlager 2027 seit gestern{% endblocktranslate %}</span><a href="#h-kommend">{% translate "Ansehen" %}</a></li>
+      <li>{% icon "uhr" %}<span>{% blocktranslate %}<strong>Anmeldeschluss in 5 Tagen</strong> für die Leitungsschulung Nord{% endblocktranslate %}</span><a href="#h-kommend">{% translate "Ansehen" %}</a></li>
+    </ul>
+  </section>
+
+  <div class="a-dash">
+    <section class="a-abschnitt a-dash-schnell" aria-labelledby="h-schnell">
+      <h2 id="h-schnell">{% translate "Schnellaktionen" %}</h2>
+      <p class="a-unterzeile">{% translate "Was du am häufigsten brauchst." %}</p>
+      <div class="a-kacheln">
+        <a class="a-kachel ist-haupt" href="#inhalt"><span class="a-kachel-ic">{% icon "plus" %}</span><span>{% translate "Veranstaltung erstellen" %}<small>{% translate "In drei Schritten zur eigenen Veranstaltung" %}</small></span></a>
+        <a class="a-kachel" href="#inhalt"><span class="a-kachel-ic">{% icon "ticket" %}</span><span>{% translate "Meine Anmeldungen" %}<small>{% translate "3 aktuelle Anmeldungen" %}</small></span></a>
+        <a class="a-kachel" href="#inhalt"><span class="a-kachel-ic">{% icon "liste" %}</span><span>{% translate "Veranstaltungen verwalten" %}<small>{% translate "2 laufend, 1 Entwurf" %}</small></span></a>
+        <a class="a-kachel" href="#inhalt"><span class="a-kachel-ic">{% icon "organisation" %}</span><span>{% translate "Organisation öffnen" %}<small>{{ orgs.0 }}</small></span></a>
+      </div>
+    </section>
+    <section class="a-abschnitt a-dash-kommend" aria-labelledby="h-kommend">
+      <h2 id="h-kommend">{% translate "Kommende Veranstaltungen" %}</h2>
+      <p class="a-unterzeile">{% translate "Entwürfe siehst nur du und dein Planungsteam." %}</p>
+      <div class="a-zeilen">
+        {% for event in events %}{% include "core/_veranstaltung.html" %}{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <p class="a-trenner">{% translate "Weitere Bausteine, die später auf eigenen Seiten stehen:" %}</p>
+
+  <section class="a-abschnitt" aria-labelledby="h-schritte">
+    <h2 id="h-schritte">{% translate "Veranstaltung anlegen" %}</h2>
+    <p class="a-unterzeile">{% translate "Baustein: Fortschrittsanzeige für Abläufe in Schritten." %}</p>
+    <ol class="a-schritte" aria-label="{% translate "Fortschritt" %}">
+      <li class="fertig"><span class="nr" aria-hidden="true">1</span><span>{% translate "Grunddaten" %} <span class="sr-nur">{% translate "(erledigt)" %}</span></span></li>
+      <li aria-current="step"><span class="nr" aria-hidden="true">2</span><span>{% translate "Anmeldung und Einstellungen" %} <span class="sr-nur">{% translate "(aktueller Schritt)" %}</span></span></li>
+      <li><span class="nr" aria-hidden="true">3</span><span>{% translate "Zusammenfassung" %}</span></li>
+    </ol>
+    <div class="a-flaeche">
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="schluss">{% translate "Anmeldeschluss" %}</label><input class="form-control" id="schluss" type="date" value="2027-04-30"></div>
+        <div class="col-md-6"><label class="form-label" for="plaetze">{% translate "Plätze" %}</label><input class="form-control" id="plaetze" type="number" inputmode="numeric" value="40"></div>
+      </div>
+      <div class="a-aktionen">
+        <a href="#inhalt" class="a-abbrechen">{% translate "Abbrechen" %}</a>
+        <span class="a-aktionen-rechts">
+          <button type="button" class="btn btn-outline-primary">{% translate "Zurück" %}</button>
+          <button type="button" class="btn btn-primary">{% translate "Weiter" %}{% icon "rechts" %}</button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="a-abschnitt" aria-labelledby="h-teilnehmende">
+    <h2 id="h-teilnehmende">{% translate "Teilnehmende · Pfingstlager 2027" %}</h2>
+    <p class="a-unterzeile">{% translate "Am Handy erscheint die Liste als Karten." %}</p>
+    <div class="a-werkzeuge">
+      <div><label class="form-label" for="suche">{% translate "Suche nach Namen" %}</label><input class="form-control" id="suche" type="search" autocomplete="off"></div>
+      <div><label class="form-label" for="filter">{% translate "Status" %}</label>
+        <select class="form-select" id="filter"><option>{% translate "Alle" %}</option><option>{% translate "angemeldet" %}</option><option>{% translate "Warteliste" %}</option><option>{% translate "abgemeldet" %}</option></select></div>
+    </div>
+    <div class="a-tabelle-huelle">
+      <table class="table a-tabelle">
+        <thead><tr><th scope="col">{% translate "Name" %}</th><th scope="col">{% translate "Gruppe" %}</th><th scope="col">{% translate "Alter" %}</th><th scope="col">{% translate "Status" %}</th></tr></thead>
+        <tbody>
+          {% for name, group, age, state in participants %}
+            <tr>
+              <td class="a-name">{{ name }}</td>
+              <td class="a-klein"><span class="a-feld">{% translate "Gruppe" %}: </span>{{ group }}</td>
+              <td class="a-klein"><span class="a-feld">{% translate "Alter" %}: </span>{% blocktranslate %}{{ age }} Jahre{% endblocktranslate %}</td>
+              <td class="a-statusspalte">{% status state.0 state.1 %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <nav class="a-blaettern" aria-label="{% translate "Seiten" %}">
+      <span>{% translate "Seite 1 von 3 · 47 Teilnehmende" %}</span>
+      <span class="a-aktionen-rechts">
+        <button class="btn btn-outline-primary btn-sm" type="button" disabled>{% translate "Zurück" %}</button>
+        <button class="btn btn-outline-primary btn-sm" type="button">{% translate "Weiter" %}</button>
+      </span>
+    </nav>
+  </section>
+
+  <section class="a-abschnitt" aria-labelledby="h-formular">
+    <h2 id="h-formular">{% translate "Formular" %}</h2>
+    <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehlermeldung direkt am Feld." %}</p>
+    <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
+      <div class="mb-3">
+        <label class="form-label" for="name">{% translate "Name der Veranstaltung" %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span></label>
+        <input class="form-control is-invalid" id="name" required aria-invalid="true" aria-describedby="name-fehler" autocomplete="off" autocapitalize="sentences">
+        <div class="invalid-feedback" id="name-fehler">{% translate "Gib einen Namen für die Veranstaltung ein." %}</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="organisation">{% translate "Organisation" %}</label>
+        <select class="form-select" id="organisation">{% for org in orgs %}<option>{{ org }}</option>{% endfor %}</select>
+      </div>
+      <div class="mb-4 form-check">
+        <input class="form-check-input" type="checkbox" id="warteliste" checked>
+        <label class="form-check-label" for="warteliste">{% translate "Warteliste erlauben, wenn alle Plätze belegt sind" %}</label>
+      </div>
+      <button type="submit" class="btn btn-primary">{% translate "Speichern" %}</button>
+    </form>
+  </section>
+{% endblock %}

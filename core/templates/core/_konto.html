@@ -1,0 +1,7 @@
+{% load i18n layout %}<div class="a-konto">
+  {% include "core/_profilkreis.html" %}
+  <form class="a-abmelden" method="post" action="{% url "account_logout" %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline-primary">{% icon "abmelden" %}{% translate "Abmelden" %}</button>
+  </form>
+</div>

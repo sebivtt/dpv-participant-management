@@ -15,11 +15,13 @@ dependencies = [
     "django>=6.1,<6.2",
     "django-allauth[socialaccount]>=65.20.1",
     "psycopg[binary]>=3.2",
+    "whitenoise>=6.12",
 ]
 
 [dependency-groups]
 dev = [
     "pip-audit>=2.9",
+    "playwright>=1.64",
     "pytest>=8.4",
     "pytest-django>=4.11",
     "ruff>=0.14",

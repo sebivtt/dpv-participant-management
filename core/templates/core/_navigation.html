@@ -1,0 +1,8 @@
+{% load i18n layout %}<nav class="a-nav" aria-label="{% translate "Hauptnavigation" %}">
+  {% if nav_example %}<p class="a-nav-titel"><span class="a-beispiel">{% translate "Beispiel" %}</span></p>{% endif %}
+  <ul>
+    {% for item in nav_items %}
+      <li><a class="a-navlink" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% icon item.icon %}<span>{{ item.label }}</span></a></li>
+    {% endfor %}
+  </ul>
+</nav>

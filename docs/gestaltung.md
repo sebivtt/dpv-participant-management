@@ -1,0 +1,219 @@
+# Gestaltung des DPV Anmeldetools
+
+Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen. Gebaut ist bisher nur die Grundgestaltung mit Musterseite (`/muster/`). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
+
+Wer eine Seite baut, nimmt die Bausteine der Musterseite (`core/templates/core/muster.html`) und die Farben aus `core/static/core/app.css`. Neue Bausteine kommen zuerst auf die Musterseite.
+
+## 1. Festgelegt bei der Klärung von #7
+
+Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 21.10.2026.
+
+- **Grundlage:** Bootstrap 5.3, ohne Build-Schritt, alle Dateien vom eigenen Server. Schrift: die Systemschrift des Geräts.
+- **Farben:** DPV-Blau `#1a4b7e` trägt die Gestaltung, dazu Weiß und kühle Grautöne. Eine Akzentfarbe, Sonnengelb `#f0ad2c`, sparsam: aktiver Navigationspunkt, Symbol von „Veranstaltung erstellen“, aktueller Schritt. Sonnengelb trägt nie Text auf Weiß. Statusfarben sind gedeckt und stehen immer mit Wort und Symbol. Alle Farben stehen an einer Stelle; nur heller Modus, ein dunkler ist vorbereitet (#15).
+- **Formen:** abgerundete Ecken, Flächen statt Rahmen, kaum Schatten, lieber Luft als Fülle.
+- **Aufbau am PC:** feste Seitenleiste links, keine Kopfzeile über dem Inhalt. Oben Lilie und „DPV Anmeldetool“, darunter die Navigation, unten Profilkreis mit Vornamen und „Abmelden“ mit Symbol und Wort.
+- **Aufbau am Handy:** schmale Leiste oben mit „Menü“, Lilie mit Namen und Profilkreis. „Menü“ öffnet die Navigation von links; „Abmelden“ steht darin mit Symbol und Wort. Die Leiste wechselt unter 992 Pixel Breite.
+- **Navigation:** Auf echten Seiten steht nur, was es gibt, und nur für Personen, die es nutzen dürfen (`core/navigation.py`). Keine leeren Platzhalter. Ausblenden ersetzt nie die Rechteprüfung auf dem Server.
+- **Fußbereich:** eine flache Zeile am Ende des Inhalts, links „Impressum“ und „Datenschutz“, rechts „© DPV e.V. · Anmeldetool 2026“; die Jahreszahl zählt weiter.
+- **Login- und Fehlerseite:** ruhig und mittig, ohne Seitenleiste.
+- **Dashboard (Vorschau auf der Musterseite, gebaut in #28):** oben die Begrüßung, darunter einige Statusmeldungen, darunter am PC zwei Drittel „Kommende Veranstaltungen“ und ein Drittel „Schnellaktionen“; am Handy untereinander, Schnellaktionen zuerst.
+- **Veranstaltungen in Übersichten:** breite, flache Zeilen. Links ein Bild (Ausschnitt aus dem Banner oder eigenes Logo, #31), ohne Bild die Lilie; in der Mitte Name, Zeitraum, Ort, Organisation; rechts Zustand und Anmeldezahl. Mit Obergrenze „23 von 40 angemeldet“ mit Balken, voll zusätzlich „ausgebucht“; ohne Obergrenze nur „23 angemeldet“. Entwürfe gestrichelt umrandet und mit dem Wort „Entwurf“.
+- **Zustände (vorläufig, endgültig in #29):** „Entwurf“, „Anmeldung ab 01.12.“, „Anmeldung offen“, „Anmeldung geschlossen“.
+- **Menüs:** öffnen am PC beim Darüberfahren und zusätzlich per Klick, Antippen und Tastatur; sie schließen mit kurzer Verzögerung.
+- **Sprache:** neutrale Wörter („Teilnehmende“, „Leitung“, „Person“), sonst beide Formen oder umformulieren; kein Sternchen, kein Doppelpunkt. Die Texte duzen.
+- **Browser:** die gängigen der letzten rund zwei Jahre: Safari auf iPhone und Mac, Chrome und Samsung Internet auf Android, Chrome, Firefox und Edge am PC.
+
+**Offener Widerspruch:** LIS-01 und das Abschlusskriterium von P5 verlangen, lebensbedrohliche Allergien in der Teilnehmendenliste hervorzuheben. Abschnitt 5 unten sagt, Gesundheitsdaten erscheinen nicht in der allgemeinen Übersicht. Geklärt wird das in #30, bevor die Liste gebaut wird.
+
+## 2. Gestaltungskonzept: DPV Anmeldetool
+
+Von Sebastian am 21.10.2026.
+
+### 1. Gestalterische Grundidee
+
+Das DPV Anmeldetool erhält eine klare, moderne und funktionale Oberfläche. Im Mittelpunkt stehen eine einfache Bedienung, eine gute Übersicht über Veranstaltungen und Anmeldungen sowie kurze, nachvollziehbare Arbeitsabläufe.
+
+Die Gestaltung soll ruhig und aufgeräumt wirken. Informationen werden in klar abgegrenzten Bereichen dargestellt. Wiederkehrende Elemente und ein einheitliches Layout sorgen dafür, dass sich Nutzende schnell orientieren können.
+
+Verbindlich gesetzt sind die DPV-Farbe und das DPV-Logo. Die übrige Gestaltung soll sich daran orientieren, ohne unnötig komplex zu werden.
+
+### 2. Grundlayout und Navigation
+
+#### Desktop
+
+Das Desktop-Layout verwendet eine feste linke Seitenleiste. Es gibt keine zusätzliche, über die gesamte Inhaltsfläche laufende Kopfzeile oder ein separates Banner.
+
+Die Seitenleiste enthält:
+
+- DPV-Logo und Produktbezeichnung „DPV Anmeldetool“ im oberen Bereich
+- Hauptnavigation mit den zentralen Bereichen
+- Profil- und Kontobereich am unteren Rand
+- Abmeldefunktion
+
+Die Navigation soll mindestens folgende Bereiche vorsehen, soweit sie für die jeweilige Rolle verfügbar sind:
+
+- Startseite
+- Veranstaltungen
+- Teilnehmende
+- Organisation
+- Einstellungen
+
+Der aktive Navigationspunkt wird deutlich hervorgehoben. Die Seitenleiste bleibt über die verschiedenen Ansichten hinweg konsistent.
+
+Der eigentliche Seiteninhalt beginnt direkt rechts neben der Seitenleiste. Er besitzt eine klare Überschriftenhierarchie und ausreichend Abstand zwischen den einzelnen Bereichen.
+
+#### Smartphone und kleinere Bildschirme
+
+Auf mobilen Geräten wird die feste Seitenleiste durch eine kompakte Navigation ersetzt. Diese bietet einen Menüzugang, die Produktidentität und den Profilzugang.
+
+Listen und Tabellen werden für kleine Bildschirme angepasst. Insbesondere die Teilnehmendenverwaltung soll auf Smartphones mit kompakten Karten anstelle einer breiten Tabelle funktionieren.
+
+### 3. Startseite / Dashboard
+
+Das Dashboard ist der zentrale Einstiegspunkt nach der Anmeldung. Es soll die wichtigsten Aufgaben zugänglich machen, ohne eine überladene Übersichtsseite zu erzeugen.
+
+#### Begrüßung und Einstieg
+
+Im oberen Bereich des Inhalts erscheint eine kurze Begrüßung mit einem knappen Hinweis auf die wichtigsten Informationen. Eine zusätzliche globale Kopfzeile ist nicht vorgesehen.
+
+#### Kommende Veranstaltungen
+
+Der Bereich „Kommende Veranstaltungen“ ist ein zentrales Element des Dashboards.
+
+Veranstaltungen werden in übersichtlichen Karten dargestellt. Diese können abhängig von den verfügbaren Daten enthalten:
+
+- Veranstaltungsname
+- Zeitraum
+- Veranstaltungsort
+- Organisationszuordnung
+- Anmeldestatus bzw. Veröffentlichungsstatus
+- Anzahl der angemeldeten Personen und gegebenenfalls die verfügbare Kapazität
+- Direkten Zugang zur jeweiligen Veranstaltungsansicht
+
+Entwürfe und veröffentlichte Veranstaltungen müssen klar voneinander unterscheidbar sein. Die Darstellung soll sich auf die Informationen konzentrieren, die für die schnelle Orientierung tatsächlich relevant sind.
+
+#### Schnellaktionen
+
+Der Bereich „Schnellaktionen“ ermöglicht den direkten Zugriff auf häufig benötigte Funktionen.
+
+Dazu gehören insbesondere:
+
+- Veranstaltung erstellen
+- Eigene Anmeldungen aufrufen
+- Veranstaltungen verwalten
+- Organisationsbereich öffnen
+
+Die verfügbaren Aktionen können abhängig von Rolle und Berechtigungen variieren. Die Aktion „Veranstaltung erstellen“ soll besonders gut auffindbar sein.
+
+#### Schrittweise erweiterbare Informationsbereiche
+
+Zusätzliche Übersichtsbereiche oder Kennzahlen sind optional. Sie sollen nicht allein deshalb dauerhaft vorgesehen werden, weil sie gestalterisch möglich sind.
+
+Stattdessen soll das Dashboard modular aufgebaut sein: Wenn ein neues fachliches Modul hinzukommt, kann es einen passenden Übersichtsbereich, eine Schnellaktion oder einen direkten Verweis auf die entsprechende Funktion erhalten.
+
+So wächst das Dashboard mit dem Funktionsumfang des Anmeldetools. Nicht verfügbare oder für eine Person irrelevante Bereiche werden nicht als leere Platzhalter angezeigt.
+
+### 4. Veranstaltung anlegen
+
+Das Anlegen einer Veranstaltung soll als klar geführter, mehrstufiger Ablauf gestaltet werden.
+
+Die einzelnen Schritte werden durch eine Fortschrittsanzeige kenntlich gemacht. Als Grundstruktur bietet sich an:
+
+1. Grunddaten
+2. Anmeldung und weitere Einstellungen
+3. Zusammenfassung und Veröffentlichung
+
+Die konkreten Felder richten sich nach den fachlichen Anforderungen. Grunddaten umfassen insbesondere den Veranstaltungstitel, die organisatorische Zuordnung, Zeitraum, Ort und Beschreibung.
+
+#### Bedienung und Navigation
+
+- Die primäre Aktion „Weiter“ führt zum nächsten Schritt.
+- Ab dem zweiten Schritt wird eine Zurück-Funktion angeboten, über die vorherige Eingaben erneut bearbeitet werden können.
+- Abbrechen und Weiter sollen klar unterscheidbar sein.
+- Eingaben dürfen beim Wechsel zwischen den Schritten nicht unbeabsichtigt verloren gehen.
+- Fehler werden verständlich und möglichst direkt am betroffenen Feld angezeigt.
+- Pflichtfelder werden eindeutig gekennzeichnet.
+
+Vor einer Veröffentlichung soll eine Zusammenfassung der eingegebenen Daten möglich sein. Das Speichern eines Entwurfs und das Veröffentlichen einer Veranstaltung müssen klar voneinander getrennt sein.
+
+### 5. Teilnehmendenverwaltung
+
+Die Teilnehmendenverwaltung soll die effiziente Bearbeitung von Anmeldungen ermöglichen.
+
+#### Übersicht
+
+Die Übersicht enthält insbesondere:
+
+- Auswahl der Veranstaltung
+- Suche nach Namen
+- Filtermöglichkeiten, beispielsweise nach Status oder Gruppe
+- Eine übersichtliche Liste der Teilnehmenden
+- Statuskennzeichnungen, etwa angemeldet, Warteliste oder abgemeldet
+- Pagination oder eine vergleichbare Lösung bei größeren Listen
+
+Auf dem Desktop kann eine tabellarische Darstellung verwendet werden. Auf mobilen Geräten werden die Informationen in kompakte Karten überführt.
+
+#### Detailansicht
+
+Die Auswahl einer Person öffnet eine Detailansicht mit den für die jeweilige Rolle zugänglichen Informationen. Die Darstellung soll klar zwischen allgemeinen Anmeldedaten und besonders schützenswerten Angaben unterscheiden.
+
+Gesundheitsdaten und andere besonders sensible Angaben dürfen nicht in der allgemeinen Teilnehmendenübersicht erscheinen. Der Zugriff auf solche Daten muss auf berechtigte Veranstaltungsleitungen beschränkt sein und serverseitig geprüft werden.
+
+Aktionen wie Statusänderungen oder Nachrichtenversand sollen nur dort angeboten werden, wo sie fachlich vorgesehen und durch die jeweilige Berechtigung erlaubt sind.
+
+### 6. Visuelle Gestaltung
+
+#### Farben und Kontraste
+
+- DPV-Blau als zentrale Markenfarbe
+- Weiß und dezente Grautöne für Hintergründe, Flächen und Trennlinien
+- Statusfarben als ergänzende Orientierung, nicht als alleinige Informationsquelle
+- Ausreichender Kontrast für Texte, Bedienelemente und Fokusmarkierungen
+
+#### Karten und Inhaltsbereiche
+
+Karten dienen der Gruppierung zusammengehöriger Informationen, beispielsweise bei Veranstaltungen, Schnellaktionen und Teilnehmenden.
+
+Sie sollen einheitlich gestaltet sein und nicht unnötig viele Rahmen, Schatten oder dekorative Elemente verwenden. Die visuelle Hierarchie entsteht vor allem durch Abstände, Typografie, Ausrichtung und gezielte Hervorhebungen.
+
+#### Typografie und Symbole
+
+Überschriften, Beschreibungstexte, Statusinformationen und Aktionen müssen klar unterscheidbar sein. Symbole unterstützen die Orientierung, ersetzen jedoch keine verständlichen Beschriftungen, wenn deren Bedeutung nicht eindeutig ist.
+
+### 7. Barrierefreiheit und Bedienbarkeit
+
+Die Gestaltung berücksichtigt insbesondere:
+
+- vollständige Bedienbarkeit per Tastatur
+- gut sichtbare Fokuszustände
+- verständlich beschriftete Formulare und Bedienelemente
+- nachvollziehbare Fehlermeldungen
+- ausreichende Kontraste und gut lesbare Schriftgrößen
+- verständliche, inklusive Sprache
+- responsives Verhalten auf Desktop, Tablet und Smartphone
+
+Die Oberfläche soll auch ohne ausschließlich farbliche Hinweise verständlich bleiben.
+
+### 8. Technische Leitlinien
+
+Die Gestaltung soll zur vorgesehenen Architektur mit Django-Templates und htmx passen. Serverseitig gerenderte Seiten bilden die Grundlage; dynamische Interaktionen werden dort ergänzt, wo sie einen konkreten Bedienungsvorteil bieten.
+
+Berechtigungen werden serverseitig geprüft und nicht allein durch das Ausblenden von Navigationselementen oder Aktionen abgesichert.
+
+Die Umsetzung soll möglichst einfach, wartbar und modular bleiben. Neue fachliche Funktionen sollen sich in die bestehende Navigation und das Dashboard integrieren lassen, ohne das gesamte Layout neu gestalten zu müssen.
+
+### 9. Zielbild
+
+Das Ergebnis soll ein ruhiges, modernes und funktionales Anmeldetool sein, das die Veranstaltungsverwaltung in den Mittelpunkt stellt.
+
+Besonders wichtig sind:
+
+- eine feste linke Desktop-Seitenleiste ohne zusätzliches Banner
+- eine kompakte mobile Navigation
+- ein Dashboard mit „Kommende Veranstaltungen“ und „Schnellaktionen“ als zentralen Elementen
+- ein geführtes Veranstaltungsformular mit Vor- und Zurücknavigation
+- eine übersichtliche, responsive Teilnehmendenverwaltung
+- modular erweiterbare Übersichtsbereiche
+- konsequente Beachtung von Barrierefreiheit, Rollen und Datenschutz
+
+Das Konzept beschreibt die gewünschte Gestaltung und Bedienung. Die konkrete Umsetzung soll sich an den fachlichen Anforderungen und dem schrittweisen Ausbau der Anwendung orientieren.

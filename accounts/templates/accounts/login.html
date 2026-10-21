@@ -1,30 +1,24 @@
-{% load i18n %}<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% translate "Anmelden · DPV Anmeldetool" %}</title>
-</head>
-<body>
-  <main>
-    <h1>{% translate "DPV Anmeldetool" %}</h1>
-    {% if session_expired_hint %}<p role="status">{{ session_expired_hint }}</p>{% endif %}
-    {% for message in messages %}<p role="alert">{{ message }}</p>{% endfor %}
-    <form method="post" action="{{ start }}">
+{% extends "base_einfach.html" %}
+{% load i18n %}
+{% block title %}{% translate "Anmelden · DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  <h1>{% translate "DPV Anmeldetool" %}</h1>
+  <p class="a-einfach-text">{% translate "Melde dich mit deinem DPV-Konto an." %}</p>
+  {% if session_expired_hint %}<p class="alert alert-info" role="status">{{ session_expired_hint }}</p>{% endif %}
+  {% for message in messages %}<p class="alert alert-warning" role="alert">{{ message }}</p>{% endfor %}
+  <form method="post" action="{{ start }}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="btn btn-primary btn-lg w-100">{% translate "Mit DPV-Konto anmelden" %}</button>
+  </form>
+  {% if registration_link_enabled %}
+    {# Ein Formular statt eines Links: Der Login bei Keycloak startet nur per POST. #}
+    <form method="post" action="{{ registration_start }}">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next }}">
-      <button type="submit">{% translate "Mit DPV-Konto anmelden" %}</button>
+      <button type="submit" class="btn btn-link w-100">{% translate "Noch kein Konto? Registrieren" %}</button>
     </form>
-    {% if registration_link_enabled %}
-      {# Ein Formular statt eines Links: Der Login bei Keycloak startet nur per POST. #}
-      <form method="post" action="{{ registration_start }}">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ next }}">
-        <button type="submit">{% translate "Noch kein Konto? Registrieren" %}</button>
-      </form>
-    {% else %}
-      <p>{% blocktranslate with address=help_email %}Wenn du noch kein Konto hast, wende dich an {{ address }}{% endblocktranslate %}</p>
-    {% endif %}
-  </main>
-</body>
-</html>
+  {% else %}
+    <p class="a-einfach-text">{% blocktranslate with address=help_email %}Wenn du noch kein Konto hast, wende dich an {{ address }}{% endblocktranslate %}</p>
+  {% endif %}
+{% endblock %}

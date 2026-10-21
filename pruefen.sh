@@ -47,6 +47,10 @@ check "Code-Regeln (ruff)" $run ruff check .
 check "Django-Systemprüfung" $run python manage.py check
 check "Fehlen Migrationen?" $run python manage.py makemigrations --check --dry-run
 check "Tests (pytest)" $run pytest
+# Eigener Lauf: Playwright betreibt eine Ereignisschleife, neben der Django Datenbankzugriffe
+# sonst abbricht (rauchtests/conftest.py). Braucht die Browser (README.md, Schritt 10).
+check "Rauchtest im Browser mit Prüfung auf Barrierefreiheit (Playwright, axe)" \
+    env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest rauchtests -rs
 check "Bekannte Sicherheitslücken in Paketen (pip-audit)" audit_packages
 
 echo ""
