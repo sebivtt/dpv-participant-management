@@ -51,7 +51,7 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 ## 6. Abhängigkeiten
 
 - **Neue Pakete nur mit Begründung im Pull Request:** Wofür, warum nicht selbst gelöst, wird es gepflegt, welche Lizenz? Die Lizenz muss mit der EUPL-1.2 verträglich sein. (Review)
-- Die Pakete stehen in einer kurzen Liste; daraus wird eine Liste mit festen Fassungen erzeugt, nie von Hand bearbeitet. Das Werkzeug dafür legt P1 fest. (Review)
+- Die Pakete stehen in einer kurzen Liste (`pyproject.toml`); daraus erzeugt `uv` die Liste mit festen Fassungen (`uv.lock`), die nie von Hand bearbeitet wird. (automatisch ab P1: `uv lock --check` meldet, wenn beide nicht zusammenpassen)
 - Pakete mit bekannten Sicherheitslücken blockieren die Übernahme. (automatisch ab P1, `pip-audit`)
 - Gestaltung und Skripte für den Browser kommen vom eigenen Server, nicht von fremden Servern. (Review)
 
@@ -64,6 +64,7 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 ## 8. Pull Requests
 
 - **Klein und thematisch:** ein Thema pro Pull Request. (Review)
+- **Nur grüne Pull Requests werden übernommen.** Alle Prüfungen auf GitHub müssen für den letzten Stand grün sein; die Beschreibung nennt das Ergebnis. Wer einen Pull Request zur Durchsicht schickt, tut das erst, wenn alles grün ist. GitHub sperrt das Übernehmen bei diesem privaten Repo nicht, deshalb gilt die Regel, bis die Sperre mit der Veröffentlichung kommt (#16). (Review, Entscheidung vom 21.10.2026)
 - Die Beschreibung folgt der Vorlage (`.github/pull_request_template.md`) und erklärt in Alltagssprache:
   1. was sich für Nutzende ändert,
   2. welche Anforderungen, Regeln oder Entscheidungen umgesetzt sind,

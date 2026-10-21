@@ -1,0 +1,30 @@
+# Hilfsdienste für die lokale Entwicklung. Vorerst nur die Datenbank; Keycloak kommt
+# mit #5 dazu. Das Tool selbst läuft direkt auf dem Rechner (README.md).
+# NICHT für den Echtbetrieb verwenden: Die Zugangsdaten sind erfunden und öffentlich.
+#
+# Übernommen aus sebivtt/scout-participant-management, dev/docker-compose.yml, Stand 9df4513.
+# Angepasst: ohne Redis (der Plan nutzt es nicht) und vorerst ohne Keycloak; PostgreSQL 18
+# statt 16; nur vom eigenen Rechner aus erreichbar; meldet, wann die Datenbank bereit ist.
+name: dpv-dev
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: dpv
+      POSTGRES_PASSWORD: nur-lokal-nicht-geheim
+      POSTGRES_DB: dpv
+    ports:
+      # Nur 127.0.0.1: Andere Geräte im selben WLAN erreichen die Datenbank nicht.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Ab PostgreSQL 18 gehört der Speicherort eine Ebene höher als bei 16.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dpv -d dpv"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  pgdata:

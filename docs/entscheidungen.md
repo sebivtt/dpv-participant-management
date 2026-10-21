@@ -6,6 +6,23 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen
+
+**Entscheidung:**
+
+1. **Nur grüne Pull Requests** (Sebastian, Klärung von #4 am 20.10.2026): Die KI schickt den Link zu einem Pull Request erst, wenn alle Prüfungen auf GitHub für den letzten Stand grün sind, und nennt das Ergebnis in der Beschreibung. Sebastian übernimmt keinen Pull Request mit roter Prüfung. Die Regel ersetzt die Sperre durch GitHub, bis das Repo veröffentlicht ist (#16).
+2. **Werkzeuge und Fassungen** (KI, technisch):
+   - `uv` verwaltet Python und Pakete. Kurze Paketliste in `pyproject.toml`, feste Fassungen in `uv.lock`.
+   - Python genau 3.13, festgelegt in `.python-version` und `pyproject.toml`. Django 6.1 wie entschieden am 20.10.2026.
+   - PostgreSQL 18, lokal in Docker (`dev/docker-compose.yml`) und in der Prüfung auf GitHub. Die Tests laufen nur gegen PostgreSQL, nie gegen eine Ersatzdatenbank.
+   - Alle Prüfungen stehen in `pruefen.sh`. GitHub ruft dasselbe Skript auf; lokal und auf GitHub wird gleich geprüft.
+   - Zugangsdaten kommen aus Umgebungsvariablen; lokal aus `.env`, die `uv run --env-file .env` einliest. Fehlt eine Pflichtangabe, startet das Tool nicht. Die Fehleranzeige für Entwickler ist nur an, wenn sie ausdrücklich eingeschaltet ist.
+   - Fremde Bausteine im Prüfablauf auf GitHub sind auf einen festen Commit festgelegt.
+
+**Begründung:** Zu 1: GitHub sperrt das Übernehmen roter Pull Requests bei privaten Repos ohne GitHub Pro nicht (Protokoll zu #4). Zu 2: `uv` installiert auch die passende Python-Fassung und macht die Startprobe einfacher (Protokoll zu #4). Die feste Python-Fassung ist nötig: Auf Sebastians Mac lagen am 21.10.2026 drei Python-Fassungen, und `uv` griff ohne Festlegung zu 3.11 und wich still auf Django 5.2 aus (Befund der KI). 3.13 statt 3.14, weil 3.13 länger erprobt ist und Django 6.1 beide unterstützt; die Fassung auf dem DPV-Server ist noch offen (OP-4). PostgreSQL 18 ist die neueste Hauptfassung; PostgreSQL pflegt jede Hauptfassung fünf Jahre, bei Erscheinen 2025 also bis 2030 (aus dem Wissen der KI, nicht eigens nachgesehen); die Fassung auf dem Server ist ebenfalls offen (OP-4). Ein gemeinsames Prüfskript verhindert, dass lokal etwas anderes geprüft wird als auf GitHub. Feste Commits verhindern, dass eine Änderung an einem fremden Baustein unbemerkt in die Prüfung gelangt. `uv run --env-file` liest die Umgebungsdatei ohne zusätzliches Paket.
+
+**Umsetzung:** `CLAUDE.md` (Ablauf je Aufgabe, Schritte 4 und 6; Erfahrung „Erst alles hochladen“), `CONTRIBUTING.md` (Abschnitte 6 und 8), `.github/pull_request_template.md`, `README.md` („Projekt starten“), Pull Request zu #4.
+
 ## 2026-10-21 · P1 beginnt früher, Restpunkte von P0 laufen parallel
 
 **Entscheidung** (Sebastian): Phase P1 „Gerüst“ beginnt am 21.10.2026 statt wie bisher vorgesehen am 30.11.2026. Die Restpunkte von P0 erledigt Sebastian parallel: Anfragen zu OP-1, OP-2 und OP-4 verschicken (bis 15.11.2026), altes Repo archivieren, Stundenlog führen; dazu, mit gleicher Frist wie E0, Liste 1 dem DPV mitteilen (OP-6, bis 29.11.2026). Prüfpunkt E0 bleibt am 29.11.2026; die Zieldaten im Fahrplan bleiben unverändert.

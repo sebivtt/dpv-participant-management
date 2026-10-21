@@ -24,9 +24,9 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 1. **Eng fassen:** eine Anforderung oder ein Fehler je Aufgabe, als Issue (Skill `issue-anlegen`). Umgesetzt wird nur ein Issue mit dem Label `geklärt` (Skill `grill-me`), und erst, wenn es laut `docs/fahrplan.md` dran ist.
 2. **Erst lesen und planen:** betroffene Dateien, Risiken, offene Annahmen und Testfälle nennen, bevor Code entsteht.
 3. **Szenarien vor Code:** Sebastian schreibt die fachlichen Szenarien; die KI schlägt fehlende Fälle vor, er entscheidet. Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund (`CONTRIBUTING.md`, Abschnitt 3). Erst dann kommt der Code.
-4. **Tatsächlich prüfen:** Tests, ruff und die übrigen Prüfungen lokal ausführen. Im Bericht trennen, was ausgeführt wurde und was nur empfohlen ist.
+4. **Tatsächlich prüfen:** alle automatischen Prüfungen lokal mit `./pruefen.sh` ausführen (Anleitung im `README.md`). Im Bericht trennen, was ausgeführt wurde und was nur empfohlen ist.
 5. **Unabhängige Prüfung** vor jedem Pull Request (siehe unten).
-6. **Pull Request** nach der Vorlage. Erst alles hochladen, dann den Link schicken.
+6. **Pull Request** nach der Vorlage. Erst alles hochladen und warten, bis alle Prüfungen auf GitHub grün sind; dann den Link schicken und das Ergebnis der Prüfungen in der Beschreibung nennen. GitHub sperrt das Übernehmen roter Pull Requests bei diesem privaten Repo nicht; die Regel ersetzt die Sperre, bis das Repo veröffentlicht ist (#16).
 
 Für Phasen und Vorgemerktes gilt:
 
@@ -81,7 +81,7 @@ Diese Fehler sind dort tatsächlich passiert. Sie wiederholen sich leicht.
 - **Die unabhängige Prüfung findet fast immer etwas.** Ihren Auftrag eng fassen, Befunde selbst nachprüfen, dann beheben. Bricht sie ab (z. B. Nutzungslimit), sie fortsetzen statt neu zu starten.
 - **Zahlen in der Doku nachrechnen,** bevor sie im Pull Request stehen. Falsche Zahlen fielen mehrfach erst in der Prüfung auf.
 - **Erst gründlich nachsehen, dann „geht nicht“ festhalten.** Eine Sperre für jeden Bezugsweg einzeln prüfen, bevor sie als Tatsache gilt.
-- **Erst alles hochladen, dann den Link schicken.** Sebastian übernimmt einen Pull Request oft gleich. Vor dem Link müssen `git rev-parse HEAD` und `git ls-remote origin <branch>` dieselbe Kennung zeigen. Danach nichts mehr nachschieben; fällt doch etwas auf, ihm vorher Bescheid geben.
+- **Erst alles hochladen, dann den Link schicken.** Sebastian übernimmt einen Pull Request oft gleich. Vor dem Link müssen `git rev-parse HEAD` und `git ls-remote origin <branch>` dieselbe Kennung zeigen, und alle Prüfungen auf GitHub müssen für genau diese Kennung grün sein. Danach nichts mehr nachschieben; fällt doch etwas auf, ihm vorher Bescheid geben.
 - **Eingabefelder auch wie am Handy prüfen,** mit Autokorrektur und Wortvorschlägen. Ein Rauchtest, der nur wie am Laptop tippt, übersah einmal verschwindenden Text.
 - **Fehler, die nur auf Sebastians Mac auftreten:** zuerst die dort installierten Pakete prüfen.
 - **Pull Requests nicht aufeinander aufbauen.** Ein aufgebauter Pull Request landete nach der Übernahme im falschen Branch.

@@ -1,0 +1,64 @@
+# Automatische Prüfungen bei jedem Pull Request und jeder Änderung an main.
+# Die Prüfungen selbst stehen in pruefen.sh, damit sie lokal genauso laufen.
+#
+# Übernommen aus sebivtt/scout-participant-management, .github/workflows/ci.yml, Stand 9df4513.
+# Angepasst: ohne Vue-Oberfläche; eine Python-Fassung (3.13, festgelegt in .python-version)
+# statt drei; Pakete über uv; Tests gegen eine echte PostgreSQL-Datenbank; fremde Bausteine
+# auf eine feste Fassung (Commit) festgelegt, damit eine spätere Änderung dort nicht
+# unbemerkt mitläuft.
+name: Prüfungen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Ein neuer Stand im selben Pull Request bricht den alten Lauf ab und spart Freiminuten.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruefen:
+    name: Alle Prüfungen (pruefen.sh)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: dpv
+          POSTGRES_PASSWORD: nur-in-der-pruefung
+          POSTGRES_DB: dpv
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dpv -d dpv"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      # Erfundene Werte nur für diesen Prüflauf, kein Geheimnis.
+      DJANGO_SECRET_KEY: nur-in-der-pruefung-nicht-geheim
+      POSTGRES_DB: dpv
+      POSTGRES_USER: dpv
+      POSTGRES_PASSWORD: nur-in-der-pruefung
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Der Prüflauf führt Code aus dem Pull Request aus; der Zugangsschlüssel von
+          # GitHub soll danach nicht mehr im Ordner liegen.
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.13.4"
+          enable-cache: true
+      - name: Python und Pakete aus uv.lock installieren
+        run: uv sync --locked
+      - name: Alle Prüfungen
+        run: ./pruefen.sh

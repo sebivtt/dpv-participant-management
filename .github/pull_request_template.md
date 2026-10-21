@@ -14,7 +14,8 @@
 
 - Test für den erlaubten Fall:
 - Test für den verbotenen Fall (wer darf das nicht?):
-- Lokal ausgeführte Prüfungen und Ergebnis:
+- Lokal ausgeführte Prüfungen und Ergebnis (`./pruefen.sh`):
+- Prüfungen auf GitHub für den letzten Stand (alle grün?):
 - Rauchtest des Hauptablaufs:
 - Unabhängige Prüfung: Befunde und was daraus wurde:
 
