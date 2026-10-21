@@ -196,16 +196,19 @@ LOGGING = {
     },
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "safe"},
+        # Schreibt nichts. Ein Logger ganz ohne Ausgabe, der nichts weitergibt, landet sonst in
+        # Pythons Notausgabe, und die schreibt alles ab „Warnung“ doch ins Log (#25).
+        "nichts": {"class": "logging.NullHandler"},
     },
     "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         # Djangos eigene Zeilen zu Fehlern, „nicht gefunden“ und „kein Zugriff“ enthalten die
         # echte Adresse. Sie sind abgeschaltet; core.errors schreibt stattdessen eigene Zeilen.
-        "django.request": {"handlers": [], "propagate": False},
+        "django.request": {"handlers": ["nichts"], "propagate": False},
         # Ebenso Djangos Zeilen zu verdächtigen Anfragen und zum Formularschutz (CSRF): Sie
         # enthalten die echte Adresse oder frei gewählten Text, z. B. aus dem Namen des Servers.
-        "django.security": {"handlers": [], "propagate": False},
+        "django.security": {"handlers": ["nichts"], "propagate": False},
         # Der Testserver auf dem eigenen Rechner (runserver) zeigt Adressen mit Parametern.
         # Er läuft nur lokal mit erfundenen Daten; der Webserver im Betrieb kommt mit #11.
         "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
