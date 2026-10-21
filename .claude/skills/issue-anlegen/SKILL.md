@@ -13,6 +13,7 @@ Gesprochen wird mit Sebastian deutsch, in Alltagssprache, ohne Fachjargon. Er is
 
 - **Fehler** (Label `bug`): Das Tool tut etwas Falsches oder Unerwartetes. Vorlage `.github/ISSUE_TEMPLATE/fehler.yml`.
 - **Anforderung** (Label `enhancement`): Das Tool soll etwas können, was bisher nicht vorgesehen ist. Vorlage `.github/ISSUE_TEMPLATE/anforderung.yml`.
+- **Befund aus einem externen Review** (Label `review-befund`): nur nach `docs/review-leitfaden.md`, Abschnitt 7, und erst nach Sebastians Einordnung. Vorlage `.github/ISSUE_TEMPLATE/review-befund.yml`; das Review-Issue einer Phase hat die Vorlage `externes-review.yml`.
 - Ein Thema pro Issue. Stecken mehrere Themen in einer Meldung, mehrere Issues vorschlagen.
 - Dazu das Label der Phase (`P0` bis `P10`), in die das Issue laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Wird es auf später verschoben oder ungeklärt für eine spätere Phase angelegt, zusätzlich `vorgemerkt` (`CLAUDE.md`, „Für Phasen und Vorgemerktes gilt“).
 

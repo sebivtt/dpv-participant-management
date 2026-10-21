@@ -6,6 +6,31 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Externes KI-Review am Ende jeder Phase
+
+**Entscheidung** (Sebastian, Klärung von #26 am 21.10.2026; Protokoll in #26):
+
+1. **Einordnung:** #26 kommt aus dem Puffer von P1 und verdrängt nichts. Die Zeit für jedes Review steht im Stundenlog.
+2. **Zeitpunkt:** Am Ende jeder Phase P1 bis P10, sobald die Abschlusskriterien erfüllt scheinen, prüfen zwei externe KI-Modelle den Stand; P0 bekommt kein Review. Eine Phase gilt erst als abgeschlossen, wenn das Review-Issue eingeordnet ist und alle blockierenden Befunde behoben sind. Erst dann wechselt der „Stand“ im `README.md`.
+3. **Umfang:** der ganze Stand zum geprüften Commit, Code, Tests und Doku, mit Schwerpunkt auf dem Neuen der Phase. Jedes Abschlusskriterium wird als erfüllt, nicht erfüllt oder nicht prüfbar bewertet. Widersprüche melden die Modelle, sie lösen sie nie auf.
+4. **Modelle:** A mit breitem Blick, B mit Schwerpunkt Sicherheit, Rechte und Datenschutz; B sieht den Bericht von A erst nach der eigenen Prüfung. Pilot nach P1: A = ChatGPT, B = Gemini. Kein Anbieter ist vorgeschrieben. Ein drittes Modell nur bei einem strittigen, möglicherweise blockierenden Befund und immer nach P6 (vor Tor E3).
+5. **Zugang:** je Review eine ZIP-Datei genau des geprüften Commits, die Sebastian hochlädt. Kein dauerhafter Zugriff externer Dienste auf das Repo. Externe Modelle bekommen nur den Inhalt des Repos und erfundene Daten (DSG-08).
+6. **Zusammenführung:** Eine eigene Claude-Sitzung prüft jeden Befund nach (Beleg oder Annahme), bündelt Doppelte und schlägt die Einordnung vor. Sie schreibt nur ins Review-Issue; Befund-Issues legt sie erst nach Sebastians Entscheidung an.
+7. **Stufen:** blockierend, zeitnah, später, Fehlalarm oder Duplikat, akzeptiertes Risiko. Blockierende Befunde sind vor Abschluss der Phase behoben, nicht nur entschieden. Bei Sicherheit und Datenschutz gibt es kein akzeptiertes Risiko; ein Härtungshinweis ohne konkrete Lücke darf auf „später“, ist aber vor E3 erledigt.
+8. **Ablage:** ein Review-Issue je Phase. Die Rohberichte stehen unverändert als eingeklappte Kommentare darin, die eingeordneten Befunde im Text. Ins Repo kommen nur Entscheidungen.
+9. **Auswertung** nach dem Review zu P2, zusammen mit E1 (#35).
+10. **Fahrplan:** Phasenende und Stundenrechnung angepasst (`docs/fahrplan.md`, Abschnitt 6, Nr. 40), mit Sebastians Zustimmung.
+
+**Technische Wahl** (KI):
+
+- **Labels statt Issue-Typ:** GitHub bietet eigene Issue-Typen nur für Organisationen an; `sebivtt` ist ein persönliches Konto, und die Schnittstelle liefert für das Repo keine Typen (geprüft am 21.10.2026). Deshalb die Labels `externes-review` (Review-Issue einer Phase) und `review-befund` (Einzelbefund) mit je einer Vorlage in `.github/ISSUE_TEMPLATE/`.
+- **ZIP-Datei mit `git archive`:** Sie enthält nur Dateien aus dem Repo, nie `.env`. `.gitattributes` hält die fremden Bibliotheken Bootstrap und axe-core heraus.
+- **PyYAML 6.0.3** (MIT, mit der EUPL-1.2 verträglich; Fassung vom 25.09.2025, gepflegt vom YAML-Projekt pyyaml.org), nur zum Prüfen: Der Test liest damit die Issue-Vorlagen. Eine fehlerhafte Vorlage zeigt GitHub ohne Fehlermeldung nicht an; ein eigener Leser für das YAML-Format wäre fehleranfälliger als das verbreitete, gepflegte Paket.
+
+**Begründung:** Die Prüfung vor jedem Pull Request sieht nur den Diff, die Prüfung vom 20.10.2026 war einmalig. Fehler im Zusammenspiel, nur scheinbar erfüllte Abschlusskriterien und widersprüchliche Anforderungen fallen so leicht durch. Zwei Modelle mit verschiedenem Schwerpunkt sehen mehr als eines; die Nachprüfung verhindert, dass Vermutungen als Fehler gelten (am 20.10.2026 waren mehrere Anmerkungen falsch oder unbelegt, z. B. G4 und G7). Claude prüft nicht als A oder B, weil Claude den Code schreibt. Blockierende Befunde müssen behoben sein, weil die nächste Phase sonst auf einem fehlerhaften Stand aufbaut; bei Sicherheit und Datenschutz wird laut Fahrplan nie gekürzt.
+
+**Umsetzung:** `docs/review-leitfaden.md`, `.github/ISSUE_TEMPLATE/externes-review.yml`, `.github/ISSUE_TEMPLATE/review-befund.yml`, `.gitattributes`, `docs/fahrplan.md` (Machbarkeit, Phasen, Abschnitt 6 Nr. 40), `CLAUDE.md`, `README.md`, `.claude/skills/issue-anlegen/SKILL.md`, `pyproject.toml`, `uv.lock`, Labels auf GitHub, Tests in `tests/test_issue_vorlagen.py`.
+
 ## 2026-10-21 · Grundgestaltung: Bootstrap, Farben, Aufbau, Sprache und Prüfung im Browser
 
 **Entscheidung** (Sebastian, Klärung von #7 am 20.10.2026 und drei Nachklärungen am 21.10.2026; Protokolle in #7):

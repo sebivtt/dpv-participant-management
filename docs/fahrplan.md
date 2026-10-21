@@ -75,6 +75,8 @@ Deshalb verschiebe ich vier Muss-Anforderungen fest auf ihren ersten echten Beda
 
 **Nach der Prüfung vom 20.10.2026** (Abschnitt 6) kommen bis Juni 2028 rund 12 Stunden dazu (Annahme): rund 4 für das Protokoll der Rollenänderungen in P2, rund 8 für genauere Abschlusskriterien in P1 bis P6. Der Bedarf steigt auf rund 587 Stunden. Verfügbar bleiben 658, der Puffer sinkt von rund 15 auf rund 12 % (71 Stunden). Der Plan hält bei 8 Stunden weiterhin, aber mit weniger Reserve.
 
+**Nach der Klärung von #26 am 21.10.2026** (Abschnitt 6, Nr. 40) endet jede Phase zusätzlich mit einem externen KI-Review (`docs/review-leitfaden.md`). Bis Juni 2028 kommen rund 19 Stunden dazu (Annahme): rund 4 zum Einrichten in P1 und sechs Reviews von P1 bis P6 zu je rund 2,5. Der Bedarf steigt auf rund 606 Stunden. Verfügbar bleiben 658, der Puffer sinkt von rund 12 auf rund 9 % (52 Stunden). Die Stundenspalte der Phasen bleibt unverändert; E1 rechnet mit dem Stundenlog nach.
+
 **Planungsgrundlagen**
 
 - Entschieden am 20.10.2026: Name „DPV Anmeldetool“, Repo sebivtt/dpv-participant-management, Lizenz EUPL-1.2, Liste 1 bestätigt. Start Montag, 26.10.2026. 8 Stunden pro Woche im Jahresschnitt, Betrieb eingerechnet (Mitte deiner Spanne). Du führst ab P0 ein einfaches Stundenlog; es ist die Messgröße für E1 und E2.
@@ -118,7 +120,7 @@ Bis zur Generalprobe laufen sieben Phasen hintereinander. Der Durchstich P2 ist 
 
 ### Phasen
 
-Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs, einmal davon nur mit Tastatur (NFA-03). Stunden: geschätzter Bedarf (Annahme) gegenüber dem, was bei 8 Stunden pro Woche verfügbar ist.
+Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs, einmal davon nur mit Tastatur (NFA-03). Danach folgt das externe Review nach `docs/review-leitfaden.md`; abgeschlossen ist eine Phase erst, wenn dessen blockierende Befunde behoben sind (ab P1). Stunden: geschätzter Bedarf (Annahme) gegenüber dem, was bei 8 Stunden pro Woche verfügbar ist.
 
 Nachgerechnet am 20.10.2026: Die Spalte „verfügbar“ setzt rund 7,5 Stunden je Kalenderwoche bis P6 an und rund 6,5 ab P7. Warum weniger als 8, ist nicht festgehalten (Annahme: freie Wochen, ab P7 der Betrieb). E1 prüft das mit dem Stundenlog.
 
@@ -325,6 +327,12 @@ Ohne eigene Zeile, weil nur die Form betroffen ist: Die beiden Diagramme (Zeitle
 | Nr | Stelle | vorher | jetzt | warum |
 | --- | --- | --- | --- | --- |
 | 39 | OP-Tabelle, OP-1 (Test-Client) | ohne diese Auskunft | Auskunft: Selbstregistrierung erlaubt; Benutzername und Mail bei jedem Konto vorhanden und fest; Vor- und Nachname können fehlen oder sich ändern | Sebastian bei der Klärung von #5; ergibt den Registrierungslink in #5 |
+
+**Änderungen nach der Klärung von #26 vom 21.10.2026** (Pull Request zu #26):
+
+| Nr | Stelle | vorher | jetzt | warum |
+| --- | --- | --- | --- | --- |
+| 40 | Phasen, Einleitung; Machbarkeit | Phasenende mit grünem Rauchtest; Bedarf rund 587 Stunden, Puffer rund 12 % | zusätzlich externes KI-Review am Phasenende, Phase erst ohne offene blockierende Befunde abgeschlossen; Bedarf rund 606 Stunden, Puffer rund 9 % (52 Stunden) | #26, Zustimmung von Sebastian am 21.10.2026; Rechnung: 4 Stunden Einrichten plus 6 × 2,5 Stunden Review (Annahme) |
 
 **Grundlagen:** [Anforderungsdokument](https://claude.ai/code/artifact/63f2b213-1e66-453f-a270-0de357af386b), [Fahrplan Neubau](https://claude.ai/code/artifact/3e8d079d-7652-4b49-bce3-edee342841b6) und [Bewertung von Claude](https://claude.ai/code/artifact/8ba0df78-1ae2-44a1-a865-f72ca5295fb3), die Bewertungen von ChatGPT und Gemini (Anhänge), Repository [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) Stand 9df4513, Django-Pflegezeiträume laut [djangoproject.com](https://www.djangoproject.com/download/). Dieser Fahrplan ersetzt den Fahrplan Neubau vom 20.10.2026.
 

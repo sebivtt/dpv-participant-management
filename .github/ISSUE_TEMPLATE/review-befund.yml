@@ -1,0 +1,133 @@
+name: Befund aus einem externen Review
+description: Ein einzelner, eigenständig bearbeitbarer Befund aus dem Review am Phasenende (docs/review-leitfaden.md).
+labels: ["review-befund"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Nur für Befunde, die Sebastian im Review-Issue eingeordnet hat und die sich eigenständig bearbeiten lassen. Vor der Umsetzung wird der Befund mit `grill-me` geklärt; erst danach bekommt er das Label `geklärt`.
+
+        **Keine echten Personendaten** (DSG-08). Fehler werden mit erfundenen Testdaten nachgestellt.
+
+        Der graue Text in den Feldern ist nur ein Beispiel und wird nicht übernommen.
+
+  - type: input
+    id: review
+    attributes:
+      label: Aus Review
+      description: Review-Issue und Nummer des Befunds dort.
+      placeholder: Externes Review – P1, Befund B3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kategorie
+    attributes:
+      label: Kategorie
+      options:
+        - Rechte
+        - Datenschutz
+        - Sicherheit
+        - Datenintegrität
+        - Abschlusskriterium nicht erfüllt
+        - Widerspruch in Anforderungen oder Doku
+        - Fehlender Test
+        - Verständlichkeit
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: input
+    id: fundstelle
+    attributes:
+      label: Fundstelle
+      description: Datei und Zeile im geprüften Commit, oder Abschnitt der Doku.
+      placeholder: accounts/views.py Z. 40–52
+    validations:
+      required: true
+
+  - type: textarea
+    id: beobachtung
+    attributes:
+      label: Beobachtung
+      description: Was genau ist falsch oder fehlt? Ein konkreter Fall, keine allgemeine Sorge.
+      placeholder: Die Abmeldung leitet nach abgelaufener Sitzung auf eine Fehlerseite statt zum Login.
+    validations:
+      required: true
+
+  - type: textarea
+    id: beleg
+    attributes:
+      label: Beleg oder Nachstellen
+      description: Womit wurde der Befund am Code nachgeprüft? Schritte zum Nachstellen mit erfundenen Daten oder ein Test, der fehlschlägt.
+      placeholder: |
+        1. Als erika.testfrau anmelden
+        2. Sitzung ablaufen lassen
+        3. „Abmelden“ klicken → Fehlerseite
+    validations:
+      required: true
+
+  - type: textarea
+    id: auswirkung
+    attributes:
+      label: Mögliche Auswirkung
+      description: Wen trifft es, und was kann schlimmstenfalls passieren?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sicherheit
+    attributes:
+      label: Sicherheit der Einschätzung
+      description: Beleg heißt mit Fundstelle nachgeprüft, Annahme heißt nicht im Projekt belegt.
+      options:
+        - Beleg
+        - Annahme
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stufe
+    attributes:
+      label: Stufe
+      description: Wie im Review-Issue entschieden. Fehlalarme, Duplikate und akzeptierte Risiken bekommen kein eigenes Issue (Leitfaden, Abschnitt 8).
+      options:
+        - blockierend
+        - zeitnah
+        - später
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      description: Beim Anlegen „offen“. Danach im Text dieses Issues fortschreiben.
+      options:
+        - offen
+        - mit grill-me geklärt
+        - in Arbeit
+        - behoben und geprüft
+    validations:
+      required: true
+
+  - type: textarea
+    id: klaerung
+    attributes:
+      label: Klärung mit grill-me
+      description: Wird beim Klären ausgefüllt. Besteht das Problem wirklich? Welches Verhalten ist fachlich gewollt? Link zum Protokoll.
+
+  - type: textarea
+    id: entscheidung
+    attributes:
+      label: Entscheidung
+      description: Wird beim Klären ausgefüllt. Was Sebastian entschieden hat, mit Datum.
+
+  - type: textarea
+    id: abnahmekriterien
+    attributes:
+      label: Abnahmekriterien
+      description: Wird beim Klären ausgefüllt. Woran erkennt man, dass der Befund behoben ist? Nach der Behebung hier vermerken, womit geprüft wurde (Test, ./pruefen.sh).
+      placeholder: |
+        - [ ] Nach abgelaufener Sitzung führt „Abmelden“ zur Login-Seite.
+        - [ ] Test, der ohne die Behebung fehlschlägt.

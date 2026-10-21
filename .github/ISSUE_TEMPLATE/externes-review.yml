@@ -1,0 +1,95 @@
+name: Externes Review einer Phase
+description: Ein Issue je Phase für das externe KI-Review am Phasenende (docs/review-leitfaden.md).
+title: "Externes Review – P1"
+labels: ["externes-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ablauf und Prüfaufträge stehen in `docs/review-leitfaden.md`. Beim Anlegen nur Phase, Commit, Datum und geprüfte Bereiche ausfüllen; Modelle, Ergebnisse und verlinkte Befunde trägt die Zusammenführung nach, die Abschlussentscheidung Sebastian. Im Titel die Phase anpassen.
+
+        **Keine echten Personendaten** in diesem Issue, in den Berichten oder in den Chats mit den Modellen (DSG-08). Die Modelle bekommen nur die ZIP-Datei des Repos.
+
+        Der graue Text in den Feldern ist nur ein Beispiel und wird nicht übernommen.
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - P1
+        - P2
+        - P3
+        - P4
+        - P5
+        - P6
+        - P7
+        - P8
+        - P9
+        - P10
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Geprüfter Commit
+      description: Die Kennung (SHA) aus Schritt 2 des Leitfadens. Genau dieser Stand steckt in der ZIP-Datei.
+      placeholder: 7d5f673d097ad2bdacec3366abd4d887bde780ff
+    validations:
+      required: true
+
+  - type: input
+    id: datum
+    attributes:
+      label: Datum
+      placeholder: 28.02.2027
+    validations:
+      required: true
+
+  - type: textarea
+    id: bereiche
+    attributes:
+      label: Geprüfte Bereiche
+      description: Was in dieser Phase neu kam und deshalb Schwerpunkt ist, und die Abschlusskriterien der Phase aus `docs/fahrplan.md`. Geprüft wird immer der ganze Stand.
+      placeholder: |
+        Schwerpunkt: Login über Keycloak (#5), Fehlerprotokoll (#6), Grundgestaltung (#7).
+        Abschlusskriterien von P1 laut docs/fahrplan.md, Abschnitt 3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: modelle
+    attributes:
+      label: Modelle und Fassungen
+      description: Wer welchen Prüfauftrag bekam, mit Fassung, soweit bekannt. Ein drittes Modell nur in den Fällen aus dem Leitfaden.
+      placeholder: |
+        Prüfauftrag A (breiter Blick): ChatGPT, Modell laut Chat
+        Prüfauftrag B (Sicherheit, Rechte, Datenschutz): Gemini, Modell laut Chat
+        Zusammenführung: Claude, eigene Sitzung
+
+  - type: textarea
+    id: ergebnisse
+    attributes:
+      label: Ergebnisse
+      description: Wird von der Zusammenführung ausgefüllt. Je Abschlusskriterium erfüllt, nicht erfüllt oder nicht prüfbar; dann je Befund eine Zeile mit Nummer, Fundstelle, Beleg oder Annahme, vorgeschlagener und entschiedener Stufe. Die Rohberichte stehen als eingeklappte Kommentare darunter.
+      placeholder: |
+        | Nr | Befund | Fundstelle | Prüfung | Stufe | Entschieden |
+        | --- | --- | --- | --- | --- | --- |
+        | A1 | … | accounts/views.py Z. 12 | Beleg | zeitnah | zeitnah |
+
+  - type: textarea
+    id: befunde
+    attributes:
+      label: Verlinkte Befunde
+      description: Je eigenständig bearbeitbarem Befund ein Issue nach der Vorlage „Befund aus einem externen Review“. Fehlalarme, Duplikate und akzeptierte Risiken stehen nur in den Ergebnissen, mit Begründung.
+      placeholder: |
+        - [ ] Issue zu A1, zeitnah
+        - [ ] Issue zu B3, blockierend
+
+  - type: textarea
+    id: abschluss
+    attributes:
+      label: Abschlussentscheidung
+      description: Wird zum Schluss von Sebastian festgehalten. Die Phase ist erst abgeschlossen, wenn jeder Befund eingeordnet und jeder blockierende behoben ist.
+      placeholder: Alle Befunde eingeordnet, blockierende behoben. Phase P1 abgeschlossen am 03.03.2027.
