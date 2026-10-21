@@ -23,13 +23,28 @@ check() {
     shift
     echo ""
     echo "=== $name"
-    if "$@"; then
+    output="$(mktemp)"
+    status="$(mktemp)"
+    # Ausgabe mitschreiben, damit auf GitHub die roten Tests als Hinweise erscheinen können.
+    { "$@"; echo $? > "$status"; } 2>&1 | tee "$output"
+    if [ "$(cat "$status")" = "0" ]; then
         echo "--> grün: $name"
     else
         echo "--> ROT: $name"
         failed="$failed
   - $name"
+        report_on_github "$name" "$output"
     fi
+    rm -f "$output" "$status"
+}
+
+report_on_github() {
+    # Nur auf GitHub: Die Namen der roten Tests und ihr Grund in einer Zeile werden zu Hinweisen
+    # am Prüflauf („annotations“). Die lassen sich auch ohne Zugriff auf das volle Protokoll
+    # lesen. Die Tests arbeiten nur mit erfundenen Daten.
+    [ -n "${GITHUB_ACTIONS:-}" ] || return 0
+    echo "::error title=ROT::$1"
+    grep -E '^(FAILED|ERROR) ' "$2" | head -n 20 | cut -c1-300 | sed 's/^/::error title=Test::/'
 }
 
 audit_packages() {
@@ -46,11 +61,15 @@ check "Liste mit festen Fassungen passt zur Paketliste (uv lock --check)" uv loc
 check "Code-Regeln (ruff)" $run ruff check .
 check "Django-Systemprüfung" $run python manage.py check
 check "Fehlen Migrationen?" $run python manage.py makemigrations --check --dry-run
-check "Tests (pytest)" $run pytest
+check "Tests (pytest)" $run pytest -rfE
 # Eigener Lauf: Playwright betreibt eine Ereignisschleife, neben der Django Datenbankzugriffe
 # sonst abbricht (rauchtests/conftest.py). Braucht die Browser (README.md, Schritt 10).
 check "Rauchtest im Browser mit Prüfung auf Barrierefreiheit (Playwright, axe)" \
-    env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest rauchtests -rs
+    env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest rauchtests -rsfE
+# Eigener Lauf: baut das Container-Abbild und startet die Testumgebung so, wie sie nach dem
+# README startet (#58). Braucht Docker und die Ports 8000 und 8081; eine laufende Testumgebung
+# vorher anhalten (README.md).
+check "Testumgebung im Container (Docker)" $run pytest containertests -rfE
 check "Bekannte Sicherheitslücken in Paketen (pip-audit)" audit_packages
 
 echo ""

@@ -26,6 +26,9 @@ def required_env(name: str) -> str:
 
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
 
+# Gerüst für #58; die Umsetzung folgt.
+TEST_ENVIRONMENT = False
+
 # Die Fehleranzeige für Entwickler zeigt Formularinhalte und Einstellungen. Sie ist
 # deshalb nur an, wenn sie ausdrücklich eingeschaltet wird, nie als Standard.
 DEBUG = os.environ.get("DJANGO_DEBUG") == "1"

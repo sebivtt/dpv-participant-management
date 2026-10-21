@@ -30,3 +30,4 @@ max-complexity = 12
 # Tests prüfen mit assert und übergeben erfundene Passwörter.
 "tests/*" = ["S101", "S106"]
 "rauchtests/*" = ["S101", "S106"]
+"containertests/*" = ["S101", "S106"]
