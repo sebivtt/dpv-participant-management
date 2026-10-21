@@ -105,3 +105,13 @@ def test_umgebungsdatei_kommt_nie_ins_repo():
     )
 
     assert result.returncode == 0
+
+
+def test_readme_legt_das_projekt_nicht_in_einen_icloud_ordner():
+    # „Dokumente“ und „Schreibtisch“ gleicht iCloud oft ab; dort entstanden am 21.10.2026
+    # Kopien wie „pyproject 2.toml“, die versehentlich in einen Commit gerieten (#23).
+    readme = (BASE_DIR / "README.md").read_text(encoding="utf-8")
+
+    assert "~/Entwicklung/dpv-participant-management" in readme
+    for icloud_folder in ["~/Documents/", "~/Desktop/"]:
+        assert icloud_folder not in readme

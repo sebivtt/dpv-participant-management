@@ -6,6 +6,14 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Projektordner auf dem Mac außerhalb von iCloud
+
+**Entscheidung** (Sebastian, #23): Das Projekt liegt auf dem Mac in `~/Entwicklung/dpv-participant-management`, nicht in „Dokumente“ oder „Schreibtisch“. Das README nennt diesen Ort.
+
+**Begründung:** Am 21.10.2026 waren fünf Kopien wie `pyproject 2.toml` versehentlich in einem Commit zu #6 (vor dem Pull Request entfernt). Belegt ist: Sebastians Ordner „Dokumente“ wird mit iCloud abgeglichen. Annahme: iCloud legt solche Kopien bei Konflikten an, etwa wenn git viele Dateien auf einmal ändert, und kann auch Dateien in `.git` doppeln oder nur in der Cloud behalten. Außerhalb von iCloud entfällt die Ursache. Nichts geht verloren, weil alles auf GitHub liegt.
+
+**Umsetzung:** `README.md` („Projekt starten (Mac)“, Schritte 2 und 3), Test in `tests/test_grundgeruest.py`. Den bestehenden Ordner verschiebt Sebastian selbst (Anleitung im Pull Request). Zusätzlich sperrt auf Sebastians Mac `.git/info/exclude` Dateien nach dem Muster „Name Leerzeichen Zahl“ für git; das gilt nur dort und steht nicht im Repo.
+
 ## 2026-10-21 · Fehlerprotokoll ohne Personendaten
 
 **Entscheidung** (Sebastian, Klärung von #6 am 20.10.2026 und Nachklärung am 21.10.2026):
