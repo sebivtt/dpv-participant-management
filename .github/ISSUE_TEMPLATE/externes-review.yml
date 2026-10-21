@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Ablauf und Prüfaufträge stehen in `docs/review-leitfaden.md`. Beim Anlegen nur Phase, Commit, Datum und geprüfte Bereiche ausfüllen; den Rest trägt die Zusammenführung im Lauf des Reviews nach. Im Titel die Phase anpassen.
+        Ablauf und Prüfaufträge stehen in `docs/review-leitfaden.md`. Beim Anlegen nur Phase, Commit, Datum und geprüfte Bereiche ausfüllen; Modelle, Ergebnisse und verlinkte Befunde trägt die Zusammenführung nach, die Abschlussentscheidung Sebastian. Im Titel die Phase anpassen.
 
         **Keine echten Personendaten** in diesem Issue, in den Berichten oder in den Chats mit den Modellen (DSG-08). Die Modelle bekommen nur die ZIP-Datei des Repos.
 

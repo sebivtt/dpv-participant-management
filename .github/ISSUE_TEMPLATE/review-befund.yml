@@ -90,13 +90,11 @@ body:
     id: stufe
     attributes:
       label: Stufe
-      description: Wie im Review-Issue entschieden. Die Bedeutung der Stufen steht im Leitfaden.
+      description: Wie im Review-Issue entschieden. Fehlalarme, Duplikate und akzeptierte Risiken bekommen kein eigenes Issue (Leitfaden, Abschnitt 8).
       options:
         - blockierend
         - zeitnah
         - später
-        - Fehlalarm oder Duplikat
-        - akzeptiertes Risiko
     validations:
       required: true
 

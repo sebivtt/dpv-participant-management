@@ -59,7 +59,7 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
    ```bash
    git switch main
    ```
-   Danach: `Switched to branch 'main'` oder `Already on 'main'`.
+   Danach: `Switched to branch 'main'` oder `Already on 'main'`. Steht dort `error: Your local changes … would be overwritten`, gibt es auf dem Mac ungesicherte Änderungen: Sie zuerst mit der KI sichern oder verwerfen, dann diesen Schritt wiederholen.
 3. Den neuesten Stand von GitHub holen.
    ```bash
    git pull
@@ -76,8 +76,8 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
    ```
    Danach: keine Ausgabe; im Ordner „Downloads“ liegt `externes-review.zip`. Sie enthält alle Dateien des Repos außer den fremden Bibliotheken Bootstrap und axe-core (`.gitattributes`).
 6. Auf GitHub ein Issue nach der Vorlage **Externes Review einer Phase** anlegen. Phase, Commit aus Schritt 4, Datum und geprüfte Bereiche eintragen; im Titel die Phase anpassen.
-7. **ChatGPT:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag A (Abschnitt 9) hineinkopieren, mit Phase und Kennung ausgefüllt. Den fertigen Bericht kopieren.
-8. **Gemini:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag B hineinkopieren. Erst wenn der Bericht fertig ist, den Nachtrag zu Prüfauftrag B mit dem Bericht von ChatGPT schicken.
+7. **ChatGPT:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag A (Abschnitt 9) hineinkopieren; vorher `[PHASE]` durch die Phase (z. B. P1) und `[KENNUNG]` durch die Kennung aus Schritt 4 ersetzen. Den fertigen Bericht kopieren.
+8. **Gemini:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag B hineinkopieren, mit Phase und Kennung wie in Schritt 7. Erst wenn der Bericht fertig ist, den Nachtrag zu Prüfauftrag B mit dem Bericht von ChatGPT schicken.
 9. Jeden Bericht unverändert als eigenen Kommentar ins Review-Issue stellen, eingeklappt mit diesem Rahmen; in die leere Zeile den Bericht einfügen:
    ```text
    <details><summary>Bericht A: ChatGPT, Modell laut Chat</summary>
@@ -85,19 +85,21 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
    </details>
    ```
    Bei Gemini „Bericht B“, beim Nachtrag „Nachtrag B“.
-10. Eine neue Claude-Sitzung starten und den Auftrag zur Zusammenführung (Abschnitt 9) mit der Nummer des Review-Issues hineinkopieren.
-11. Die vorgeschlagene Einordnung durchgehen und je Befund entscheiden. Danach legt die Claude-Sitzung die Befund-Issues an.
-12. Jeden Befund-Issue vor der Umsetzung mit `grill-me` klären, wie jedes andere Issue. Blockierende zuerst.
-13. Sind alle Befunde eingeordnet und alle blockierenden behoben: die Abschlussentscheidung ins Review-Issue schreiben und es schließen. Erst dann wechselt der „Stand“ im `README.md`.
+10. **Nur nach P6:** einem dritten Modell in einem neuen Chat die ZIP-Datei und Prüfauftrag B geben und den Bericht als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen.
+11. Eine neue Claude-Sitzung starten und den Auftrag zur Zusammenführung (Abschnitt 9) mit der Nummer des Review-Issues hineinkopieren.
+12. **Nur wenn die Zusammenführung ein drittes Modell vorschlägt** (Abschnitt 4, Fall 1): einem dritten Modell in einem neuen Chat die ZIP-Datei und den Auftrag „Strittiger Befund“ (Abschnitt 9) geben; die Zusammenführung füllt ihn vorher mit dem Befund und beiden Begründungen aus. Die Antwort als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen und der Claude-Sitzung Bescheid geben.
+13. Die vorgeschlagene Einordnung durchgehen und je Befund entscheiden. Danach legt die Claude-Sitzung die Befund-Issues an.
+14. Jedes Befund-Issue vor der Umsetzung mit `grill-me` klären, wie jedes andere Issue. Blockierende zuerst. Nach jeder Behebung laufen die betroffenen Tests und alle Prüfungen mit `./pruefen.sh`; im Befund-Issue steht, womit geprüft wurde.
+15. Sind alle Befunde eingeordnet und alle blockierenden behoben: die Abschlussentscheidung ins Review-Issue schreiben und es schließen. Erst dann wechselt der „Stand“ im `README.md`.
 
 ## 7. Zusammenführung
 
 Eine eigene Claude-Sitzung, ohne Kenntnis der Sitzungen, die den Code der Phase geschrieben haben:
 
 - prüft jeden Befund am geprüften Commit nach: mit Fundstelle bestätigt heißt **Beleg**, sonst **Annahme**. Wo ein Befund Verhalten betrifft, führt sie die Tests in einer eigenen Arbeitskopie dieses Commits aus;
-- bündelt Doppelte und hält fest, wo A und B übereinstimmen und wo sie sich widersprechen; ruft bei einem strittigen, möglicherweise blockierenden Befund das dritte Modell auf (Abschnitt 4);
+- bündelt Doppelte und hält fest, wo A und B übereinstimmen und wo sie sich widersprechen; schlägt bei einem strittigen, möglicherweise blockierenden Befund das dritte Modell vor und füllt dafür den Auftrag „Strittiger Befund“ aus (Abschnitt 4); Sebastian gibt ihn weiter, weil die Sitzung selbst keine anderen Modelle erreicht;
 - schlägt je Befund eine Stufe vor (Abschnitt 8), mit Begründung;
-- schreibt das Ergebnis in den Text des Review-Issues (Feld „Ergebnisse“) und ändert sonst nichts;
+- schreibt das Ergebnis in den Text des Review-Issues (Felder „Modelle und Fassungen“, „Ergebnisse“ und später „Verlinkte Befunde“) und ändert sonst nichts; die Abschlussentscheidung schreibt Sebastian;
 - legt nach Sebastians Entscheidung je eigenständig bearbeitbarem Befund ein Issue nach der Vorlage **Befund aus einem externen Review** an und verlinkt es im Review-Issue. Labels: `review-befund`, das Phasen-Label der Phase, in der er erledigt wird, bei „später“ zusätzlich `vorgemerkt`.
 
 Ein Befund-Issue nur, wenn sich der Befund eigenständig bearbeiten lässt. Duplikate werden zusammengeführt. Fehlalarme, Duplikate und akzeptierte Risiken stehen nur im Review-Issue, mit Begründung.
@@ -114,15 +116,20 @@ Ein Befund-Issue nur, wenn sich der Befund eigenständig bearbeiten lässt. Dupl
 
 Bei Sicherheit und Datenschutz gibt es kein akzeptiertes Risiko (`docs/fahrplan.md`, Risiken: „bei Sicherheit und Datenschutz wird nie gekürzt“). Ein Härtungshinweis dort ohne konkrete Lücke darf mit Begründung auf „später“, ist aber vor E3 erledigt.
 
+Befund-Issues gibt es nur für die ersten drei Stufen. Zeigt sich beim Klären mit `grill-me`, dass ein Befund ein Fehlalarm ist, wird sein Issue mit Begründung geschlossen und die Einordnung im Review-Issue nachgetragen.
+
 ## 9. Prüfaufträge zum Hineinkopieren
 
-In jedem Auftrag die Phase und die Kennung aus Schritt 4 eintragen.
+In jedem Auftrag `[PHASE]` durch die Phase (z. B. P1) und `[KENNUNG]` durch die Kennung aus Schritt 4 ersetzen.
 
 ### Prüfauftrag A: breiter Blick
 
 ```text
-Du prüfst als unabhängiges Review den Stand eines Software-Projekts am Ende der Phase P1.
-Die ZIP-Datei enthält genau den Commit 7d5f673 (ersetzen) des Repos „DPV Anmeldetool“,
+Phase: [PHASE]
+Commit: [KENNUNG]
+
+Du prüfst als unabhängiges Review den Stand eines Software-Projekts am Ende dieser Phase.
+Die ZIP-Datei enthält genau diesen Commit des Repos „DPV Anmeldetool“,
 eines Anmeldetools für Pfadfinderveranstaltungen (Django, PostgreSQL, Login über Keycloak).
 
 Lies zuerst CLAUDE.md, CONTRIBUTING.md und alle Dateien in docs/. Maßgeblich sind
@@ -143,7 +150,7 @@ Entscheidungen und Code, Verstöße gegen die Regeln in CONTRIBUTING.md.
 Geprüft wird der ganze Stand, mit Schwerpunkt auf dem, was in dieser Phase neu kam.
 
 Liefere:
-1. Eine Tabelle mit jedem Abschlusskriterium der Phase P1 aus docs/fahrplan.md:
+1. Eine Tabelle mit jedem Abschlusskriterium dieser Phase aus docs/fahrplan.md:
    erfüllt / nicht erfüllt / nicht prüfbar, mit Fundstelle und einem Satz Begründung.
 2. Deine Befunde, nummeriert A1, A2, …, nach Schwere sortiert. Je Befund:
    - Kategorie (Rechte, Datenschutz, Sicherheit, Datenintegrität, Abschlusskriterium
@@ -163,8 +170,11 @@ Antworte auf Deutsch.
 ### Prüfauftrag B: Sicherheit, Rechte und Datenschutz
 
 ```text
-Du prüfst als unabhängiges Review den Stand eines Software-Projekts am Ende der Phase P1.
-Die ZIP-Datei enthält genau den Commit 7d5f673 (ersetzen) des Repos „DPV Anmeldetool“,
+Phase: [PHASE]
+Commit: [KENNUNG]
+
+Du prüfst als unabhängiges Review den Stand eines Software-Projekts am Ende dieser Phase.
+Die ZIP-Datei enthält genau diesen Commit des Repos „DPV Anmeldetool“,
 eines Anmeldetools für Pfadfinderveranstaltungen (Django, PostgreSQL, Login über Keycloak).
 Später verarbeitet es Daten von Kindern und Gesundheitsdaten.
 
@@ -189,7 +199,7 @@ bekannten Lücken. Geprüft wird der ganze Stand, mit Schwerpunkt auf dem, was i
 Phase neu kam.
 
 Liefere:
-1. Eine Tabelle mit jedem Abschlusskriterium der Phase P1 aus docs/fahrplan.md, das
+1. Eine Tabelle mit jedem Abschlusskriterium dieser Phase aus docs/fahrplan.md, das
    Sicherheit, Rechte oder Datenschutz berührt: erfüllt / nicht erfüllt / nicht prüfbar,
    mit Fundstelle und einem Satz Begründung.
 2. Deine Befunde, nummeriert B1, B2, …, nach Schwere sortiert. Je Befund:
@@ -226,6 +236,27 @@ eigenen Befunde nicht. Nenne nur:
 Führe das externe Review nach docs/review-leitfaden.md zusammen, Abschnitt 7.
 Review-Issue: Nummer hier eintragen. Die Berichte stehen dort als Kommentare.
 Arbeite nur lesend: keine Änderung an Code, Doku oder anderen Issues, kein Commit,
-kein Pull Request. Schreib nur in das Feld „Ergebnisse“ des Review-Issues.
+kein Pull Request. Schreib nur in den Text des Review-Issues (Felder „Modelle und
+Fassungen“, „Ergebnisse“ und „Verlinkte Befunde“).
 Leg Befund-Issues erst an, nachdem ich die Einordnung entschieden habe.
+```
+
+### Strittiger Befund (drittes Modell)
+
+Die Zusammenführung füllt die eckigen Klammern aus; Sebastian gibt den Text mit der ZIP-Datei weiter.
+
+```text
+Phase: [PHASE]
+Commit: [KENNUNG]
+
+Die ZIP-Datei enthält genau diesen Commit des Repos „DPV Anmeldetool“. Zwei unabhängige
+Reviews sind sich bei einem Befund uneinig. Prüf nur diesen Befund, nur lesend.
+
+Befund: [BEFUND MIT FUNDSTELLE]
+Begründung Review A: [BEGRÜNDUNG A]
+Begründung Review B: [BEGRÜNDUNG B]
+
+Antworte: Besteht das Problem? Belegt (mit Datei und Zeile) oder vermutet? Welche Stufe
+schlägst du vor: blockierend, zeitnah oder später (Bedeutung in docs/review-leitfaden.md,
+Abschnitt 8)? Das Repo enthält nur erfundene Testdaten. Antworte auf Deutsch.
 ```

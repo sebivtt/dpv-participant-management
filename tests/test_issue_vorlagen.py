@@ -20,6 +20,8 @@ GUIDE = BASE_DIR / "docs" / "review-leitfaden.md"
 
 # Feldarten, die GitHub in Issue-Vorlagen kennt (docs.github.com, „Syntax for GitHub's form schema“).
 FIELD_TYPES = {"markdown", "input", "textarea", "dropdown", "checkboxes"}
+TOP_LEVEL_KEYS = {"name", "description", "title", "labels", "assignees", "projects", "type", "body"}
+STAGES = ["blockierend", "zeitnah", "später", "Fehlalarm oder Duplikat", "akzeptiertes Risiko"]
 TEMPLATES = sorted(path for path in TEMPLATE_DIR.glob("*.yml") if path.name != "config.yml")
 
 
@@ -49,6 +51,8 @@ def test_jede_issue_vorlage_ist_gueltig_aufgebaut(path):
     assert isinstance(template.get("name"), str) and template["name"].strip()
     assert isinstance(template.get("description"), str) and template["description"].strip()
     assert isinstance(template.get("body"), list) and template["body"]
+    # Unbekannte Schlüssel lassen GitHub die ganze Vorlage verwerfen.
+    assert set(template) <= TOP_LEVEL_KEYS, set(template) - TOP_LEVEL_KEYS
 
     ids, labels = [], []
     for field in template["body"]:
@@ -60,7 +64,11 @@ def test_jede_issue_vorlage_ist_gueltig_aufgebaut(path):
         assert re.fullmatch(r"[A-Za-z0-9_-]+", field.get("id", "")), field
         assert attributes.get("label", "").strip(), field
         if field["type"] == "dropdown":
-            assert attributes.get("options"), field
+            # GitHub verlangt Optionen, jede nur einmal, nicht leer und nicht „None“.
+            options = attributes.get("options")
+            assert options, field
+            assert len(options) == len(set(options)), field
+            assert all(str(option).strip() and option != "None" for option in options), field
         ids.append(field["id"])
         labels.append(attributes["label"])
 
@@ -81,7 +89,7 @@ def test_vorlage_review_hat_alle_pflichtfelder_aus_26():
     assert "externes-review" in template["labels"]
 
 
-def test_vorlage_befund_hat_alle_pflichtfelder_aus_26():
+def test_vorlage_befund_hat_alle_felder_aus_26():
     template = _load("review-befund.yml")
     fields = _fields(template)
 
@@ -98,13 +106,18 @@ def test_vorlage_befund_hat_alle_pflichtfelder_aus_26():
         "abnahmekriterien",
     }
     assert expected <= fields.keys()
+    # Klärung, Entscheidung und Abnahmekriterien entstehen erst mit grill-me, alles andere
+    # steht beim Anlegen fest.
+    must = {"review", "kategorie", "fundstelle", "beobachtung", "beleg", "auswirkung", "sicherheit", "stufe", "status"}
+    assert {name for name, field in fields.items() if _required(field)} == must
     assert "review-befund" in template["labels"]
 
 
-def test_befund_vorlage_kennt_genau_die_fuenf_stufen_aus_26():
+def test_befund_issues_gibt_es_nur_fuer_die_stufen_mit_eigener_bearbeitung():
+    # Fehlalarme, Duplikate und akzeptierte Risiken stehen nur im Review-Issue (Leitfaden, Abschnitt 8).
     options = _fields(_load("review-befund.yml"))["stufe"]["attributes"]["options"]
 
-    assert options == ["blockierend", "zeitnah", "später", "Fehlalarm oder Duplikat", "akzeptiertes Risiko"]
+    assert options == STAGES[:3]
 
 
 def test_leitfaden_enthaelt_beide_pruefauftraege_und_den_datenschutz():
@@ -113,8 +126,27 @@ def test_leitfaden_enthaelt_beide_pruefauftraege_und_den_datenschutz():
     assert "Prüfauftrag A" in guide
     assert "Prüfauftrag B" in guide
     assert "DSG-08" in guide
-    for stage in ["blockierend", "zeitnah", "später", "Fehlalarm oder Duplikat", "akzeptiertes Risiko"]:
+    for stage in STAGES:
         assert stage in guide
+
+
+def test_leitfaden_verlangt_nach_jeder_behebung_alle_pruefungen():
+    guide = GUIDE.read_text(encoding="utf-8")
+
+    assert "./pruefen.sh" in guide
+
+
+def test_pruefauftraege_nennen_phase_und_commit_nur_ueber_platzhalter():
+    # Fest eingetragene Phasen übersieht man beim nächsten Review leicht; dann bewertet ein
+    # Modell die Abschlusskriterien der falschen Phase.
+    guide = GUIDE.read_text(encoding="utf-8")
+    # Nur die Textblöcke zum Hineinkopieren in Abschnitt 9, nicht die Erklärungen dazwischen.
+    prompts = "\n".join(re.findall(r"```text\n(.*?)```", guide.split("## 9.", 1)[1], flags=re.DOTALL))
+
+    assert "[PHASE]" in prompts
+    assert "[KENNUNG]" in prompts
+    assert not re.search(r"\bP\d+\b", prompts)
+    assert "7d5f673" not in prompts
 
 
 def test_zip_fuer_die_modelle_enthaelt_das_repo_ohne_fremde_bibliotheken(tmp_path):
