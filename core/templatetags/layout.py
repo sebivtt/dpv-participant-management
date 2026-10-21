@@ -1,4 +1,4 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Fußbereich.
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
@@ -56,3 +56,13 @@ def fussbereich() -> dict:
         "holder": settings.COPYRIGHT_HOLDER,
         "years": copyright_years(localdate()),
     }
+
+
+@register.inclusion_tag("core/_testband.html")
+def testumgebung_band() -> dict:
+    """Band „Testumgebung“ oben auf jeder Seite, nur wenn die Testumgebung eingeschaltet ist (#58).
+
+    Mit Symbol und Text, nicht nur in Farbe (NFA-03). Als Hinweis (role="note") ohne Fokus,
+    damit die Tastatur weiter mit dem ersten Tab zum Inhalt kommt.
+    """
+    return {"show": settings.TEST_ENVIRONMENT}

@@ -155,3 +155,10 @@ def test_webserver_schreibt_kein_zugriffsprotokoll_mit_echten_adressen():
 
     assert "--access-logfile" not in script
     assert "--access-log" not in script
+
+
+def test_webserver_hat_keinen_steuerzugang():
+    # gunicorn legt sonst einen Steuerzugang im Benutzerordner an, über den sich der laufende
+    # Webserver bedienen lässt. Gebraucht wird er nicht, und der Benutzer im Abbild hat
+    # absichtlich keinen eigenen Ordner.
+    assert "--no-control-socket" in START.read_text()

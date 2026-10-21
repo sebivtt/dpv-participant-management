@@ -26,12 +26,15 @@ def required_env(name: str) -> str:
 
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
 
-# Gerüst für #58; die Umsetzung folgt.
-TEST_ENVIRONMENT = False
+# Testumgebung auf dem Server (#58): Band auf jeder Seite, Bitte an Suchmaschinen, keine
+# Fehleranzeige für Entwickler. Nur mit dem ausdrücklichen Wert 1, nie als Standard.
+TEST_ENVIRONMENT = os.environ.get("TEST_ENVIRONMENT") == "1"
 
 # Die Fehleranzeige für Entwickler zeigt Formularinhalte und Einstellungen. Sie ist
-# deshalb nur an, wenn sie ausdrücklich eingeschaltet wird, nie als Standard.
-DEBUG = os.environ.get("DJANGO_DEBUG") == "1"
+# deshalb nur an, wenn sie ausdrücklich eingeschaltet wird, nie als Standard. In der
+# Testumgebung bleibt sie aus, auch wenn die Umgebungsdatei sie einschalten will: Die
+# Testumgebung ist im Internet erreichbar.
+DEBUG = os.environ.get("DJANGO_DEBUG") == "1" and not TEST_ENVIRONMENT
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
@@ -50,7 +53,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # Ganz außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
+    # Ganz außen, damit auch Fehlerseiten und Antworten der übrigen Bausteine die Bitte an
+    # Suchmaschinen tragen (#58).
+    "core.testumgebung.NoIndexMiddleware",
+    # Außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
     "core.errors.ClientErrorLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
     # Liefert Gestaltung und Skripte vom eigenen Server (#7, CONTRIBUTING.md, Abschnitt 6),
@@ -105,6 +111,21 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Hinter HTTPS (#58): Vor dem Tool liegt dann ein Programm, das die verschlüsselte Verbindung
+# annimmt und mit dem Hinweis X-Forwarded-Proto weiterreicht. Nur mit Schalter: Ohne so ein
+# Programm davor könnte jede Anfrage diesen Hinweis selbst mitschicken. Dann gehen Sitzungs-
+# und Formular-Cookies nur über HTTPS; das Cookie „war angemeldet“ folgt der Anfrage selbst.
+BEHIND_HTTPS_PROXY = os.environ.get("DJANGO_BEHIND_HTTPS_PROXY") == "1"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if BEHIND_HTTPS_PROXY else None
+SESSION_COOKIE_SECURE = BEHIND_HTTPS_PROXY
+CSRF_COOKIE_SECURE = BEHIND_HTTPS_PROXY
+
+# Mails gehen bis auf Weiteres nur als Hinweis ins Log, nie an einen Mailserver (#58). Den
+# Versand über den DPV-Mailweg bringt P5; in der Testumgebung dann nur an erlaubte
+# Testadressen (#60).
+# MAILERS statt EMAIL_BACKEND: Diese Einstellung gibt es seit Django 6.1, EMAIL_BACKEND ist veraltet.
+MAILERS = {"default": {"BACKEND": "core.mail.LogOnlyEmailBackend"}}
+
 # Oberfläche nur auf Deutsch, Texte aber übersetzbar (NFA-02).
 LANGUAGE_CODE = "de"
 LANGUAGES = [("de", "Deutsch")]
@@ -139,6 +160,10 @@ LOGIN_REDIRECT_URL = "start"
 KEYCLOAK_REALM_URL = os.environ.get("KEYCLOAK_REALM_URL", "").rstrip("/")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "")
 KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
+# Nur für die Testumgebung auf dem eigenen Rechner (#58): Im Container erreicht das Tool die
+# Keycloak-Testumgebung unter einer anderen Adresse als der Browser. Diese Adresse nutzt nur
+# das Tool selbst für seine Anfragen an Keycloak; der Browser bekommt weiter KEYCLOAK_REALM_URL.
+KEYCLOAK_REALM_URL_INTERN = os.environ.get("KEYCLOAK_REALM_URL_INTERN", "").rstrip("/") or KEYCLOAK_REALM_URL
 
 # Schalter für den Link „Noch kein Konto? Registrieren“ (0 = ausgeblendet) und die Adresse,
 # die die Login-Seite stattdessen nennt.
@@ -174,7 +199,7 @@ SOCIALACCOUNT_PROVIDERS = {
                 "name": "DPV-Konto",
                 "client_id": KEYCLOAK_CLIENT_ID,
                 "secret": KEYCLOAK_CLIENT_SECRET,
-                "settings": {"server_url": KEYCLOAK_REALM_URL, "fetch_userinfo": True},
+                "settings": {"server_url": KEYCLOAK_REALM_URL_INTERN, "fetch_userinfo": True},
             }
         ],
     }

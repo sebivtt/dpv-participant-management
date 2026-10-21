@@ -1,0 +1,17 @@
+# Was nicht ins Container-Abbild kommt (#58). Vor allem nie Umgebungsdateien mit Zugangsdaten.
+.git
+.env
+**/.env
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+node_modules
+lokal
+media
+rauchtests
+containertests
+tests
+dev
+testumgebung
+docs

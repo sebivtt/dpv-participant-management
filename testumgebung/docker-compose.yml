@@ -1,0 +1,89 @@
+# Testumgebung im Container (#58): das Tool mit eigener Datenbank, so wie es später auf dem
+# Produktivserver des DPV läuft (#59). Nur erfundene Daten.
+# Starten auf dem eigenen Rechner: README.md, „Testumgebung im Container“.
+#
+# Getrennt von allem anderen: Die Datenbank liegt allein mit dem Tool in einem Netz ohne
+# Verbindung nach außen („intern“) und hat keinen Port nach außen. Jeder Dienst hat seine
+# eigene Ablage; Ordner vom Rechner gibt es nur für die erfundenen Konten der
+# Keycloak-Testumgebung, und die startet nur auf dem eigenen Rechner (Profil „lokal“).
+name: dpv-test
+
+services:
+  datenbank:
+    # Gleiche Fassung wie lokal und in der Prüfung auf GitHub; unabhängig vom PostgreSQL des Servers.
+    image: postgres:18
+    env_file: ${TESTUMGEBUNG_ENV_FILE:-.env}
+    volumes:
+      # Ab PostgreSQL 18 gehört der Speicherort eine Ebene höher als bei 16.
+      - daten:/var/lib/postgresql
+    networks:
+      - intern
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  tool:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: dpv-anmeldetool:test
+    env_file: ${TESTUMGEBUNG_ENV_FILE:-.env}
+    environment:
+      # Fest eingetragen, nicht aus der Umgebungsdatei: Band, Bitte an Suchmaschinen, keine
+      # Fehleranzeige für Entwickler (config/settings.py).
+      TEST_ENVIRONMENT: "1"
+      POSTGRES_HOST: datenbank
+      POSTGRES_PORT: "5432"
+    depends_on:
+      datenbank:
+        condition: service_healthy
+    networks:
+      - intern
+      - aussen
+    ports:
+      # Nur 127.0.0.1: Andere Geräte im selben WLAN erreichen die Testumgebung nicht.
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      # Nur „nimmt der Webserver Verbindungen an“; unabhängig vom eingestellten Servernamen.
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+    restart: unless-stopped
+
+  keycloak:
+    # Nur auf dem eigenen Rechner: Keycloak-Testumgebung mit den erfundenen Konten aus dev/.
+    # Auf dem Server meldet sich die Testumgebung beim Test-Realm des DPV an (#38).
+    profiles: ["lokal"]
+    image: quay.io/keycloak/keycloak:26.7.5
+    # Der Browser erreicht Keycloak unter localhost:8081, das Tool unter keycloak:8080.
+    # Keycloak nennt dem Browser deshalb immer localhost:8081 und dem Tool die Adresse, unter
+    # der es fragt.
+    command: ["start-dev", "--import-realm", "--hostname=http://localhost:8081", "--hostname-backchannel-dynamic=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: nur-lokal-nicht-geheim
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ../dev/keycloak/dpv-realm.json:/opt/keycloak/data/import/dpv-realm.json:ro
+    networks:
+      - aussen
+    ports:
+      - "127.0.0.1:8081:8080"
+    healthcheck:
+      # Das Image enthält kein curl; bash kann über /dev/tcp selbst eine Verbindung öffnen.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+
+networks:
+  intern:
+    internal: true
+  aussen: {}
+
+volumes:
+  daten: {}

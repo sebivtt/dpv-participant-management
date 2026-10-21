@@ -72,6 +72,10 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-flaeche > h2 { font-size: 1.1rem; }
 
 /* ---------- Schlichte Seiten: Login und Fehler, ruhig und mittig ---------- */
+/* Band der Testumgebung (#58): Sonnengelb als Fläche, Text dunkel (Kontrast rund 8 : 1). */
+.a-testband { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-klein); background: var(--akzent); color: var(--akzent-text); font-weight: 700; line-height: 1.4; }
+.a-testband .ic { stroke-width: 2.2; }
+.a-einfach-main .a-testband { width: 100%; max-width: 420px; margin: 0; box-sizing: border-box; }
 .a-einfach-main { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 32px 16px; box-sizing: border-box; }
 .a-einfach-karte { width: 100%; max-width: 420px; background: var(--flaeche); border-radius: var(--radius); padding: 32px 28px; display: flex; flex-direction: column; gap: 14px; text-align: center; }
 .a-einfach-marke { color: var(--dpv); display: flex; justify-content: center; }
