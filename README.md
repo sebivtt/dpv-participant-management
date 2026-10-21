@@ -28,7 +28,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    brew install uv
    ```
    Danach: Am Ende steht eine Zeile mit `uv` und einer Fassungsnummer, ohne `Error`.
-2. Das Repo holen. Wer es schon auf dem Rechner hat, überspringt diesen Schritt. Der Ordner `Entwicklung` liegt bewusst nicht in „Dokumente“ oder „Schreibtisch“: Diese beiden gleicht iCloud oft ab, und iCloud legt dann Kopien wie `pyproject 2.toml` an, die git durcheinanderbringen können.
+2. Das Repo holen. Wer es schon unter `~/Entwicklung/dpv-participant-management` hat, überspringt diesen Schritt; liegt es woanders, zuerst den ganzen Ordner dorthin verschieben. Der Ordner `Entwicklung` liegt bewusst nicht in „Dokumente“ oder „Schreibtisch“: Diese beiden gleicht iCloud oft ab, und iCloud kann dann Kopien wie `pyproject 2.toml` anlegen, die git durcheinanderbringen.
    ```bash
    git clone https://github.com/sebivtt/dpv-participant-management.git ~/Entwicklung/dpv-participant-management
    ```

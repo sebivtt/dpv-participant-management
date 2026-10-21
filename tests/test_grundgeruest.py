@@ -113,5 +113,6 @@ def test_readme_legt_das_projekt_nicht_in_einen_icloud_ordner():
     readme = (BASE_DIR / "README.md").read_text(encoding="utf-8")
 
     assert "~/Entwicklung/dpv-participant-management" in readme
-    for icloud_folder in ["~/Documents/", "~/Desktop/"]:
+    # Ohne „~“, damit auch Schreibweisen wie $HOME/Documents/ oder /Users/…/Documents/ auffallen.
+    for icloud_folder in ["Documents/", "Desktop/"]:
         assert icloud_folder not in readme
