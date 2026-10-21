@@ -1,0 +1,31 @@
+# Automatische Code-Prüfung, siehe CONTRIBUTING.md. Lokal: ./pruefen.sh
+#
+# Übernommen aus sebivtt/scout-participant-management, backend/ruff.toml, Stand 9df4513.
+# Angepasst: Python 3.13; Ausnahmen für Dateien des alten Tools entfernt; Ausnahme B904
+# entfernt, weil es noch keine Views mit Fehlerumwandlung gibt.
+
+target-version = "py313"
+line-length = 120
+extend-exclude = ["*/migrations/*", ".venv"]
+
+[lint]
+select = [
+    "F",      # Fehler: ungenutzte Importe/Variablen, undefinierte Namen
+    "E9",     # Syntaxfehler
+    "E722",   # pauschales "except:"
+    "B",      # häufige Fehlerquellen (z. B. veränderliche Standardwerte)
+    "C90",    # Komplexität
+    "T20",    # print() im Anwendungscode
+    "S",      # Sicherheit (entspricht dem Werkzeug bandit)
+    "PGH004", # "# noqa" nur mit Regelnummer, sonst schaltet es auch künftige Regeln ab
+    "RUF100", # überflüssige "# noqa"-Ausnahmen melden
+]
+
+[lint.mccabe]
+max-complexity = 12
+
+[lint.per-file-ignores]
+# Verwaltungsbefehle geben ihre Ergebnisse bewusst mit print() aus (CONTRIBUTING.md, Abschnitt 2).
+"*/management/commands/*" = ["T20"]
+# Tests prüfen mit assert und übergeben erfundene Passwörter.
+"tests/*" = ["S101", "S106"]

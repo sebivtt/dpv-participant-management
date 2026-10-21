@@ -2,7 +2,7 @@
 
 Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmeldungen einzeln und gesammelt annehmen, Teilnehmendenlisten führen. Login über den Keycloak des DPV. Ehrenamtlich entwickelt, gepflegt und betrieben.
 
-**Stand:** Laufende Phase P1 „Gerüst“, seit dem 21.10.2026 (Zieldatum 28.02.2027, `docs/fahrplan.md`). Noch kein Programmcode; der erste entsteht mit dem Grundgerüst (#4). Parallel laufen die Restpunkte von P0 „Klären und festlegen“ bis zum Prüfpunkt E0 am 29.11.2026 (`docs/entscheidungen.md`, 21.10.2026).
+**Stand:** Laufende Phase P1 „Gerüst“, seit dem 21.10.2026 (Zieldatum 28.02.2027, `docs/fahrplan.md`). Das Grundgerüst mit automatischen Prüfungen steht (#4); Fachfunktionen gibt es noch nicht. Parallel laufen die Restpunkte von P0 „Klären und festlegen“ bis zum Prüfpunkt E0 am 29.11.2026 (`docs/entscheidungen.md`, 21.10.2026).
 
 ## Wo was steht
 
@@ -16,6 +16,73 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`CLAUDE.md`](CLAUDE.md) | zusätzliche Hinweise für KI-Assistenten |
 
 Anforderungen und Fahrplan sind hier im Repo maßgeblich (Entscheidung vom 20.10.2026). Änderungen daran laufen wie alles andere über Pull Requests.
+
+## Projekt starten (Mac)
+
+Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehen sein sollte. Voraussetzungen: [Homebrew](https://brew.sh) und die App „Docker“ (Docker Desktop) sind installiert.
+
+**Einmalig einrichten**
+
+1. Das Werkzeug `uv` installieren. Es holt später selbst die passende Python-Fassung und alle Pakete.
+   ```bash
+   brew install uv
+   ```
+   Danach: Am Ende steht eine Zeile mit `uv` und einer Fassungsnummer, ohne `Error`.
+2. Das Repo holen. Wer es schon auf dem Rechner hat, überspringt diesen Schritt.
+   ```bash
+   git clone https://github.com/sebivtt/dpv-participant-management.git ~/Documents/dpv-participant-management
+   ```
+   Danach: `Cloning into ...` und keine Fehlermeldung.
+3. In den Ordner des Projekts wechseln. Das ist auch bei jedem späteren Start der erste Schritt.
+   ```bash
+   cd ~/Documents/dpv-participant-management
+   ```
+   Danach: keine Ausgabe.
+4. Die Umgebungsdatei aus der Vorlage anlegen. Sie enthält nur erfundene Werte für den eigenen Rechner und kommt nie ins Repo.
+   ```bash
+   cp .env.example .env
+   ```
+   Danach: keine Ausgabe.
+5. Python und Pakete installieren.
+   ```bash
+   uv sync
+   ```
+   Danach: Beim ersten Mal `Downloaded cpython-3.13...`, am Ende `Installed ... packages`.
+
+**Bei jedem Start** (zuerst Schritt 3)
+
+6. Die App „Docker“ öffnen und warten, bis unten links „Engine running“ steht.
+7. Die Datenbank starten.
+   ```bash
+   docker compose -f dev/docker-compose.yml up -d --wait
+   ```
+   Danach: `Container dpv-dev-postgres-1 Healthy`. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6.
+8. Die Datenbank auf den neuesten Stand bringen.
+   ```bash
+   uv run --env-file .env python manage.py migrate
+   ```
+   Danach: mehrere Zeilen `Applying ... OK` oder `No migrations to apply.` Steht dort `Connection refused`, läuft die Datenbank nicht: zurück zu Schritt 6.
+9. Das Tool starten.
+   ```bash
+   uv run --env-file .env python manage.py runserver
+   ```
+   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Dort steht „Das DPV Anmeldetool läuft“. Beenden mit `ctrl` + `C` im Terminal.
+
+**Prüfungen laufen lassen** (zuerst Schritt 3, 6 und 7)
+
+10. Alle automatischen Prüfungen starten, dieselben wie auf GitHub.
+    ```bash
+    ./pruefen.sh
+    ```
+    Danach: Für jede Prüfung eine Zeile `--> grün: ...`, ganz unten `Alle Prüfungen grün.` Ist etwas rot, steht unten `Nicht bestanden:` mit der Liste.
+
+**Aufhören**
+
+11. Die Datenbank anhalten. Die Daten bleiben erhalten.
+    ```bash
+    docker compose -f dev/docker-compose.yml down
+    ```
+    Danach: `Container dpv-dev-postgres-1 Removed`.
 
 ## Technik (geplant)
 
