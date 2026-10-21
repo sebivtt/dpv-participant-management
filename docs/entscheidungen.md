@@ -6,6 +6,30 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-21 · Login über Keycloak: Abmelden, Sitzung, Anrede und Technik
+
+**Entscheidung** (Sebastian, Klärung von #5 am 20.10.2026 und Nachklärung am 21.10.2026):
+
+1. **Vollständiges Abmelden:** „Abmelden“ beendet die Sitzung im Tool und bei Keycloak. Wer danach am selben Gerät „Anmelden“ klickt, muss das Passwort eingeben. Andere Dienste am selben Keycloak sind dann ebenfalls abgemeldet (Annahme).
+2. **Sitzungsdauer:** Nach 2 Stunden ohne Aktivität endet die Sitzung im Tool; jeder Klick verlängert sie. Die Dauer steht an einer Stelle (`SESSION_IDLE_MINUTES` in `config/settings.py`).
+3. **Anrede:** Alle Texte des Tools duzen, wie das Anforderungsdokument.
+4. **Gleiche Mail, neue Kennung:** Meldet sich jemand mit einer neuen Keycloak-Kennung (`sub`), aber derselben Mail wie ein bestehendes Konto an, legt das Tool ein neues, leeres Konto an. Zwei Konten mit derselben Mail sind damit möglich; der Umgang damit gehört zu #8.
+
+**Technische Wahl** (KI):
+
+- **django-allauth 65.20.1** mit der Anbindung für OpenID Connect ist der Login-Baustein. Es läuft mit Keycloak 26.7.5; das belegen Tests, die sich wirklich an der Keycloak-Testumgebung anmelden, registrieren und abmelden. Der Rückfall auf Django 5.2 mit mozilla-django-oidc (20.10.2026) ist nicht nötig.
+- **Eigenes Kontenmodell:** App `accounts`, Modell `User` (Djangos Bezeichnung), im Text „Konto“. Verknüpft wird nur über die Keycloak-Kennung, die allauth als `SocialAccount.uid` speichert.
+- **Login-Pflicht für jede Adresse** über Djangos `LoginRequiredMiddleware`. Öffentlich sind nur die Login-Seite, Start und Rückkehr des Logins bei Keycloak und das Abmelden; die Liste steht mit Begründung in `tests/test_rundumtest.py`. Das Abmelden ist öffentlich, damit es auch nach abgelaufener Sitzung bei Keycloak gelingt; es geht nur per Formular mit Formularschutz.
+- **Keine Anmeldung mit Passwort im Tool:** Die Adressen von allauth sind nicht eingebunden, nur Start und Rückkehr des Logins; dazu `SOCIALACCOUNT_ONLY`. Konten werden nie über die Mail gefunden oder verknüpft.
+- **Abmelden ohne Rückfrage bei Keycloak:** Das Tool hebt das Kennungs-Token von Keycloak in der Sitzung auf und schickt es beim Abmelden mit. Ohne das fragt Keycloak „Möchtest du dich wirklich abmelden?“.
+- **Hinweis „Sitzung abgelaufen“:** Ein Cookie `dpv_war_angemeldet` mit dem Wert `1`, ohne Bezug zur Person, überdauert die Sitzung bis zu 30 Tage. Ist es da und die Sitzung weg, zeigt die Login-Seite den Hinweis und löscht das Cookie; beim Abmelden wird es ebenfalls gelöscht.
+- **Keycloak-Angaben** (`KEYCLOAK_REALM_URL`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`) prüft eine Systemprüfung beim Start (`runserver`, `migrate`, `check`), nicht das Laden der Einstellungen, damit sich diese auch ohne Keycloak laden lassen.
+- **Keycloak-Testumgebung:** Keycloak 26.7.5 in `dev/docker-compose.yml` mit eingebauter Entwicklungsdatenbank, Realm, Login-Client und erfundenen Konten aus `dev/keycloak/dpv-realm.json`. Die Reihe 26.7 nutzte der DPV laut altem Repo im Juli 2026. Auf GitHub startet dieselbe Umgebung in einem eigenen Schritt.
+
+**Begründung:** Zu 1 bis 3: Protokoll der Klärung in #5. Vollständiges Abmelden wegen gemeinsam genutzter Geräte und späterer Gesundheitsdaten. Zu 4: Niemand wird ausgesperrt, und ins bestehende Konto kommt die Person trotzdem nie (Frage beim Umsetzen, Protokoll in #5). Zur Technik: Ein eigenes Kontenmodell empfiehlt Django zu Projektbeginn, weil ein späterer Wechsel aufwendig ist; mit #5 entstehen die ersten Konten. Die Login-Pflicht als Grundeinstellung schützt auch Adressen, bei denen jemand den Schutz vergisst. Die Keycloak-Testumgebung entsteht so bei jedem Start gleich, auch bei einer schon bestehenden Datenbank; das 7 KB große Einrichtungsskript des alten Repos entfällt.
+
+**Umsetzung:** `accounts/` (Modell, Anpassungen an allauth, Seiten, Hinweise), `config/settings.py`, `config/urls.py`, `core/views.py`, `core/templates/core/start.html`, `dev/docker-compose.yml`, `dev/keycloak/dpv-realm.json`, `.env.example`, `.github/workflows/ci.yml`, `README.md`, Tests in `tests/test_login.py`, `tests/test_rundumtest.py` und `tests/test_keycloak_echt.py`.
+
 ## 2026-10-21 · Projektordner auf dem Mac außerhalb von iCloud
 
 **Entscheidung** (Sebastian, #23): Das Projekt liegt auf dem Mac in `~/Entwicklung/dpv-participant-management`, nicht in „Dokumente“ oder „Schreibtisch“. Das README nennt diesen Ort.

@@ -48,6 +48,10 @@ jobs:
       POSTGRES_PASSWORD: nur-in-der-pruefung
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
+      # Keycloak-Testumgebung aus dev/keycloak/dpv-realm.json (#5), erfundene Werte.
+      KEYCLOAK_REALM_URL: http://localhost:8080/realms/dpv
+      KEYCLOAK_CLIENT_ID: dpv-anmeldetool
+      KEYCLOAK_CLIENT_SECRET: nur-lokal-nicht-geheim
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -58,7 +62,24 @@ jobs:
         with:
           version: "0.13.4"
           enable-cache: true
+      # Keycloak läuft nicht als Dienst wie PostgreSQL, weil Dienste auf GitHub keinen eigenen
+      # Startbefehl und keine Dateien aus dem Repo bekommen können. Gleiche Fassung und gleiche
+      # Testumgebung wie in dev/docker-compose.yml.
+      - name: Keycloak-Testumgebung starten
+        run: |
+          docker run -d --name keycloak -p 127.0.0.1:8080:8080 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=nur-in-der-pruefung \
+            -v "$PWD/dev/keycloak/dpv-realm.json:/opt/keycloak/data/import/dpv-realm.json:ro" \
+            quay.io/keycloak/keycloak:26.7.5 start-dev --import-realm
       - name: Python und Pakete aus uv.lock installieren
         run: uv sync --locked
+      - name: Warten, bis Keycloak bereit ist
+        run: |
+          for attempt in $(seq 1 90); do
+            curl -fsS http://localhost:8080/realms/dpv/.well-known/openid-configuration > /dev/null && exit 0
+            sleep 2
+          done
+          docker logs keycloak
+          exit 1
       - name: Alle Prüfungen
         run: ./pruefen.sh

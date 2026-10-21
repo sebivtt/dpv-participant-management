@@ -4,16 +4,18 @@ Geprüft wird die tatsächliche Ausgabe der eingestellten Log-Ausgaben, nicht nu
 Django übergeben wird. Alle Daten sind erfunden.
 """
 
-import io
 import logging
 import re
 
 import pytest
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import OperationalError, connection
 from django.test import Client
 
 pytestmark = pytest.mark.urls("tests.urls")
+
+# Seit #5 hat das Tool ein eigenes Kontenmodell; Djangos Standardmodell gibt es nicht mehr.
+User = get_user_model()
 
 # Fehlernummer wie 7F3K-92QA: ohne 0, 1, I, L und O, die man leicht verwechselt.
 ERROR_NUMBER = re.compile(r"[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}")
@@ -32,36 +34,6 @@ NEVER_IN_LOG = [
     "suche",
     "Testfehler",
 ]
-
-
-@pytest.fixture
-def log_output(capsys):
-    """Fängt alles ab, was die eingestellten Log-Ausgaben schreiben, und gibt es als Text zurück.
-
-    Die Ausgaben des Tools werden beim Start eingerichtet und schreiben dann an ihr festes Ziel.
-    Deshalb wird ihr Ziel für die Dauer des Tests umgelenkt. Was ohne eingerichtete Ausgabe
-    trotzdem erscheint (Pythons Notausgabe), fängt capsys ab. Die Aufzeichnung von pytest
-    selbst bleibt außen vor; sie gibt es im Betrieb nicht.
-    """
-    buffer = io.StringIO()
-    loggers = [logging.getLogger(), *logging.Logger.manager.loggerDict.values()]
-    handlers = {
-        handler
-        for logger in loggers
-        if isinstance(logger, logging.Logger)
-        for handler in logger.handlers
-        # pytest hängt eigene Aufzeichnungen an; die gehören nicht zum Tool.
-        if isinstance(handler, logging.StreamHandler) and not type(handler).__module__.startswith("_pytest")
-    }
-    previous = {handler: handler.setStream(buffer) for handler in handlers}
-
-    def read() -> str:
-        captured = capsys.readouterr()
-        return buffer.getvalue() + captured.out + captured.err
-
-    yield read
-    for handler, stream in previous.items():
-        handler.setStream(stream)
 
 
 @pytest.fixture
