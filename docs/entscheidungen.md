@@ -6,6 +6,26 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-22 · Antworten der Datenschutzperson zu OP-2
+
+**Entscheidung** (Sebastian, 22.10.2026; #81): Die Antworten der Datenschutzperson des DPV werden so übernommen:
+
+- **Verantwortlich** im Sinne der DSGVO ist der Betreiber, also der DPV.
+- **Einwilligung:** Die Abfrage genügt, dass die angemeldeten Personen die Kriterien erfüllen bzw. die Einwilligung der Erziehungsberechtigten vorliegt (DSG-01, auch für die Bestätigung beim Anlegen nach DSG-02). Grundsatz: nach bestem Wissen umsetzen, handhabbar und brauchbar bleiben, Vertrauen statt übermäßiger Kontrolle. Die Idee, dass die Leitung einen Link erzeugt, über den Eltern bzw. Kinder einer Gruppenanmeldung beitreten und selbst bestätigen, kommt als Vorschlag in #44.
+- **Gesundheitsangaben im eigenen Profil** (FRM-04): freiwillige Angaben sind in Ordnung, bei regelmäßiger automatischer Löschung. In der Anmeldung speichert ein Knopf „Für künftige Anmeldungen speichern“ die Angaben im eigenen Profil, wo sie bearbeitet werden können. Die Löschfrist ist offen und wird beim Klären festgelegt.
+- **Verträge zur Auftragsverarbeitung** (u. a. Microsoft Azure, Google Workspace) liegen vor; Google Workspace gilt laut Datenschutzperson als DSGVO-konform.
+- **Impressum und Datenschutzerklärung:** Das Tool bekommt eigene Seiten (#12); verantwortlich ist der DPV.
+
+**Noch offen** (nicht beantwortet oder ausdrücklich offen): ob eine Datenschutz-Folgenabschätzung nötig ist; ab welchem Alter Personen mit Account selbst einwilligen können; ob die Einwilligung nach Volljährigkeit fortgilt (DSG-02, bleibt Annahme); Verzeichnis der Verarbeitungen und Ablauf bei Datenpannen; ob das Fehlerprotokoll einen Bezug zum Konto braucht (#11, bis dahin bleibt es ohne). Der Vorbehalt bei FRM-04 bleibt deshalb: Die Speicherung im Profil wird in P4 zuletzt gebaut und nur mit Freigabe aus OP-2. Fristen und Folgen der OP-Tabelle bleiben unverändert.
+
+**Neue Wünsche,** vorgemerkt ohne Phase: Fahrtkosten- und Auslagenerstattung (#82), Anbindung an Google Sheets für Kostenübersichten (#83), Kennwort für Gäste je Veranstaltung (#84).
+
+**Begründung:** Die Antworten bestätigen die Arbeitsannahme vom 20.10.2026 zur stellvertretenden Bestätigung. Hinweise der KI: Einige Antworten lassen die Frage offen, etwa ob eine Folgenabschätzung entfällt; sie werden deshalb nicht als geklärt eingetragen, sondern bleiben unter OP-2 offen. Gesundheitsdaten von Kindern gehören zu den besonders geschützten Daten; ob dafür eine Folgenabschätzung Pflicht ist, entscheidet die Datenschutzperson, nicht die KI.
+
+**Umsetzung:** `docs/anforderungen.md` (FRM-04, Abschnitt Datenschutz, DSG-01, DSG-02, OP-2) und `docs/fahrplan.md` (OP-Tabelle bei OP-2, Abschnitt 6 Nr. 45), mit Zustimmung von Sebastian am 22.10.2026; Kommentare in #11, #12 und #44; neue vorgemerkte Issues #82, #83 und #84.
+
+---
+
 ## 2026-10-22 · Login auf dem Testserver wandert von P1 nach P2
 
 **Entscheidung** (Sebastian, 22.10.2026; #71): Das Abschlusskriterium „Login nur per Keycloak … auf dem Testserver“ gehört jetzt zu P2, zusammen mit #59 (Testumgebung auf dem Server) und #63 (Login dort nachweisen). P1 verlangt nur noch den Login lokal. Die Folgen bei OP-1 (Test-Client) und OP-4 (Testserver) in der OP-Tabelle nennen P2; die Fristen der Anfragen bleiben. Die Empfehlung der KI war das Verschieben; die Alternative war, auf den Admin zu warten.
