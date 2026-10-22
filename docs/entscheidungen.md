@@ -6,6 +6,22 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-22 · Kein Stundenlog, E1 misst Termine statt Stunden
+
+**Entscheidung** (Sebastian, 22.10.2026; #68):
+
+1. **Kein Stundenlog.** Sebastian führt keins; er ist dem Zeitplan weit voraus. Damit entfallen das Stundenlog aus dem Eintrag „Neustart, Name, Lizenz, Umfang und Technik“ vom 20.10.2026, die getrennt notierte Lernzeit aus „Entscheidungen nach der Prüfung der Rückmeldungen“ vom 20.10.2026, „Stundenlog führen“ aus „P1 beginnt früher, Restpunkte von P0 laufen parallel“ vom 21.10.2026 und der Eintrag der Review-Zeit aus „Externes KI-Review am Ende jeder Phase“ vom 21.10.2026.
+2. **E1 misst Termine statt Stunden:** weiter, wenn P2 mit höchstens 4 Wochen Verzug fertig ist; bei 4 bis 8 Wochen Liste 2 und die Zieldaten der folgenden Phasen um den Verzug neu rechnen; bei mehr Verzug mit dem DPV-Veranstaltungsteam ein späteres Vorbereitungstreffen als Generalprobe festlegen. Die übrigen Bedingungen von E1 bleiben. E2 misst schon so.
+3. **Risikotabelle:** „Zu wenig Zeit“ zeigt sich daran, dass eine Phase an ihrem Zieldatum nicht fertig ist; „Schätzung zu niedrig“ daran, dass P2 mehr als 4 Wochen nach ihrem Zieldatum fertig ist.
+
+Die Empfehlung der KI war „Termine statt Stunden“; die anderen Möglichkeiten waren eine grobe Schätzung am Prüfpunkt oder keine Prüfung des Tempos mehr.
+
+**Begründung:** Eine Messgröße, die nicht gepflegt wird, macht die Prüfpunkte wertlos. Termine stehen ohnehin fest. P2 dauert rund 17 Wochen (28.02. bis 30.06.2027); 4 Wochen Verzug entsprechen etwa 125 %, 8 Wochen etwa 150 % der Phasendauer. Das ist etwas großzügiger als die bisherige Schwelle von 125 % der geschätzten Stunden, die bei rund 7,5 Stunden je Woche schon nach rund 2 Wochen Verzug erreicht gewesen wäre. Die Schätzungen in Stunden bleiben als Planungsgrundlage (Annahme) stehen, werden aber nicht mehr nachgemessen. Punkt 1 aus „Offene Punkte aus der Bestandsaufnahme“ vom 20.10.2026 („Die Stundenschwelle an E1 wird nicht weiter geklärt“) ist damit gegenstandslos.
+
+**Nicht geändert:** E4 („Betriebsaufwand pro Woche gemessen“) betrifft den Betrieb ab 2028 und wird vor E4 neu angesehen.
+
+**Umsetzung:** `docs/fahrplan.md` (Planungsgrundlagen, Machbarkeit, Phasen, E1, Risikotabelle, Abschnitt 6 Nr. 43), `docs/review-leitfaden.md`; in #57 ist „Stundenlog läuft“ als entfallen markiert.
+
 ## 2026-10-22 · Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis
 
 **Entscheidung** (Sebastian, Klärung von #38 am 22.10.2026; Protokoll in #38):

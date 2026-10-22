@@ -19,7 +19,7 @@ Das Review ersetzt keine der anderen Prüfungen. Übernommen aus der Prüfung vo
 
 - Das Review beginnt, sobald alle Abschlusskriterien der Phase (`docs/fahrplan.md`, Abschnitt 3) erfüllt scheinen. P0 bekommt keins, weil sie keinen Code hat.
 - Die Phase gilt erst als abgeschlossen, wenn das Review-Issue eingeordnet ist und alle blockierenden Befunde behoben sind. Erst dann wechselt der „Stand“ im `README.md` zur nächsten Phase.
-- Aufwand für Sebastian: rund 2,5 Stunden je Review (Annahme), im Stundenlog notiert. Nach dem Review zu P2 wird das Verfahren ausgewertet (#35).
+- Aufwand für Sebastian: rund 2,5 Stunden je Review (Annahme). Nach dem Review zu P2 wird das Verfahren ausgewertet (#35).
 
 ## 3. Was geprüft wird
 
