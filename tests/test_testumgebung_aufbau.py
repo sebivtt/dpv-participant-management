@@ -118,6 +118,18 @@ def test_compose_datei_schaltet_die_fehleranzeige_nicht_ein():
     assert "DJANGO_DEBUG" not in _environment(_services()["tool"])
 
 
+def test_pruefung_ueberschreibt_das_abbild_der_eigenen_testumgebung_nicht(monkeypatch, tmp_path):
+    from containertests import conftest
+
+    calls = []
+    monkeypatch.setattr(conftest.subprocess, "run", lambda command, **kwargs: calls.append(kwargs["env"]))
+
+    conftest.compose("config", env_file=tmp_path / ".env")
+
+    assert _services()["tool"]["image"] == "dpv-anmeldetool:${TESTUMGEBUNG_TAG:-test}"
+    assert calls[0]["TESTUMGEBUNG_TAG"] not in ("", "test")
+
+
 def test_keycloak_der_testumgebung_startet_nur_auf_dem_eigenen_rechner():
     keycloak = _services()["keycloak"]
 

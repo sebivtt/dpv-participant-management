@@ -34,7 +34,9 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    image: dpv-anmeldetool:test
+    # Die Prüfung (containertests/) baut unter eigenem Namen, damit sie das Abbild der eigenen
+    # Testumgebung nicht überschreibt.
+    image: dpv-anmeldetool:${TESTUMGEBUNG_TAG:-test}
     env_file: ${TESTUMGEBUNG_ENV_FILE:-.env}
     environment:
       # Fest eingetragen, nicht aus der Umgebungsdatei: Band, Bitte an Suchmaschinen, keine

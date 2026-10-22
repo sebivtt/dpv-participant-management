@@ -43,7 +43,7 @@ def compose(*arguments: str, env_file: Path, check: bool = True) -> subprocess.C
     ]
     return subprocess.run(  # noqa: S603 -- fester Befehl, die Angaben stammen aus diesem Repo
         command,
-        env={**_path_only(), "TESTUMGEBUNG_ENV_FILE": str(env_file)},
+        env={**_path_only(), "TESTUMGEBUNG_ENV_FILE": str(env_file), "TESTUMGEBUNG_TAG": PROJECT},
         capture_output=True,
         text=True,
         check=check,

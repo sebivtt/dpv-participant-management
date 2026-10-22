@@ -86,7 +86,7 @@ def test_fehler_im_webserver_steht_nur_mit_seiner_art_im_log():
     log, answer = _log_of_gunicorn("tests.webserver_apps:failing", raw)
 
     assert answer.startswith(b"HTTP/1.1 500")
-    assert "Fehler im Webserver bei einer Anfrage: ValueError" in log
+    assert "Fehler im Webserver: ValueError" in log
     _assert_nothing_from_the_request(log)
 
 

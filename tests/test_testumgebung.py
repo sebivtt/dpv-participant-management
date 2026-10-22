@@ -247,11 +247,11 @@ def test_hinter_https_kehrt_keycloak_an_eine_https_adresse_zurueck(hinter_https,
     assert parameters["redirect_uri"].startswith("https://")
 
 
-def test_ohne_https_klappt_der_login_wie_bisher(settings, client, keycloak):
-    settings.SECURE_PROXY_SSL_HEADER = None
-
+def test_ohne_https_klappt_der_login_wie_bisher(client, keycloak):
+    # Mit den Einstellungen ohne Schalter, wie auf dem Mac: Cookies auch ohne HTTPS.
     login(client)
 
+    assert client.cookies["sessionid"]["secure"] == ""
     assert "Hallo Erika!" in client.get("/").content.decode()
 
 

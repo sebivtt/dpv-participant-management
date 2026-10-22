@@ -24,6 +24,10 @@ class SafeLogger(Logger):
     def exception(self, msg, *args, **kwargs):
         """Fehler im Webserver stehen nur mit ihrer Art im Log, ohne Adresse, Meldungstext und Ablauf.
 
+        Das gilt für alle Fehler von gunicorn, nicht nur für die bei einer Anfrage: Auch Fehler
+        beim Start eines Workers laufen hier durch, und deren Meldungstext lässt sich nicht von
+        dem einer Anfrage unterscheiden. Die Zeile sagt deshalb nicht, wobei der Fehler entstand.
+
         Den Ablauf lässt diese Zeile weg, weil gunicorn ihn samt Meldungstext ausgäbe. Solche
         Fehler entstehen außerhalb von Django, dessen eigenes Fehlerprotokoll (core/errors.py)
         Art und Stellen im Code schon festhält; wer einen nachstellen will, tut das lokal mit
@@ -31,4 +35,4 @@ class SafeLogger(Logger):
         """
         error_type = sys.exc_info()[0]
         name = error_type.__name__ if error_type else "unbekannt"
-        self.error("Fehler im Webserver bei einer Anfrage: %s", name)
+        self.error("Fehler im Webserver: %s", name)
