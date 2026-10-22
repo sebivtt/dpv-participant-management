@@ -88,6 +88,62 @@ def test_band_steht_auch_auf_der_fehlerseite(testumgebung):
     assert BAND in response.content.decode()
 
 
+def _not_found(client):
+    return client.get("/gibt-es-nicht/")
+
+
+def _forbidden(client):
+    return client.get("/test/1/verboten/")
+
+
+def _form_expired(client):
+    # Ohne gültigen Formularschutz (CSRF), etwa weil das Formular zu lange offen war.
+    return Client(enforce_csrf_checks=True).post("/anmelden/keycloak/start/")
+
+
+def _bad_request(client):
+    # Unbekannter Servername: Das Tool lehnt die Anfrage ab.
+    return Client(HTTP_HOST="fremd.example").get("/anmelden/")
+
+
+# Djangos eingebaute Fehlerseiten; die eigenen zeigen stattdessen einen kurzen Hinweis auf Deutsch.
+DJANGO_ERROR_TEXTS = ("Not Found", "Forbidden", "Bad Request", "CSRF verification failed")
+ERROR_PAGES = [
+    pytest.param(_not_found, 404, id="nicht-gefunden"),
+    pytest.param(_forbidden, 403, id="kein-zugriff"),
+    pytest.param(_form_expired, 403, id="formular-abgelaufen"),
+    pytest.param(_bad_request, 400, id="ungueltige-anfrage"),
+]
+
+
+# Entscheidung von Sebastian am 22.10.2026 in #58: das Band auf jeder Fehlerseite.
+@pytest.mark.parametrize(("request_page", "status"), ERROR_PAGES)
+def test_band_steht_auf_jeder_fehlerseite(testumgebung, client, keycloak, request_page, status):
+    testumgebung.ROOT_URLCONF = "tests.urls"
+    login(client)
+
+    response = request_page(client)
+
+    assert response.status_code == status
+    page = response.content.decode()
+    assert BAND in page
+    assert not any(text in page for text in DJANGO_ERROR_TEXTS), page
+
+
+@pytest.mark.parametrize(("request_page", "status"), ERROR_PAGES)
+def test_ohne_schalter_eigene_fehlerseite_ohne_band(settings, client, keycloak, request_page, status):
+    settings.TEST_ENVIRONMENT = False
+    settings.ROOT_URLCONF = "tests.urls"
+    login(client)
+
+    response = request_page(client)
+
+    assert response.status_code == status
+    page = response.content.decode()
+    assert BAND not in page
+    assert "DPV Anmeldetool" in page
+
+
 def test_band_hat_ein_symbol_und_ist_fuer_bildschirmleser_ein_hinweis(testumgebung):
     page = Client().get("/anmelden/").content.decode()
 

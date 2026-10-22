@@ -1,0 +1,8 @@
+{% extends "base_einfach.html" %}
+{% load i18n %}
+{# Eigene Seite statt der von Django, mit Band in der Testumgebung (#58). Ohne Adresse und ohne Einzelheiten zum Fehler. #}
+{% block title %}{% translate "Formular abgelaufen · DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  <h1>{% translate "Das Formular ist abgelaufen." %}</h1>
+  <p class="a-einfach-text">{% translate "Bitte lade die Seite neu und versuche es noch einmal." %}</p>
+{% endblock %}
