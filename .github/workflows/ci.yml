@@ -52,6 +52,9 @@ jobs:
       KEYCLOAK_REALM_URL: http://localhost:8080/realms/dpv
       KEYCLOAK_CLIENT_ID: dpv-anmeldetool
       KEYCLOAK_CLIENT_SECRET: nur-lokal-nicht-geheim
+      # Admin der Keycloak-Testumgebung (Schritt „Keycloak-Testumgebung starten“), nur für die
+      # Tests der Importdatei des Test-Realms (#62); das Tool selbst nutzt nie einen Admin-Zugang.
+      KEYCLOAK_DEV_ADMIN_PASSWORD: nur-in-der-pruefung
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
