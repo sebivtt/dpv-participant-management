@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from tests.keycloak_fake import RETURN, start_login
+from tests.localhost_browser import BrowserOnLocalhost
 
 pytestmark = pytest.mark.django_db
 
@@ -34,19 +35,6 @@ def client(client, settings):
     settings.ALLOWED_HOSTS = ["localhost"]
     client.defaults["HTTP_HOST"] = TOOL_HOST
     return client
-
-
-class BrowserOnLocalhost(requests.Session):
-    """Schickt Keycloak seine Cookies zurück, wie ein Browser es bei localhost tut.
-
-    Keycloak markiert seine Cookies als „nur über HTTPS“. Browser schicken sie bei localhost
-    trotzdem mit, requests nicht; ohne das meldet Keycloak „cookie_not_found“.
-    """
-
-    def prepare_request(self, request):
-        for cookie in self.cookies:
-            cookie.secure = False
-        return super().prepare_request(request)
 
 
 @pytest.fixture

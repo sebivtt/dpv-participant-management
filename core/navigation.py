@@ -42,7 +42,12 @@ def items_for(request: HttpRequest) -> list[dict]:
 
 
 def navigation(request: HttpRequest) -> dict:
-    """Stellt die Navigation jeder Seite bereit; ohne Login gibt es keine."""
-    if not request.user.is_authenticated:
+    """Stellt die Navigation jeder Seite bereit; ohne Login gibt es keine.
+
+    Auf der Seite „ungültige Anfrage“ (400) kennt die Anfrage noch keine Person: Django lehnt
+    sie ab, bevor der Login-Baustein läuft. Auch dann gibt es keine Navigation (#58).
+    """
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated:
         return {"nav_items": []}
     return {"nav_items": items_for(request)}

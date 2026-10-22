@@ -88,7 +88,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
     uv run playwright install chromium firefox webkit
     ```
     Danach: je Browser eine Zeile `... downloaded to ...`; ist ein Browser schon da, erscheint für ihn nichts.
-11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Vorher das Tool beenden, falls es aus Schritt 9 noch läuft: Der Rauchtest braucht dieselbe Adresse (Port 8000).
+11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Vorher das Tool beenden, falls es aus Schritt 9 noch läuft, und eine laufende Testumgebung im Container anhalten (Schritt T5): Der Rauchtest und die Prüfung der Testumgebung brauchen dieselben Adressen (Ports 8000 und 8081). Die Prüfung baut die Testumgebung selbst und räumt sie danach wieder ab; deine eigene Testumgebung und ihre Daten berührt sie nicht.
     ```bash
     ./pruefen.sh
     ```
@@ -101,6 +101,45 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
     docker compose -f dev/docker-compose.yml down
     ```
     Danach: `Container dpv-dev-postgres-1 Removed` und `Container dpv-dev-keycloak-1 Removed`.
+
+## Testumgebung im Container (Mac)
+
+So läuft das Tool auf deinem Mac genauso wie später in der Testumgebung auf dem Server des DPV (#58): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
+
+**Einmalig einrichten**
+
+T1. Die Umgebungsdatei der Testumgebung aus der Vorlage anlegen. Sie enthält nur erfundene Werte und kommt nie ins Repo.
+   ```bash
+   cp testumgebung/.env.example testumgebung/.env
+   ```
+   Danach: keine Ausgabe.
+
+**Starten und Aktualisieren** (zuerst Schritt 3)
+
+T2. Die Testumgebung bauen und starten. Derselbe Befehl bringt sie nach einer Änderung auf den neuesten Stand; vorher die Änderungen mit `git pull` holen.
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml --profile lokal up -d --build --wait
+   ```
+   Danach: am Ende `Container dpv-test-datenbank-1 Healthy`, `Container dpv-test-tool-1 Healthy` und `Container dpv-test-keycloak-1 Healthy`. Beim ersten Mal lädt Docker vorher einiges herunter und baut das Tool; das dauert einige Minuten. Die Datenbank bringt sich beim Start selbst auf den neuesten Stand. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6. Steht dort `port is already allocated`, läuft auf dem Mac schon etwas auf Port 8000 oder 8081, etwa das Tool aus Schritt 9. Steht dort `is unhealthy`, ist das Tool nicht gestartet: Schritt T4 zeigt, warum, etwa `Die Umgebungsvariable DJANGO_SECRET_KEY fehlt`.
+T3. Im Browser http://localhost:8000/ öffnen. Es erscheint die Login-Seite mit dem gelben Band „Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.“ Anmelden mit einem erfundenen Konto aus der Tabelle oben, z. B. `erika.testfrau`; danach steht dort „Hallo Erika!“, ebenfalls mit Band. Keycloak läuft hier unter http://localhost:8081/.
+T4. Nur bei Bedarf: das Log des Tools ansehen. Auch wenn hier nur erfundene Daten stehen: Auszüge aus Logs gehören nicht in KI-Werkzeuge.
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml logs tool
+   ```
+   Danach: die Zeilen des Tools, u. a. `Applying ... OK` oder `No migrations to apply.` und `Booting worker`.
+
+**Anhalten**
+
+T5. Die Testumgebung anhalten. Ihre Daten bleiben erhalten, auch über das Aktualisieren hinweg. Selbst registrierte Konten in Keycloak sind beim nächsten Start weg, wie bei Schritt 12.
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml --profile lokal down
+   ```
+   Danach: je Container eine Zeile `Removed`.
+T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht die der normalen Entwicklung.
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml --profile lokal down --volumes
+   ```
+   Danach: je Container eine Zeile `Removed`, dazu `Volume dpv-test_daten Removed`.
 
 ## Technik (geplant)
 

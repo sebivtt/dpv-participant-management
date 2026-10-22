@@ -1,0 +1,30 @@
+# Was ins Container-Abbild kommt (#58). Das Abbild entsteht aus dem Arbeitsordner, nicht aus
+# dem Stand auf GitHub; dort können Zugangsdaten, Exporte oder lokale Datenbanken liegen, die
+# .gitignore aus dem Repo fernhält. Deshalb erst alles ausschließen und nur das Nötige freigeben.
+*
+!accounts
+!config
+!core
+!docker
+!manage.py
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!LICENSE
+
+# Auch in den freigegebenen Ordnern nie Zugangsdaten, Schlüssel, Exporte oder Datenbanken
+# (wie in .gitignore), dazu kein Zwischenspeicher von Python.
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/*.csv
+**/*.xlsx
+**/*.dump
+**/*.sql.gz
+**/*.sqlite3
+**/*.sqlite3-journal
+**/*.log
+**/__pycache__

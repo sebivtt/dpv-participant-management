@@ -93,6 +93,11 @@
     </nav>
   </section>
 
+  <section class="a-abschnitt" aria-labelledby="h-testband">
+    <h2 id="h-testband">{% translate "Band der Testumgebung" %}</h2>
+    {% include "core/_testband.html" with show=True %}
+  </section>
+
   <section class="a-abschnitt" aria-labelledby="h-formular">
     <h2 id="h-formular">{% translate "Formular" %}</h2>
     <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehlermeldung direkt am Feld." %}</p>

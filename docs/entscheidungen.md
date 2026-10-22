@@ -6,6 +6,31 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-22 · Testumgebung im Container: Schutz, Kennzeichnung, Datenbank, Mails, Aktualisieren
+
+**Entscheidung** (Sebastian, Klärung von #37 am 22.10.2026; Protokoll in #37):
+
+1. **Schutz:** Die Testumgebung ist offen erreichbar wie später das echte Tool, ohne Vorschaltpasswort. Suchmaschinen werden gebeten, nichts aufzunehmen. Hineinkommen kann nur, wer ein Konto im Test-Realm hat (#38). Die Empfehlung der KI war ein Vorschaltpasswort.
+2. **Kennzeichnung:** Auf jeder Seite der Testumgebung steht oben ein Band mit Symbol und dem Text „Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.“ Es erscheint nur mit dem Schalter `TEST_ENVIRONMENT=1`, nie im späteren Betrieb.
+3. **Datenbank:** Die Testumgebung bringt einen eigenen Datenbank-Container mit PostgreSQL 18 mit, ohne Zugriff auf das PostgreSQL des Servers.
+4. **Mails** gehen in der Testumgebung nur als Hinweis ins Log, ohne Empfänger und Inhalt. Der Mailtest aus P5 kommt in #60.
+5. **Aktualisieren:** Sebastian selbst, der Admin als Vertretung; bei Bedarf, sicher vor jedem externen Review und vor den Prüfpunkten. Nichts wird automatisch von GitHub auf den Server gespielt.
+6. **Aufteilung:** #37 in #58 (Abbild und Testumgebung lokal) und #59 (auf dem Server).
+
+**Technische Wahl** (KI):
+
+- **gunicorn 26.2.0** (MIT, mit der EUPL-1.2 verträglich; Fassung vom 24.08.2026, gepflegt vom Projekt gunicorn.org, keine weiteren Pakete) als Webserver im Container. Djangos eigener Server ist nur für die Entwicklung gedacht. Gewählt statt uvicorn oder waitress, weil das Tool synchron arbeitet (WSGI) und gunicorn dafür der verbreitetste Weg ist. Ohne Zugriffsprotokoll: Es enthielte jede echte Adresse mit Parametern (Entscheidung zu #6); ob der Betrieb eins braucht, klärt #11.
+- **Abbild:** `python:3.13-slim` mit uv 0.13.4 wie in der Prüfung auf GitHub, Pakete fest aus `uv.lock` ohne die Pakete zum Prüfen, das Tool läuft nicht als Verwalter. Die Grundabbilder sind über ihre Fassung festgelegt, nicht über eine Prüfsumme; die ließ sich aus der Arbeitsumgebung nicht nachsehen (Docker Hub gesperrt).
+- **Mails über `MAILERS`:** Seit Django 6.1 ersetzt `MAILERS` die Einstellung `EMAIL_BACKEND`, die bis Django 2028 wegfällt. Der einzige Mailweg ist `core.mail.LogOnlyEmailBackend`, auch in der Entwicklung, bis P5 den Versand bringt.
+- **HTTPS nur mit Schalter** (`DJANGO_BEHIND_HTTPS_PROXY=1`): Dann vertraut das Tool dem Hinweis `X-Forwarded-Proto` des Programms davor, und Sitzungs- und Formular-Cookies gehen nur über HTTPS. Ohne Schalter könnte jede Anfrage den Hinweis selbst mitschicken.
+- **Keycloak aus dem Container** (`KEYCLOAK_REALM_URL_INTERN`): Auf dem eigenen Rechner erreicht das Tool im Container die Keycloak-Testumgebung unter `keycloak:8080`, der Browser unter `localhost:8081`. Keycloak nennt dem Browser deshalb immer `localhost:8081` (`--hostname`, `--hostname-backchannel-dynamic`). Auf dem Server ist beides dieselbe Adresse.
+- **Prüfung im Container:** `pruefen.sh` baut und startet die Testumgebung unter eigenem Namen (`containertests/`), meldet sich wirklich an und räumt danach ab; eine eigene Testumgebung auf dem Mac bleibt unberührt.
+- **Rote Prüfungen auf GitHub lesbar:** `pruefen.sh` schreibt auf GitHub je rote Prüfung einen Fehler-Hinweis und die roten Tests als Warnungen an den Prüflauf. Das volle Protokoll ist aus der Arbeitsumgebung der KI nicht lesbar (Azure-Speicher gesperrt), diese Hinweise schon.
+
+**Begründung:** Zu 1 bis 6: Protokoll in #37. Die Testumgebung läuft so lokal genau so, wie sie später auf dem Server läuft, und lässt sich prüfen, bevor der Admin die Testdomain eingerichtet hat.
+
+**Umsetzung:** `Dockerfile`, `.dockerignore`, `docker/start.sh`, `testumgebung/`, `config/settings.py`, `core/mail.py`, `core/testumgebung.py`, `core/templatetags/layout.py`, `core/templates/` (Band, Symbol, Musterseite), `core/static/core/app.css`, `pyproject.toml`, `uv.lock`, `pruefen.sh`, `.github/workflows/ci.yml`, `ruff.toml`, `README.md`, Tests in `tests/test_testumgebung.py`, `tests/test_testumgebung_aufbau.py` und `containertests/`.
+
 ## 2026-10-21 · Antwort des DPV-Admins: Test-Realm, Testumgebung auf dem Produktivserver, eigene Admin-Konten
 
 **Auskünfte** des Admins des DPV vom 21.10.2026, von Sebastian weitergegeben:
