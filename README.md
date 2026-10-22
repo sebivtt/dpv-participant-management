@@ -157,7 +157,7 @@ K3. Unter „Resource file“ auf „Browse...“ klicken, die Datei aus K1 ausw
 **Einmalig, sobald die Testdomain feststeht** (#59)
 
 K4. Im Realm `dpv-test` links „Clients“ öffnen, dann `dpv-anmeldetool`. Im Reiter „Settings“ steht bei „Valid redirect URIs“ und „Valid post logout redirect URIs“ der Platzhalter `https://testdomain-eintragen.invalid`. In beiden Feldern nur diesen Teil durch die Testdomain ersetzen, z. B. `https://anmeldetool-test.example.org`; der Rest (`/anmelden/keycloak/zurueck/` bzw. `/anmelden/`) bleibt. Dann unten „Save“.
-K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein.
+K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein. Die Zeile `KEYCLOAK_REALM_URL_INTERN` aus der Vorlage wird dort gelöscht; sie gilt nur für die Keycloak-Testumgebung auf dem eigenen Rechner, und mit ihr scheitert der Login auf dem Server.
 
 **Einmalig: Passwörter setzen** (Sebastian)
 

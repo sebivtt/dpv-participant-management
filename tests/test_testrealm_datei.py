@@ -22,7 +22,16 @@ USERS = {
 }
 
 # Schlüssel, unter denen Keycloak Passwörter und Geheimnisse in einer Importdatei liest.
-SECRET_KEYS = {"credentials", "secret", "password", "hashedPassword", "secretData", "credentialData"}
+SECRET_KEYS = {
+    "credentials",
+    "secret",
+    "password",
+    "hashedPassword",
+    "secretData",
+    "credentialData",
+    "privateKey",
+    "clientSecret",
+}
 
 
 def load_realm() -> dict:
@@ -57,10 +66,15 @@ def test_importdatei_enthaelt_kein_passwort_und_kein_client_secret():
 def test_pruefung_auf_passwoerter_findet_ein_eingeschleustes_passwort():
     # Gegenprobe: Die Prüfung oben schlägt wirklich fehl, sobald ein Passwort oder Secret hineinkommt.
     realm = load_realm()
-    realm["users"][0]["credentials"] = [{"type": "password", "value": "geheim"}]
-    _client(realm)["secret"] = "geheim"
+    realm["users"][0]["credentials"] = [{"type": "password", "value": "erfunden"}]
+    _client(realm).update(secret="erfunden")
+    realm["components"]["org.keycloak.keys.KeyProvider"] = [{"config": {"privateKey": ["erfunden"]}}]
 
-    assert set(secret_keys_in(realm)) == {"/clients/0/secret", "/users/0/credentials"}
+    assert set(secret_keys_in(realm)) == {
+        "/clients/0/secret",
+        "/users/0/credentials",
+        "/components/org.keycloak.keys.KeyProvider/0/config/privateKey",
+    }
 
 
 def test_realm_heisst_dpv_test_ohne_anzeigenamen():

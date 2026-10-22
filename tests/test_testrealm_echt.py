@@ -14,6 +14,7 @@ Keycloak muss laufen (README.md, „Projekt starten“); sonst schlagen die Test
 import copy
 import os
 import secrets
+from urllib.parse import urlparse
 
 import pytest
 import requests
@@ -39,10 +40,21 @@ def _keycloak_base() -> str:
 
 
 class KeycloakAdmin:
-    """Erledigt mit dem Admin-Zugang der Testumgebung, was Admin und Sebastian von Hand tun."""
+    """Erledigt mit dem Admin-Zugang der Testumgebung, was Admin und Sebastian von Hand tun.
+
+    Meldet sich vor jeder Anfrage neu an: Der Zugang von Keycloak gilt nur 60 Sekunden, und
+    der Testlauf mit vielen Logins kann länger dauern, gerade auf GitHub.
+    """
 
     def __init__(self) -> None:
         self.base = _keycloak_base()
+        # Der Test löscht den Realm dpv-test. So heißt auch der echte Test-Realm beim DPV;
+        # deshalb nur gegen die Keycloak-Testumgebung auf dem eigenen Rechner.
+        assert urlparse(self.base).hostname in {"localhost", "127.0.0.1"}, (
+            f"Die Tests des Test-Realms laufen nur gegen die lokale Keycloak-Testumgebung, nicht gegen {self.base}"
+        )
+
+    def _token(self) -> str:
         try:
             answer = requests.post(
                 f"{self.base}/realms/master/protocol/openid-connect/token",
@@ -54,53 +66,57 @@ class KeycloakAdmin:
                 f"Keycloak unter {self.base} nicht erreichbar ({type(error).__name__}). "
                 "Starten: docker compose -f dev/docker-compose.yml up -d --wait"
             )
-        assert answer.status_code == 200, f"Admin-Login bei der Keycloak-Testumgebung gescheitert: {answer.text[:500]}"
-        self.session = requests.Session()
-        self.session.headers["Authorization"] = f"Bearer {answer.json()['access_token']}"
+        assert answer.status_code == 200, (
+            "Admin-Login bei der Keycloak-Testumgebung gescheitert. Das Passwort steht in "
+            f"dev/docker-compose.yml bzw. in KEYCLOAK_DEV_ADMIN_PASSWORD. Antwort: {answer.text[:500]}"
+        )
+        return answer.json()["access_token"]
 
-    def url(self, path: str) -> str:
-        return f"{self.base}/admin/realms{path}"
+    def request(self, method: str, path: str, **arguments) -> requests.Response:
+        """Schickt eine Anfrage an die Admin-Schnittstelle, mit frischem Zugang."""
+        headers = {"Authorization": f"Bearer {self._token()}", **arguments.pop("headers", {})}
+        return requests.request(method, f"{self.base}/admin/realms{path}", headers=headers, timeout=30, **arguments)
 
     def delete_realm(self) -> None:
-        answer = self.session.delete(self.url(f"/{REALM}"), timeout=10)
+        answer = self.request("DELETE", f"/{REALM}")
         assert answer.status_code in (204, 404), answer.text[:500]
 
     def import_realm(self, content: str) -> requests.Response:
         """Legt den Realm aus der Datei an, wie „Realm erstellen“ mit hochgeladener Datei."""
-        return self.session.post(
-            self.url(""), data=content.encode(), headers={"Content-Type": "application/json"}, timeout=30
-        )
+        return self.request("POST", "", data=content.encode(), headers={"Content-Type": "application/json"})
 
-    def users(self) -> list[dict]:
-        answer = self.session.get(self.url(f"/{REALM}/users"), params={"max": 100}, timeout=10)
-        answer.raise_for_status()
+    def _get(self, path: str, **params) -> list | dict:
+        answer = self.request("GET", path, params=params)
+        assert answer.status_code == 200, f"{path}: {answer.status_code} {answer.text[:500]}"
         return answer.json()
 
+    def users(self) -> list[dict]:
+        return self._get(f"/{REALM}/users", max=100)
+
     def user_id(self, username: str) -> str:
-        answer = self.session.get(
-            self.url(f"/{REALM}/users"), params={"username": username, "exact": "true"}, timeout=10
-        )
-        answer.raise_for_status()
-        return answer.json()[0]["id"]
+        return self._get(f"/{REALM}/users", username=username, exact="true")[0]["id"]
+
+    def credentials(self, username: str) -> list[dict]:
+        """Zugangsdaten eines Kontos, wie unter „Credentials“ in der Verwaltung."""
+        return self._get(f"/{REALM}/users/{self.user_id(username)}/credentials")
 
     def set_password(self, username: str, password: str) -> None:
-        """Setzt ein dauerhaftes Passwort, wie Sebastian unter „Zugangsdaten“ nach dem Import."""
-        answer = self.session.put(
-            self.url(f"/{REALM}/users/{self.user_id(username)}/reset-password"),
+        """Setzt ein dauerhaftes Passwort, wie Sebastian unter „Credentials“ nach dem Import."""
+        answer = self.request(
+            "PUT",
+            f"/{REALM}/users/{self.user_id(username)}/reset-password",
             json={"type": "password", "value": password, "temporary": False},
-            timeout=10,
         )
         assert answer.status_code == 204, answer.text[:500]
 
+    def user_profile(self) -> dict:
+        return self._get(f"/{REALM}/users/profile")
+
     def client_secret(self) -> str:
         """Liest das Client-Secret, das Keycloak beim Import selbst erzeugt hat."""
-        clients = self.session.get(
-            self.url(f"/{REALM}/clients"), params={"clientId": "dpv-anmeldetool"}, timeout=10
-        ).json()
+        clients = self._get(f"/{REALM}/clients", clientId="dpv-anmeldetool")
         assert len(clients) == 1, clients
-        answer = self.session.get(self.url(f"/{REALM}/clients/{clients[0]['id']}/client-secret"), timeout=10)
-        answer.raise_for_status()
-        return answer.json()["value"]
+        return self._get(f"/{REALM}/clients/{clients[0]['id']}/client-secret")["value"]
 
 
 @pytest.fixture(scope="module")
@@ -161,15 +177,15 @@ def test_import_legt_genau_die_vier_erfundenen_konten_und_den_login_client_an(ad
 
 
 def test_keycloak_laesst_name_und_mail_nur_vom_admin_aendern(admin):
-    answer = admin.session.get(admin.url(f"/{REALM}/users/profile"), timeout=10)
-    answer.raise_for_status()
-
-    for attribute in answer.json()["attributes"]:
+    for attribute in admin.user_profile()["attributes"]:
         assert attribute["permissions"]["edit"] == ["admin"], attribute["name"]
 
 
 def test_ohne_gesetztes_passwort_kommt_niemand_hinein(client, browser, admin):
-    answer = _try_sign_in(client, browser, "ohne.nachname", "geratenes-passwort-123")
+    assert admin.credentials("ohne.nachname") == []
+
+    # Auch nicht mit dem Passwort, das das Konto in der lokalen Testumgebung hat.
+    answer = _try_sign_in(client, browser, "ohne.nachname", "testpasswort-ohne-nachname")
 
     # Keycloak zeigt das Formular wieder mit Fehlermeldung, statt zurück ins Tool zu leiten.
     assert answer.status_code == 200
@@ -211,7 +227,9 @@ def test_direkt_aufgerufene_registrierung_zeigt_kein_formular(client, browser, a
     assert 'name="password-confirm"' not in page.text
 
 
-def test_nach_zehn_falschen_passwoertern_sperrt_keycloak_vorlaeufig(client, browser, admin):
+def test_nach_vielen_falschen_passwoertern_sperrt_keycloak_vorlaeufig(client, browser, admin):
+    # Schnell aufeinander folgende Fehlversuche sperren schon früher; dass es nach 10 auch
+    # langsamen Versuchen geschieht, sichert tests/test_testrealm_datei.py über failureFactor.
     password = f"testpasswort-{secrets.token_hex(8)}"
     admin.set_password("max.testmann", password)
 
