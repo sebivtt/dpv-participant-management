@@ -6,6 +6,14 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-22 · Login auf dem Testserver wandert von P1 nach P2
+
+**Entscheidung** (Sebastian, 22.10.2026; #71): Das Abschlusskriterium „Login nur per Keycloak … auf dem Testserver“ gehört jetzt zu P2, zusammen mit #59 (Testumgebung auf dem Server) und #63 (Login dort nachweisen). P1 verlangt nur noch den Login lokal. Die Folgen bei OP-1 (Test-Client) und OP-4 (Testserver) in der OP-Tabelle nennen P2; die Fristen der Anfragen bleiben. Die Empfehlung der KI war das Verschieben; die Alternative war, auf den Admin zu warten.
+
+**Begründung:** Der Code von P1 ist fertig. Der Server-Teil bringt vor allem Einrichtung auf dem Server, eine Anleitung und eine Checkliste von Hand und wartet auf Auskünfte des Admins, der im Urlaub ist. So kann das externe Review zu P1 jetzt auf dem fertigen Stand laufen, und P2 beginnt danach. Das Review zu P2 prüft den Server-Teil mit. Ändert der Server doch Code, etwa für HTTPS hinter einem vorgeschalteten Programm, landet das in P2. An E3 ändert sich nichts: Dort müssen ohnehin alle Abschlusskriterien von P1 bis P6 erfüllt sein. Die Stunden der Phasen bleiben, der Aufwand des Server-Teils ist gering (Annahme). Antwortet der Admin sehr spät, zählt die Wartezeit jetzt gegen P2 und damit gegen E1; die OP-Fristen (31.01. und 28.02.2027) liegen aber vor dem Zieldatum von P2.
+
+**Umsetzung:** `docs/fahrplan.md` (Phasen P1 und P2, OP-Tabelle, kritischer Pfad, Abschnitt 6 Nr. 44); Labels und Texte von #37, #38, #59, #63; #57.
+
 ## 2026-10-22 · Kein Stundenlog, E1 misst Termine statt Stunden
 
 **Entscheidung** (Sebastian, 22.10.2026; #68):
