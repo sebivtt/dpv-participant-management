@@ -88,8 +88,14 @@ def test_band_steht_auch_auf_der_fehlerseite(testumgebung):
     assert BAND in response.content.decode()
 
 
+# Jede Anfrage kommt von einer angemeldeten Person (client nach login).
 def _not_found(client):
     return client.get("/gibt-es-nicht/")
+
+
+def _entry_not_found(client):
+    # Die Adresse gibt es, den Eintrag nicht (Http404 in der Seite selbst).
+    return client.get("/test/1/nicht-da/")
 
 
 def _forbidden(client):
@@ -98,18 +104,20 @@ def _forbidden(client):
 
 def _form_expired(client):
     # Ohne gültigen Formularschutz (CSRF), etwa weil das Formular zu lange offen war.
-    return Client(enforce_csrf_checks=True).post("/anmelden/keycloak/start/")
+    client.handler.enforce_csrf_checks = True
+    return client.post("/abmelden/")
 
 
 def _bad_request(client):
     # Unbekannter Servername: Das Tool lehnt die Anfrage ab.
-    return Client(HTTP_HOST="fremd.example").get("/anmelden/")
+    return client.get("/anmelden/", HTTP_HOST="fremd.example")
 
 
 # Djangos eingebaute Fehlerseiten; die eigenen zeigen stattdessen einen kurzen Hinweis auf Deutsch.
 DJANGO_ERROR_TEXTS = ("Not Found", "Forbidden", "Bad Request", "CSRF verification failed")
 ERROR_PAGES = [
     pytest.param(_not_found, 404, id="nicht-gefunden"),
+    pytest.param(_entry_not_found, 404, id="eintrag-nicht-gefunden"),
     pytest.param(_forbidden, 403, id="kein-zugriff"),
     pytest.param(_form_expired, 403, id="formular-abgelaufen"),
     pytest.param(_bad_request, 400, id="ungueltige-anfrage"),
@@ -128,6 +136,14 @@ def test_band_steht_auf_jeder_fehlerseite(testumgebung, client, keycloak, reques
     page = response.content.decode()
     assert BAND in page
     assert not any(text in page for text in DJANGO_ERROR_TEXTS), page
+
+
+def test_fehlerseite_zeigt_die_adresse_nicht(testumgebung):
+    # Schon die Adresse kann Personendaten enthalten (Entscheidung zu #6).
+    response = Client().get("/erika-mustermann/")
+
+    assert response.status_code == 404
+    assert "erika" not in response.content.decode().lower()
 
 
 @pytest.mark.parametrize(("request_page", "status"), ERROR_PAGES)

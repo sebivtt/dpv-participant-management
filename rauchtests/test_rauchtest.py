@@ -263,8 +263,10 @@ def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name
     findings["Fehlerseite"] = run_axe(page)
     # Die übrigen Fehlerseiten haben denselben Aufbau (#58); zwei davon stellvertretend.
     page.goto(f"{BASE}/gibt-es-nicht/")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Diese Seite gibt es nicht.")
     findings["Seite nicht gefunden"] = run_axe(page)
     page.goto(f"{BASE}/test/1/verboten/")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Dafür fehlt dir die Berechtigung.")
     findings["Kein Zugriff"] = run_axe(page)
 
     assert {name: found for name, found in findings.items() if found} == {}
