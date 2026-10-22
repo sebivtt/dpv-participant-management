@@ -98,6 +98,15 @@
     {% include "core/_testband.html" with show=True %}
   </section>
 
+  <section class="a-abschnitt" aria-labelledby="h-fehlerseite">
+    <h2 id="h-fehlerseite">{% translate "Fehlerseite" %}</h2>
+    <p class="a-unterzeile">{% translate "Baustein: Knöpfe unter dem Text. „Zurück“ erscheint nur, wenn man von einer Seite des Tools kam." %}</p>
+    <div class="a-einfach-karte">
+      <p class="a-einfach-text">{% translate "Diese Seite gibt es nicht." %}</p>
+      {% include "core/_fehler_knoepfe.html" with vorschau=True %}
+    </div>
+  </section>
+
   <section class="a-abschnitt" aria-labelledby="h-formular">
     <h2 id="h-formular">{% translate "Formular" %}</h2>
     <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehlermeldung direkt am Feld." %}</p>

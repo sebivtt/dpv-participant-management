@@ -7,4 +7,5 @@
   {% if error_number %}
     <p class="a-einfach-text">{% blocktranslate %}Wenn du dich meldest, nenne bitte diese Nummer: {{ error_number }}{% endblocktranslate %}</p>
   {% endif %}
+  {% include "core/_fehler_knoepfe.html" %}
 {% endblock %}

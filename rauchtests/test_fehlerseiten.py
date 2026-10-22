@@ -24,7 +24,7 @@ def _click_link_to(page: Page, address: str, new_tab: bool = False) -> None:
             link.href = address;
             link.textContent = 'Veralteter Link';
             if (newTab) link.target = '_blank';
-            document.body.append(link);
+            document.getElementById('inhalt').append(link);
         }""",
         [address, new_tab],
     )
@@ -39,7 +39,7 @@ def _send_expired_form(page: Page) -> None:
             form.method = 'post';
             form.action = '/abmelden/';
             form.innerHTML = '<button type="submit">Altes Formular abschicken</button>';
-            document.body.append(form);
+            document.getElementById('inhalt').append(form);
         }"""
     )
     page.get_by_role("button", name="Altes Formular abschicken").click()
