@@ -141,6 +141,37 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
    ```
    Danach: je Container eine Zeile `Removed`, dazu `Volume dpv-test_daten Removed`.
 
+## Test-Realm im Keycloak des DPV
+
+Auf dem Server meldet sich die Testumgebung nicht bei der Keycloak-Testumgebung aus `dev/` an, sondern bei einem eigenen **Test-Realm** im Keycloak des DPV (#38). Ein Realm ist ein abgeschlossener Bereich in Keycloak mit eigenen Konten; der Test-Realm `dpv-test` ist vom Realm der Mitglieder getrennt. Er hat vier erfundene Konten, und niemand kann sich dort selbst registrieren oder ein Passwort per Mail zurücksetzen. Die Importdatei liegt in `testumgebung/keycloak/dpv-test-realm.json`. Sie enthält kein Passwort und kein Client-Secret, damit niemand, der das Repo sieht, in die Testumgebung kommt.
+
+Diese Anleitung funktioniert ohne KI und ohne Terminal. Alles geschieht in der Verwaltung von Keycloak, die auf Englisch beschriftet ist; die Beschriftungen stehen hier so, wie sie in Keycloak 26.7.5 heißen. Passwörter und das Client-Secret gehören nie in Chats, Issues oder KI-Werkzeuge.
+
+**Einmalig: Test-Realm anlegen** (der Admin des DPV oder Sebastian mit seinem Admin-Konto)
+
+K1. Sebastian öffnet die Datei `dpv-test-realm.json` auf GitHub (Ordner `testumgebung/keycloak/`), lädt sie mit „Download raw file“ herunter und gibt sie bei Bedarf dem Admin; das Repo ist privat.
+K2. In der Verwaltung von Keycloak links „Manage realms“ öffnen, dann „Create realm“.
+K3. Unter „Resource file“ auf „Browse...“ klicken, die Datei aus K1 auswählen und „Create“ klicken.
+   Danach: Unter „Manage realms“ steht `dpv-test`. Darin stehen unter „Users“ genau vier Konten: `erika.testfrau`, `max.testmann`, `ohne.name` und `ohne.nachname`.
+
+**Einmalig, sobald die Testdomain feststeht** (#59)
+
+K4. Im Realm `dpv-test` links „Clients“ öffnen, dann `dpv-anmeldetool`. Im Reiter „Settings“ steht bei „Valid redirect URIs“ und „Valid post logout redirect URIs“ der Platzhalter `https://testdomain-eintragen.invalid`. In beiden Feldern nur diesen Teil durch die Testdomain ersetzen, z. B. `https://anmeldetool-test.example.org`; der Rest (`/anmelden/keycloak/zurueck/` bzw. `/anmelden/`) bleibt. Dann unten „Save“.
+K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein.
+
+**Einmalig: Passwörter setzen** (Sebastian)
+
+K6. Links „Users“ öffnen und ein Konto anklicken, z. B. `erika.testfrau`. Im Reiter „Credentials“ auf „Set password“ klicken.
+K7. Ein langes, neues Passwort aus dem Passwortmanager in beide Felder eintragen. Den Schalter „Temporary“ auf „Off“ stellen; sonst verlangt Keycloak beim ersten Login ein neues Passwort. Dann „Save“; fragt Keycloak noch einmal nach, bestätigen.
+K8. K6 und K7 für die übrigen drei Konten wiederholen, jedes mit eigenem Passwort. Die Passwörter stehen nur im Passwortmanager.
+
+**Bei Bedarf: Zugang für eine weitere Person** (Sebastian)
+
+K9. Links „Users“, dann „Add user“. Bei „Username“ einen erfundenen Namen eintragen, z. B. `pruefer.test`, bei „Email“ `pruefer.test@example.org`, bei „First name“ z. B. `Paula`. Nie den echten Namen oder die echte Mail der Person. „Email verified“ auf „On“ stellen und „Create“ klicken. Dann wie in K6 und K7 ein Passwort setzen und es der Person persönlich weitergeben, nicht per Mail oder Chat.
+K10. Wird der Zugang nicht mehr gebraucht: das Konto unter „Users“ öffnen, oben rechts „Action“ und „Delete“ wählen und bestätigen.
+
+Wer sich nach zehn falschen Passwörtern nicht mehr anmelden kann, wartet einige Minuten, höchstens 15; Keycloak sperrt das Konto nur vorübergehend. Name und Mail eines Kontos ändert nur der Admin, nicht die Person selbst, damit dort keine echten Angaben landen.
+
 ## Technik (geplant)
 
 Django mit serverseitig erzeugten Seiten und htmx, PostgreSQL, Login per OIDC über den Keycloak des DPV. Begründung im Fahrplan, Abschnitte 1 und 3.

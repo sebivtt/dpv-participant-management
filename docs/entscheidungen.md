@@ -6,6 +6,32 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-22 · Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis
+
+**Entscheidung** (Sebastian, Klärung von #38 am 22.10.2026; Protokoll in #38):
+
+1. **Selbstregistrierung aus** im Test-Realm `dpv-test`. Konten entstehen nur, wenn Sebastian oder der Admin sie anlegen.
+2. **Passwörter nicht im Repo:** Die Importdatei enthält die Konten ohne Passwort. Nach dem Import setzt Sebastian jedem Konto ein eigenes, langes Passwort und bewahrt es in seinem Passwortmanager auf. Lokal bleiben die erfundenen Passwörter im Repo, weil die Keycloak-Testumgebung nur auf dem eigenen Rechner läuft.
+3. **Vier erfundene Konten:** `erika.testfrau`, `max.testmann`, `ohne.name`, `ohne.nachname`, Mails auf `@example.org`. Ein Konto ohne Mail gibt es im echten Realm nicht; seine Ablehnung prüft weiter die lokale Testumgebung.
+4. **Weitere Personen** (Prüfer, Planungsteam) bekommen je ein eigenes erfundenes Konto ohne echten Namen und echte Mail. Sebastian legt es an und löscht es wieder.
+5. **Keine Kennzeichnung** der Login-Seite von Keycloak (Empfehlung der KI war eine Überschrift „DPV Testumgebung – nur erfundene Konten“). Der Realm bekommt keinen Anzeigenamen; Keycloak zeigt deshalb „dpv-test“.
+6. **Nachweis** des Logins auf dem Server per Checkliste von Hand (#63).
+7. **Abweichende Keycloak-Fassung:** Weicht die Fassung des DPV von 26.7.5 ab, werden die lokale Testumgebung und die Prüfung auf GitHub in einem eigenen Issue angeglichen.
+
+**Technische Wahl** (KI):
+
+- **Importdatei** `testumgebung/keycloak/dpv-test-realm.json`, angelegt über „Realm erstellen“ mit hochgeladener Datei. Kein Passwort und kein Client-Secret darin; das Secret erzeugt Keycloak beim Import. Ein Test schlägt fehl, sobald eines hineinkommt.
+- **Kein Mailserver und kein „Passwort vergessen“**, damit Keycloak aus dem Test-Realm nie Mails verschickt.
+- **Schutz gegen Passwortraten:** Nach 10 Fehlversuchen (oder sehr schnellen Wiederholungen) sperrt Keycloak das Konto vorübergehend, höchstens 15 Minuten, nie dauerhaft. Die Login-Seite ist offen erreichbar.
+- **Name und Mail ändert nur der Admin**, nicht die Person über die Kontoverwaltung von Keycloak. Sonst könnte jemand mit einem Testkonto seine echten Angaben eintragen (DSG-08). Gleiche Begründung wie bei der Selbstregistrierung.
+- **Login-Client wie lokal:** vertraulich, Login nur über die Login-Seite von Keycloak mit PKCE, kein Login mit Passwort direkt aus dem Tool, kein Service-Konto, keine Rollen. Rücksprung und Abmelden nur zur Testdomain; bis sie feststeht, steht dort `https://testdomain-eintragen.invalid`. Die Endung `.invalid` gibt es im Internet nicht.
+- **HTTPS Pflicht** (`sslRequired: external`), außer bei Aufrufen vom eigenen Rechner.
+- **Prüfung gegen echtes Keycloak 26.7.5:** Die Tests importieren die Datei mit dem Admin-Zugang der lokalen Keycloak-Testumgebung (erfundener Wert, auf GitHub `KEYCLOAK_DEV_ADMIN_PASSWORD`), setzen Passwörter und melden sich im Tool an. Das Tool selbst bekommt nie einen Admin-Zugang.
+
+**Begründung:** Zu 1 bis 7: Protokoll in #38. Die Testumgebung ist offen erreichbar (Entscheidung vom 22.10.2026 zu #37); vor E3 dürfen keine echten Daten hinein, und wer das Repo sieht, soll nicht hineinkommen.
+
+**Umsetzung:** `testumgebung/keycloak/dpv-test-realm.json`, `README.md` (Abschnitt „Test-Realm im Keycloak des DPV“), `.github/workflows/ci.yml`, Tests in `tests/test_testrealm_datei.py` und `tests/test_testrealm_echt.py`.
+
 ## 2026-10-22 · Testumgebung im Container: Schutz, Kennzeichnung, Datenbank, Mails, Aktualisieren
 
 **Entscheidung** (Sebastian, Klärung von #37 am 22.10.2026; Protokoll in #37):

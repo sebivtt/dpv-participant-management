@@ -160,6 +160,14 @@ def test_import_legt_genau_die_vier_erfundenen_konten_und_den_login_client_an(ad
     assert admin.client_secret(), "Keycloak hat beim Import kein Client-Secret erzeugt"
 
 
+def test_keycloak_laesst_name_und_mail_nur_vom_admin_aendern(admin):
+    answer = admin.session.get(admin.url(f"/{REALM}/users/profile"), timeout=10)
+    answer.raise_for_status()
+
+    for attribute in answer.json()["attributes"]:
+        assert attribute["permissions"]["edit"] == ["admin"], attribute["name"]
+
+
 def test_ohne_gesetztes_passwort_kommt_niemand_hinein(client, browser, admin):
     answer = _try_sign_in(client, browser, "ohne.nachname", "geratenes-passwort-123")
 

@@ -1,14 +1,23 @@
 {
   "realm": "dpv-test",
-  "displayName": "DPV (nur lokale Testumgebung)",
   "enabled": true,
-  "sslRequired": "none",
-  "registrationAllowed": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
   "registrationEmailAsUsername": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": false,
   "editUsernameAllowed": false,
+  "verifyEmail": false,
+  "rememberMe": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "quickLoginCheckMilliSeconds": 1000,
+  "minimumQuickLoginWaitSeconds": 60,
   "internationalizationEnabled": true,
   "supportedLocales": [
     "de"
@@ -17,25 +26,23 @@
   "clients": [
     {
       "clientId": "dpv-anmeldetool",
-      "name": "DPV Anmeldetool (lokal)",
+      "name": "DPV Anmeldetool (Testumgebung)",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "nur-lokal-nicht-geheim",
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://127.0.0.1:8000/anmelden/keycloak/zurueck/",
-        "http://localhost:8000/anmelden/keycloak/zurueck/"
+        "https://testdomain-eintragen.invalid/anmelden/keycloak/zurueck/"
       ],
       "webOrigins": [
         "+"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1:8000/anmelden/##http://localhost:8000/anmelden/",
+        "post.logout.redirect.uris": "https://testdomain-eintragen.invalid/anmelden/",
         "pkce.code.challenge.method": "S256"
       }
     }
@@ -45,13 +52,6 @@
       "username": "erika.testfrau",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "testpasswort-erika",
-          "temporary": false
-        }
-      ],
       "email": "erika.testfrau@example.org",
       "firstName": "Erika",
       "lastName": "Testfrau"
@@ -60,13 +60,6 @@
       "username": "max.testmann",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "testpasswort-max",
-          "temporary": false
-        }
-      ],
       "email": "max.testmann@example.org",
       "firstName": "Max",
       "lastName": "Testmann"
@@ -75,42 +68,14 @@
       "username": "ohne.name",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "testpasswort-ohne-name",
-          "temporary": false
-        }
-      ],
       "email": "ohne.name@example.org"
     },
     {
       "username": "ohne.nachname",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "testpasswort-ohne-nachname",
-          "temporary": false
-        }
-      ],
       "email": "ohne.nachname@example.org",
       "firstName": "Erika"
-    },
-    {
-      "username": "ohne.mail",
-      "enabled": true,
-      "emailVerified": false,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "testpasswort-ohne-mail",
-          "temporary": false
-        }
-      ],
-      "firstName": "Olaf",
-      "lastName": "Ohnemail"
     }
   ],
   "components": {
@@ -120,7 +85,7 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}}, {\"name\": \"email\", \"displayName\": \"${email}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}], \"groups\": []}"
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}}, {\"name\": \"email\", \"displayName\": \"${email}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}}], \"groups\": []}"
           ]
         }
       }

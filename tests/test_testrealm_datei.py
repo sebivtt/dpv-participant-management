@@ -104,6 +104,22 @@ def test_selbstregistrierung_passwort_vergessen_und_mailversand_aus():
     assert not realm.get("smtpServer")
 
 
+def user_profile(realm: dict) -> dict:
+    """Liest die Einstellungen, wer Benutzername, Mail und Namen eines Kontos ändern darf."""
+    provider = realm["components"]["org.keycloak.userprofile.UserProfileProvider"][0]
+    return json.loads(provider["config"]["kc.user.profile.config"][0])
+
+
+def test_name_und_mail_aendert_nur_der_admin():
+    # Sonst trüge jemand über die Kontoverwaltung von Keycloak seinen echten Namen ein (DSG-08).
+    attributes = {attribute["name"]: attribute for attribute in user_profile(load_realm())["attributes"]}
+
+    assert set(attributes) == {"username", "email", "firstName", "lastName"}
+    for name, attribute in attributes.items():
+        assert attribute["permissions"]["edit"] == ["admin"], name
+        assert "required" not in attribute, name
+
+
 def test_schutz_gegen_passwortraten_ist_an():
     realm = load_realm()
 
