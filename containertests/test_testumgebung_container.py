@@ -7,11 +7,13 @@ meldet sich dafür selbst an und prüft, dass das Konto nach dem Aktualisieren n
 """
 
 import html
+import json
 import re
 
 import requests
 
 from containertests.conftest import TOOL, compose, wait_for
+from tests.localhost_browser import BrowserOnLocalhost
 
 BAND = "Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein."
 ERIKA = ("erika.testfrau", "testpasswort-erika")
@@ -29,14 +31,17 @@ def _form(page: str, marker: str) -> tuple[str, dict[str, str]]:
     return action, hidden
 
 
-def _login(session: requests.Session, user: tuple[str, str]) -> requests.Response:
+def _login(user: tuple[str, str]) -> requests.Response:
     """Meldet sich an wie eine Person im Browser: Login-Seite, Keycloak, zurück ins Tool."""
+    session = BrowserOnLocalhost()
     login_page = session.get(f"{TOOL}/anmelden/", timeout=30)
     action, fields = _form(login_page.text, "Mit DPV-Konto anmelden")
     keycloak_page = session.post(f"{TOOL}{action}", data=fields, timeout=30)
     assert "localhost:8081" in keycloak_page.url, keycloak_page.url
     action, fields = _form(keycloak_page.text, 'name="username"')
-    return session.post(action, data={**fields, "username": user[0], "password": user[1]}, timeout=60)
+    start_page = session.post(action, data={**fields, "username": user[0], "password": user[1]}, timeout=60)
+    assert start_page.url == f"{TOOL}/", f"Login bei Keycloak gescheitert ({start_page.status_code})"
+    return start_page
 
 
 def _number_of_accounts(env_file) -> int:
@@ -67,11 +72,8 @@ def test_login_seite_mit_band_und_hinweis_an_suchmaschinen(testumgebung):
 
 # Szenario 1
 def test_erika_meldet_sich_in_der_testumgebung_an(testumgebung):
-    session = requests.Session()
+    start_page = _login(ERIKA)
 
-    start_page = _login(session, ERIKA)
-
-    assert start_page.url == f"{TOOL}/"
     page = html.unescape(start_page.text)
     assert "Hallo Erika!" in page
     assert BAND in page
@@ -89,15 +91,33 @@ def test_fehleranzeige_bleibt_aus_obwohl_die_umgebungsdatei_sie_einschaltet(test
 
 # Szenario 6
 def test_datenbank_hat_keinen_zugang_von_aussen(testumgebung):
-    result = compose("port", "datenbank", "5432", env_file=testumgebung, check=False)
+    # Kein Port zum Mac: Docker meldet für die Datenbank keine veröffentlichte Adresse.
+    listing = compose("ps", "--format", "json", "datenbank", env_file=testumgebung).stdout
+    published = [p for line in listing.splitlines() for p in json.loads(line)["Publishers"] or []]
+    assert all(p["PublishedPort"] == 0 for p in published), published
 
-    assert result.returncode != 0 or not result.stdout.strip()
+    # Ein Container außerhalb ihres Netzes (hier Keycloak) erreicht sie nicht, das Tool schon.
+    outside = compose(
+        "exec", "-T", "keycloak", "bash", "-c", "exec 3<>/dev/tcp/datenbank/5432", env_file=testumgebung, check=False
+    )
+    assert outside.returncode != 0
+    inside = compose(
+        "exec",
+        "-T",
+        "tool",
+        "python",
+        "-c",
+        "import socket; socket.create_connection(('datenbank', 5432), 3)",
+        env_file=testumgebung,
+        check=False,
+    )
+    assert inside.returncode == 0, inside.stderr
 
 
 # Szenario 10
 def test_daten_bleiben_nach_dem_aktualisieren_erhalten(testumgebung):
     # Eigenes Konto anlegen, damit der Test nicht vom Login-Test davor abhängt.
-    _login(requests.Session(), ERIKA)
+    _login(ERIKA)
     before = _number_of_accounts(testumgebung)
     assert before >= 1
 
