@@ -139,8 +139,15 @@ def test_knoepfe_nur_mit_der_tastatur_und_ganz_zu_sehen(request, browser_name, d
     stations = _tab_to(page, "Zurück")
     stations += _tab_to(page, "Zur Startseite", steps=1)
     _all_visible(stations)
+    # Ohne Login führt die Startseite zum Login mit „next=/“; „Zurück“ zur Login-Seite ohne Zusatz.
     page.keyboard.press("Enter")
-    page.wait_for_url(f"{BASE}/anmelden/**")
+    page.wait_for_url(f"{BASE}/anmelden/?next=/")
+
+    page.goto(f"{BASE}/anmelden/")
+    _click_link_to(page, "/gibt-es-nicht/")
+    _tab_to(page, "Zurück")
+    page.keyboard.press("Enter")
+    page.wait_for_url(f"{BASE}/anmelden/")
 
 
 # Szenario 8: Prüfung auf Barrierefreiheit, auch wenn „Zurück“ zu sehen ist
