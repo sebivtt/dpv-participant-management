@@ -25,6 +25,23 @@
     });
   }
 
+  // Fehlerseiten (#21): „Zurück“ nur, wenn die vorige Seite eine Seite des Tools war, damit
+  // der Knopf nie ins Leere oder auf eine fremde Seite führt. Fremde Seiten nennt der Browser
+  // wegen der Referrer-Policy „same-origin“ meist gar nicht; eine fremde Seite kann das aber
+  // für sich selbst ausdrücklich erlauben, deshalb wird hier trotzdem verglichen. Der Knopf
+  // lädt die vorige Seite neu, wie es die Seite „Formular abgelaufen“ verlangt.
+  var back = document.querySelector("a[data-zurueck]");
+  var previous = null;
+  try {
+    previous = document.referrer ? new URL(document.referrer) : null;
+  } catch (error) {
+    previous = null;
+  }
+  if (back && previous && previous.origin === window.location.origin) {
+    back.href = previous.href;
+    back.hidden = false;
+  }
+
   // Formulare der Musterseite zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {

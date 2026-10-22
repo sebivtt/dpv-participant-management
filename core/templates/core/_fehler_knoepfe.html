@@ -1,0 +1,6 @@
+{% load i18n %}
+{# Knöpfe unter dem Text jeder Fehlerseite (#21). „Zurück“ kommt versteckt und ohne Ziel vom Server; erst app.js zeigt ihn, wenn die vorige Seite eine Seite des Tools war. So braucht der Baustein keine Anfrage (500-Seite, core/errors.py) und die Seite enthält nie eine Adresse vom Server. Auf der Musterseite (vorschau) stehen beide sichtbar und führen nirgendwohin. #}
+<div class="a-einfach-aktionen">
+  <a class="btn btn-outline-primary" {% if vorschau %}href="#inhalt"{% else %}hidden data-zurueck{% endif %}>{% translate "Zurück" %}</a>
+  <a class="btn btn-primary" href="{% if vorschau %}#inhalt{% else %}{% url "start" %}{% endif %}">{% translate "Zur Startseite" %}</a>
+</div>

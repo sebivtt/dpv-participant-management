@@ -83,6 +83,7 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-einfach-karte h1 { font-size: 1.6rem; margin: 0; }
 .a-einfach-text { color: var(--text-leise); margin: 0; }
 .a-einfach-karte form { margin: 0; }
+.a-einfach-aktionen { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
 .a-einfach-main .a-fuss { width: 100%; max-width: 420px; margin: 0; }
 
 /* ---------- Seitenleiste am PC ---------- */

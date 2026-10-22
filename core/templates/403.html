@@ -5,4 +5,5 @@
 {% block content %}
   <h1>{% translate "Dafür fehlt dir die Berechtigung." %}</h1>
   <p class="a-einfach-text">{% translate "Diese Seite ist für dein Konto nicht freigegeben." %}</p>
+  {% include "core/_fehler_knoepfe.html" %}
 {% endblock %}
