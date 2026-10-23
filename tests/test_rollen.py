@@ -18,7 +18,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.models import ProtectedError
 from django.urls import get_resolver
 
-from roles.models import Role
+from roles.models import SERVER_COMMAND, Role
 from tests.keycloak_fake import login
 from tests.test_rundumtest import ALL
 from units.models import Unit
@@ -26,6 +26,9 @@ from units.models import Unit
 R = Role.Kind
 U = Unit.Kind
 LEADS_IN_UNITS = (R.GROUP_LEAD, R.TROOP_LEAD, R.RING_LEAD, R.ASSOCIATION_LEAD)
+# Wer die Änderung macht, spielt für diese Regeln keine Rolle; das Protokoll prüft
+# tests/test_rollen_protokoll.py (#91).
+BY = SERVER_COMMAND
 
 
 def person(username: str, first_name: str, last_name: str):
@@ -42,7 +45,7 @@ def unit(kind: str, name: str, parent: Unit | None = None, **extra) -> Unit:
 def give(user, kind: str, where: Unit | None = None) -> Role:
     """Gibt eine Rolle auf demselben Weg, den später auch die Seiten nehmen."""
     role = Role(user=user, kind=kind, unit=where)
-    role.save()
+    role.save(by=BY)
     return role
 
 
@@ -69,7 +72,7 @@ def move(user, to: Unit) -> None:
     """Wechselt die Mitgliedschaft in eine andere Einheit."""
     member = membership(user)
     member.unit = to
-    member.save()
+    member.save(by=BY)
 
 
 def build_org() -> SimpleNamespace:
@@ -219,15 +222,15 @@ def test_art_und_person_einer_rolle_bleiben(org):
     lead = give(org.erika, R.GROUP_LEAD, org.falken)
     lead.kind = R.TROOP_LEAD
     lead.unit = org.walhall
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
 
     lead = Role.objects.get(pk=lead.pk)
     lead.user = org.max
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
 
     lead = Role.objects.get(pk=lead.pk)
     lead.unit = org.woelfe
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
     assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.GROUP_LEAD, "Sippe Falken")}
 
 
@@ -328,7 +331,7 @@ def test_leitung_ohne_mitgliedschaft_wird_mitglied_der_geleiteten_einheit(org):
 
     assert roles_of(org.max) == {(R.GROUP_LEAD, "Sippe Falken"), (R.MEMBER, "Sippe Falken")}
 
-    lead.delete()
+    lead.delete(by=BY)
 
     assert roles_of(org.max) == {(R.MEMBER, "Sippe Falken")}
 
@@ -408,7 +411,7 @@ def test_wechsel_mit_leitungsrolle_ausserhalb_des_neuen_pfads_wird_abgelehnt(org
     assert error.error_list[0].code == "remove_roles_first"
     assert membership(org.erika).unit == org.falken
 
-    lead.delete()
+    lead.delete(by=BY)
     move(org.erika, org.adler)
 
     assert roles_of(org.erika) == {(R.MEMBER, "Sippe Adler")}
@@ -455,7 +458,7 @@ def test_mitgliedschaft_endet_nur_ohne_leitungsrollen_in_einheiten(org):
     member = give(org.erika, R.MEMBER, org.falken)
     lead = give(org.erika, R.TROOP_LEAD, org.walhall)
 
-    error = refused(member.delete)
+    error = refused(lambda: member.delete(by=BY))
     assert error.error_list[0].code == "remove_roles_first"
 
     assert "Erika Testfrau ist noch Stammesleitung in „Walhall“. Diese Rolle muss zuerst entfernt werden." in message(
@@ -463,8 +466,8 @@ def test_mitgliedschaft_endet_nur_ohne_leitungsrollen_in_einheiten(org):
     )
     assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.TROOP_LEAD, "Walhall")}
 
-    lead.delete()
-    membership(org.erika).delete()
+    lead.delete(by=BY)
+    membership(org.erika).delete(by=BY)
 
     assert not Role.objects.filter(user=org.erika).exists()
 
@@ -476,7 +479,7 @@ def test_verbandsrollen_stehen_dem_austritt_nicht_im_weg(org):
     give(org.erika, R.EVENT_TEAM, org.dpv)
     give(org.erika, R.ADMIN)
 
-    member.delete()
+    member.delete(by=BY)
 
     assert roles_of(org.erika) == {(R.FEDERATION_LEAD, "DPV"), (R.EVENT_TEAM, "DPV"), (R.ADMIN, None)}
 
@@ -501,7 +504,7 @@ def test_admin_mit_leitungsrolle_behaelt_sie(org):
     give(org.erika, R.TROOP_LEAD, org.walhall)
     admin = give(org.erika, R.ADMIN)
 
-    admin.delete()
+    admin.delete(by=BY)
 
     assert roles_of(org.erika) == {(R.TROOP_LEAD, "Walhall"), (R.MEMBER, "Walhall")}
 
@@ -670,7 +673,7 @@ def test_gleichzeitig_leitung_und_austritt():
     give(o.erika, R.MEMBER, o.falken)
 
     results = _one_after_the_other(
-        lambda: give(o.erika, R.TROOP_LEAD, o.walhall), lambda: membership(o.erika).delete()
+        lambda: give(o.erika, R.TROOP_LEAD, o.walhall), lambda: membership(o.erika).delete(by=BY)
     )
 
     assert results["erste"] == "gespeichert"

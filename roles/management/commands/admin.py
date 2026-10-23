@@ -1,7 +1,8 @@
 """Befehl auf dem Server: eine Person zum Admin ernennen oder das Admin-Recht entfernen (#89).
 
 Bis ADM-01 (P6) wird jeder Admin so ernannt, nie über das Tool, über Keycloak oder als erstes
-angemeldetes Konto. Den Eintrag im Protokoll der Rollenänderungen ergänzt #91.
+angemeldetes Konto. Ins Protokoll der Rollenänderungen kommt „Befehl auf dem Server“ als
+Urheber (#91); wer den Befehl eingetippt hat, weiß das Tool nicht.
 
 Beispiele:
     python manage.py admin grant erika.testfrau
@@ -12,7 +13,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
 from roles import texts
-from roles.models import Role
+from roles.models import SERVER_COMMAND, Role
 from units.management.common import refuse_with_reason
 
 
@@ -43,10 +44,10 @@ class Command(BaseCommand):
                 if admin:
                     self.stdout.write(texts.ADMIN_ALREADY % names)
                     return
-                Role(user=user, kind=Role.Kind.ADMIN).save()
+                Role(user=user, kind=Role.Kind.ADMIN).save(by=SERVER_COMMAND)
                 self.stdout.write(texts.ADMIN_GRANTED % names)
                 return
             if admin is None:
                 raise CommandError(texts.NOT_ADMIN % names)
-            admin.delete()
+            admin.delete(by=SERVER_COMMAND)
             self.stdout.write(texts.ADMIN_REVOKED % names)

@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy
 
 from roles import texts
+from roles.expressions import TransactionStart
 from units.models import Kind as UnitKind
 from units.models import Unit
 
@@ -69,8 +70,10 @@ class Role(models.Model):
 
     `save()` und `delete()` sperren die Person, bis die Änderung gespeichert ist; so laufen
     gleichzeitige Änderungen an den Rollen derselben Person nacheinander. Sie lehnen mit
-    `ValidationError` und einer Meldung in Alltagssprache ab. Wer an ihnen vorbei schreibt
-    (`update()`, `bulk_create()`, `QuerySet.delete()`), umgeht die Regeln, die nur das Tool prüft.
+    `ValidationError` und einer Meldung in Alltagssprache ab und schreiben jede tatsächliche
+    Änderung in derselben Transaktion ins Protokoll (`RoleChange`). Wer an ihnen vorbei schreibt
+    (`update()`, `bulk_create()`, `QuerySet.delete()`), umgeht die Regeln, die nur das Tool
+    prüft, und das Protokoll.
     """
 
     Kind = RoleKind
@@ -95,8 +98,14 @@ class Role(models.Model):
     def __str__(self) -> str:
         return f"{self.get_kind_display()}: {self.unit or '-'}"
 
-    def save(self, *args, **kwargs) -> None:
-        """Prüft die Regeln, speichert und legt bei Bedarf die Mitgliedschaft an."""
+    def save(self, *args, by, **kwargs) -> None:
+        """Prüft die Regeln, speichert, legt bei Bedarf die Mitgliedschaft an und schreibt ins Protokoll.
+
+        `by` ist das Konto, das ändert, oder `SERVER_COMMAND`. Ohne diese Angabe lehnt das Tool
+        jede Änderung ab, damit keine Seite den Urheber still vergisst (#91). Speichern ohne
+        tatsächliche Änderung schreibt keinen Eintrag.
+        """
+        check_actor(by)
         with transaction.atomic():
             self._lock_person()
             stored = Role.objects.filter(pk=self.pk).values("user_id", "kind", "unit_id").first() if self.pk else None
@@ -112,18 +121,43 @@ class Role(models.Model):
                 if duplicate:
                     raise ValidationError(duplicate) from error
                 raise
+            if stored is None:
+                RoleChange.record(by, self.user, self.kind, self.unit, RoleChange.Action.GRANTED)
+            elif stored["unit_id"] != self.unit_id:
+                # Ein Wechsel der Mitgliedschaft; jede andere Änderung lehnt _errors() ab.
+                old_unit = Unit.objects.select_related("parent").get(pk=stored["unit_id"])
+                RoleChange.record(by, self.user, self.kind, old_unit, RoleChange.Action.REMOVED)
+                RoleChange.record(by, self.user, self.kind, self.unit, RoleChange.Action.GRANTED)
             if self.kind in LEADS_IN_UNITS and self._membership() is None:
-                Role(user=self.user, kind=RoleKind.MEMBER, unit=self.unit).save()
+                Role(user=self.user, kind=RoleKind.MEMBER, unit=self.unit).save(by=by)
 
-    def delete(self, *args, **kwargs):
-        """Entfernt die Rolle; eine Mitgliedschaft nur, wenn keine Leitungsrolle in einer Einheit mehr besteht."""
+    def delete(self, *args, by, **kwargs):
+        """Entfernt die Rolle und schreibt ins Protokoll.
+
+        Eine Mitgliedschaft endet nur, wenn keine Leitungsrolle in einer Einheit mehr besteht.
+        `by` wie bei `save()`. Regeln und Protokoll richten sich nach dem gespeicherten Stand,
+        nicht nach einem im Programm schon geänderten.
+        """
+        check_actor(by)
         with transaction.atomic():
-            self._lock_person()
-            if self.kind == RoleKind.MEMBER:
-                blocking = list(self._leads())
+            stored = self._stored()
+            if stored is not None:
+                stored._lock_person()
+                stored = self._stored()  # nach der Sperre, falls sich inzwischen etwas geändert hat
+            if stored is None:
+                return super().delete(*args, **kwargs)
+            if stored.kind == RoleKind.MEMBER:
+                blocking = list(stored._leads())
                 if blocking:
-                    raise ValidationError(self._remove_first(blocking), code="remove_roles_first")
-            return super().delete(*args, **kwargs)
+                    raise ValidationError(stored._remove_first(blocking), code="remove_roles_first")
+            deleted = super().delete(*args, **kwargs)
+            if deleted[0]:
+                RoleChange.record(by, stored.user, stored.kind, stored.unit, RoleChange.Action.REMOVED)
+            return deleted
+
+    def _stored(self) -> "Role | None":
+        """Diese Rolle, wie sie in der Datenbank steht."""
+        return Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
 
     def _lock_person(self) -> None:
         """Sperrt das Konto, damit die Regeln den Stand sehen, den die Änderung tatsächlich trifft."""
@@ -204,6 +238,83 @@ class Role(models.Model):
         return message % {"person": person_name(self.user), "roles": listed}
 
 
+# Urheber von Änderungen per Befehl auf dem Server. Wer ihn eingetippt hat, weiß das Tool nicht (#91).
+SERVER_COMMAND = object()
+
+
+def check_actor(by) -> None:
+    """Lehnt eine Änderung ab, die nicht nennt, wer sie macht."""
+    if by is SERVER_COMMAND or (isinstance(by, get_user_model()) and by.pk is not None):
+        return
+    raise ValueError("Wer die Rolle ändert, muss ein gespeichertes Konto oder SERVER_COMMAND sein.")
+
+
+class RoleChange(models.Model):
+    """Ein Eintrag im Protokoll der Rollenänderungen (#91, ROL-04).
+
+    Regeln (Klärung von #91 am 22.10.2026, Fragen bei der Umsetzung am 23.10.2026):
+    - Ein Eintrag nennt Zeitpunkt, wer geändert hat, wessen Rolle, welche Rolle in welcher
+      Einheit und ob sie vergeben oder entfernt wurde. Ein Feld für einen Grund oder anderen
+      freien Text gibt es nicht, weil darin Gesundheitsangaben landen könnten, die nie mehr
+      gelöscht würden.
+    - Namen stehen so im Eintrag, wie sie zum Zeitpunkt der Änderung hießen. Die Kennungen sind
+      bewusst keine Verweise: Ein Eintrag hindert nie daran, später ein Konto oder eine Einheit
+      zu löschen (#66), und ändert sich dabei nicht.
+    - Bei Befehlen auf dem Server steht „Befehl auf dem Server“ als Urheber, ohne Kennung.
+    - Alle Einträge einer Transaktion tragen dieselbe Uhrzeit (Beginn der äußersten Transaktion),
+      etwa „entfernt“ und „vergeben“ eines Wechsels. Die Reihenfolge gibt die Kennung `id` an,
+      nicht die Uhrzeit: Bei gleichzeitigen Änderungen kann eine früher begonnene Transaktion
+      später schreiben.
+    - Einträge lassen sich nicht ändern oder löschen: hier im Programm und zusätzlich per Regel
+      in der Datenbank (Migration 0002), die auch Sammeländerungen ablehnt. Das vollständige
+      Leeren der Datenbank bleibt möglich; das braucht der Testdaten-Befehl (#103) und der
+      Testlauf. Im Tool gibt es dafür keinen Weg.
+    - In P2 sieht niemand das Protokoll im Tool (Entscheidung W4); die Einsicht kommt mit ADM-03.
+    """
+
+    class Action(models.TextChoices):
+        GRANTED = "granted", gettext_lazy("vergeben")
+        REMOVED = "removed", gettext_lazy("entfernt")
+
+    changed_at = models.DateTimeField(db_default=TransactionStart())
+    actor_id = models.BigIntegerField(null=True)
+    actor_name = models.TextField()
+    person_id = models.BigIntegerField()
+    person_name = models.TextField()
+    kind = models.CharField(max_length=20, choices=RoleKind)
+    unit_id = models.BigIntegerField(null=True)
+    unit_name = models.TextField(blank=True)
+    action = models.CharField(max_length=10, choices=Action)
+
+    @classmethod
+    def record(cls, by, user, kind: str, unit: Unit | None, action: str) -> "RoleChange":
+        """Schreibt einen Eintrag; nur innerhalb der Transaktion der Rollenänderung aufrufen."""
+        entry = cls(
+            actor_id=None if by is SERVER_COMMAND else by.pk,
+            actor_name=str(texts.SERVER_COMMAND) if by is SERVER_COMMAND else person_name(by),
+            person_id=user.pk,
+            person_name=person_name(user),
+            kind=kind,
+            unit_id=unit.pk if unit else None,
+            unit_name=logged_name(unit) if unit else "",
+            action=action,
+        )
+        entry.save()
+        return entry
+
+    def save(self, *args, **kwargs) -> None:
+        """Schreibt einen neuen Eintrag; einen bestehenden zu ändern lehnt das Tool ab."""
+        if not self._state.adding:
+            raise ValidationError(texts.LOG_LOCKED)
+        # Nie als Änderung eines vorhandenen Eintrags speichern, auch nicht mit gesetzter Kennung.
+        kwargs["force_insert"] = True
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Einträge lassen sich nicht löschen."""
+        raise ValidationError(texts.LOG_LOCKED)
+
+
 def on_path(member_unit: Unit, target: Unit) -> bool:
     """Liegt `target` auf dem Pfad einer Person, die Mitglied in `member_unit` ist?
 
@@ -227,6 +338,13 @@ def _upwards(unit: Unit) -> list[int]:
 def person_name(user) -> str:
     """Der Name für Meldungen; ohne Namen in Keycloak der Benutzername."""
     return user.get_full_name() or user.username
+
+
+def logged_name(unit: Unit) -> str:
+    """Wie eine Einheit im Protokoll heißt: ohne Anführungszeichen, Gruppen mit ihrem Stamm."""
+    if unit.kind == UnitKind.GROUP:
+        return texts.LOGGED_GROUP_IN_TROOP % {"unit": unit.name, "troop": unit.parent.name}
+    return unit.name
 
 
 def describe(unit: Unit) -> str:
