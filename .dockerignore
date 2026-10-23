@@ -7,6 +7,7 @@
 !core
 !docker
 !units
+!roles
 !manage.py
 !pyproject.toml
 !uv.lock

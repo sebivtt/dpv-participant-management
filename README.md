@@ -179,6 +179,25 @@ In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-f
    ```
    Danach: dieselbe Ausgabe wie in V3, mit den Daten der Testumgebung.
 
+## Admins ernennen und entfernen
+
+Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung. Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt.
+
+Lokal (zuerst Schritte 3, 6, 7 und 8):
+
+A1. Eine Person zum Admin ernennen, hier das erfundene Konto `erika.testfrau`.
+   ```bash
+   uv run --env-file .env python manage.py admin grant erika.testfrau
+   ```
+   Danach: `erika.testfrau ist jetzt Admin.` Hat sich das Konto noch nie angemeldet, steht dort `CommandError: Kein Konto mit diesem Benutzernamen. Die Person muss sich zuerst einmal im Tool anmelden.`
+A2. Das Admin-Recht wieder entfernen.
+   ```bash
+   uv run --env-file .env python manage.py admin revoke erika.testfrau
+   ```
+   Danach: `erika.testfrau ist jetzt kein Admin mehr.` Ist die Person kein Admin, steht dort `CommandError: erika.testfrau ist kein Admin.`
+
+In der Testumgebung im Container steht statt `uv run --env-file .env python manage.py` wieder `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`.
+
 ## Test-Realm im Keycloak des DPV
 
 Auf dem Server meldet sich die Testumgebung nicht bei der Keycloak-Testumgebung aus `dev/` an, sondern bei einem eigenen **Test-Realm** im Keycloak des DPV (#38). Ein Realm ist ein abgeschlossener Bereich in Keycloak mit eigenen Konten; der Test-Realm `dpv-test` ist vom Realm der Mitglieder getrennt. Er hat vier erfundene Konten, und niemand kann sich dort selbst registrieren oder ein Passwort per Mail zurücksetzen. Die Importdatei liegt in `testumgebung/keycloak/dpv-test-realm.json`. Sie enthält kein Passwort und kein Client-Secret, damit niemand, der das Repo sieht, in die Testumgebung kommt.

@@ -6,6 +6,29 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-23 · Rollen: Mitgliedschaft und Leitungspfad, Rolle Admin, ROL-01 ergänzt
+
+**Entscheidung** (Sebastian; Klärung von #89 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/89#issuecomment-6343606180); Nachklärung P2 vom 22.10.2026 in #106, Fragen 4 und 9; Fragen bei der Umsetzung am 23.10.2026 in #89):
+
+1. **Mitgliedschaft und Leitung sind getrennt.** Eine Person mit Account ist Mitglied in höchstens einer Einheit (Gruppe, Stamm, Ring oder Bund), nie im Verband. Leitungsrollen hat sie nur auf ihrem Pfad: im eigenen Stamm (auch in anderen Gruppen dort) und in den Einheiten darüber; ist sie direkt Mitglied eines Rings oder Bundes, auch in allen Einheiten darunter. Sonst lehnt das Tool ab und nennt den Grund.
+2. **Automatische Mitgliedschaft:** Wer ohne Mitgliedschaft als Leitung einer Gruppe, eines Stammes, eines Rings oder eines Bundes eingesetzt wird, wird Mitglied der geleiteten Einheit und bleibt es, wenn die Leitung endet. Verbandsleitung und DPV-Veranstaltungsteam brauchen keine Mitgliedschaft und legen keine an.
+3. **Wechsel und Ende der Mitgliedschaft** gehen nur, wenn danach alle Leitungsrollen in Einheiten noch auf dem Pfad liegen; ohne Mitgliedschaft heißt das: keine Leitungsrollen in Einheiten. Sonst nennt das Tool die Rollen, die zuerst entfernt werden müssen. Leitungsrollen werden nie automatisch entfernt. Am 23.10.2026 hat Sebastian erwogen, beim Austreten die Leitungsrollen mit enden zu lassen, und ist nach dem Hinweis auf #65 und den Wortlaut von ROL-01 bei der geklärten Regel geblieben (F1 in #89).
+4. **Admin** gibt keine Rechte einer Leitung; Personendaten sieht ein Admin nur über den Support-Weg mit Protokoll (#92). Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, über den Benutzernamen eines Kontos, das sich schon einmal angemeldet hat; ein zweiter Befehl entfernt das Recht, auch beim letzten Admin. Rechte entstehen nur aus Rollen, nie aus Keycloak und nie daraus, wer etwas angelegt hat.
+5. **ROL-01 ergänzt** (#109) um den Satzteil ab „Eine Person mit Account ist Mitglied in höchstens einer Einheit …“ bis „Ohne Leitungsrolle kann sie selbst aus ihrer Einheit austreten.“, im Wortlaut der Nachklärung vom 22.10.2026, dem Sebastian zugestimmt hat.
+
+**Technische Wahl** (KI):
+
+- **Eine Tabelle für alle Rollen** (`roles.Role`: Person, Rolle, Einheit), auch für die Mitgliedschaft. So setzt die Datenbank „höchstens eine Mitgliedschaft“, „dieselbe Rolle je Einheit nur einmal“, „Admin ohne Einheit, alle anderen mit“ selbst durch, und das Protokoll (#91) beobachtet nur eine Stelle. Welche Rolle zu welcher Ebene passt und der Pfad stehen in der Regelprüfung beim Speichern und Löschen.
+- **Admin nicht als Djangos „Superuser“:** Der hätte automatisch alle Rechte; ein Admin bekommt dadurch keine.
+- **Gleichzeitige Änderungen:** Jede Änderung an den Rollen einer Person sperrt deren Konto kurz; so sehen die Regeln immer den aktuellen Stand, etwa wenn ein Wechsel und eine neue Leitung zugleich kommen.
+- **Nur die Einheit einer Mitgliedschaft lässt sich ändern** (Wechsel). Jede andere Rolle wird entfernt und neu gegeben, damit jede Änderung als solche im Protokoll steht (#91).
+- **Löschschutz:** Eine Einheit, an der eine Rolle hängt, und ein Konto mit Rollen lassen sich in der Datenbank nicht löschen.
+- **Meldungen** nennen Namen in Anführungszeichen ohne Artikel („keine Leitung in „Zugvögel““), weil sich Namen nicht automatisch beugen lassen; Gruppen mit ihrem Stamm in Klammern. Meldungen, die die Einheit der Person nennen (Pfad, zweite Mitgliedschaft, Rollen zuerst entfernen), tragen je einen eigenen Code (`outside_path`, `second_membership`, `remove_roles_first`), damit #65, #93 und #94 bei fremden Personen eine Fassung ohne Einheit zeigen können (BER-01).
+- **Befehl:** `python manage.py admin grant|revoke BENUTZERNAME` (Anleitung im `README.md`). Wer schon Admin ist, bekommt beim Ernennen nur einen Hinweis.
+- **Code-Namen** (CONTRIBUTING.md, Abschnitt 1): Rolle `role`, Mitglied `member`, Gruppenleitung `group_lead`, Stammesleitung `troop_lead`, Ringleitung `ring_lead`, Bundesleitung `association_lead`, Verbandsleitung `federation_lead`, DPV-Veranstaltungsteam `event_team`, Admin `admin`.
+
+**Umsetzung:** `roles/` (Datenmodell, Migration, Regeln, Meldungen, Befehl `admin`), `config/settings.py`, `.dockerignore`, `README.md` (Abschnitt „Admins ernennen und entfernen“), `docs/anforderungen.md` (ROL-01), Tests in `tests/test_rollen.py` und `tests/test_rollen_befehle.py`; `tests/test_testumgebung_aufbau.py` nennt die neue App.
+
 ## 2026-10-23 · Einheiten: kein Löschknopf (W5), Ring-Schalter, Personen auf jeder Ebene, eindeutige Namen
 
 **Entscheidung** (Sebastian; Klärung von #88 am 22.10.2026, Nachklärung P2 vom 22.10.2026 in #106, Fragen bei der Umsetzung am 23.10.2026 in #88). Das sind Auslegungen von ORG-01 und ORG-06; der Text der Anforderungen bleibt.
