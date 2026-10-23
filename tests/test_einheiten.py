@@ -193,6 +193,60 @@ def test_auch_der_verband_hat_keinen_schalter_hat_ringe():
     assert "Nur ein Bund hat Ringe." in rejected(Unit(kind=Kind.FEDERATION, name="DPV", has_rings=True))
 
 
+@pytest.mark.django_db
+def test_die_ebene_einer_einheit_bleibt(mosaik):
+    """Befund der unabhängigen Prüfung: Aus einem Ring mit Stämmen darf kein Stamm werden."""
+    nord = make(Kind.RING, "Nord", mosaik)
+    make(Kind.TROOP, "Leuchtturm", nord)
+
+    nord.kind = Kind.TROOP
+
+    assert "Die Ebene lässt sich nachträglich nicht ändern." in rejected(nord)
+    assert Unit.objects.get(pk=nord.pk).kind == Kind.RING
+
+
+@pytest.mark.django_db
+def test_stamm_und_ring_wechseln_nicht_den_bund(boreas, mosaik):
+    """Befund der unabhängigen Prüfung: Sonst stimmt der gemerkte Bund der Einheiten darunter nicht mehr."""
+    nord = make(Kind.RING, "Nord", mosaik)
+    walhall = make(Kind.TROOP, "Walhall", boreas)
+    make(Kind.GROUP, "Sippe Falken", walhall)
+    boreas.has_rings = True
+    boreas.save()
+
+    walhall.parent = nord
+    assert "Ein Ring oder Stamm bleibt in seinem Bund." in rejected(walhall)
+    nord.parent = boreas
+    assert "Ein Ring oder Stamm bleibt in seinem Bund." in rejected(nord)
+
+
+@pytest.mark.django_db
+def test_stamm_im_bund_mit_ringen_kommt_nicht_aus_dem_ring_heraus(mosaik):
+    """Frage 4 der Klärung: In einem Bund mit Ringen ist der Ring Pflicht, auch beim Verschieben."""
+    nord = make(Kind.RING, "Nord", mosaik)
+    leuchtturm = make(Kind.TROOP, "Leuchtturm", nord)
+
+    leuchtturm.parent = mosaik
+
+    assert "Im Bund „DPBM Mosaik“ hängt jeder neue Stamm in einem Ring." in rejected(leuchtturm)
+
+
+@pytest.mark.django_db
+def test_stamm_im_bund_in_einen_ring_verschieben_geht(boreas):
+    """Gegenprobe: Zuordnen zu einem Ring und Wechsel des Rings im selben Bund bleiben möglich (#95)."""
+    walhall = make(Kind.TROOP, "Walhall", boreas)
+    boreas.has_rings = True
+    boreas.save()
+    nord = make(Kind.RING, "Nord", boreas)
+    sued = make(Kind.RING, "Süd", boreas)
+
+    for ring in (nord, sued):
+        walhall.parent = ring
+        walhall.save()
+        walhall.refresh_from_db()
+        assert walhall.parent == ring
+
+
 # Namen
 
 

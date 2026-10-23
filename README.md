@@ -145,7 +145,7 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
 
 In P2 legen Admins den Verband und die Bünde per Befehl an, nicht über eine Seite im Tool (#88; eine Seite ist für später vorgemerkt, #107). Dieselben Befehle benennen um und schalten „hat Ringe“ ein oder aus. Ringe, Stämme und Gruppen legen später die Leitungen im Tool an (#95). Löschen gibt es nicht (Entscheidung W5 in `docs/entscheidungen.md`). Die Befehle prüfen dieselben Regeln wie das Tool: genau ein Verband, keine leeren oder doppelten Namen, höchstens 100 Zeichen; „Boreas“ und „ boreas “ gelten als gleich.
 
-Lokal (zuerst Schritte 3, 6 und 8):
+Lokal (zuerst Schritte 3, 6, 7 und 8):
 
 V1. Den Verband anlegen. Ihn gibt es nur einmal.
    ```bash

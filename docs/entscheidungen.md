@@ -19,12 +19,13 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 **Technische Wahl** (KI):
 
 - **Eine Tabelle für alle fünf Ebenen** (`units.Unit`) mit Art, Name und der Einheit darüber, statt fünf Tabellen. Später hängen Personen, Rollen und Teilnahmekreise an Einheiten jeder Ebene; mit einer Tabelle reicht dafür ein Verweis. Nachteil: Welche Art unter welcher hängen darf, prüft das Tool beim Speichern, nicht die Datenbank. Genau ein Verband, eindeutige Namen, nicht leere Namen ohne Leerzeichen am Rand und der Löschschutz stehen zusätzlich als Regeln in der Datenbank.
-- **Der Bund steht bei Ringen, Stämmen und Gruppen zusätzlich dabei,** damit die Datenbank selbst doppelte Stämme über Ringe hinweg verhindert, auch bei gleichzeitigen Anfragen. Wer später einen Stamm verschiebt (#95), muss ihn mitführen; das übernimmt das Speichern.
+- **Der Bund steht bei Ringen und Stämmen zusätzlich dabei,** damit die Datenbank selbst doppelte Stämme über Ringe hinweg verhindert, auch bei gleichzeitigen Anfragen. Damit dieser Wert nie veraltet, bleibt die Ebene einer Einheit fest, und ein Ring oder Stamm wechselt nicht den Bund. Innerhalb eines Bundes lässt sich ein Stamm weiter einem Ring zuordnen oder in einen anderen Ring verschieben (#95). Sollte ein Wechsel zwischen Bünden einmal gebraucht werden, wird er dort neu entschieden.
+- **„Ring ist Pflicht“ auch beim Verschieben** (aus Frage 4 der Klärung): In einem Bund mit Ringen kommt kein Stamm neu ohne Ring an den Bund, auch nicht, indem man ihn aus seinem Ring herausnimmt. Nur Stämme von vor dem Einschalten bleiben ohne Ring.
 - **Gleichzeitige Änderungen:** Beim Anlegen eines Rings oder Stammes und beim Umschalten von „hat Ringe“ sperrt das Tool den Bund kurz, sonst könnten ein neuer Ring und das Ausschalten zugleich durchgehen.
-- **Befehle für Admins:** `python manage.py federation create|rename` und `python manage.py association create|rename|rings|list` (Anleitung im `README.md`). Befehlsnamen sind Code und deshalb englisch; die Meldungen sind deutsch.
+- **Befehle für Admins:** `python manage.py federation create|rename` und `python manage.py association create|rename|rings|list` (Anleitung im `README.md`). Befehlsnamen sind Code und deshalb englisch; die Meldungen sind deutsch. Umbenennen und Umschalten schreiben nur das geänderte Feld, damit zwei gleichzeitige Befehle sich nicht gegenseitig überschreiben.
 - **Code-Namen** (CONTRIBUTING.md, Abschnitt 1): Einheit `unit`, Verband `federation`, Bund `association`, Ring `ring`, Stamm `troop`, Gruppe `group`, Schalter „hat Ringe“ `has_rings`.
 
-**Umsetzung:** `units/` (Datenmodell, Migration, Befehle, Meldungen), `config/settings.py`, `README.md` (Abschnitt „Verband und Bünde anlegen (Admins)“), Tests in `tests/test_einheiten.py`, `tests/test_einheiten_befehle.py` und `containertests/test_testumgebung_container.py`.
+**Umsetzung:** `units/` (Datenmodell, Migration, Befehle, Meldungen), `config/settings.py`, `README.md` (Abschnitt „Verband und Bünde anlegen (Admins)“), Tests in `tests/test_einheiten.py`, `tests/test_einheiten_befehle.py`, `tests/test_testumgebung_aufbau.py` und `containertests/test_testumgebung_container.py`; `.dockerignore` gibt den Ordner `units/` für das Container-Abbild frei.
 
 ## 2026-10-22 · Antworten der Datenschutzperson zu OP-2
 

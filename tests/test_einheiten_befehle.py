@@ -197,6 +197,21 @@ def test_ringe_ausschalten_mit_ring_nennt_den_grund(dpv):
     assert association("DPBM Mosaik").has_rings is True
 
 
+def test_gleichzeitiges_umbenennen_und_umschalten_verlieren_nichts(dpv, monkeypatch):
+    """Befund der unabhängigen Prüfung: Der Befehl schreibt nur, was er ändert."""
+    from units.management.commands import association as command
+
+    run("association", "create", "Pfadfinderbund Boreas")
+    read_before_rename = association("Pfadfinderbund Boreas")
+    run("association", "rename", "Pfadfinderbund Boreas", "Bund Boreas")
+    monkeypatch.setattr(command, "association", lambda name: read_before_rename)
+
+    run("association", "rings", "Bund Boreas", "on")
+
+    boreas = Unit.objects.get(kind=Kind.ASSOCIATION)
+    assert (boreas.name, boreas.has_rings) == ("Bund Boreas", True)
+
+
 def test_schalter_nur_mit_on_oder_off(dpv):
     run("association", "create", "DPBM Mosaik")
 

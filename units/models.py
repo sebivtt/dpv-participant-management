@@ -34,7 +34,8 @@ ALLOWED_PARENTS = {
     Kind.TROOP: ((Kind.RING, Kind.ASSOCIATION), texts.TROOP_PARENT),
     Kind.GROUP: ((Kind.TROOP,), texts.GROUP_PARENT),
 }
-BELOW_ASSOCIATION = (Kind.RING, Kind.TROOP, Kind.GROUP)
+# Ebenen, bei denen der Bund zusätzlich gespeichert wird (siehe Feld `association`).
+WITH_ASSOCIATION = (Kind.RING, Kind.TROOP)
 
 
 class Unit(models.Model):
@@ -50,8 +51,11 @@ class Unit(models.Model):
       was sich nur in Groß- und Kleinschreibung oder Leerzeichen am Rand unterscheidet.
     - Eine Einheit, unter der noch etwas hängt, lässt sich nicht löschen (Entscheidung W5).
 
+    - Die Ebene einer Einheit bleibt, und ein Ring oder Stamm wechselt nicht den Bund.
+
     Die Regeln gelten bei jedem Speichern, auch für Testdaten und spätere Seiten; `save()`
-    lehnt mit `ValidationError` und einer Meldung in Alltagssprache ab.
+    lehnt mit `ValidationError` und einer Meldung in Alltagssprache ab. Wer an `save()` vorbei
+    schreibt (`update()`, `bulk_create()`), umgeht die Regeln, die nur das Tool prüft.
     """
 
     Kind = Kind
@@ -61,9 +65,11 @@ class Unit(models.Model):
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.PROTECT, related_name="children"
     )
-    # Der Bund, zu dem ein Ring, Stamm oder eine Gruppe gehört. Steht zusätzlich zur Einheit
-    # darüber, damit die Datenbank selbst „kein Stamm heißt im Bund zweimal gleich“ prüfen
-    # kann, auch über Ringe hinweg und bei gleichzeitigen Anfragen. Setzt `save()` selbst.
+    # Der Bund, zu dem ein Ring oder Stamm gehört. Steht zusätzlich zur Einheit darüber, damit
+    # die Datenbank selbst „kein Stamm heißt im Bund zweimal gleich“ prüfen kann, auch über
+    # Ringe hinweg und bei gleichzeitigen Anfragen. Setzt `save()` selbst. Gruppen brauchen ihn
+    # nicht (eindeutig im Stamm), und ein Ring oder Stamm wechselt nie den Bund; so kann der
+    # Wert bei keiner Einheit veralten.
     association = models.ForeignKey(
         "self", null=True, blank=True, editable=False, on_delete=models.PROTECT, related_name="+"
     )
@@ -78,8 +84,8 @@ class Unit(models.Model):
                 name="unit_parent_except_federation",
             ),
             models.CheckConstraint(
-                condition=Q(kind__in=BELOW_ASSOCIATION, association__isnull=False)
-                | Q(kind__in=(Kind.FEDERATION, Kind.ASSOCIATION), association__isnull=True),
+                condition=Q(kind__in=WITH_ASSOCIATION, association__isnull=False)
+                | (~Q(kind__in=WITH_ASSOCIATION) & Q(association__isnull=True)),
                 name="unit_association_below_association",
             ),
             models.CheckConstraint(
@@ -126,7 +132,8 @@ class Unit(models.Model):
 
     def clean(self) -> None:
         """Prüft Ebene, Ringe und Namen und sammelt alle Gründe für eine Ablehnung."""
-        errors = [*self._parent_errors(), *self._ring_errors()]
+        stored = Unit.objects.filter(pk=self.pk).values("kind", "parent_id", "association_id").first()
+        errors = [*self._change_errors(stored), *self._parent_errors(), *self._ring_errors(stored)]
         clash = self._name_clash()
         if clash:
             errors.append(clash)
@@ -134,8 +141,8 @@ class Unit(models.Model):
             raise ValidationError(errors)
 
     def _find_association(self) -> "Unit | None":
-        """Der Bund über einem Ring, Stamm oder einer Gruppe; bei falscher Ebene keiner."""
-        if self.kind not in BELOW_ASSOCIATION or self.parent is None:
+        """Der Bund über einem Ring oder Stamm; bei anderer oder falscher Ebene keiner."""
+        if self.kind not in WITH_ASSOCIATION or self.parent is None:
             return None
         if self.parent.kind == Kind.ASSOCIATION:
             return self.parent
@@ -152,6 +159,16 @@ class Unit(models.Model):
         if locked:
             list(Unit.objects.select_for_update().filter(pk=locked).values_list("pk"))
 
+    def _change_errors(self, stored: dict | None) -> list:
+        """Was sich an einer gespeicherten Einheit nicht ändern darf."""
+        if stored is None:
+            return []
+        if stored["kind"] != self.kind:
+            return [texts.KIND_FIXED]
+        if self.kind in WITH_ASSOCIATION and stored["association_id"] != self.association_id:
+            return [texts.STAYS_IN_ASSOCIATION]
+        return []
+
     def _parent_errors(self) -> list:
         """Hängt die Einheit unter der richtigen Ebene? Eine unbekannte Art meldet clean_fields."""
         if self.kind not in ALLOWED_PARENTS:
@@ -163,7 +180,7 @@ class Unit(models.Model):
             valid = self.parent is None
         return [] if valid else [message]
 
-    def _ring_errors(self) -> list:
+    def _ring_errors(self, stored: dict | None) -> list:
         """Regeln zum Schalter „hat Ringe“. Liest den Schalter frisch aus der Datenbank."""
         if self.has_rings and self.kind != Kind.ASSOCIATION:
             return [texts.ONLY_ASSOCIATION_HAS_RINGS]
@@ -176,8 +193,12 @@ class Unit(models.Model):
         association = Unit.objects.get(pk=self.association_id)
         if self.kind == Kind.RING and not association.has_rings:
             return [texts.RINGS_SWITCHED_OFF % {"association": association.name}]
-        new_troop_without_ring = self._state.adding and self.parent_id == association.pk
-        if self.kind == Kind.TROOP and association.has_rings and new_troop_without_ring:
+        # Stämme von vor dem Einschalten dürfen ohne Ring bleiben; neu ohne Ring an den Bund
+        # kommt keiner, auch nicht durch Verschieben aus einem Ring.
+        placed_without_ring = self.parent_id == association.pk and (
+            stored is None or stored["parent_id"] != self.parent_id
+        )
+        if self.kind == Kind.TROOP and association.has_rings and placed_without_ring:
             return [texts.NEW_TROOP_NEEDS_RING % {"association": association.name}]
         return []
 

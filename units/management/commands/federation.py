@@ -33,5 +33,5 @@ class Command(BaseCommand):
             if unit is None:
                 raise CommandError(texts.CREATE_FEDERATION_FIRST)
             unit.name = name
-            unit.save()
+            unit.save(update_fields=["name"])
             self.stdout.write(texts.FEDERATION_RENAMED % {"name": unit.name})

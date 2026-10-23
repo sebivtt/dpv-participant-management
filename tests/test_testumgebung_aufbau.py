@@ -167,6 +167,7 @@ def test_ins_abbild_kommt_nur_was_ausdruecklich_erlaubt_ist():
         "config",
         "core",
         "docker",
+        "units",
         "manage.py",
         "pyproject.toml",
         "uv.lock",
@@ -186,6 +187,18 @@ def test_auch_in_freigegebenen_ordnern_keine_zugangsdaten_und_keine_daten():
     for pattern in ("**/*.dump", "**/*.sql.gz", "**/*.sqlite3", "**/*.log", "**/__pycache__"):
         assert pattern in excluded_afterwards, pattern
     assert ".env" not in DOCKERFILE.read_text().replace(".env.example", "")
+
+
+def test_jede_eigene_app_kommt_ins_abbild():
+    # Fehlt eine neue App in .dockerignore, startet das Tool im Container nicht, obwohl alle
+    # übrigen Tests grün sind (passiert bei #88 mit „units“; erst der Container-Test bemerkte es).
+    from django.conf import settings
+
+    allowed = {line[1:] for line in _dockerignore() if line.startswith("!")}
+    own_apps = {app.split(".")[0] for app in settings.INSTALLED_APPS if (BASE_DIR / app.split(".")[0]).is_dir()}
+
+    assert own_apps
+    assert own_apps <= allowed, own_apps - allowed
 
 
 def test_abbild_enthaelt_nur_die_pakete_fuer_den_betrieb():

@@ -13,6 +13,8 @@ ASSOCIATION_PARENT = gettext_lazy("Ein Bund hängt am Verband.")
 RING_PARENT = gettext_lazy("Ein Ring hängt an einem Bund.")
 TROOP_PARENT = gettext_lazy("Ein Stamm hängt an einem Ring oder direkt an einem Bund.")
 GROUP_PARENT = gettext_lazy("Eine Gruppe hängt an einem Stamm.")
+KIND_FIXED = gettext_lazy("Die Ebene lässt sich nachträglich nicht ändern.")
+STAYS_IN_ASSOCIATION = gettext_lazy("Ein Ring oder Stamm bleibt in seinem Bund.")
 ONLY_ASSOCIATION_HAS_RINGS = gettext_lazy("Nur ein Bund hat Ringe.")
 RINGS_SWITCHED_OFF = gettext_lazy(
     "Im Bund „%(association)s“ ist „hat Ringe“ ausgeschaltet. Ringe gibt es nur in einem Bund mit Ringen."

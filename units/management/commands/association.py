@@ -52,13 +52,14 @@ class Command(BaseCommand):
         unit = association(name)
         old = unit.name
         unit.name = new_name
-        unit.save()
+        # Nur den Namen schreiben, damit ein gleichzeitiges Umschalten nicht verloren geht.
+        unit.save(update_fields=["name"])
         self.stdout.write(texts.ASSOCIATION_RENAMED % {"old": old, "new": unit.name})
 
     def _rings(self, name: str, switch: str, **options):
         unit = association(name)
         unit.has_rings = switch == "on"
-        unit.save()
+        unit.save(update_fields=["has_rings"])
         self.stdout.write((texts.RINGS_NOW_ON if unit.has_rings else texts.RINGS_NOW_OFF) % {"name": unit.name})
 
     def _list(self, **options):
