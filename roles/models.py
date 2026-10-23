@@ -54,6 +54,9 @@ class Role(models.Model):
     - Jede Rolle außer Admin hängt an genau einer Einheit der passenden Ebene. Dieselbe Rolle
       hat eine Person in derselben Einheit höchstens einmal, Admin höchstens einmal.
     - Mitglied ist eine Person in höchstens einer Einheit, nie im Verband.
+    - Meldungen, die die Einheit der Person nennen, tragen einen Code (`outside_path`,
+      `second_membership`, `remove_roles_first`). Seiten für Leitungen (#65, #93, #94) zeigen
+      bei Personen außerhalb ihres Bereichs damit eine Fassung ohne Einheit (BER-01).
     - Leitungsrollen in Einheiten liegen auf dem Pfad der Mitgliedschaft: im eigenen Stamm (auch
       in anderen Gruppen dort) und in den Einheiten darüber; wer direkt Mitglied eines Rings oder
       Bundes ist, auch in allen Einheiten darunter.
@@ -119,7 +122,7 @@ class Role(models.Model):
             if self.kind == RoleKind.MEMBER:
                 blocking = list(self._leads())
                 if blocking:
-                    raise ValidationError(self._remove_first(blocking))
+                    raise ValidationError(self._remove_first(blocking), code="remove_roles_first")
             return super().delete(*args, **kwargs)
 
     def _lock_person(self) -> None:
@@ -149,10 +152,10 @@ class Role(models.Model):
         if self.kind == RoleKind.MEMBER and stored and stored["unit_id"] != self.unit_id:
             blocking = [lead for lead in self._leads() if not on_path(self.unit, lead.unit)]
             if blocking:
-                return [self._remove_first(blocking)]
+                return [ValidationError(self._remove_first(blocking), code="remove_roles_first")]
         return []
 
-    def _duplicate_error(self) -> str | None:
+    def _duplicate_error(self) -> "str | ValidationError | None":
         """Meldung, wenn die Person diese Rolle dort schon hat; sonst None."""
         others = Role.objects.filter(user_id=self.user_id).exclude(pk=self.pk).select_related("unit__parent")
         name = person_name(self.user)
@@ -160,7 +163,10 @@ class Role(models.Model):
             return texts.ALREADY_ADMIN % {"person": name} if others.filter(kind=RoleKind.ADMIN).exists() else None
         if self.kind == RoleKind.MEMBER:
             other = others.filter(kind=RoleKind.MEMBER).first()
-            return texts.SECOND_MEMBERSHIP % {"person": name, "unit": describe(other.unit)} if other else None
+            if other is None:
+                return None
+            message = texts.SECOND_MEMBERSHIP % {"person": name, "unit": describe(other.unit)}
+            return ValidationError(message, code="second_membership")
         if others.filter(kind=self.kind, unit_id=self.unit_id).exists():
             return texts.ALREADY_HAS_ROLE % {"person": name, "role": self.get_kind_display(), "unit": describe(self.unit)}
         return None

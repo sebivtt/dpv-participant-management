@@ -203,6 +203,7 @@ def test_hoechstens_eine_mitgliedschaft(org):
         "Erika Testfrau ist schon Mitglied in „Sippe Falken“ (Walhall). "
         "Mitglied ist man in höchstens einer Organisation." in message(error)
     )
+    assert error.error_list[0].code == "second_membership"
     assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken")}
 
 
@@ -404,6 +405,7 @@ def test_wechsel_mit_leitungsrolle_ausserhalb_des_neuen_pfads_wird_abgelehnt(org
         "Erika Testfrau ist noch Gruppenleitung in „Meute Wölfe“ (Walhall). Diese Rolle muss zuerst entfernt werden."
         in message(error)
     )
+    assert error.error_list[0].code == "remove_roles_first"
     assert membership(org.erika).unit == org.falken
 
     lead.delete()
@@ -454,6 +456,7 @@ def test_mitgliedschaft_endet_nur_ohne_leitungsrollen_in_einheiten(org):
     lead = give(org.erika, R.TROOP_LEAD, org.walhall)
 
     error = refused(member.delete)
+    assert error.error_list[0].code == "remove_roles_first"
 
     assert "Erika Testfrau ist noch Stammesleitung in „Walhall“. Diese Rolle muss zuerst entfernt werden." in message(
         error
