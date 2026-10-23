@@ -12,7 +12,7 @@ from allauth.account.adapter import DefaultAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialLogin
-from allauth.socialaccount.providers.base import AuthProcess
+from allauth.socialaccount.providers.base import AuthError, AuthProcess
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest, HttpResponseRedirect
@@ -22,6 +22,10 @@ from requests import RequestException
 from accounts import texts
 
 logger = logging.getLogger(__name__)
+
+# Die Fehlerwerte, die allauth beim gescheiterten Login liefert (allauth 65.20.1). Nur sie
+# kommen ins Log; ein anderer Wert könnte frei gewählten Text aus der Adresse enthalten (#75).
+KNOWN_AUTH_ERRORS = (AuthError.UNKNOWN, AuthError.CANCELLED, AuthError.DENIED)
 
 
 def back_to_login_page(request: HttpRequest, hint: str) -> ImmediateHttpResponse:
@@ -110,10 +114,11 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         """Führt bei jedem gescheiterten Login zurück zur Login-Seite mit Hinweis, nie zu einer Fehlerseite.
 
         Ist Keycloak nicht erreichbar, lautet der Hinweis anders als bei einem abgebrochenen
-        oder ungültigen Login, damit niemand vergeblich weiter probiert.
+        oder ungültigen Login, damit niemand vergeblich weiter probiert. Ins Log kommt nur
+        einer der bekannten Fehlerwerte von allauth, sonst „anderer Wert“.
         """
         if isinstance(exception, RequestException):
             logger.warning("Login nicht möglich: Keycloak nicht erreichbar (%s)", type(exception).__name__)
             raise back_to_login_page(request, texts.KEYCLOAK_UNREACHABLE)
-        logger.info("Login nicht abgeschlossen: %s", error)
+        logger.info("Login nicht abgeschlossen: %s", error if error in KNOWN_AUTH_ERRORS else "anderer Wert")
         raise back_to_login_page(request, texts.LOGIN_CANCELLED)

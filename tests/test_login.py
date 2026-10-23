@@ -13,14 +13,17 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.models import Session
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.db import connection
-from django.test import Client
+from django.test import Client, RequestFactory
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
+from accounts.adapter import SocialAccountAdapter
 from tests.keycloak_fake import ERIKA, MAX, RETURN, keycloak_parameters, login, start_login
 
 pytestmark = pytest.mark.django_db
@@ -481,8 +484,6 @@ def test_ohne_keycloak_angaben_startet_das_tool_nicht():
 def test_zwei_gleichzeitige_erste_logins_ohne_fehlerseite_und_ohne_verwaistes_konto(client, keycloak, monkeypatch):
     # Doppelklick oder zwei Tabs: Während die Rückkehr von A läuft, ist die von B schon fertig.
     # B läuft wie im Betrieb über eine eigene Datenbankverbindung (eigener Thread).
-    from accounts.adapter import SocialAccountAdapter
-
     other = Client()
     state_a = keycloak_parameters(start_login(client))["state"]
     state_b = keycloak_parameters(start_login(other))["state"]
@@ -569,3 +570,54 @@ def test_falsche_keycloak_adresse_ohne_fehlerseite(client, keycloak):
     response = start_login(client)
 
     _assert_lands_on_login_page_with(client, response, HINT_UNREACHABLE)
+
+
+# #75 (Befund K3 aus #73): Beim abgebrochenen Login kommen nur die drei bekannten Werte von
+# allauth ins Log, jeder andere als „anderer Wert“. Erfundene Mail als frei gewählter Text.
+FREE_TEXT = "geheim.erika@example.org"
+
+
+def test_frei_gewaehlter_fehler_in_der_adresse_kommt_nicht_ins_log(client, keycloak, log_output):
+    # Wache: allauth 65.20.1 macht daraus schon selbst „unknown“. Besteht deshalb auch ohne die
+    # Prüfung im Tool und meldet, falls eine künftige Fassung von allauth den Text weitergibt.
+    state = keycloak_parameters(start_login(client))["state"]
+
+    response = client.get(RETURN, {"state": state, "error": FREE_TEXT})
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+    log = log_output()
+    assert "Login nicht abgeschlossen: unknown" in log
+    assert "erika" not in log
+
+
+def _authentication_error(error: str) -> None:
+
+    request = RequestFactory().get(RETURN)
+    request.session = {}
+    request._messages = FallbackStorage(request)
+    with pytest.raises(ImmediateHttpResponse):
+        SocialAccountAdapter(request).on_authentication_error(request, provider=None, error=error)
+
+
+def test_frei_gewaehlter_fehlerwert_steht_als_anderer_wert_im_log(log_output):
+    _authentication_error(FREE_TEXT)
+
+    log = log_output()
+    assert "Login nicht abgeschlossen: anderer Wert" in log
+    assert "erika" not in log
+
+
+# Szenario 8 aus #75: Gegenprobe
+@pytest.mark.parametrize("error", ["cancelled", "unknown", "denied"])
+def test_bekannte_fehlerwerte_von_allauth_stehen_weiter_im_log(log_output, error):
+    _authentication_error(error)
+
+    assert f"Login nicht abgeschlossen: {error}\n" in log_output()
+
+
+def test_echter_abbruch_steht_weiter_als_cancelled_im_log(client, keycloak, log_output):
+    state = keycloak_parameters(start_login(client))["state"]
+
+    client.get(RETURN, {"state": state, "error": "access_denied"})
+
+    assert "Login nicht abgeschlossen: cancelled" in log_output()

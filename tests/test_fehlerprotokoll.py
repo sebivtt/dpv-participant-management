@@ -4,6 +4,7 @@ Geprüft wird die tatsächliche Ausgabe der eingestellten Log-Ausgaben, nicht nu
 Django übergeben wird. Alle Daten sind erfunden.
 """
 
+import io
 import logging
 import os
 import re
@@ -131,6 +132,96 @@ def test_auch_andere_logeintraege_zeigen_vom_fehler_nur_die_art(log_output):
 
     log = log_output()
     assert log.count("ValueError") == 2
+    assert "erika" not in log
+
+
+# #75: Auch die Log-Zeile selbst zeigt von einem Fehler nur die Art, nicht nur der Ablauf darunter.
+# Szenarien 1 bis 3 und 9 aus dem Issue; erfundene Mail im Meldungstext.
+@pytest.mark.parametrize("logger_name", ["core", "allauth"])
+def test_fehler_als_logzeile_oder_platzhalter_zeigt_nur_die_art(log_output, logger_name):
+    log_target = logging.getLogger(logger_name)
+    try:
+        raise ValueError("erika.testfrau@example.org")
+    except ValueError as error:
+        log_target.exception(error)
+        log_target.error("Fehler: %s", error)
+        log_target.error("Fehler: %(fehler)s", {"fehler": error})
+
+    log = log_output()
+    assert "erika" not in log
+    assert f"{logger_name} ValueError\n" in log
+    assert log.count("Fehler: ValueError") == 2
+
+
+# Szenario 4 aus #75
+def test_normale_logzeile_mit_platzhalter_bleibt_unveraendert(log_output):
+    logging.getLogger("core").warning("Nicht gefunden: %s", "/profil/")
+
+    assert "core Nicht gefunden: /profil/\n" in log_output()
+
+
+# Szenario 10 aus #75
+def test_fehler_aus_fremdem_paket_steht_mit_vollem_namen_in_der_logzeile(log_output):
+    logging.getLogger("allauth").error("Datenbank: %s", OperationalError("erika@example.org"))
+
+    log = log_output()
+    assert "Datenbank: django.db.utils.OperationalError" in log
+    assert "erika" not in log
+
+
+def test_andere_ausgaben_bekommen_den_logeintrag_unveraendert(log_output):
+    # Der Schutz arbeitet auf einer Kopie; der Eintrag selbst bleibt, wie er ist.
+    entries = []
+
+    class Collect(logging.Handler):
+        def emit(self, record):
+            entries.append(record)
+
+    collector = Collect()
+    log_target = logging.getLogger("core")
+    log_target.addHandler(collector)
+    try:
+        error = ValueError("erika@example.org")
+        log_target.error("Fehler: %s", error)
+    finally:
+        log_target.removeHandler(collector)
+
+    assert "erika" not in log_output()
+    assert entries[0].args == (error,)
+
+
+# Befunde der unabhängigen Prüfung zu #75
+def test_unpassende_platzhalter_bringen_den_meldungstext_nicht_ins_log(log_output, monkeypatch):
+    # Scheitert das Zusammensetzen der Zeile, schreibt Python sonst den ursprünglichen Eintrag
+    # samt Werten als eigene Fehlermeldung aus, und die Zeile selbst ginge verloren.
+    # Die Aufzeichnung von pytest bricht dabei den Test ab; im Betrieb gibt es sie nicht.
+    root = logging.getLogger()
+    tool_handlers = [handler for handler in root.handlers if not type(handler).__module__.startswith("_pytest")]
+    monkeypatch.setattr(root, "handlers", tool_handlers)
+    # Gewollt falsch: Fremde Pakete prüft ruff nicht.
+    logging.getLogger("allauth").error("A %s %s", ValueError("erika@example.org"))  # noqa: PLE1206 -- gewollt
+
+    log = log_output()
+    assert "erika" not in log
+    assert "allauth Log-Zeile nicht lesbar (TypeError)" in log
+
+
+def test_schon_gespeicherter_ablauf_aus_anderer_ausgabe_kommt_nicht_ins_log(log_output):
+    # Eine andere Ausgabe mit gewöhnlicher Darstellung speichert den vollen Ablauf am Eintrag.
+    plain = logging.StreamHandler(io.StringIO())
+    plain.setFormatter(logging.Formatter())
+    log_target = logging.getLogger("core")
+    log_target.handlers.insert(0, plain)
+    try:
+        try:
+            raise ValueError("erika@example.org")
+        except ValueError:
+            log_target.exception("Beispiel")
+    finally:
+        log_target.removeHandler(plain)
+
+    log = log_output()
+    assert "ValueError" in log
     assert "erika" not in log
 
 

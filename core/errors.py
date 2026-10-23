@@ -7,10 +7,12 @@ um die es geht (z. B. „Mail erika@… existiert schon“). Statt der echten Ad
 Muster im Log, weil schon die Adresse eine Kontonummer enthalten kann (z. B. /konto/17/).
 """
 
+import copy
 import logging
 import secrets
 import sys
 import traceback
+from collections.abc import Mapping
 from pathlib import Path
 from types import TracebackType
 
@@ -59,23 +61,68 @@ def _code_location(filename: str) -> str:
     return path.name
 
 
-def describe_exception(error_type: type[BaseException], tb: TracebackType | None) -> str:
-    """Beschreibt einen Fehler nur durch seine Art und die Stellen im Code, ohne den Meldungstext."""
+def exception_kind(error_type: type[BaseException]) -> str:
+    """Name der Fehlerart, bei Fehlern aus Paketen mit Modul, z. B. django.db.utils.OperationalError."""
     name = error_type.__qualname__
     if error_type.__module__ != "builtins":
         name = f"{error_type.__module__}.{name}"
+    return name
+
+
+def describe_exception(error_type: type[BaseException], tb: TracebackType | None) -> str:
+    """Beschreibt einen Fehler nur durch seine Art und die Stellen im Code, ohne den Meldungstext."""
     frames = [
         f"  {_code_location(frame.filename)}:{frame.lineno} in {frame.name}" for frame in traceback.extract_tb(tb)
     ]
-    return "\n".join([name, *frames])
+    return "\n".join([exception_kind(error_type), *frames])
+
+
+def _without_message_text(value):
+    """Ersetzt einen Fehler durch den Namen seiner Art; alles andere bleibt, wie es ist."""
+    if isinstance(value, BaseException):
+        return exception_kind(type(value))
+    return value
 
 
 class SafeFormatter(logging.Formatter):
-    """Log-Ausgabe, die bei Fehlern nur Art und Stellen im Code zeigt, nie den Meldungstext.
+    """Log-Ausgabe, die bei Fehlern nur Art und Stellen im Code zeigt, nie den Meldungstext (#75).
 
-    Gilt für alle Log-Einträge, auch aus fremden Paketen, damit kein späterer
-    logger.exception() den Meldungstext doch noch ins Log bringt.
+    Gilt für alle Log-Einträge, auch aus fremden Paketen. Geschützt ist ein Fehler an diesen
+    Stellen: im angehängten Ablauf (logger.exception()), als Meldung selbst
+    (logger.exception(fehler)) und als Wert für einen Platzhalter (logger.error("… %s", fehler)).
+
+    Grenze: Text, der schon vor dem Log-Aufruf fertig ist, kann der Schutz nicht mehr als
+    Fehler erkennen. Im eigenen Code verbietet ruff deshalb zusammengebaute Log-Zeilen
+    (Regelgruppe G in ruff.toml: f-Strings, str.format, % oder + im Log-Aufruf). Nicht erkannt
+    wird ein ausdrücklich in Text umgewandelter Fehler wie str(fehler) oder repr(fehler);
+    darauf achtet die Prüfung von Hand. Ebenso nicht ein Fehler, der in einer Liste oder
+    einem anderen Wert steckt. ruff erkennt einen Logger nur an seinem Namen; im eigenen Code
+    heißt er deshalb immer logger.
     """
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Ersetzt Fehler in Meldung und Platzhaltern durch ihre Art, auf einer Kopie des Eintrags.
+
+        Auf einer Kopie, weil derselbe Eintrag auch an andere Ausgaben geht, die ihn
+        unverändert erwarten.
+        """
+        record = copy.copy(record)
+        # Eine andere Ausgabe kann den vollen Ablauf schon am Eintrag gespeichert haben.
+        record.exc_text = None
+        record.msg = _without_message_text(record.msg)
+        if isinstance(record.args, Mapping):
+            record.args = {key: _without_message_text(value) for key, value in record.args.items()}
+        elif record.args:
+            record.args = tuple(_without_message_text(value) for value in record.args)
+        try:
+            return super().format(record)
+        except Exception as failure:
+            # Bewusst breit: Scheitert das Zusammensetzen, etwa weil Platzhalter und Werte nicht
+            # zusammenpassen, schreibt Python sonst den ursprünglichen Eintrag samt Werten aus.
+            # So bleibt die Zeile erhalten, und vermerkt wird nur die Art des Problems.
+            record.msg = f"Log-Zeile nicht lesbar ({type(failure).__qualname__})"
+            record.args = ()
+            return super().format(record)
 
     def formatException(self, ei) -> str:
         """Ersetzt Pythons vollständige Fehlerausgabe durch die Beschreibung ohne Meldungstext."""
