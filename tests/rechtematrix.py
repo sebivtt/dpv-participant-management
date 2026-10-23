@@ -48,7 +48,7 @@ def rows(text: str) -> list[list[str]]:
         cells = _cells(line)
         if cells[0] == "Kennung":
             in_matrix_table = True
-        elif in_matrix_table and not set(cells[0]) <= set("-: "):
+        elif in_matrix_table and not all(re.fullmatch(r":?-+:?", cell) for cell in cells):
             found.append(cells)
     return found
 

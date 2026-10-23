@@ -21,7 +21,7 @@ Erster Entwurf für P2 vom 23.10.2026 (#87). Spätere Phasen ergänzen ihre Zeil
 
 ## So liest man die Matrix
 
-**Grundregel:** Was hier nicht ausdrücklich erlaubt ist, ist verboten (`CONTRIBUTING.md`, Abschnitt 4). Hat eine Person mehrere Rollen, darf sie alles, was eine davon erlaubt (#90). Rechte an Personen und Einheiten entstehen nur aus Rollen und Mitgliedschaften im Tool, nie aus Keycloak und nie daraus, wer etwas angelegt hat (#89). Eigene Rechte haben nur die Veranstaltungsleitung (wer eine Veranstaltung anlegt, leitet sie, TEAM-01) und die Ansprechperson einer Anmeldung (#90). Rechte werden bei jedem Klick neu berechnet; wer eine Rolle verliert, verliert das Recht beim nächsten Klick (#90).
+**Grundregel:** Was hier nicht ausdrücklich erlaubt ist, ist verboten (`CONTRIBUTING.md`, Abschnitt 4). Hat eine Person mehrere Rollen, darf sie alles, was eine davon erlaubt (#90). Rechte an Personen und Einheiten entstehen nur aus Rollen und Mitgliedschaften im Tool, nie aus Keycloak und nie daraus, wer etwas angelegt hat (#89). Ausnahmen: Eigene Rechte haben die Veranstaltungsleitung (wer eine Veranstaltung anlegt, leitet sie, TEAM-01) und die Ansprechperson einer Anmeldung (#90). Rechte werden bei jedem Klick neu berechnet; wer eine Rolle verliert, verliert das Recht beim nächsten Klick (#90).
 
 **Spalten:**
 
@@ -43,7 +43,7 @@ Erster Entwurf für P2 vom 23.10.2026 (#87). Spätere Phasen ergänzen ihre Zeil
 - **Ansprechperson:** wer eine Anmeldung abgegeben hat.
 - **Jede Person mit Konto:** alle oben, egal mit welcher Rolle.
 
-**Verbotszeilen** sagen, was eine Rolle nicht gibt. Hat eine Person zusätzlich eine andere Rolle, darf sie, was diese erlaubt. Gilt ein Verbot für alle, steht „Jede Person mit Konto“. Ausnahmen aus anderen Zeilen nennt die Spalte „Ergebnis“ mit Kennung.
+**Verbotszeilen** sagen, was eine Rolle nicht gibt. Hat eine Person zusätzlich eine andere Rolle oder ist sie Veranstaltungsleitung oder Ansprechperson, darf sie, was diese Zeilen erlauben. Gilt ein Verbot für alle, steht „Jede Person mit Konto“. Ausnahmen aus anderen Zeilen nennt die Spalte „Ergebnis“ mit Kennung.
 
 **Kennungen:** Die Buchstaben stehen für den Abschnitt oder einen Teil davon (im Abschnitt „Veranstaltungen und Anmeldungen“: VA und AN).
 
@@ -62,7 +62,7 @@ Erster Entwurf für P2 vom 23.10.2026 (#87). Spätere Phasen ergänzen ihre Zeil
 | EP-05 | Jede Person mit Konto, auch Leitungen und Admins | Vorname, Nachname, Benutzername und Mail eines Kontos | ändern im Tool | verboten; sie kommen aus dem DPV-Konto | #96, #65 | geplant (#96) |
 | EP-06 | Mitglied | eigene Mitgliedschaft | beenden (austreten) | erlaubt, nur ohne Leitungsrollen in Einheiten | ROL-01, #65 | geplant (#65) |
 | EP-07 | Jede Person mit Konto | Mitgliedschaft einer anderen Person | über „austreten“ beenden | verboten | #65 | geplant (#65) |
-| EP-08 | Jede Person mit Konto, auch Konto ohne Zuordnung | sich selbst einer Einheit zuordnen | über „Aufnehmen“ als Mitglied eintragen | verboten; außer der automatischen Mitgliedschaft beim Einsetzen als Leitung (RO-12, RO-16, #89) | #65, #89 | geplant (#65) |
+| EP-08 | Jede Person mit Konto, auch Konto ohne Zuordnung | sich selbst einer Einheit zuordnen | über „Aufnehmen“ als Mitglied eintragen | verboten; außer der automatischen Mitgliedschaft beim Einsetzen als Leitung (RO-16, #89) | #65, #89 | geplant (#65) |
 
 ## Personen mit Konto
 
@@ -73,8 +73,8 @@ Was Leitungen sehen: Name, Fahrtenname, Mail, Organisation und Rollen (#87, Frag
 | PK-01 | Gruppenleitung | Mitglieder ihrer Gruppe | ansehen | erlaubt | BER-01, #87 | geplant (#65) |
 | PK-02 | Stammesleitung | Mitglieder ihres Stammes und seiner Gruppen | ansehen | erlaubt | BER-01, #87 | geplant (#65) |
 | PK-03 | Ringleitung, Bundesleitung | Mitglieder ihres Rings bzw. Bundes und aller Einheiten darunter | ansehen | erlaubt | BER-01, #87 | geplant (#65) |
-| PK-04 | Leitung | Personen mit Konto außerhalb ihres Bereichs, z. B. Stammesleitung der Zugvögel bei Walhall, Gruppenleitung bei einer anderen Gruppe ihres Stammes | ansehen | verboten, „nicht gefunden“; außer dem Finden über die genaue Mail oder den Benutzernamen (PK-13) | BER-01 | geplant (#65) |
-| PK-05 | Mitglied | andere Personen mit Konto, auch in der eigenen Einheit | ansehen | verboten; außer den Leitungen auf dem eigenen Pfad (RO-02, RO-09) | BER-01 | geplant (#65) |
+| PK-04 | Leitung | Personen mit Konto außerhalb ihres Bereichs, z. B. Stammesleitung der Zugvögel bei Walhall, Gruppenleitung bei einer anderen Gruppe ihres Stammes | ansehen | verboten, „nicht gefunden“; außer den Leitungen auf dem eigenen Pfad (RO-01), Konten ohne Zuordnung für die Bundesleitung (PK-11) und dem Finden über die genaue Mail oder den Benutzernamen (PK-13) | BER-01 | geplant (#65) |
+| PK-05 | Mitglied | andere Personen mit Konto, auch in der eigenen Einheit | ansehen | verboten; außer den Leitungen auf dem eigenen Pfad (RO-02) | BER-01 | geplant (#65) |
 | PK-06 | Konto ohne Zuordnung | andere Personen mit Konto | ansehen | verboten | BER-01, #9 | geplant (#9) |
 | PK-07 | Verbandsleitung, DPV-Veranstaltungsteam | Personen mit Konto in Bünden, Ringen, Stämmen und Gruppen | ansehen | verboten; außer: Verbandsleitung sieht die Bundesleitungen (RO-05) und findet Konten über die genaue Mail oder den Benutzernamen (PK-13) | ROL-03, ROL-05, #94 | geplant (#94) |
 | PK-08 | Admin ohne Support-Zugang | Personen mit Konto | ansehen | verboten | BER-02, #92 | geplant (#92) |
@@ -137,7 +137,7 @@ Einheiten sind Verband, Bünde, Ringe, Stämme und Gruppen (ORG-01); im Tool hei
 | EH-12 | Stammesleitung | Gruppen im eigenen Stamm | anlegen | erlaubt | ORG-06, #95 | geplant (#95) |
 | EH-13 | Gruppenleitung; Leitungen außerhalb ihres Bereichs; höhere Ebenen zwei Stufen tiefer, z. B. Bundesleitung Gruppen in einem Stamm (außer beim Einspringen, EH-18); Verbandsleitung, DPV-Veranstaltungsteam, Mitglied, Konto ohne Zuordnung, Admin ohne Support-Zugang | Ringe, Stämme, Gruppen | anlegen | verboten | #95 | geplant (#95) |
 | EH-14 | Leitung der direkt darüberliegenden Einheit; Leitung der Einheit selbst | Name eines Rings, Stammes oder einer Gruppe | umbenennen | erlaubt | ORG-06, #95 | geplant (#95) |
-| EH-15 | Höhere Ebenen, Leitungen außerhalb, Mitglied, Konto ohne Zuordnung, Verbandsleitung, DPV-Veranstaltungsteam, Admin ohne Support-Zugang | Name eines Rings, Stammes oder einer Gruppe | umbenennen | verboten | #95 | geplant (#95) |
+| EH-15 | Höhere Ebenen, Leitungen außerhalb, Mitglied, Konto ohne Zuordnung, Verbandsleitung, DPV-Veranstaltungsteam, Admin ohne Support-Zugang | Name eines Rings, Stammes oder einer Gruppe | umbenennen | verboten; außer beim Einspringen (EH-18) | #95 | geplant (#95) |
 | EH-16 | Bundesleitung | Stamm ihres Bundes | einem Ring zuordnen oder in einen anderen Ring desselben Bundes verschieben | erlaubt | #88, #95 | geplant (#95) |
 | EH-17 | Ringleitung, Stammesleitung, Leitungen anderer Bünde | Stamm | einem Ring zuordnen oder Ring wechseln | verboten | #95 | geplant (#95) |
 | EH-18 | Leitung der direkt darüberliegenden Einheit, solange die Einheit keine Leitung mit Konto hat | Einheiten unter dieser Einheit | anlegen, bearbeiten (einspringen) | erlaubt; endet, sobald wieder eine Leitung benannt ist | #95, #99 | geplant (#95) |

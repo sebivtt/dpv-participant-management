@@ -65,11 +65,32 @@ def test_jede_zeile_nennt_alle_sieben_angaben():
         assert cells[6].startswith(("geplant", "gebaut")), cells
 
 
+def sections_without_rows(text: str) -> list[str]:
+    """Abschnitte mit Rechten, in denen keine Zeile gefunden wird, etwa wegen eines vertippten Tabellenkopfs."""
+    empty = []
+    for part in re.split(r"^## ", text, flags=re.MULTILINE)[1:]:
+        title = part.split("\n", 1)[0]
+        if title not in ("Inhalt", "So liest man die Matrix", "Tabellen in der Datenbank") and not rows(part):
+            empty.append(title)
+    return empty
+
+
+def test_jeder_abschnitt_mit_rechten_hat_zeilen():
+    assert sections_without_rows(matrix_text()) == []
+
+
+def test_vertippter_tabellenkopf_ist_rot():
+    """Gegenprobe: Ein Abschnitt, dessen Tabelle nicht als Matrix erkannt wird, fällt auf."""
+    text = matrix_text().replace("## Eigenes Profil\n\n| Kennung |", "## Eigenes Profil\n\n| Kenung |")
+
+    assert sections_without_rows(text) == ["Eigenes Profil"]
+
+
 def test_jede_kennung_hat_die_vorgesehene_form():
     assert invalid_ids(matrix_text()) == []
 
 
-@pytest.mark.parametrize("row_id", ["VP-2", "VP-100", "vp-02", "**VP-02**"])
+@pytest.mark.parametrize("row_id", ["VP-2", "VP-100", "vp-02", "**VP-02**", "", "-"])
 def test_falsch_geschriebene_kennung_faellt_nicht_still_heraus(row_id):
     """Gegenprobe: Eine solche Zeile zählt mit und wird gemeldet."""
     text = HEADER + f"| {row_id} | Stammesleitung | Beispiel | ansehen | erlaubt | BER-01 | gebaut: erlaubt `tests/x.py::test_a` |\n"
