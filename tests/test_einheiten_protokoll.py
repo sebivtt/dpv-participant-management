@@ -279,6 +279,23 @@ def test_umbenennen_schreibt_einen_veralteten_schalter_nicht_ins_protokoll(org):
     assert entries(start) == [("Erika Testfrau", "Pfadfinderbund Boreas", A.RENAMED, "Pfadfinderbund Boreas", "Bund Boreas")]
 
 
+def test_neuer_ort_steht_mit_seinem_gespeicherten_namen_im_eintrag(org):
+    """Befund der zweiten unabhängigen Prüfung: auch wenn die Einheit darüber im Programm veraltet ist."""
+    stale_ring = Unit.objects.get(pk=org.kueste.pk)
+    stale_troop = Unit.objects.get(pk=org.walhall.pk)
+    rename(org.kueste, "Küste Ost", by=org.erika)
+    rename(org.walhall, "Walhall Nord", by=org.erika)
+    start = mark()
+
+    place(org.sturmvogel, stale_ring, by=org.erika)
+    make(U.GROUP, "Sippe Neu", stale_troop, by=org.erika)
+
+    assert entries(start) == [
+        ("Erika Testfrau", "Sturmvogel", A.RING_CHANGED, "Nord", "Küste Ost"),
+        ("Erika Testfrau", "Sippe Neu (Walhall Nord)", A.CREATED, "", "Walhall Nord"),
+    ]
+
+
 def test_felder_zum_schreiben_auch_als_einmal_lesbare_folge(org):
     """Befund der unabhängigen Prüfung: Auch dann kommt die Umbenennung ins Protokoll."""
     start = mark()
@@ -525,7 +542,7 @@ def test_protokoll_erscheint_nicht_im_log(org, log_output):
 
     log = log_output()
     assert UnitChange.objects.filter(action__in=(A.RENAMED, A.RING_CHANGED, A.HAS_RINGS)).count() == 4
-    for text in ("Erika Testfrau", "Habichte", "Leuchtturm", "umbenannt", "Ring gewechselt", "hat Ringe"):
+    for text in ("Erika Testfrau", "Habichte", "Leuchtturm", "umbenannt", "Ring gewechselt", "hat Ringe", *A.values):
         assert text not in log
 
 

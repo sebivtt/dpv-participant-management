@@ -139,6 +139,10 @@ class Unit(models.Model):
                 stored = self._lock_stored()
                 self.full_clean(validate_unique=False, validate_constraints=False)
                 super().save(*args, **kwargs)
+                if self.parent_id:
+                    # Die Einheit darüber frisch lesen: Im Programm kann ihr Name veraltet sein,
+                    # ins Protokoll gehört der gespeicherte.
+                    self.parent = Unit.objects.get(pk=self.parent_id)
                 if stored is None:
                     self._record_created(by)
                 else:
