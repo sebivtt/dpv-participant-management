@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import Q
+from django.db.models.functions import Now
 from django.utils.translation import gettext_lazy
 
 from roles import texts
@@ -95,7 +96,7 @@ class Role(models.Model):
     def __str__(self) -> str:
         return f"{self.get_kind_display()}: {self.unit or '-'}"
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args, by=None, **kwargs) -> None:
         """Prüft die Regeln, speichert und legt bei Bedarf die Mitgliedschaft an."""
         with transaction.atomic():
             self._lock_person()
@@ -115,7 +116,7 @@ class Role(models.Model):
             if self.kind in LEADS_IN_UNITS and self._membership() is None:
                 Role(user=self.user, kind=RoleKind.MEMBER, unit=self.unit).save()
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, by=None, **kwargs):
         """Entfernt die Rolle; eine Mitgliedschaft nur, wenn keine Leitungsrolle in einer Einheit mehr besteht."""
         with transaction.atomic():
             self._lock_person()
@@ -202,6 +203,28 @@ class Role(models.Model):
         listed = parts[0] if len(parts) == 1 else f"{', '.join(parts[:-1])} {texts.AND} {parts[-1]}"
         message = texts.REMOVE_ROLE_FIRST if len(parts) == 1 else texts.REMOVE_ROLES_FIRST
         return message % {"person": person_name(self.user), "roles": listed}
+
+
+# Urheber von Änderungen, die per Befehl auf dem Server entstehen (#91).
+SERVER_COMMAND = object()
+
+
+class RoleChange(models.Model):
+    """Ein Eintrag im Protokoll der Rollenänderungen (#91, ROL-04). Gerüst."""
+
+    class Action(models.TextChoices):
+        GRANTED = "granted", gettext_lazy("vergeben")
+        REMOVED = "removed", gettext_lazy("entfernt")
+
+    changed_at = models.DateTimeField(db_default=Now())
+    actor_id = models.BigIntegerField(null=True)
+    actor_name = models.TextField()
+    person_id = models.BigIntegerField()
+    person_name = models.TextField()
+    kind = models.CharField(max_length=20, choices=RoleKind)
+    unit_id = models.BigIntegerField(null=True)
+    unit_name = models.TextField(blank=True)
+    action = models.CharField(max_length=10, choices=Action)
 
 
 def on_path(member_unit: Unit, target: Unit) -> bool:
