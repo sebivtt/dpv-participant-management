@@ -6,6 +6,7 @@
 !config
 !core
 !docker
+!units
 !manage.py
 !pyproject.toml
 !uv.lock

@@ -114,6 +114,31 @@ def test_datenbank_hat_keinen_zugang_von_aussen(testumgebung):
     assert inside.returncode == 0, inside.stderr
 
 
+# #88: Die Befehle für Verband und Bünde laufen auch in der Testumgebung, so wie im README.
+def test_verband_und_buende_per_befehl_in_der_testumgebung(testumgebung):
+    def manage(*arguments: str):
+        return compose("exec", "-T", "tool", "python", "manage.py", *arguments, env_file=testumgebung, check=False)
+
+    created = [
+        manage("federation", "create", "DPV"),
+        manage("association", "create", "Pfadfinderbund Boreas"),
+        manage("association", "create", "DPBM Mosaik", "--rings"),
+    ]
+    assert all(result.returncode == 0 for result in created), [r.stdout + r.stderr for r in created]
+
+    twice = manage("association", "create", " pfadfinderbund boreas ")
+    assert twice.returncode != 0
+    assert "Den Bund „Pfadfinderbund Boreas“ gibt es schon." in twice.stderr
+
+    listing = manage("association", "list")
+    assert listing.stdout.splitlines() == [
+        "Verband: DPV",
+        "Bünde:",
+        "  DPBM Mosaik (hat Ringe)",
+        "  Pfadfinderbund Boreas (ohne Ringe)",
+    ], listing.stderr
+
+
 # Szenario 10
 def test_daten_bleiben_nach_dem_aktualisieren_erhalten(testumgebung):
     # Eigenes Konto anlegen, damit der Test nicht vom Login-Test davor abhängt.

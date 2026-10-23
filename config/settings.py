@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.openid_connect",
     "core",
     "accounts",
+    "units",
 ]
 
 MIDDLEWARE = [

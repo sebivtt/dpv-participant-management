@@ -141,6 +141,44 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
    ```
    Danach: je Container eine Zeile `Removed`, dazu `Volume dpv-test_daten Removed`.
 
+## Verband und Bünde anlegen (Admins)
+
+In P2 legen Admins den Verband und die Bünde per Befehl an, nicht über eine Seite im Tool (#88; eine Seite ist für später vorgemerkt, #107). Dieselben Befehle benennen um und schalten „hat Ringe“ ein oder aus. Ringe, Stämme und Gruppen legen später die Leitungen im Tool an (#95). Löschen gibt es nicht (Entscheidung W5 in `docs/entscheidungen.md`). Die Befehle prüfen dieselben Regeln wie das Tool: genau ein Verband, keine leeren oder doppelten Namen, höchstens 100 Zeichen; „Boreas“ und „ boreas “ gelten als gleich.
+
+Lokal (zuerst Schritte 3, 6, 7 und 8):
+
+V1. Den Verband anlegen. Ihn gibt es nur einmal.
+   ```bash
+   uv run --env-file .env python manage.py federation create "DPV"
+   ```
+   Danach: `Den Verband „DPV“ gibt es jetzt.` Gibt es schon einen, steht dort `CommandError: Es gibt schon einen Verband: „DPV“.`
+V2. Einen Bund anlegen. Hat der Bund Ringe, am Ende ` --rings` anfügen.
+   ```bash
+   uv run --env-file .env python manage.py association create "Pfadfinderbund Boreas"
+   ```
+   Danach: `Den Bund „Pfadfinderbund Boreas“ gibt es jetzt.` Gibt es ihn schon, steht dort `CommandError: Den Bund „Pfadfinderbund Boreas“ gibt es schon.`
+V3. Nachsehen, was angelegt ist.
+   ```bash
+   uv run --env-file .env python manage.py association list
+   ```
+   Danach: `Verband: DPV`, darunter `Bünde:` und je Bund eine Zeile, z. B. `  Pfadfinderbund Boreas (ohne Ringe)`.
+V4. Nur bei Bedarf: einen Bund umbenennen, erst der alte, dann der neue Name.
+   ```bash
+   uv run --env-file .env python manage.py association rename "Pfadfinderbund Boreas" "Bund Boreas"
+   ```
+   Danach: `Der Bund „Pfadfinderbund Boreas“ heißt jetzt „Bund Boreas“.` Den Verband benennt `federation rename "Neuer Name"` um.
+V5. Nur bei Bedarf: „hat Ringe“ einschalten (`on`) oder ausschalten (`off`).
+   ```bash
+   uv run --env-file .env python manage.py association rings "Bund Boreas" on
+   ```
+   Danach: `Im Bund „Bund Boreas“ ist „hat Ringe“ jetzt eingeschaltet.` Ausschalten geht nur, solange der Bund keinen Ring hat; sonst nennt der Befehl den Grund.
+
+In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-file .env python manage.py` jeweils `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`, z. B.:
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml exec tool python manage.py association list
+   ```
+   Danach: dieselbe Ausgabe wie in V3, mit den Daten der Testumgebung.
+
 ## Test-Realm im Keycloak des DPV
 
 Auf dem Server meldet sich die Testumgebung nicht bei der Keycloak-Testumgebung aus `dev/` an, sondern bei einem eigenen **Test-Realm** im Keycloak des DPV (#38). Ein Realm ist ein abgeschlossener Bereich in Keycloak mit eigenen Konten; der Test-Realm `dpv-test` ist vom Realm der Mitglieder getrennt. Er hat vier erfundene Konten, und niemand kann sich dort selbst registrieren oder ein Passwort per Mail zurücksetzen. Die Importdatei liegt in `testumgebung/keycloak/dpv-test-realm.json`. Sie enthält kein Passwort und kein Client-Secret, damit niemand, der das Repo sieht, in die Testumgebung kommt.
