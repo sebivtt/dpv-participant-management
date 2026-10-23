@@ -23,6 +23,8 @@
 
 <!-- Nur ausfüllen, wenn Modelle, Migrationen oder die Rechteprüfung geändert sind: welche Dateien, damit sie sich nachlesen lassen. Sonst „nicht betroffen“. -->
 
+- Neue Daten? Welche Zeilen der Rechtematrix (`docs/rechtematrix.md`)?
+
 ## Neue Pakete
 
 <!-- Wofür, warum nicht selbst gelöst, wird es gepflegt, welche Lizenz (verträglich mit EUPL-1.2)? Sonst „keine“. -->

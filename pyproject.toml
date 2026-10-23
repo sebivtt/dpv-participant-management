@@ -40,3 +40,7 @@ testpaths = ["tests"]
 # (CONTRIBUTING.md, Abschnitt 3).
 xfail_strict = true
 addopts = "-rxX"
+markers = [
+    # Kennung einer Zeile in docs/rechtematrix.md; tests/test_rechtematrix.py liest sie (#87).
+    "rechtematrix(kennung): Test zu einer Zeile der Rechtematrix",
+]

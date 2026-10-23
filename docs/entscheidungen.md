@@ -6,6 +6,28 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-23 · Rechtematrix (#87): Form, Regel „neue Daten → sofort Rechte klären“, Login-Tabellen, DPV-Veranstaltungsteam
+
+**Entscheidung** (Sebastian; Klärung von #87 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6343846888); [Fragen bei der Umsetzung](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6365683098) und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6365733029) am 23.10.2026):
+
+1. **Form:** Die Rechtematrix steht als `docs/rechtematrix.md` im Repo und wird dauerhaft fortgeschrieben. Sie hat ein Inhaltsverzeichnis und einen Abschnitt je Art von Daten. Jede Zeile nennt Kennung, wer, welche Daten, welche Aktion, erlaubt oder verboten, die Quelle und den Stand („geplant“ mit dem bauenden Issue oder „gebaut“ mit den Tests für den erlaubten und den verbotenen Fall). Der erste Entwurf für P2 kommt mit #87; mit dem Übernehmen ist er freigegeben, danach beginnt #90.
+2. **Neue Daten → sofort Rechte klären:** Wer neue Daten ins Tool bringt, ergänzt im selben Pull Request ihre Zeilen: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten. Die Regel steht in `CONTRIBUTING.md` (Abschnitt 4), im Skill `grill-me` und in der Vorlage für Pull Requests. Ein automatischer Test wird rot, wenn eine Tabelle der Datenbank in der Matrix fehlt.
+3. **Umfang des ersten Pull Requests** (F1): Matrix und Regel zusammen, ohne Code für die Rechteprüfung. „Nur die Matrix“ im Issue heißt: ohne Rechte-Code.
+4. **Tabellen des Logins** (F2): Sitzungen, die Verknüpfung mit dem DPV-Konto samt dem, was Keycloak mitschickt, die Mail-Liste des Login-Bausteins und Djangos technische Listen sieht und ändert niemand im Tool, auch Admins nicht, auch nicht im Support-Zugang. Nur der Login selbst schreibt sie. Was Leitungen von Personen mit Konto sehen, regelt allein der Abschnitt „Personen mit Konto“.
+5. **DPV-Veranstaltungsteam** (F3): Es sieht die Namen aller Bünde wie die Verbandsleitung, aber nicht, wer sie leitet. Sebastian wollte zunächst „alles wie die Verbandsleitung“; die KI hat darauf hingewiesen, dass die Namen der Bundesleitungen Personendaten sind und ROL-05 der Rolle keinen weiteren Zugriff darauf gibt. ROL-05 bleibt unverändert.
+6. **Rechte ohne Seite in P2** (F4): Mitglieder dürfen die Namen der Einheiten ihres Bundes und die Leitungen auf ihrem Pfad sehen; das Veranstaltungsteam die Namen der Bünde. In P2 baut keine Seite das für sie. Die Zeilen stehen als „erlaubt“ mit Stand „geplant“; die Anzeige ist in #134 vorgemerkt (P3, Soll).
+
+**Technische Wahl** (KI):
+
+- **Kennungen:** zwei Großbuchstaben für den Abschnitt und eine zweistellige Nummer, z. B. `VP-02`. Eine Kennung kommt nur einmal vor; ein Test prüft das.
+- **Tests nennen ihre Zeile über eine Markierung** (`@pytest.mark.rechtematrix("PR-02")`), nicht über ihren Namen. So bleiben vorhandene Tests unverändert; die vier Protokolltests je aus `tests/test_rollen_protokoll.py` und `tests/test_einheiten_protokoll.py` bekommen nur diese Markierung, ihre Regeln blieben gleich.
+- **Was „erlaubt“ und „verboten“ prüfen:** Eine Zeile „erlaubt“ prüft als verbotenen Fall den nächsten Nachbarn (andere Einheit, Ebene darunter); eine Zeile „verboten“ prüft als erlaubten Fall die Gegenprobe, dass der vorgesehene Weg weiter geht.
+- **Automatische Prüfung schon jetzt:** `tests/test_rechtematrix.py` läuft mit `./pruefen.sh` und wird rot bei einer fehlenden Tabelle, einer doppelten Kennung und bei einer gebauten Zeile, deren Tests fehlen oder die Kennung nicht tragen. #90 baut darauf auf (direkte Adressen, htmx-Anfragen, manipulierte Formulare, Rundumtest).
+- **Verbindungstabellen,** die Django selbst zu einer Tabelle anlegt, gehören zu dieser Tabelle und stehen nicht eigens in der Matrix.
+- **Aus der Grundregel abgeleitet,** nicht neu entschieden, aber erstmals ausgeschrieben: Verbandsleitung und Veranstaltungsteam ohne weitere Rolle sehen keine Namen von Ringen, Stämmen und Gruppen (EH-05), weil das nirgends erlaubt ist.
+
+**Umsetzung:** `docs/rechtematrix.md`, `tests/rechtematrix.py`, `tests/test_rechtematrix.py`, `pyproject.toml` (Markierung angemeldet), `CONTRIBUTING.md` (Abschnitt 4), `.claude/skills/grill-me/SKILL.md`, `.github/pull_request_template.md`; Markierung an Tests in `tests/test_rollen_protokoll.py` und `tests/test_einheiten_protokoll.py`.
+
 ## 2026-10-23 · Protokoll der Strukturänderungen (#131): Anlegen, Umbenennen, Ring, „hat Ringe“; 5 Stunden aus dem Puffer
 
 **Entscheidung** (Sebastian; Klärung von #131 am 23.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/131#issuecomment-6360896544); [Fragen bei der Umsetzung](https://github.com/sebivtt/dpv-participant-management/issues/131#issuecomment-6361709938) am selben Tag). Löst die technische Wahl „Kein Protokoll für Änderungen an Einheiten“ aus der Klärung von #95 vom 22.10.2026 ab.

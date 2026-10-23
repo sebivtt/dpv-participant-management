@@ -66,6 +66,7 @@ def place(unit: Unit, parent: Unit, by) -> None:
 # Was ins Protokoll kommt
 
 
+@pytest.mark.rechtematrix("PR-04")
 def test_gruppe_umbenennen(org):
     """S1, das Beispiel aus dem Issue."""
     start = mark()
@@ -421,6 +422,7 @@ def stored_entry(org) -> UnitChange:
     return entry
 
 
+@pytest.mark.rechtematrix("PR-04")
 def test_eintrag_laesst_sich_im_programm_nicht_aendern_oder_loeschen(org):
     """S11: auch nicht für Admins; einen Weg dafür gibt es im Tool nicht."""
     entry = stored_entry(org)
@@ -437,6 +439,7 @@ def test_eintrag_laesst_sich_im_programm_nicht_aendern_oder_loeschen(org):
     assert UnitChange.objects.get(pk=entry.pk).new_value == "Sippe Habichte"
 
 
+@pytest.mark.rechtematrix("PR-04")
 @pytest.mark.parametrize(
     "bulk",
     [
@@ -458,6 +461,7 @@ def test_sammelaenderungen_scheitern_an_der_datenbank(org, bulk):
     assert UnitChange.objects.get(pk=entry.pk).new_value == "Sippe Habichte"
 
 
+@pytest.mark.rechtematrix("PR-04")
 def test_aendern_per_sql_scheitert_an_der_datenbank(org):
     """S11."""
     stored_entry(org)
