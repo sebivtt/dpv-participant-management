@@ -6,6 +6,28 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-23 · Protokoll der Rollenänderungen (#91): nur schreiben in P2 (W4), Namen zum Zeitpunkt, Sperre in der Datenbank
+
+**Entscheidung** (Sebastian; Bestandsaufnahme P2 vom 22.10.2026, [W4 in #106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6342842432); Klärung von #91 am 22.10.2026; Nachklärung P2 vom 22.10.2026 in #106, Frage 2; [Fragen bei der Umsetzung](https://github.com/sebivtt/dpv-participant-management/issues/91#issuecomment-6360190203) am 23.10.2026):
+
+1. **W4, Einsicht in Protokolle (ROL-03 gegen ADM-03):** In P2 werden das Protokoll der Rollenänderungen (#91) und das Protokoll der Admin-Zugriffe (#92) nur geschrieben und getestet, auch dass sich Einträge nicht ändern oder löschen lassen. Die Einsicht für Admins und Verbandsleitung kommt mit ADM-03 in P8; bis dahin gilt die Ausnahme in ROL-03 noch nicht.
+2. **Was ins Protokoll kommt:** jedes tatsächliche Vergeben und Entfernen einer Rolle aus ROL-01, auch der Mitgliedschaft (aufnehmen, beenden, wechseln, automatisch beim Einsetzen als Leitung) und der Admin-Befehle auf dem Server. Ein Wechsel ergibt „entfernt“ und „vergeben“ mit derselben Uhrzeit. Abgelehnte Versuche und Speichern ohne Änderung schreiben nichts. Es gibt kein Feld für einen Grund oder freien Text, weil darin Gesundheitsangaben landen könnten.
+3. **Urheber:** Der Eintrag nennt nur die Person, die geändert hat, nicht die Rolle, in der sie gehandelt hat; bei mehreren passenden Rollen wäre unklar, welche gemeint ist. Bei Befehlen auf dem Server steht „Befehl auf dem Server“.
+4. **Namen zum Zeitpunkt der Änderung:** Der Eintrag hält die Namen von Person, Urheber und Organisation fest, wie sie damals hießen; eine spätere Umbenennung ändert ihn nicht. Ein Eintrag hindert nie daran, später ein Konto zu löschen. Was dann mit den Einträgen geschieht und wie lange sie bleiben, klärt #66 (DSG-09, OP-2); in P2 wird nichts gelöscht.
+5. **Testdaten-Befehl:** Lokal und in der Testumgebung darf der Befehl aus #103 die Datenbank vollständig leeren, auch das Protokoll. Die Sperre im Tool bleibt.
+6. **Rechtematrix:** Die Zeilen für das Protokoll kommen mit #87, weil es die Matrix bei #91 noch nicht gab (Hinweis in #87).
+
+**Technische Wahl** (KI):
+
+- **Eine Tabelle `roles.RoleChange`** in der App der Rollen. Kennungen von Urheber, Person und Einheit stehen als Zahlen darin, nicht als Verweise; sonst ließe sich ein Konto, das je eine Rolle hatte, nie löschen, oder die Datenbank müsste den Eintrag beim Löschen ändern.
+- **Wer ändert, ist Pflicht:** Speichern und Löschen einer Rolle verlangen die Angabe `by` (Konto oder `SERVER_COMMAND`); ohne sie lehnt das Tool ab. So kann keine spätere Seite (#65, #93, #94, #92, #103) den Urheber still vergessen. Die bestehenden Tests in `tests/test_rollen.py` und `tests/test_rollen_befehle.py` geben deshalb an, wer ändert; ihre Regeln blieben gleich.
+- **Beides oder nichts:** Rolle und Eintrag werden in derselben Datenbank-Transaktion geschrieben. Die Uhrzeit ist der Beginn dieser Transaktion, deshalb tragen zusammengehörige Einträge genau dieselbe.
+- **Sperre doppelt:** Im Programm lehnt das Tool Ändern und Löschen eines Eintrags ab. Zusätzlich lehnt eine Regel in der Datenbank (Trigger) jedes `UPDATE` und `DELETE` auf der Tabelle ab, auch Sammeländerungen am Programm vorbei. Offen bleibt nur das vollständige Leeren (`TRUNCATE`), das der Testdaten-Befehl (#103) und der Testlauf brauchen; im Tool gibt es dafür keinen Weg. Wer direkt in der Datenbank auf dem Server arbeitet, kann den Trigger entfernen; das gehört ins Betriebshandbuch (P6).
+- **Grenze:** Sammeländerungen an den Rollen selbst (`update()`, `bulk_create()`, `QuerySet.delete()`) umgehen wie schon die Regeln aus #89 auch das Protokoll. Das Tool nutzt sie für Rollen nicht.
+- **Code-Namen** (CONTRIBUTING.md, Abschnitt 1): Protokoll der Rollenänderungen `role_change` (`RoleChange`), Urheber `actor`, vergeben `granted`, entfernt `removed`, Befehl auf dem Server `SERVER_COMMAND`.
+
+**Umsetzung:** `roles/models.py` (`RoleChange`, Einträge beim Speichern und Löschen), `roles/expressions.py`, `roles/migrations/0002_role_change.py` (Tabelle und Trigger), `roles/texts.py`, `roles/management/commands/admin.py`, `README.md` (Abschnitt „Admins ernennen und entfernen“), Tests in `tests/test_rollen_protokoll.py`; Anpassungen in `tests/test_rollen.py` und `tests/test_rollen_befehle.py`.
+
 ## 2026-10-23 · Rollen: Mitgliedschaft und Leitungspfad, Rolle Admin, ROL-01 ergänzt
 
 **Entscheidung** (Sebastian; Klärung von #89 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/89#issuecomment-6343606180); Nachklärung P2 vom 22.10.2026 in #106, Fragen 4 und 9; Fragen bei der Umsetzung am 23.10.2026 in #89):

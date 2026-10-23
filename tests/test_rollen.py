@@ -222,15 +222,15 @@ def test_art_und_person_einer_rolle_bleiben(org):
     lead = give(org.erika, R.GROUP_LEAD, org.falken)
     lead.kind = R.TROOP_LEAD
     lead.unit = org.walhall
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
 
     lead = Role.objects.get(pk=lead.pk)
     lead.user = org.max
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
 
     lead = Role.objects.get(pk=lead.pk)
     lead.unit = org.woelfe
-    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lead.save))
+    assert "Bei einer Rolle lässt sich nur die Organisation einer Mitgliedschaft ändern." in message(refused(lambda: lead.save(by=BY)))
     assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.GROUP_LEAD, "Sippe Falken")}
 
 
@@ -458,7 +458,7 @@ def test_mitgliedschaft_endet_nur_ohne_leitungsrollen_in_einheiten(org):
     member = give(org.erika, R.MEMBER, org.falken)
     lead = give(org.erika, R.TROOP_LEAD, org.walhall)
 
-    error = refused(member.delete)
+    error = refused(lambda: member.delete(by=BY))
     assert error.error_list[0].code == "remove_roles_first"
 
     assert "Erika Testfrau ist noch Stammesleitung in „Walhall“. Diese Rolle muss zuerst entfernt werden." in message(

@@ -10,7 +10,7 @@ Alle Namen sind erfunden.
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import InternalError, connection, transaction
+from django.db import DatabaseError, connection, transaction
 
 from roles.models import SERVER_COMMAND, Role, RoleChange
 from tests.test_rollen import R, _one_after_the_other, build_org, membership, person, refused
@@ -339,7 +339,7 @@ def test_sammelaenderungen_scheitern_an_der_datenbank(org, bulk):
     """S7: Die Datenbank selbst lehnt ab, auch an der Sperre im Programm vorbei."""
     stored_entry(org)
 
-    with pytest.raises(InternalError, match=LOCKED), transaction.atomic():
+    with pytest.raises(DatabaseError, match=LOCKED), transaction.atomic():
         bulk()
 
     assert entries() == [("Erika Testfrau", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", GRANTED)]
@@ -350,7 +350,7 @@ def test_aendern_per_sql_scheitert_an_der_datenbank(org):
     stored_entry(org)
 
     for statement in ("UPDATE roles_rolechange SET action = 'removed'", "DELETE FROM roles_rolechange"):
-        with pytest.raises(InternalError, match=LOCKED), transaction.atomic(), connection.cursor() as cursor:
+        with pytest.raises(DatabaseError, match=LOCKED), transaction.atomic(), connection.cursor() as cursor:
             cursor.execute(statement)
 
     assert len(entries()) == 1

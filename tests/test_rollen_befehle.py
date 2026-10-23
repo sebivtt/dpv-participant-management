@@ -1,8 +1,8 @@
 """Tests für den Befehl, mit dem Admins auf dem Server ernannt und entfernt werden (#89).
 
 Bis ADM-01 (P6) wird jeder Admin so ernannt, nie über das Tool, über Keycloak oder als erstes
-angemeldetes Konto. Die Nummern verweisen auf die Szenarien im Issue #89. Den Eintrag im
-Protokoll der Rollenänderungen ergänzt #91.
+angemeldetes Konto. Die Nummern verweisen auf die Szenarien im Issue #89. Die Einträge im
+Protokoll der Rollenänderungen prüft tests/test_rollen_protokoll.py (#91).
 """
 
 import io
@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from roles.models import Role
+from roles.models import SERVER_COMMAND, Role
 
 pytestmark = pytest.mark.django_db
 
@@ -85,7 +85,7 @@ def test_entfernen_laesst_andere_rollen_stehen(erika):
 
     dpv = Unit(kind=Unit.Kind.FEDERATION, name="DPV")
     dpv.save()
-    Role(user=erika, kind=Role.Kind.FEDERATION_LEAD, unit=dpv).save()
+    Role(user=erika, kind=Role.Kind.FEDERATION_LEAD, unit=dpv).save(by=SERVER_COMMAND)
     run("admin", "grant", "erika.testfrau")
 
     run("admin", "revoke", "erika.testfrau")

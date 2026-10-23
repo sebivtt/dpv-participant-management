@@ -181,7 +181,7 @@ In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-f
 
 ## Admins ernennen und entfernen
 
-Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung. Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt.
+Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung. Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt. Beide Befehle schreiben einen Eintrag ins Protokoll der Rollenänderungen, mit „Befehl auf dem Server“ als Urheber (#91).
 
 Lokal (zuerst Schritte 3, 6, 7 und 8):
 
