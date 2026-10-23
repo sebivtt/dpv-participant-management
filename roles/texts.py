@@ -38,9 +38,7 @@ AND = gettext_lazy("und")
 UNIT = gettext_lazy("„%(unit)s“")
 GROUP_IN_TROOP = gettext_lazy("„%(unit)s“ (%(troop)s)")
 
-# Protokoll der Rollenänderungen (#91)
-SERVER_COMMAND = gettext_lazy("Befehl auf dem Server")
-LOGGED_GROUP_IN_TROOP = gettext_lazy("%(unit)s (%(troop)s)")
+# Protokoll der Rollenänderungen (#91); „Befehl auf dem Server“ steht in core/actors.py.
 LOG_LOCKED = gettext_lazy("Einträge im Protokoll der Rollenänderungen lassen sich nicht ändern oder löschen.")
 
 # Befehl für Admins

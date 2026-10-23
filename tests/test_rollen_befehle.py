@@ -84,7 +84,7 @@ def test_entfernen_laesst_andere_rollen_stehen(erika):
     from units.models import Unit
 
     dpv = Unit(kind=Unit.Kind.FEDERATION, name="DPV")
-    dpv.save()
+    dpv.save(by=SERVER_COMMAND)
     Role(user=erika, kind=Role.Kind.FEDERATION_LEAD, unit=dpv).save(by=SERVER_COMMAND)
     run("admin", "grant", "erika.testfrau")
 

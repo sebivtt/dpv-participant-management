@@ -13,6 +13,9 @@ from django.db.models import Q, Value
 from django.db.models.functions import Lower, Trim
 from django.utils.translation import gettext_lazy
 
+from core import actors
+from core.actors import check_actor
+from roles.expressions import TransactionStart
 from units import texts
 
 
@@ -54,8 +57,11 @@ class Unit(models.Model):
     - Die Ebene einer Einheit bleibt, und ein Ring oder Stamm wechselt nicht den Bund.
 
     Die Regeln gelten bei jedem Speichern, auch für Testdaten und spätere Seiten; `save()`
-    lehnt mit `ValidationError` und einer Meldung in Alltagssprache ab. Wer an `save()` vorbei
-    schreibt (`update()`, `bulk_create()`), umgeht die Regeln, die nur das Tool prüft.
+    lehnt mit `ValidationError` und einer Meldung in Alltagssprache ab. Jedes Anlegen und jede
+    tatsächliche Änderung an Name, Einheit darüber und „hat Ringe“ schreibt `save()` in
+    derselben Transaktion ins Protokoll der Strukturänderungen (`UnitChange`, #131). Wer an
+    `save()` vorbei schreibt (`update()`, `bulk_create()`), umgeht die Regeln, die nur das Tool
+    prüft, und das Protokoll.
     """
 
     Kind = Kind
@@ -109,21 +115,38 @@ class Unit(models.Model):
     def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs) -> None:
-        """Prüft die Regeln und speichert; lehnt mit `ValidationError` ab.
+    def save(self, *args, by, **kwargs) -> None:
+        """Prüft die Regeln, speichert und schreibt ins Protokoll; lehnt mit `ValidationError` ab.
+
+        `by` ist das Konto, das ändert, oder `SERVER_COMMAND`. Ohne diese Angabe lehnt das Tool
+        jede Änderung ab, damit keine Seite den Urheber still vergisst (#131, wie #91).
 
         Der betroffene Bund wird dabei gesperrt, bis gespeichert ist. Sonst könnten ein neuer
         Ring und das Ausschalten von „hat Ringe“ gleichzeitig durchgehen, weil keiner den
-        anderen sieht. Legen zwei gleichzeitig denselben Namen an, lehnt die Datenbank den
-        zweiten ab; er bekommt dieselbe Meldung wie sonst auch.
+        anderen sieht. Ebenso die Einheit selbst, damit das Protokoll den tatsächlich alten Wert
+        festhält. Legen zwei gleichzeitig denselben Namen an, lehnt die Datenbank den zweiten
+        ab; er bekommt dieselbe Meldung wie sonst auch.
         """
+        check_actor(by)
+        if kwargs.get("update_fields") is not None:
+            # Django liest die Felder einmal; das Protokoll braucht sie danach noch einmal.
+            kwargs["update_fields"] = frozenset(kwargs["update_fields"])
         self.name = self.name.strip()
         self.association = self._find_association()
         try:
             with transaction.atomic():
                 self._lock_association()
+                stored = self._lock_stored()
                 self.full_clean(validate_unique=False, validate_constraints=False)
                 super().save(*args, **kwargs)
+                if self.parent_id:
+                    # Die Einheit darüber frisch lesen: Im Programm kann ihr Name veraltet sein,
+                    # ins Protokoll gehört der gespeicherte.
+                    self.parent = Unit.objects.get(pk=self.parent_id)
+                if stored is None:
+                    self._record_created(by)
+                else:
+                    self._record_changes(by, stored, kwargs.get("update_fields"))
         except IntegrityError as error:
             clash = self._name_clash()
             if clash:
@@ -158,6 +181,75 @@ class Unit(models.Model):
             return
         if locked:
             list(Unit.objects.select_for_update().filter(pk=locked).values_list("pk"))
+
+    def _lock_stored(self) -> "Unit | None":
+        """Sperrt die gespeicherte Einheit bis zum Ende des Speicherns und gibt ihren Stand zurück.
+
+        Ohne die Sperre sähen zwei gleichzeitige Umbenennungen beide den Namen von vorher, und
+        im Protokoll stünde zweimal „A → …“ statt „A → B“ und danach „B → C“.
+        """
+        if self.pk is None:
+            return None
+        list(Unit.objects.select_for_update().filter(pk=self.pk).values_list("pk"))
+        return Unit.objects.select_related("parent").filter(pk=self.pk).first()
+
+    def _record_created(self, by) -> None:
+        """Schreibt das Anlegen ins Protokoll, mit der Einheit darüber (F1 in #131).
+
+        Ist „hat Ringe“ gleich eingeschaltet, kommt das als eigener Eintrag dazu (F2), damit
+        jedes Einschalten gleich im Protokoll steht.
+        """
+        name = logged_name(self)
+        where = logged_name(self.parent) if self.parent else ""
+        UnitChange.record(by, self, name, UnitChange.Action.CREATED, new=where, new_parent_id=self.parent_id)
+        if self.has_rings:
+            UnitChange.record(by, self, name, UnitChange.Action.HAS_RINGS, old=texts.SWITCH_OFF, new=texts.SWITCH_ON)
+
+    def _record_changes(self, by, stored: "Unit", update_fields) -> None:
+        """Schreibt jede tatsächliche Änderung ins Protokoll, mit dem Namen von vor dem Speichern.
+
+        Zählt nur, was dieses Speichern tatsächlich schreibt. Die Befehle schreiben nur ein Feld;
+        ein im Programm veralteter Wert der übrigen Felder ist keine Änderung.
+        """
+        if update_fields is None:
+            written = {"name", "parent", "has_rings"}
+        else:
+            written = {self._meta.get_field(field).name for field in update_fields}
+        name = logged_name(stored)
+        if "name" in written and stored.name != self.name:
+            UnitChange.record(by, self, name, UnitChange.Action.RENAMED, old=stored.name, new=self.name)
+        if "parent" in written and stored.parent_id != self.parent_id:
+            UnitChange.record(
+                by,
+                self,
+                name,
+                self._move_action(stored.parent),
+                old=self._place_name(stored.parent),
+                new=self._place_name(self.parent),
+                old_parent_id=stored.parent_id,
+                new_parent_id=self.parent_id,
+            )
+        if "has_rings" in written and stored.has_rings != self.has_rings:
+            switch = (texts.SWITCH_OFF, texts.SWITCH_ON) if self.has_rings else (texts.SWITCH_ON, texts.SWITCH_OFF)
+            UnitChange.record(by, self, name, UnitChange.Action.HAS_RINGS, old=switch[0], new=switch[1])
+
+    def _move_action(self, old_parent: "Unit") -> str:
+        """Was das Verschieben heißt. Nur Stämme und Gruppen wechseln die Einheit darüber.
+
+        Ein Stamm kommt nie neu ohne Ring an den Bund (#88); deshalb gibt es kein „aus dem
+        Ring genommen“.
+        """
+        if self.kind == Kind.GROUP:
+            return UnitChange.Action.TROOP_CHANGED
+        if old_parent.kind == Kind.ASSOCIATION:
+            return UnitChange.Action.RING_ASSIGNED
+        return UnitChange.Action.RING_CHANGED
+
+    def _place_name(self, parent: "Unit") -> str:
+        """Alter oder neuer Wert beim Verschieben: der Stamm einer Gruppe, der Ring eines Stammes."""
+        if self.kind == Kind.TROOP and parent.kind != Kind.RING:
+            return ""
+        return parent.name
 
     def _change_errors(self, stored: dict | None) -> list:
         """Was sich an einer gespeicherten Einheit nicht ändern darf."""
@@ -221,3 +313,86 @@ class Unit(models.Model):
             if other:
                 return texts.GROUP_EXISTS % {"troop": self.parent.name, "name": other.name}
         return None
+
+
+def logged_name(unit: Unit) -> str:
+    """Wie eine Einheit im Protokoll heißt: ohne Anführungszeichen, Gruppen mit ihrem Stamm."""
+    if unit.kind == Kind.GROUP:
+        return texts.LOGGED_GROUP_IN_TROOP % {"unit": unit.name, "troop": unit.parent.name}
+    return unit.name
+
+
+class UnitChange(models.Model):
+    """Ein Eintrag im Protokoll der Strukturänderungen (#131, ORG-06).
+
+    Regeln (Klärung von #131 am 23.10.2026, Fragen bei der Umsetzung am selben Tag):
+    - Ins Protokoll kommen Anlegen, Umbenennen, einen Stamm einem Ring zuordnen oder in einen
+      anderen Ring verschieben, eine Gruppe in einen anderen Stamm verschieben und „hat Ringe“
+      ein- oder ausschalten; jede Änderung ein Eintrag. Nur tatsächliche Änderungen zählen,
+      eine andere Schreibweise des Namens ist eine. Das Notfall-Löschen steht im Protokoll
+      der Admin-Zugriffe (#92), nicht hier.
+    - Ein Eintrag nennt Zeitpunkt, wer geändert hat, welche Organisation, was geändert wurde
+      und bei Änderungen den alten und den neuen Wert; beim Anlegen als neuen Wert, wo die
+      Organisation hängt. Ein Feld für einen Grund oder anderen freien Text gibt es nicht.
+    - Beim Zuordnen und Wechseln eines Rings sind alter und neuer Wert die Namen der Ringe;
+      leer heißt „kein Ring“. Dazu stehen die Kennungen der Einheiten darüber dabei.
+    - Namen stehen so im Eintrag, wie sie vor der Änderung hießen, Gruppen mit ihrem Stamm.
+      Kennungen sind wie bei #91 bewusst keine Verweise; ein Eintrag hindert nie daran, später
+      eine Einheit zu löschen.
+    - Bei Befehlen auf dem Server steht „Befehl auf dem Server“ als Urheber, ohne Kennung.
+    - Uhrzeit und Reihenfolge wie bei `roles.RoleChange`: Beginn der äußersten Transaktion,
+      Reihenfolge nach der Kennung `id`.
+    - Einträge lassen sich nicht ändern oder löschen: hier im Programm und zusätzlich per Regel
+      in der Datenbank (Migration 0002). Das vollständige Leeren der Datenbank bleibt möglich
+      (#103); im Tool gibt es dafür keinen Weg.
+    - In P2 sieht niemand das Protokoll im Tool (Entscheidung W4); die Einsicht kommt mit ADM-03.
+    """
+
+    class Action(models.TextChoices):
+        CREATED = "created", gettext_lazy("angelegt")
+        RENAMED = "renamed", gettext_lazy("umbenannt")
+        RING_ASSIGNED = "ring_assigned", gettext_lazy("Ring zugeordnet")
+        RING_CHANGED = "ring_changed", gettext_lazy("Ring gewechselt")
+        TROOP_CHANGED = "troop_changed", gettext_lazy("Stamm gewechselt")
+        HAS_RINGS = "has_rings", gettext_lazy("hat Ringe")
+
+    changed_at = models.DateTimeField(db_default=TransactionStart())
+    actor_id = models.BigIntegerField(null=True)
+    actor_name = models.TextField()
+    unit_id = models.BigIntegerField()
+    unit_kind = models.CharField(max_length=20, choices=Kind)
+    unit_name = models.TextField()
+    action = models.CharField(max_length=20, choices=Action)
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    old_parent_id = models.BigIntegerField(null=True)
+    new_parent_id = models.BigIntegerField(null=True)
+
+    @classmethod
+    def record(cls, by, unit: Unit, unit_name: str, action: str, old="", new="", **parent_ids) -> "UnitChange":
+        """Schreibt einen Eintrag; nur innerhalb der Transaktion der Änderung aufrufen."""
+        entry = cls(
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
+            unit_id=unit.pk,
+            unit_kind=unit.kind,
+            unit_name=unit_name,
+            action=action,
+            old_value=str(old),
+            new_value=str(new),
+            **parent_ids,
+        )
+        entry.save()
+        return entry
+
+    def save(self, *args, **kwargs) -> None:
+        """Schreibt einen neuen Eintrag; einen bestehenden zu ändern lehnt das Tool ab."""
+        if not self._state.adding:
+            raise ValidationError(texts.LOG_LOCKED)
+        # Nie als Änderung eines vorhandenen Eintrags speichern, auch nicht mit gesetzter Kennung.
+        kwargs["force_insert"] = True
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Einträge lassen sich nicht löschen."""
+        raise ValidationError(texts.LOG_LOCKED)

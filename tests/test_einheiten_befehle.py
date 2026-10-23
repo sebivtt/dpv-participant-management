@@ -11,6 +11,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from core.actors import SERVER_COMMAND
 from units.models import Unit
 
 pytestmark = pytest.mark.django_db
@@ -174,7 +175,8 @@ def test_ringe_einschalten_und_ausschalten(dpv):
 def test_ringe_einschalten_obwohl_es_schon_staemme_gibt(dpv):
     """S9."""
     run("association", "create", "Pfadfinderbund Boreas")
-    walhall = Unit.objects.create(kind=Kind.TROOP, name="Walhall", parent=association("Pfadfinderbund Boreas"))
+    walhall = Unit(kind=Kind.TROOP, name="Walhall", parent=association("Pfadfinderbund Boreas"))
+    walhall.save(by=SERVER_COMMAND)
 
     run("association", "rings", "Pfadfinderbund Boreas", "on")
 
@@ -186,7 +188,7 @@ def test_ringe_einschalten_obwohl_es_schon_staemme_gibt(dpv):
 def test_ringe_ausschalten_mit_ring_nennt_den_grund(dpv):
     """S10."""
     run("association", "create", "DPBM Mosaik", "--rings")
-    Unit.objects.create(kind=Kind.RING, name="Küste", parent=association("DPBM Mosaik"))
+    Unit(kind=Kind.RING, name="Küste", parent=association("DPBM Mosaik")).save(by=SERVER_COMMAND)
 
     message = refused("association", "rings", "DPBM Mosaik", "off")
 

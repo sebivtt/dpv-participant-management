@@ -329,7 +329,7 @@ def test_umbenennen_aendert_alte_eintraege_nicht(org):
     give(org.max, R.GROUP_LEAD, org.falken, by=org.erika)
 
     org.walhall.name = "Walhall Nord"
-    org.walhall.save()
+    org.walhall.save(by=SERVER_COMMAND)
     org.erika.first_name = "Erika Maria"
     org.erika.save()
 

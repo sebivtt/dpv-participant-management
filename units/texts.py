@@ -29,6 +29,13 @@ RING_EXISTS = gettext_lazy("Im Bund „%(association)s“ gibt es schon den Ring
 TROOP_EXISTS = gettext_lazy("Im Bund „%(association)s“ gibt es schon den Stamm „%(name)s“.")
 GROUP_EXISTS = gettext_lazy("Im Stamm „%(troop)s“ gibt es schon die Gruppe „%(name)s“.")
 
+# Protokoll der Strukturänderungen (#131)
+LOGGED_GROUP_IN_TROOP = gettext_lazy("%(unit)s (%(troop)s)")
+# Alter und neuer Wert von „hat Ringe“
+SWITCH_ON = gettext_lazy("ein")
+SWITCH_OFF = gettext_lazy("aus")
+LOG_LOCKED = gettext_lazy("Einträge im Protokoll der Strukturänderungen lassen sich nicht ändern oder löschen.")
+
 # Befehle für Admins
 NO_FEDERATION = gettext_lazy("Es gibt noch keinen Verband.")
 CREATE_FEDERATION_FIRST = gettext_lazy("Es gibt noch keinen Verband. Lege ihn zuerst mit „federation create“ an.")

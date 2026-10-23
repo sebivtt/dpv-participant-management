@@ -11,6 +11,7 @@ Beispiele:
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models.functions import Lower
 
+from core.actors import SERVER_COMMAND
 from units import texts
 from units.management.common import association, federation, refuse_with_reason
 from units.models import Kind, Unit
@@ -43,7 +44,7 @@ class Command(BaseCommand):
         if parent is None:
             raise CommandError(texts.CREATE_FEDERATION_FIRST)
         unit = Unit(kind=Kind.ASSOCIATION, name=name, parent=parent, has_rings=rings)
-        unit.save()
+        unit.save(by=SERVER_COMMAND)
         self.stdout.write(texts.ASSOCIATION_CREATED % {"name": unit.name})
         if rings:
             self.stdout.write(texts.RINGS_ON_AT_CREATION)
@@ -53,13 +54,13 @@ class Command(BaseCommand):
         old = unit.name
         unit.name = new_name
         # Nur den Namen schreiben, damit ein gleichzeitiges Umschalten nicht verloren geht.
-        unit.save(update_fields=["name"])
+        unit.save(update_fields=["name"], by=SERVER_COMMAND)
         self.stdout.write(texts.ASSOCIATION_RENAMED % {"old": old, "new": unit.name})
 
     def _rings(self, name: str, switch: str, **options):
         unit = association(name)
         unit.has_rings = switch == "on"
-        unit.save(update_fields=["has_rings"])
+        unit.save(update_fields=["has_rings"], by=SERVER_COMMAND)
         self.stdout.write((texts.RINGS_NOW_ON if unit.has_rings else texts.RINGS_NOW_OFF) % {"name": unit.name})
 
     def _list(self, **options):
