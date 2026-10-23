@@ -279,6 +279,16 @@ def test_umbenennen_schreibt_einen_veralteten_schalter_nicht_ins_protokoll(org):
     assert entries(start) == [("Erika Testfrau", "Pfadfinderbund Boreas", A.RENAMED, "Pfadfinderbund Boreas", "Bund Boreas")]
 
 
+def test_felder_zum_schreiben_auch_als_einmal_lesbare_folge(org):
+    """Befund der unabhängigen Prüfung: Auch dann kommt die Umbenennung ins Protokoll."""
+    start = mark()
+
+    org.walhall.name = "Walhall Nord"
+    org.walhall.save(update_fields=iter(["name"]), by=org.erika)
+
+    assert entries(start) == [("Erika Testfrau", "Walhall", A.RENAMED, "Walhall", "Walhall Nord")]
+
+
 def test_loeschen_einer_leeren_einheit_steht_nicht_in_diesem_protokoll(org):
     """Das Notfall-Löschen durch Admins steht im Protokoll der Admin-Zugriffe (#92)."""
     start = mark()

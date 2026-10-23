@@ -128,6 +128,9 @@ class Unit(models.Model):
         ab; er bekommt dieselbe Meldung wie sonst auch.
         """
         check_actor(by)
+        if kwargs.get("update_fields") is not None:
+            # Django liest die Felder einmal; das Protokoll braucht sie danach noch einmal.
+            kwargs["update_fields"] = frozenset(kwargs["update_fields"])
         self.name = self.name.strip()
         self.association = self._find_association()
         try:
