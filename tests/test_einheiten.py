@@ -312,6 +312,28 @@ def test_umbenennen_auf_einen_vergebenen_namen_wird_abgelehnt(boreas, mosaik):
     assert mosaik.name == "DPBM Mosaik"
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"name": ""},
+        {"name": " Walhall "},
+        {"name": "walhall", "kind": Kind.RING},
+        {"has_rings": True},
+        {"kind": Kind.FEDERATION, "parent": None, "association": None},
+    ],
+    ids=["leer", "leerzeichen", "ring-gleichnamig", "schalter-am-stamm", "zweiter-verband"],
+)
+def test_datenbank_haelt_die_regeln_auch_ohne_pruefung_des_tools(mosaik, change):
+    """Wer an `save()` vorbei direkt in die Datenbank schreibt, scheitert an ihren eigenen Regeln."""
+    kueste = make(Kind.RING, "Küste", mosaik)
+    make(Kind.TROOP, "Walhall", kueste)
+    other = make(Kind.TROOP, "Leuchtturm", kueste)
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Unit.objects.filter(pk=other.pk).update(**change)
+
+
 # Löschen (Entscheidung W5)
 
 

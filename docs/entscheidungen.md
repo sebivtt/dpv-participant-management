@@ -6,6 +6,26 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-23 · Einheiten: kein Löschknopf (W5), Ring-Schalter, Personen auf jeder Ebene, eindeutige Namen
+
+**Entscheidung** (Sebastian; Klärung von #88 am 22.10.2026, Nachklärung P2 vom 22.10.2026 in #106, Fragen bei der Umsetzung am 23.10.2026 in #88). Das sind Auslegungen von ORG-01 und ORG-06; der Text der Anforderungen bleibt.
+
+1. **W5, Einheiten löschen:** In P2 gibt es in der Oberfläche keinen Löschknopf, nur Anlegen und Bearbeiten. Die Datenbank verhindert das Löschen einer Einheit, unter der noch Einheiten hängen; den Schutz für Einheiten mit Personen testen die Issues, die Personen an Einheiten hängen (#65, #97). Im Notfall löscht ein Admin eine leere Einheit per Befehl, protokolliert (#92). Löschen mit Zusammenfassung nach ORG-07 kommt später (#108).
+2. **Ring-Schalter je Bund** statt Ringen fest nur im „DPBM Mosaik“: Jeder Bund hat den Schalter „hat Ringe“, Standard aus. Nur dort lassen sich Ringe anlegen, und jeder neue Stamm hängt dann in einem Ring. Einschalten geht auch, wenn der Bund schon Stämme hat; sie bleiben ohne Ring, bis sie einem zugeordnet werden (#95). Ausschalten geht nur, solange der Bund keinen Ring hat.
+3. **Personen auf jeder Ebene außer dem Verband:** Personen gehören zu einer Gruppe, einem Stamm, einem Ring oder einem Bund, nie direkt zum Verband. Das deckt „Pflegt ein Bund keine Stämme, gehören Personen direkt zum Bund“ (ORG-01) ab. Umgesetzt mit #65 und #97.
+4. **Eindeutige Namen:** Kein Name ist leer, keiner ist länger als 100 Zeichen. Eindeutig sind Bünde im Verband, Ringe und Stämme zusammen im Bund (auch über verschiedene Ringe hinweg; ein Ring und ein Stamm im selben Bund heißen also nie gleich) und Gruppen im Stamm. Als gleich gilt, was sich nur in Groß- und Kleinschreibung oder Leerzeichen am Anfang oder Ende unterscheidet; Leerzeichen in der Mitte zählen („Sippe  Falken“ ist ein anderer Name als „Sippe Falken“). Stämme und Gruppen dürfen in verschiedenen Bünden bzw. Stämmen gleich heißen.
+5. **Kurznamen** wie „DPV“ oder „DPBM“ kommen nicht mit #88; vorgemerkt in #124.
+
+**Technische Wahl** (KI):
+
+- **Eine Tabelle für alle fünf Ebenen** (`units.Unit`) mit Art, Name und der Einheit darüber, statt fünf Tabellen. Später hängen Personen, Rollen und Teilnahmekreise an Einheiten jeder Ebene; mit einer Tabelle reicht dafür ein Verweis. Nachteil: Welche Art unter welcher hängen darf, prüft das Tool beim Speichern, nicht die Datenbank. Genau ein Verband, eindeutige Namen, nicht leere Namen ohne Leerzeichen am Rand und der Löschschutz stehen zusätzlich als Regeln in der Datenbank.
+- **Der Bund steht bei Ringen, Stämmen und Gruppen zusätzlich dabei,** damit die Datenbank selbst doppelte Stämme über Ringe hinweg verhindert, auch bei gleichzeitigen Anfragen. Wer später einen Stamm verschiebt (#95), muss ihn mitführen; das übernimmt das Speichern.
+- **Gleichzeitige Änderungen:** Beim Anlegen eines Rings oder Stammes und beim Umschalten von „hat Ringe“ sperrt das Tool den Bund kurz, sonst könnten ein neuer Ring und das Ausschalten zugleich durchgehen.
+- **Befehle für Admins:** `python manage.py federation create|rename` und `python manage.py association create|rename|rings|list` (Anleitung im `README.md`). Befehlsnamen sind Code und deshalb englisch; die Meldungen sind deutsch.
+- **Code-Namen** (CONTRIBUTING.md, Abschnitt 1): Einheit `unit`, Verband `federation`, Bund `association`, Ring `ring`, Stamm `troop`, Gruppe `group`, Schalter „hat Ringe“ `has_rings`.
+
+**Umsetzung:** `units/` (Datenmodell, Migration, Befehle, Meldungen), `config/settings.py`, `README.md` (Abschnitt „Verband und Bünde anlegen (Admins)“), Tests in `tests/test_einheiten.py`, `tests/test_einheiten_befehle.py` und `containertests/test_testumgebung_container.py`.
+
 ## 2026-10-22 · Antworten der Datenschutzperson zu OP-2
 
 **Entscheidung** (Sebastian, 22.10.2026; #81): Die Antworten der Datenschutzperson des DPV werden so übernommen:
