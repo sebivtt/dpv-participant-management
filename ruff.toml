@@ -16,6 +16,7 @@ select = [
     "B",      # häufige Fehlerquellen (z. B. veränderliche Standardwerte)
     "C90",    # Komplexität
     "T20",    # print() im Anwendungscode
+    "G",      # keine zusammengebauten Log-Zeilen; der Log-Schutz erkennt Fehler nur als Platzhalter (#75)
     "S",      # Sicherheit (entspricht dem Werkzeug bandit)
     "PGH004", # "# noqa" nur mit Regelnummer, sonst schaltet es auch künftige Regeln ab
     "RUF100", # überflüssige "# noqa"-Ausnahmen melden
