@@ -1,8 +1,8 @@
 """Liest die Rechtematrix (`docs/rechtematrix.md`) für die Tests in `tests/test_rechtematrix.py`.
 
 Die Matrix ist für Menschen geschrieben; gelesen wird nur, was die Tests brauchen: Zeilen mit
-Kennung, die Liste der Tabellen und die Tests, die eine gebaute Zeile nennt. Ab #90 nutzt
-`./pruefen.sh` dieselben Funktionen.
+Kennung, die Liste der Tabellen und die Tests, die eine gebaute Zeile nennt. Die Tests laufen
+mit `./pruefen.sh`; #90 baut darauf auf.
 """
 
 import ast
@@ -18,6 +18,8 @@ TABLES_SECTION = "Tabellen in der Datenbank"
 # Zwei Großbuchstaben, Bindestrich, zwei Ziffern, z. B. VP-02.
 ROW_ID = re.compile(r"^[A-Z]{2}-\d{2}$")
 TEST_REFERENCE = re.compile(r"`([^`]+\.py)::(test_\w+)`")
+# Verweise auf Tests in Klassen (datei.py::Klasse::test_x) erkennt die Prüfung nicht; sie meldet
+# sie als fehlenden Test. Die Tests dieses Repos stehen nicht in Klassen.
 
 
 def matrix_text() -> str:
@@ -31,14 +33,29 @@ def _cells(line: str) -> list[str]:
 
 
 def rows(text: str) -> list[list[str]]:
-    """Alle Zeilen der Matrix mit Kennung, je als Liste ihrer Zellen."""
+    """Alle Datenzeilen der Tabellen, deren Kopf mit „Kennung“ beginnt, je als Liste ihrer Zellen.
+
+    Gezählt wird jede Zeile solcher Tabellen, auch eine mit falsch geschriebener Kennung, damit
+    sie nicht still aus den Prüfungen herausfällt; `invalid_ids` meldet sie.
+    """
     found = []
-    for line in text.splitlines():
-        if line.startswith("|"):
-            cells = _cells(line)
-            if ROW_ID.match(cells[0]):
-                found.append(cells)
+    in_matrix_table = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            in_matrix_table = False
+            continue
+        cells = _cells(line)
+        if cells[0] == "Kennung":
+            in_matrix_table = True
+        elif in_matrix_table and not set(cells[0]) <= set("-: "):
+            found.append(cells)
     return found
+
+
+def invalid_ids(text: str) -> list[str]:
+    """Kennungen, die nicht die Form „zwei Großbuchstaben, Bindestrich, zwei Ziffern“ haben."""
+    return [cells[0] for cells in rows(text) if not ROW_ID.match(cells[0])]
 
 
 def duplicate_ids(text: str) -> list[str]:
@@ -55,6 +72,19 @@ def _section(text: str, title: str) -> str:
     return ""
 
 
+def unknown_sections(text: str) -> list[str]:
+    """Abschnitte in der Tabellenliste, die es als Überschrift nicht gibt."""
+    headings = set(re.findall(r"^## (.+)$", text, flags=re.MULTILINE))
+    unknown = []
+    for line in _section(text, TABLES_SECTION).splitlines():
+        if line.startswith("| `"):
+            for section in _cells(line)[-1].split(";"):
+                name = re.sub(r"\s*\(.*\)$", "", section.strip())
+                if name not in headings:
+                    unknown.append(name)
+    return unknown
+
+
 def missing_tables(text: str, models) -> list[str]:
     """Datenmodelle, die im Abschnitt „Tabellen in der Datenbank“ fehlen.
 
@@ -62,7 +92,8 @@ def missing_tables(text: str, models) -> list[str]:
     Sitzungen). Reine Verbindungstabellen, die Django selbst zu einem Modell anlegt, gehören zu
     diesem Modell und fehlen deshalb in `models` (`apps.get_models()` ohne `include_auto_created`).
     """
-    listed = set(re.findall(r"`(\w+\.\w+)`", _section(text, TABLES_SECTION)))
+    table_rows = [line for line in _section(text, TABLES_SECTION).splitlines() if line.startswith("| `")]
+    listed = {_cells(line)[0].strip("`") for line in table_rows}
     return sorted(model._meta.label for model in models if model._meta.label not in listed)
 
 
@@ -92,7 +123,9 @@ def broken_test_references(text: str, root: Path) -> list[str]:
         row_id, stand = cells[0], cells[-1]
         if not stand.startswith("gebaut"):
             continue
-        allowed, _, forbidden = stand.partition("verboten")
+        # Getrennt wird am Wort „verboten“ nach einem Strichpunkt, nicht an einem Testnamen,
+        # der das Wort enthält.
+        allowed, _, forbidden = stand.partition("; verboten ")
         for case, part in (("erlaubt", allowed), ("verboten", forbidden)):
             references = TEST_REFERENCE.findall(part)
             if not references:

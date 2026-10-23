@@ -19,10 +19,10 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Technische Wahl** (KI):
 
-- **Kennungen:** zwei Großbuchstaben für den Abschnitt und eine zweistellige Nummer, z. B. `VP-02`. Eine Kennung kommt nur einmal vor; ein Test prüft das.
+- **Kennungen:** zwei Großbuchstaben für den Abschnitt oder einen Teil davon (VA und AN im Abschnitt „Veranstaltungen und Anmeldungen“), ein Bindestrich und eine zweistellige Nummer, z. B. `VP-02`. Eine Kennung kommt nur einmal vor und hat genau diese Form; Tests prüfen beides. Die Tabellenliste darf nur vorhandene Abschnitte nennen.
 - **Tests nennen ihre Zeile über eine Markierung** (`@pytest.mark.rechtematrix("PR-02")`), nicht über ihren Namen. So bleiben vorhandene Tests unverändert; die vier Protokolltests je aus `tests/test_rollen_protokoll.py` und `tests/test_einheiten_protokoll.py` bekommen nur diese Markierung, ihre Regeln blieben gleich.
 - **Was „erlaubt“ und „verboten“ prüfen:** Eine Zeile „erlaubt“ prüft als verbotenen Fall den nächsten Nachbarn (andere Einheit, Ebene darunter); eine Zeile „verboten“ prüft als erlaubten Fall die Gegenprobe, dass der vorgesehene Weg weiter geht.
-- **Automatische Prüfung schon jetzt:** `tests/test_rechtematrix.py` läuft mit `./pruefen.sh` und wird rot bei einer fehlenden Tabelle, einer doppelten Kennung und bei einer gebauten Zeile, deren Tests fehlen oder die Kennung nicht tragen. #90 baut darauf auf (direkte Adressen, htmx-Anfragen, manipulierte Formulare, Rundumtest).
+- **Automatische Prüfung schon jetzt:** `tests/test_rechtematrix.py` läuft mit `./pruefen.sh` und wird rot bei einer fehlenden Tabelle, einer doppelten oder falsch geschriebenen Kennung, einem unbekannten Abschnitt in der Tabellenliste und bei einer gebauten Zeile, deren Tests fehlen oder die Kennung nicht tragen. #90 baut darauf auf (direkte Adressen, htmx-Anfragen, manipulierte Formulare, Rundumtest).
 - **Verbindungstabellen,** die Django selbst zu einer Tabelle anlegt, gehören zu dieser Tabelle und stehen nicht eigens in der Matrix.
 - **Aus der Grundregel abgeleitet,** nicht neu entschieden, aber erstmals ausgeschrieben: Verbandsleitung und Veranstaltungsteam ohne weitere Rolle sehen keine Namen von Ringen, Stämmen und Gruppen (EH-05), weil das nirgends erlaubt ist.
 

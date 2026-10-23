@@ -1,8 +1,9 @@
 """Tests für die Form der Rechtematrix (#87, `docs/rechtematrix.md`).
 
-S1 bis S4 verweisen auf die Szenarien im Issue #87 (Kommentar „Szenarien für die Umsetzung,
-23.10.2026“). Die Rechte selbst prüfen die Tests, die eine gebaute Zeile nennt; diese hier
-prüfen nur, dass die Matrix vollständig ist und jede gebaute Zeile auf echte Tests zeigt.
+S1, S2 und S4 verweisen auf die Szenarien im Issue #87 (Kommentar „Szenarien für die Umsetzung,
+23.10.2026“). S3 prüfen die Protokolltests, die die Zeilen PR-02 und PR-04 nennen. Die Rechte
+selbst prüfen die Tests, die eine gebaute Zeile nennt; diese hier prüfen nur, dass die Matrix
+vollständig ist und jede gebaute Zeile auf echte Tests zeigt.
 """
 
 import re
@@ -15,9 +16,11 @@ from tests.rechtematrix import (
     MATRIX,
     broken_test_references,
     duplicate_ids,
+    invalid_ids,
     matrix_text,
     missing_tables,
     rows,
+    unknown_sections,
 )
 
 SECTIONS = [
@@ -62,6 +65,19 @@ def test_jede_zeile_nennt_alle_sieben_angaben():
         assert cells[6].startswith(("geplant", "gebaut")), cells
 
 
+def test_jede_kennung_hat_die_vorgesehene_form():
+    assert invalid_ids(matrix_text()) == []
+
+
+@pytest.mark.parametrize("row_id", ["VP-2", "VP-100", "vp-02", "**VP-02**"])
+def test_falsch_geschriebene_kennung_faellt_nicht_still_heraus(row_id):
+    """Gegenprobe: Eine solche Zeile zählt mit und wird gemeldet."""
+    text = HEADER + f"| {row_id} | Stammesleitung | Beispiel | ansehen | erlaubt | BER-01 | gebaut: erlaubt `tests/x.py::test_a` |\n"
+
+    assert invalid_ids(text) == [row_id]
+    assert broken_test_references(text, MATRIX.parent.parent) != []
+
+
 # S1: Jede Art von Daten in der Datenbank steht in der Matrix
 
 
@@ -84,6 +100,17 @@ def test_nicht_eingetragene_tabelle_macht_die_pruefung_rot(unlisted_model):
     assert missing_tables(matrix_text(), apps.get_models()) == ["units.Unlisted"]
 
 
+def test_tabellenliste_nennt_nur_vorhandene_abschnitte():
+    assert unknown_sections(matrix_text()) == []
+
+
+def test_tabellenliste_mit_unbekanntem_abschnitt_ist_rot():
+    """Gegenprobe."""
+    text = matrix_text().replace("| `units.Unit` | Einheiten | Einheiten |", "| `units.Unit` | Einheiten | Organisationen |")
+
+    assert unknown_sections(text) == ["Organisationen"]
+
+
 # S2: Jede gebaute Zeile zeigt auf Tests, die es gibt und die ihre Kennung tragen
 
 
@@ -102,6 +129,8 @@ def repo(tmp_path):
         "import pytest\n\n\n"
         '@pytest.mark.rechtematrix("XY-01")\n'
         "def test_mit_kennung():\n    pass\n\n\n"
+        '@pytest.mark.rechtematrix("XY-01")\n'
+        "def test_verboten_im_namen():\n    pass\n\n\n"
         "def test_ohne_kennung():\n    pass\n",
         encoding="utf-8",
     )
@@ -126,8 +155,12 @@ def test_gegenprobe_mit_vorhandenen_tests_ist_gruen(repo):
         "gebaut: erlaubt `tests/test_beispiel.py::test_mit_kennung`; verboten `tests/test_beispiel.py::test_ohne_kennung`",
         "gebaut: erlaubt `tests/test_beispiel.py::test_mit_kennung`",
         "gebaut: verboten `tests/test_beispiel.py::test_mit_kennung`",
+        (
+            "gebaut: erlaubt `tests/test_beispiel.py::test_mit_kennung`, `tests/test_beispiel.py::test_verboten_im_namen`, "
+            "`tests/test_beispiel.py::test_mit_kennung`"
+        ),
     ],
-    ids=["test_fehlt", "datei_fehlt", "ohne_kennung", "verboten_fehlt", "erlaubt_fehlt"],
+    ids=["test_fehlt", "datei_fehlt", "ohne_kennung", "verboten_fehlt", "erlaubt_fehlt", "verboten_nur_im_namen"],
 )
 def test_fehlender_oder_unmarkierter_test_macht_die_pruefung_rot(repo, stand):
     """S2, Gegenprobe."""
