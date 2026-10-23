@@ -3,6 +3,23 @@
 import roles.expressions
 from django.db import migrations, models
 
+# Die Datenbank lehnt jedes Ändern und Löschen eines Eintrags im Protokoll ab, auch Sammeländerungen
+# am Programm vorbei (#131, wie #91). TRUNCATE, also das vollständige Leeren, bleibt erlaubt: Das
+# brauchen der Testdaten-Befehl (#103) und der Testlauf.
+LOCK = """
+CREATE FUNCTION units_unitchange_locked() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Einträge im Protokoll der Strukturänderungen lassen sich nicht ändern oder löschen.';
+END;
+$$;
+CREATE TRIGGER units_unitchange_locked BEFORE UPDATE OR DELETE ON units_unitchange
+    FOR EACH ROW EXECUTE FUNCTION units_unitchange_locked();
+"""
+UNLOCK = """
+DROP TRIGGER units_unitchange_locked ON units_unitchange;
+DROP FUNCTION units_unitchange_locked();
+"""
+
 
 class Migration(migrations.Migration):
 
@@ -28,4 +45,5 @@ class Migration(migrations.Migration):
                 ('new_parent_id', models.BigIntegerField(null=True)),
             ],
         ),
+        migrations.RunSQL(LOCK, UNLOCK),
     ]

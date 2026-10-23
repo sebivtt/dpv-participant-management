@@ -77,6 +77,8 @@ Deshalb verschiebe ich vier Muss-Anforderungen fest auf ihren ersten echten Beda
 
 **Nach der Klärung von #26 am 21.10.2026** (Abschnitt 6, Nr. 40) endet jede Phase zusätzlich mit einem externen KI-Review (`docs/review-leitfaden.md`). Bis Juni 2028 kommen rund 19 Stunden dazu (Annahme): rund 4 zum Einrichten in P1 und sechs Reviews von P1 bis P6 zu je rund 2,5. Der Bedarf steigt auf rund 606 Stunden. Verfügbar bleiben 658, der Puffer sinkt von rund 12 auf rund 9 % (52 Stunden). Die Stundenspalte der Phasen bleibt unverändert; nachgemessen wird sie nicht, E1 und E2 prüfen den Verzug in Wochen (Entscheidung vom 22.10.2026, Abschnitt 6, Nr. 43).
 
+**Nach der Klärung von #131 am 23.10.2026** (Abschnitt 6, Nr. 47) kommt das Protokoll der Strukturänderungen neu in P2. Es verdrängt nichts, sondern kostet rund 5 Stunden aus dem Puffer (Annahme). Der Bedarf steigt auf rund 611 Stunden. Verfügbar bleiben 658, der Puffer sinkt von rund 9 auf rund 8 % (47 Stunden).
+
 **Planungsgrundlagen**
 
 - Entschieden am 20.10.2026: Name „DPV Anmeldetool“, Repo sebivtt/dpv-participant-management, Lizenz EUPL-1.2, Liste 1 bestätigt. Start Montag, 26.10.2026. 8 Stunden pro Woche im Jahresschnitt, Betrieb eingerechnet (Mitte deiner Spanne). Ein Stundenlog führst du nicht (Entscheidung vom 22.10.2026); E1 und E2 messen das Tempo am Verzug gegenüber den Zieldaten.
@@ -358,6 +360,12 @@ Ohne eigene Zeile, weil nur die Form betroffen ist: Die beiden Diagramme (Zeitle
 | Nr | Stelle | vorher | jetzt | warum |
 | --- | --- | --- | --- | --- |
 | 45 | OP-Tabelle, OP-2 (Ansprechperson, Folgenabschätzung und Einwilligung, Verantwortlichkeit und Verträge) | ohne Antwort der Datenschutzperson | Ansprechperson hat geantwortet; Bestätigung als Abfrage genügt; freiwillige Angaben im Profil in Ordnung, bei regelmäßiger automatischer Löschung; Verantwortlich ist der DPV; Verträge zur Auftragsverarbeitung liegen vor. Offen: Folgenabschätzung, Alter, Fortgeltung, Verzeichnis, Datenpannen, eigener Vertrag mit dem DPV. Fristen und Folgen unverändert | Antwort der Datenschutzperson, Zustimmung von Sebastian am 22.10.2026 (`docs/entscheidungen.md`) |
+
+**Änderungen nach der Klärung von #131 vom 23.10.2026** (Pull Request zu #131):
+
+| Nr | Stelle | vorher | jetzt | warum |
+| --- | --- | --- | --- | --- |
+| 47 | Abschnitt 3, Machbarkeit | Bedarf rund 606 Stunden, Puffer rund 9 % (52 Stunden) | Protokoll der Strukturänderungen (#131) neu in P2, aus dem Puffer, nichts verdrängt; Bedarf rund 611 Stunden, Puffer rund 8 % (47 Stunden). Stunden der Phasen unverändert | Zustimmung von Sebastian am 23.10.2026 (#131). Rechnung: 606 + 5 = 611; 658 − 611 = 47; 47 / 611 ≈ 7,7 %, rund 8 % (Annahme: rund 5 Stunden). Gerechnet ohne #113, das Nr. 46 bekommt und die Zahlen danach fortschreibt |
 
 **Grundlagen:** [Anforderungsdokument](https://claude.ai/code/artifact/63f2b213-1e66-453f-a270-0de357af386b), [Fahrplan Neubau](https://claude.ai/code/artifact/3e8d079d-7652-4b49-bce3-edee342841b6) und [Bewertung von Claude](https://claude.ai/code/artifact/8ba0df78-1ae2-44a1-a865-f72ca5295fb3), die Bewertungen von ChatGPT und Gemini (Anhänge), Repository [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) Stand 9df4513, Django-Pflegezeiträume laut [djangoproject.com](https://www.djangoproject.com/download/). Dieser Fahrplan ersetzt den Fahrplan Neubau vom 20.10.2026.
 
