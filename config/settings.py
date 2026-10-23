@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "units",
+    "roles",
 ]
 
 MIDDLEWARE = [
