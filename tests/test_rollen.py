@@ -38,7 +38,7 @@ def person(username: str, first_name: str, last_name: str):
 
 def unit(kind: str, name: str, parent: Unit | None = None, **extra) -> Unit:
     created = Unit(kind=kind, name=name, parent=parent, **extra)
-    created.save()
+    created.save(by=BY)
     return created
 
 

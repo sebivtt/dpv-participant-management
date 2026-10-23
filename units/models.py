@@ -13,6 +13,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Lower, Trim
 from django.utils.translation import gettext_lazy
 
+from roles.expressions import TransactionStart
 from units import texts
 
 
@@ -109,7 +110,7 @@ class Unit(models.Model):
     def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args, by=None, **kwargs) -> None:
         """Prüft die Regeln und speichert; lehnt mit `ValidationError` ab.
 
         Der betroffene Bund wird dabei gesperrt, bis gespeichert ist. Sonst könnten ein neuer
@@ -221,3 +222,34 @@ class Unit(models.Model):
             if other:
                 return texts.GROUP_EXISTS % {"troop": self.parent.name, "name": other.name}
         return None
+
+
+def logged_name(unit: Unit) -> str:
+    """Wie eine Einheit im Protokoll heißt: ohne Anführungszeichen, Gruppen mit ihrem Stamm."""
+    if unit.kind == Kind.GROUP:
+        return texts.LOGGED_GROUP_IN_TROOP % {"unit": unit.name, "troop": unit.parent.name}
+    return unit.name
+
+
+class UnitChange(models.Model):
+    """Ein Eintrag im Protokoll der Strukturänderungen (#131, ORG-06)."""
+
+    class Action(models.TextChoices):
+        CREATED = "created", gettext_lazy("angelegt")
+        RENAMED = "renamed", gettext_lazy("umbenannt")
+        RING_ASSIGNED = "ring_assigned", gettext_lazy("Ring zugeordnet")
+        RING_CHANGED = "ring_changed", gettext_lazy("Ring gewechselt")
+        TROOP_CHANGED = "troop_changed", gettext_lazy("Stamm gewechselt")
+        HAS_RINGS = "has_rings", gettext_lazy("hat Ringe")
+
+    changed_at = models.DateTimeField(db_default=TransactionStart())
+    actor_id = models.BigIntegerField(null=True)
+    actor_name = models.TextField()
+    unit_id = models.BigIntegerField()
+    unit_kind = models.CharField(max_length=20, choices=Kind)
+    unit_name = models.TextField()
+    action = models.CharField(max_length=20, choices=Action)
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    old_parent_id = models.BigIntegerField(null=True)
+    new_parent_id = models.BigIntegerField(null=True)

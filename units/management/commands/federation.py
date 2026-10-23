@@ -7,6 +7,7 @@ Beispiele:
 
 from django.core.management.base import BaseCommand, CommandError
 
+from core.actors import SERVER_COMMAND
 from units import texts
 from units.management.common import federation, refuse_with_reason
 from units.models import Kind, Unit
@@ -26,12 +27,12 @@ class Command(BaseCommand):
         with refuse_with_reason():
             if action == "create":
                 unit = Unit(kind=Kind.FEDERATION, name=name)
-                unit.save()
+                unit.save(by=SERVER_COMMAND)
                 self.stdout.write(texts.FEDERATION_CREATED % {"name": unit.name})
                 return
             unit = federation()
             if unit is None:
                 raise CommandError(texts.CREATE_FEDERATION_FIRST)
             unit.name = name
-            unit.save(update_fields=["name"])
+            unit.save(update_fields=["name"], by=SERVER_COMMAND)
             self.stdout.write(texts.FEDERATION_RENAMED % {"name": unit.name})

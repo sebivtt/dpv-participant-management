@@ -16,14 +16,20 @@ from django.urls import get_resolver
 
 from tests.keycloak_fake import login
 from tests.test_rundumtest import ALL
+from core.actors import SERVER_COMMAND
 from units.models import Unit
 
 Kind = Unit.Kind
+# Wer die Änderung macht, spielt für diese Regeln keine Rolle; das Protokoll prüft
+# tests/test_einheiten_protokoll.py (#131).
+BY = SERVER_COMMAND
 
 
 def make(kind: str, name: str, parent: Unit | None = None) -> Unit:
     """Legt eine Einheit an, auf demselben Weg wie jeder andere Teil des Tools."""
-    return Unit.objects.create(kind=kind, name=name, parent=parent)
+    created = Unit(kind=kind, name=name, parent=parent)
+    created.save(by=BY)
+    return created
 
 
 @pytest.fixture
@@ -39,14 +45,14 @@ def boreas(dpv) -> Unit:
 @pytest.fixture
 def mosaik(dpv) -> Unit:
     association = Unit(kind=Kind.ASSOCIATION, name="DPBM Mosaik", parent=dpv, has_rings=True)
-    association.save()
+    association.save(by=BY)
     return association
 
 
 def rejected(unit: Unit) -> str:
     """Speichert und gibt die Meldung der Ablehnung zurück; schlägt fehl, wenn gespeichert wurde."""
     with pytest.raises(ValidationError) as error:
-        unit.save()
+        unit.save(by=BY)
     return " ".join(error.value.messages)
 
 
@@ -150,10 +156,10 @@ def test_ringe_einschalten_obwohl_es_schon_staemme_gibt(boreas):
     walhall = make(Kind.TROOP, "Walhall", boreas)
 
     boreas.has_rings = True
-    boreas.save()
+    boreas.save(by=BY)
     walhall.refresh_from_db()
     walhall.name = "Walhall am See"
-    walhall.save()
+    walhall.save(by=BY)
 
     walhall.refresh_from_db()
     assert (walhall.name, walhall.parent) == ("Walhall am See", boreas)
@@ -173,7 +179,7 @@ def test_ringe_ausschalten_nur_ohne_ring(mosaik):
 
     ring.delete()
     mosaik.has_rings = False
-    mosaik.save()
+    mosaik.save(by=BY)
     mosaik.refresh_from_db()
     assert mosaik.has_rings is False
 
@@ -212,7 +218,7 @@ def test_stamm_und_ring_wechseln_nicht_den_bund(boreas, mosaik):
     walhall = make(Kind.TROOP, "Walhall", boreas)
     make(Kind.GROUP, "Sippe Falken", walhall)
     boreas.has_rings = True
-    boreas.save()
+    boreas.save(by=BY)
 
     walhall.parent = nord
     assert "Ein Ring oder Stamm bleibt in seinem Bund." in rejected(walhall)
@@ -236,13 +242,13 @@ def test_stamm_im_bund_in_einen_ring_verschieben_geht(boreas):
     """Gegenprobe: Zuordnen zu einem Ring und Wechsel des Rings im selben Bund bleiben möglich (#95)."""
     walhall = make(Kind.TROOP, "Walhall", boreas)
     boreas.has_rings = True
-    boreas.save()
+    boreas.save(by=BY)
     nord = make(Kind.RING, "Nord", boreas)
     sued = make(Kind.RING, "Süd", boreas)
 
     for ring in (nord, sued):
         walhall.parent = ring
-        walhall.save()
+        walhall.save(by=BY)
         walhall.refresh_from_db()
         assert walhall.parent == ring
 
@@ -314,7 +320,7 @@ def test_stamm_ohne_ring_und_stamm_im_ring_teilen_sich_die_namen(boreas):
     """S11: Ein Stamm, der aus der Zeit vor dem Schalter noch ohne Ring ist, zählt mit."""
     make(Kind.TROOP, "Walhall", boreas)
     boreas.has_rings = True
-    boreas.save()
+    boreas.save(by=BY)
     nord = make(Kind.RING, "Nord", boreas)
 
     assert "gibt es schon den Stamm „Walhall“" in rejected(Unit(kind=Kind.TROOP, name="Walhall", parent=nord))
@@ -350,7 +356,7 @@ def test_gruppe_ist_im_stamm_eindeutig_darf_aber_in_anderem_stamm_gleich_heissen
 def test_umbenennen_nur_in_der_schreibweise_geht(boreas):
     """S5."""
     boreas.name = "PFADFINDERBUND BOREAS"
-    boreas.save()
+    boreas.save(by=BY)
 
     boreas.refresh_from_db()
     assert boreas.name == "PFADFINDERBUND BOREAS"
@@ -475,7 +481,7 @@ def test_ring_anlegen_und_gleichzeitig_ringe_ausschalten():
     """Der Ring entsteht zuerst; das gleichzeitige Ausschalten muss danach den Ring sehen."""
     dpv = make(Kind.FEDERATION, "DPV")
     mosaik = Unit(kind=Kind.ASSOCIATION, name="DPBM Mosaik", parent=dpv, has_rings=True)
-    mosaik.save()
+    mosaik.save(by=BY)
     ring_saved, release = threading.Event(), threading.Event()
     results: dict[str, str] = {}
 
@@ -489,7 +495,7 @@ def test_ring_anlegen_und_gleichzeitig_ringe_ausschalten():
         ring_saved.wait(10)
         stale = Unit.objects.get(pk=mosaik.pk)
         stale.has_rings = False
-        stale.save()
+        stale.save(by=BY)
 
     first = _in_thread(create_ring, results, "ring")
     second = _in_thread(switch_off, results, "aus")
@@ -509,7 +515,7 @@ def test_ringe_ausschalten_und_gleichzeitig_ring_anlegen():
     """Das Ausschalten kommt zuerst; der gleichzeitige Ring muss danach abgelehnt werden."""
     dpv = make(Kind.FEDERATION, "DPV")
     mosaik = Unit(kind=Kind.ASSOCIATION, name="DPBM Mosaik", parent=dpv, has_rings=True)
-    mosaik.save()
+    mosaik.save(by=BY)
     switched, release = threading.Event(), threading.Event()
     results: dict[str, str] = {}
 
@@ -517,7 +523,7 @@ def test_ringe_ausschalten_und_gleichzeitig_ring_anlegen():
         with transaction.atomic():
             fresh = Unit.objects.get(pk=mosaik.pk)
             fresh.has_rings = False
-            fresh.save()
+            fresh.save(by=BY)
             switched.set()
             release.wait(10)
 

@@ -13,10 +13,15 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from django.utils.translation import gettext_lazy
 
+from core import actors
+from core.actors import SERVER_COMMAND, check_actor, person_name
 from roles import texts
 from roles.expressions import TransactionStart
 from units.models import Kind as UnitKind
-from units.models import Unit
+from units.models import Unit, logged_name
+
+# SERVER_COMMAND bleibt hier erreichbar, wie seit #91; es steht jetzt in core/actors.py.
+__all__ = ["SERVER_COMMAND", "Role", "RoleChange"]
 
 
 class RoleKind(models.TextChoices):
@@ -238,17 +243,6 @@ class Role(models.Model):
         return message % {"person": person_name(self.user), "roles": listed}
 
 
-# Urheber von Änderungen per Befehl auf dem Server. Wer ihn eingetippt hat, weiß das Tool nicht (#91).
-SERVER_COMMAND = object()
-
-
-def check_actor(by) -> None:
-    """Lehnt eine Änderung ab, die nicht nennt, wer sie macht."""
-    if by is SERVER_COMMAND or (isinstance(by, get_user_model()) and by.pk is not None):
-        return
-    raise ValueError("Wer die Rolle ändert, muss ein gespeichertes Konto oder SERVER_COMMAND sein.")
-
-
 class RoleChange(models.Model):
     """Ein Eintrag im Protokoll der Rollenänderungen (#91, ROL-04).
 
@@ -290,8 +284,8 @@ class RoleChange(models.Model):
     def record(cls, by, user, kind: str, unit: Unit | None, action: str) -> "RoleChange":
         """Schreibt einen Eintrag; nur innerhalb der Transaktion der Rollenänderung aufrufen."""
         entry = cls(
-            actor_id=None if by is SERVER_COMMAND else by.pk,
-            actor_name=str(texts.SERVER_COMMAND) if by is SERVER_COMMAND else person_name(by),
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
             person_id=user.pk,
             person_name=person_name(user),
             kind=kind,
@@ -333,18 +327,6 @@ def _upwards(unit: Unit) -> list[int]:
         found.append(unit.pk)
         unit = unit.parent
     return found
-
-
-def person_name(user) -> str:
-    """Der Name für Meldungen; ohne Namen in Keycloak der Benutzername."""
-    return user.get_full_name() or user.username
-
-
-def logged_name(unit: Unit) -> str:
-    """Wie eine Einheit im Protokoll heißt: ohne Anführungszeichen, Gruppen mit ihrem Stamm."""
-    if unit.kind == UnitKind.GROUP:
-        return texts.LOGGED_GROUP_IN_TROOP % {"unit": unit.name, "troop": unit.parent.name}
-    return unit.name
 
 
 def describe(unit: Unit) -> str:
