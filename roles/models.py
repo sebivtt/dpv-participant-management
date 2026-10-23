@@ -135,21 +135,29 @@ class Role(models.Model):
         """Entfernt die Rolle und schreibt ins Protokoll.
 
         Eine Mitgliedschaft endet nur, wenn keine Leitungsrolle in einer Einheit mehr besteht.
-        `by` wie bei `save()`. Ins Protokoll kommt der gespeicherte Stand, nicht ein im
-        Programm schon geänderter.
+        `by` wie bei `save()`. Regeln und Protokoll richten sich nach dem gespeicherten Stand,
+        nicht nach einem im Programm schon geänderten.
         """
         check_actor(by)
         with transaction.atomic():
-            self._lock_person()
-            stored = Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
-            if self.kind == RoleKind.MEMBER:
-                blocking = list(self._leads())
+            stored = self._stored()
+            if stored is not None:
+                stored._lock_person()
+                stored = self._stored()  # nach der Sperre, falls sich inzwischen etwas geändert hat
+            if stored is None:
+                return super().delete(*args, **kwargs)
+            if stored.kind == RoleKind.MEMBER:
+                blocking = list(stored._leads())
                 if blocking:
-                    raise ValidationError(self._remove_first(blocking), code="remove_roles_first")
+                    raise ValidationError(stored._remove_first(blocking), code="remove_roles_first")
             deleted = super().delete(*args, **kwargs)
-            if stored is not None and deleted[0]:
+            if deleted[0]:
                 RoleChange.record(by, stored.user, stored.kind, stored.unit, RoleChange.Action.REMOVED)
             return deleted
+
+    def _stored(self) -> "Role | None":
+        """Diese Rolle, wie sie in der Datenbank steht."""
+        return Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
 
     def _lock_person(self) -> None:
         """Sperrt das Konto, damit die Regeln den Stand sehen, den die Änderung tatsächlich trifft."""
@@ -253,8 +261,10 @@ class RoleChange(models.Model):
       bewusst keine Verweise: Ein Eintrag hindert nie daran, später ein Konto oder eine Einheit
       zu löschen (#66), und ändert sich dabei nicht.
     - Bei Befehlen auf dem Server steht „Befehl auf dem Server“ als Urheber, ohne Kennung.
-    - Alle Einträge einer Transaktion tragen dieselbe Uhrzeit (Beginn der Transaktion), etwa
-      „entfernt“ und „vergeben“ eines Wechsels.
+    - Alle Einträge einer Transaktion tragen dieselbe Uhrzeit (Beginn der äußersten Transaktion),
+      etwa „entfernt“ und „vergeben“ eines Wechsels. Die Reihenfolge gibt die Kennung `id` an,
+      nicht die Uhrzeit: Bei gleichzeitigen Änderungen kann eine früher begonnene Transaktion
+      später schreiben.
     - Einträge lassen sich nicht ändern oder löschen: hier im Programm und zusätzlich per Regel
       in der Datenbank (Migration 0002), die auch Sammeländerungen ablehnt. Das vollständige
       Leeren der Datenbank bleibt möglich; das braucht der Testdaten-Befehl (#103) und der

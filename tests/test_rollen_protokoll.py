@@ -212,6 +212,30 @@ def test_eine_rolle_laesst_sich_nicht_umschreiben_und_das_schreibt_nichts(org):
     assert entries() == before
 
 
+def test_entfernen_richtet_sich_nach_dem_gespeicherten_stand(org):
+    """Befund der unabhängigen Prüfung: Eine im Programm geänderte, nicht gespeicherte Rolle zählt nicht."""
+    give(org.max, R.TROOP_LEAD, org.walhall, by=org.erika)
+    member = membership(org.max)
+    before = entries()
+
+    member.kind = R.GROUP_LEAD
+    error = refused(lambda: member.delete(by=org.erika))
+
+    assert error.error_list[0].code == "remove_roles_first"
+    assert Role.objects.filter(user=org.max, kind=R.MEMBER).exists()
+    assert entries() == before
+
+
+def test_eintrag_beim_entfernen_nennt_die_gespeicherte_einheit(org):
+    """Befund der unabhängigen Prüfung: Ins Protokoll kommt der gespeicherte Stand."""
+    member = give(org.max, R.MEMBER, org.falken, by=org.erika)
+
+    member.unit = org.woelfe
+    member.delete(by=org.erika)
+
+    assert entries()[-1] == ("Erika Testfrau", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", REMOVED)
+
+
 # Wer ändert (S15)
 
 
