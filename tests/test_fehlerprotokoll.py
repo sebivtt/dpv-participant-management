@@ -4,6 +4,7 @@ Geprüft wird die tatsächliche Ausgabe der eingestellten Log-Ausgaben, nicht nu
 Django übergeben wird. Alle Daten sind erfunden.
 """
 
+import io
 import logging
 import os
 import re
@@ -187,6 +188,41 @@ def test_andere_ausgaben_bekommen_den_logeintrag_unveraendert(log_output):
 
     assert "erika" not in log_output()
     assert entries[0].args == (error,)
+
+
+# Befunde der unabhängigen Prüfung zu #75
+def test_unpassende_platzhalter_bringen_den_meldungstext_nicht_ins_log(log_output, monkeypatch):
+    # Scheitert das Zusammensetzen der Zeile, schreibt Python sonst den ursprünglichen Eintrag
+    # samt Werten als eigene Fehlermeldung aus, und die Zeile selbst ginge verloren.
+    # Die Aufzeichnung von pytest bricht dabei den Test ab; im Betrieb gibt es sie nicht.
+    root = logging.getLogger()
+    tool_handlers = [handler for handler in root.handlers if not type(handler).__module__.startswith("_pytest")]
+    monkeypatch.setattr(root, "handlers", tool_handlers)
+    # Gewollt falsch: Fremde Pakete prüft ruff nicht.
+    logging.getLogger("allauth").error("A %s %s", ValueError("erika@example.org"))  # noqa: PLE1206 -- gewollt
+
+    log = log_output()
+    assert "erika" not in log
+    assert "allauth Log-Zeile nicht lesbar (TypeError)" in log
+
+
+def test_schon_gespeicherter_ablauf_aus_anderer_ausgabe_kommt_nicht_ins_log(log_output):
+    # Eine andere Ausgabe mit gewöhnlicher Darstellung speichert den vollen Ablauf am Eintrag.
+    plain = logging.StreamHandler(io.StringIO())
+    plain.setFormatter(logging.Formatter())
+    log_target = logging.getLogger("core")
+    log_target.handlers.insert(0, plain)
+    try:
+        try:
+            raise ValueError("erika@example.org")
+        except ValueError:
+            log_target.exception("Beispiel")
+    finally:
+        log_target.removeHandler(plain)
+
+    log = log_output()
+    assert "ValueError" in log
+    assert "erika" not in log
 
 
 # Szenario 4

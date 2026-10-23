@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Die Fehlerwerte, die allauth beim gescheiterten Login liefert (allauth 65.20.1). Nur sie
 # kommen ins Log; ein anderer Wert könnte frei gewählten Text aus der Adresse enthalten (#75).
-KNOWN_AUTH_ERRORS = {AuthError.UNKNOWN, AuthError.CANCELLED, AuthError.DENIED}
+KNOWN_AUTH_ERRORS = (AuthError.UNKNOWN, AuthError.CANCELLED, AuthError.DENIED)
 
 
 def back_to_login_page(request: HttpRequest, hint: str) -> ImmediateHttpResponse:

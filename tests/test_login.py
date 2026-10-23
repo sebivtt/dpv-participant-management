@@ -591,7 +591,6 @@ def test_frei_gewaehlter_fehler_in_der_adresse_kommt_nicht_ins_log(client, keycl
 
 
 def _authentication_error(error: str) -> None:
-    from accounts.adapter import SocialAccountAdapter
 
     request = RequestFactory().get(RETURN)
     request.session = {}

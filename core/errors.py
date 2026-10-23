@@ -96,7 +96,8 @@ class SafeFormatter(logging.Formatter):
     (Regelgruppe G in ruff.toml: f-Strings, str.format, % oder + im Log-Aufruf). Nicht erkannt
     wird ein ausdrücklich in Text umgewandelter Fehler wie str(fehler) oder repr(fehler);
     darauf achtet die Prüfung von Hand. Ebenso nicht ein Fehler, der in einer Liste oder
-    einem anderen Wert steckt.
+    einem anderen Wert steckt. ruff erkennt einen Logger nur an seinem Namen; im eigenen Code
+    heißt er deshalb immer logger.
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -106,12 +107,22 @@ class SafeFormatter(logging.Formatter):
         unverändert erwarten.
         """
         record = copy.copy(record)
+        # Eine andere Ausgabe kann den vollen Ablauf schon am Eintrag gespeichert haben.
+        record.exc_text = None
         record.msg = _without_message_text(record.msg)
         if isinstance(record.args, Mapping):
             record.args = {key: _without_message_text(value) for key, value in record.args.items()}
         elif record.args:
             record.args = tuple(_without_message_text(value) for value in record.args)
-        return super().format(record)
+        try:
+            return super().format(record)
+        except Exception as failure:
+            # Bewusst breit: Scheitert das Zusammensetzen, etwa weil Platzhalter und Werte nicht
+            # zusammenpassen, schreibt Python sonst den ursprünglichen Eintrag samt Werten aus.
+            # So bleibt die Zeile erhalten, und vermerkt wird nur die Art des Problems.
+            record.msg = f"Log-Zeile nicht lesbar ({type(failure).__qualname__})"
+            record.args = ()
+            return super().format(record)
 
     def formatException(self, ei) -> str:
         """Ersetzt Pythons vollständige Fehlerausgabe durch die Beschreibung ohne Meldungstext."""
