@@ -19,7 +19,7 @@ TABLES_SECTION = "Tabellen in der Datenbank"
 # Zwei Großbuchstaben, Bindestrich, zwei Ziffern, z. B. VP-02.
 ROW_ID = re.compile(r"^[A-Z]{2}-\d{2}$")
 # Verweise auf Zeilen (VP-02) und Anforderungen (BER-01, DSG-09) im Fließtext.
-REFERENCE = re.compile(r"\b[A-Z]{2,3}-\d{2}\b")
+REFERENCE = re.compile(r"\b[A-Z]{2,4}-\d{2}\b")
 # Jedes Wort, das „Pfad“ enthält; erlaubt ist nur der Begriff „Leitungspfad“ (#136, A1).
 PATH_WORD = re.compile(r"\w*[Pp]fad\w*")
 ALLOWED_PATH_WORDS = {"Leitungspfad", "Leitungspfads", "Leitungspfades"}
@@ -77,7 +77,7 @@ def row_ids(text: str) -> set[str]:
 
 def requirement_ids(text: str) -> set[str]:
     """Alle Anforderungs-IDs aus `docs/anforderungen.md` (erste Spalte der Tabellen)."""
-    return set(re.findall(r"^\| ([A-Z]{2,3}-\d{2}) \|", text, flags=re.MULTILINE))
+    return set(re.findall(r"^\| ([A-Z]{2,4}-\d{2}) \|", text, flags=re.MULTILINE))
 
 
 def dangling_references(text: str, known: set[str]) -> list[str]:

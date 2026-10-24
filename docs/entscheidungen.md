@@ -8,7 +8,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): neun Anforderungen geändert
 
-**Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3) sowie die Klärungen in #65, #93, #94 und #95; die alten Einträge bleiben stehen.
+**Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3 und 5) sowie die Klärungen in #9, #65, #93, #94, #95, #100, #117 und #118; die alten Einträge bleiben stehen.
 
 1. **Reichweite** (Grundsatz 1): Es gibt keine pauschale Vererbung nach unten; jedes Recht hat seine eigene Reichweite. Leitungen benennen Leitungen in allen Einheiten unter ihrer eigenen (ROL-02). Mitglieder und verwaltete Personen ordnet jede Leitung nur ihrer eigenen Einheit zu und verteilt sie nur eine Ebene tiefer. Personen sehen gilt weiter nach BER-01. Entfernen und endgültig löschen dürfen nur die Leitungen der eigenen Einheit der Person (Teil 3, Frage 1; Teil 2 zu VP-09).
 2. **Keine Selbstvergabe** (Grundsatz 2): Niemand gibt sich selbst eine Rolle, auch nicht die Verbandsleitung als Bundesleitung; die eigene Rolle niederlegen darf jede Person (ROL-02, ROL-03).
@@ -37,7 +37,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Begründung** (Sebastian, aus den Protokollen): eine einfache Regel statt Einzelfällen; Schutz vor unbekannten Erwachsenen bei Veranstaltungen mit Kindern (Grundsatz 5); niemand verschafft sich selbst Rechte (Grundsatz 2); Einheiten ohne Leitung bleiben handlungsfähig, ohne dass die Verbandsleitung Personendaten bekommt (Grundsatz 4, ROL-03); Mengenbegrenzung und Protokoll, damit die Suche über Mail und Benutzernamen nicht zum Durchprobieren taugt (Frage 15).
 
-**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen und die Spaltenüberschrift), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue, vorgemerkte Issues: #137 bis #149.
+**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen und die Spaltenüberschrift), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue Issues: #137 bis #149, die meisten vorgemerkt.
 
 ## 2026-10-24 · Rechtematrix nach dem Review korrigiert (#136): Begriffe, Kennungen, technische Vorschläge
 
