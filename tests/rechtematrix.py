@@ -13,10 +13,16 @@ from pathlib import Path
 from django.conf import settings
 
 MATRIX = Path(settings.BASE_DIR) / "docs" / "rechtematrix.md"
+REQUIREMENTS = Path(settings.BASE_DIR) / "docs" / "anforderungen.md"
 TABLES_SECTION = "Tabellen in der Datenbank"
 
 # Zwei Großbuchstaben, Bindestrich, zwei Ziffern, z. B. VP-02.
 ROW_ID = re.compile(r"^[A-Z]{2}-\d{2}$")
+# Verweise auf Zeilen (VP-02) und Anforderungen (BER-01, DSG-09) im Fließtext.
+REFERENCE = re.compile(r"\b[A-Z]{2,3}-\d{2}\b")
+# Jedes Wort, das „Pfad“ enthält; erlaubt ist nur der Begriff „Leitungspfad“ (#136, A1).
+PATH_WORD = re.compile(r"\w*[Pp]fad\w*")
+ALLOWED_PATH_WORDS = {"Leitungspfad", "Leitungspfads", "Leitungspfades"}
 TEST_REFERENCE = re.compile(r"`([^`]+\.py)::(test_\w+)`")
 # Verweise auf Tests in Klassen (datei.py::Klasse::test_x) erkennt die Prüfung nicht; sie meldet
 # sie als fehlenden Test. Die Tests dieses Repos stehen nicht in Klassen.
@@ -62,6 +68,31 @@ def duplicate_ids(text: str) -> list[str]:
     """Kennungen, die mehr als einmal vorkommen."""
     counts = Counter(cells[0] for cells in rows(text))
     return sorted(row_id for row_id, count in counts.items() if count > 1)
+
+
+def row_ids(text: str) -> set[str]:
+    """Alle Kennungen der Matrix."""
+    return {cells[0] for cells in rows(text)}
+
+
+def requirement_ids(text: str) -> set[str]:
+    """Alle Anforderungs-IDs aus `docs/anforderungen.md` (erste Spalte der Tabellen)."""
+    return set(re.findall(r"^\| ([A-Z]{2,3}-\d{2}) \|", text, flags=re.MULTILINE))
+
+
+def dangling_references(text: str, known: set[str]) -> list[str]:
+    """Verweise auf Kennungen oder Anforderungen, die es weder in der Matrix noch in `known` gibt."""
+    found = set(REFERENCE.findall(text))
+    return sorted(found - row_ids(text) - known)
+
+
+def stray_path_words(text: str) -> list[str]:
+    """Wörter mit „Pfad“, die nicht der Begriff „Leitungspfad“ sind.
+
+    „Pfad“ allein stand früher für zwei Dinge (#136, A1); jetzt heißt es „Kette nach oben“ für
+    das Sehen und „Leitungspfad“ dafür, wo jemand Leitung sein darf.
+    """
+    return sorted({word for word in PATH_WORD.findall(text) if word not in ALLOWED_PATH_WORDS})
 
 
 def _section(text: str, title: str) -> str:

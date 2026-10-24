@@ -3,7 +3,8 @@
 S1, S2 und S4 verweisen auf die Szenarien im Issue #87 (Kommentar „Szenarien für die Umsetzung,
 23.10.2026“). S3 prüfen die Protokolltests, die die Zeilen PR-02 und PR-04 nennen. Die Rechte
 selbst prüfen die Tests, die eine gebaute Zeile nennt; diese hier prüfen nur, dass die Matrix
-vollständig ist und jede gebaute Zeile auf echte Tests zeigt.
+vollständig ist und jede gebaute Zeile auf echte Tests zeigt. Die Tests am Ende kommen aus den
+Korrekturen nach dem externen Review (#136).
 """
 
 import re
@@ -14,12 +15,17 @@ from django.db import models
 
 from tests.rechtematrix import (
     MATRIX,
+    REQUIREMENTS,
     broken_test_references,
+    dangling_references,
     duplicate_ids,
     invalid_ids,
     matrix_text,
     missing_tables,
+    requirement_ids,
+    row_ids,
     rows,
+    stray_path_words,
     unknown_sections,
 )
 
@@ -204,3 +210,65 @@ def test_doppelte_kennung_macht_die_pruefung_rot():
     other = "| XY-02 | Gruppenleitung | Beispiel | ansehen | verboten | BER-01 | geplant (#90) |\n"
 
     assert duplicate_ids(HEADER + row + other + "\n## Weiter\n\n" + HEADER + row) == ["XY-01"]
+
+
+# Korrekturen nach dem externen Review (#136)
+
+# Zeilen je Kennung im ersten Entwurf vom 23.10.2026. Issues und Tests nennen diese Kennungen;
+# fällt ein Recht weg, wird seine Zeile zum Verbot, statt zu verschwinden (#136).
+FIRST_DRAFT = {"EP": 8, "PK": 23, "VP": 16, "EH": 21, "RO": 19, "VA": 4, "AN": 6, "GA": 5, "SZ": 6, "PR": 6, "TD": 1}
+
+
+def missing_first_draft_ids(text: str) -> list[str]:
+    expected = {f"{prefix}-{number:02d}" for prefix, count in FIRST_DRAFT.items() for number in range(1, count + 1)}
+    return sorted(expected - row_ids(text))
+
+
+def test_kennungen_des_ersten_entwurfs_bleiben_bestehen():
+    assert missing_first_draft_ids(matrix_text()) == []
+
+
+def test_entfernte_zeile_macht_die_pruefung_rot():
+    """Gegenprobe."""
+    text = "\n".join(line for line in matrix_text().splitlines() if not line.startswith("| RO-12 |"))
+
+    assert missing_first_draft_ids(text) == ["RO-12"]
+
+
+def test_entfallene_rechte_stehen_als_verbot():
+    """Grundsatz 2 (RO-12, RO-16: niemand gibt sich selbst eine Rolle) und C2 (PK-11: keine
+    Namenssuche nach Konten ohne Zuordnung)."""
+    results = {cells[0]: cells[4] for cells in rows(matrix_text())}
+
+    for row_id in ("RO-12", "RO-16", "PK-11"):
+        assert results[row_id].startswith("verboten"), row_id
+
+
+def test_pfad_heisst_kette_nach_oben_oder_leitungspfad():
+    """A1: „Pfad“ allein ist mehrdeutig; die Lesehilfe erklärt beide Begriffe."""
+    text = matrix_text()
+    reading = text.split("## So liest man die Matrix", 1)[1].split("\n## ", 1)[0]
+
+    assert stray_path_words(text) == []
+    assert "**Kette nach oben:**" in reading
+    assert "**Leitungspfad" in reading
+
+
+def test_mehrdeutiger_pfad_ist_rot():
+    """Gegenprobe."""
+    assert stray_path_words("Leitungen auf dem eigenen Pfad; Pfad-Regel; Leitungspfad") == ["Pfad"]
+
+
+def test_verweise_zeigen_auf_vorhandene_zeilen_und_anforderungen():
+    known = requirement_ids(REQUIREMENTS.read_text(encoding="utf-8"))
+
+    assert {"BER-01", "ROL-02", "ORG-06"} <= known
+    assert dangling_references(matrix_text(), known) == []
+
+
+def test_verweis_ins_leere_ist_rot():
+    """Gegenprobe: eine entfallene Kennung und eine vertippte Anforderung."""
+    text = matrix_text().replace("(RO-01)", "(RO-99)", 1).replace("ORG-06", "ORG-66", 1)
+    known = requirement_ids(REQUIREMENTS.read_text(encoding="utf-8"))
+
+    assert dangling_references(text, known) == ["ORG-66", "RO-99"]
