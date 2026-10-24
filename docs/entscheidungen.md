@@ -6,6 +6,50 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): neun Anforderungen geändert
+
+**Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3) sowie die Klärungen in #65, #93, #94 und #95; die alten Einträge bleiben stehen.
+
+1. **Reichweite** (Grundsatz 1): Es gibt keine pauschale Vererbung nach unten; jedes Recht hat seine eigene Reichweite. Leitungen benennen Leitungen in allen Einheiten unter ihrer eigenen (ROL-02). Mitglieder und verwaltete Personen ordnet jede Leitung nur ihrer eigenen Einheit zu und verteilt sie nur eine Ebene tiefer. Personen sehen gilt weiter nach BER-01. Entfernen und endgültig löschen dürfen nur die Leitungen der eigenen Einheit der Person (Teil 3, Frage 1; Teil 2 zu VP-09).
+2. **Keine Selbstvergabe** (Grundsatz 2): Niemand gibt sich selbst eine Rolle, auch nicht die Verbandsleitung als Bundesleitung; die eigene Rolle niederlegen darf jede Person (ROL-02, ROL-03).
+3. **Einheiten ohne Leitung** (Grundsatz 4): Hat eine Einheit keine Leitung mit Konto, hat die Leitung direkt darüber dort alle Rechte einer Leitung, höchstens bis zur Bundesleitung, nie die Verbandsleitung. Das wird berechnet, nicht als Rolle gespeichert (ROL-02). Eine kommissarische Leitung außerhalb des eigenen Pfads ist vorgemerkt (#138).
+4. **Zuordnung** (Grundsatz 5, Teil 3, Frage 8): Alles rund um Veranstaltungen und Kreise braucht eine Zuordnung: Mitglied einer Gruppe, eines Stammes, eines Rings oder eines Bundes, oder Verbandsleitung oder DPV-Veranstaltungsteam (BER-03). In P2 gilt davon nur das Anlegen einer Veranstaltung (#100). **Was ein Konto ohne Zuordnung darf, steht nur in der Rechtematrix**, damit neue Module nicht an zwei Stellen nachgetragen werden müssen; bei BER-01 bleibt die geschlossene Liste, weil es dort um Personendaten geht.
+5. **Wer welche Leitungen sieht** (B2, B3): Mitglieder sehen die Leitungen auf ihrer Kette nach oben (eigene Einheit und darüber bis zum Bund). Wer die Ansicht „Leitungen“ sieht, sieht Name, Fahrtenname und Rolle; die Mail nur, wer die Person nach BER-01 ohnehin sieht. Das gilt auch für angezeigte Leitungsrollen verwalteter Personen (BER-01, Grund 3).
+6. **Konten finden** (C2, C3, Frage 15): Die Namenssuche der Bundesleitung nach Konten ohne Zuordnung entfällt. Konten findet man über die genaue Mail oder den Benutzernamen, höchstens 20 Suchen je Person und Stunde (#93, P2). Das Protokoll der Kontosuchen ist vorgemerkt (#144, spätestens P6).
+7. **Austritt und Entfernen** (F2.4, Teil 3 zu ROL-01, Nachtrag Nr. 4): Austreten geht jederzeit; die Person wählt die Ebene und wird Einzelmitglied der Ebene darüber. Es enden die Leitungsrollen in der verlassenen Einheit und darunter sowie alle, die danach nicht mehr auf dem Leitungspfad liegen. Das Tool zeigt sie vorher und führt erst nach Bestätigung aus. Bestehende Anmeldungen bleiben. Das ändert die Ablehnung „erst die Rollen abgeben“ aus #89; der Code folgt mit #65.
+8. **Struktur** (F2.8, Teil 3, Fragen 28 und zu ORG-06): Die Verbandsleitung legt Bünde an und benennt sie um (#107). Die Bundesleitung benennt ihren Bund um und schaltet „hat Ringe“ ein (mit #95, P2). Ausgeschaltet wird „hat Ringe“ in einem Schritt; bis zur Seite für Bünde (#107) tut das ein Admin per Befehl auf Bitte der Bundesleitung (#95). „Ausschalten nur ohne Ringe“ (Eintrag zu #88, Nr. 2) entfällt damit; „Ring ist Pflicht“ bleibt, solange ein Bund Ringe hat. Umbenennen darf jede Leitung ihre Einheit und alle darunter.
+9. **Ab P3** (Teil 3, Fragen 2 bis 5): Beitrittsanfragen kommen mit #140. Dafür sieht ein Konto ohne Zuordnung die Namen der Bünde, Ringe und Stämme, ohne Gruppen und ohne Leitungsstatus; für Mitglieder gilt das über die Bundesgrenze hinaus. Ob eine Einheit gerade eine Leitung hat, sehen nur Mitglieder für die Einheiten ihres Bundes. In P2 bleibt das Sehen von Einheiten wie bisher.
+10. **Begriff „Kreis“** (Teil 3, Frage 8): „Kreis“ ist der Begriff für die „eigenen Kreise“ aus GRP-01, auch für die „Teams“ aus Sebastians Konzept. „Veranstaltungsteam“ und „DPV-Veranstaltungsteam“ bleiben davon getrennt. Wer einen Kreis verwaltet, heißt „Verwaltende“.
+
+**Geänderte Anforderungen** in `docs/anforderungen.md`, Wortlaut aus Teil 3, von Sebastian bestätigt:
+
+- **ROL-01:** Leitungsrollen nur auf dem Leitungspfad; Austritt jederzeit mit Wahl der Ebene; Entfernen wirkt eine Ebene nach oben; welche Rollen dabei enden; Anmeldungen bleiben.
+- **ROL-02:** Benennen in allen Einheiten unter der eigenen, nur auf dem Leitungspfad; keine Selbstvergabe; Einspringen bis höchstens zur Bundesleitung.
+- **ROL-03:** Die Verbandsleitung legt Bünde an und benennt sie um, gibt sich selbst keine Rolle, springt nie ein; Ausnahmen nach BER-01, Grund 3 und 4.
+- **ORG-01:** Weitere Bünde legt die Verbandsleitung an; Ringe „nur in Bünden mit Ringen, derzeit DPBM Mosaik“; Einzelmitglieder direkt in Bund, Ring oder Stamm.
+- **ORG-06:** Wer welche Einheiten anlegt, löscht und umbenennt; „hat Ringe“ einschalten und in einem Schritt ausschalten.
+- **BER-01:** geschlossene Liste von sieben Gründen, Personendaten zu sehen; Spalte „Fremde Einheiten“ heißt jetzt „Personen fremder Einheiten“.
+- **BER-03:** Veranstaltungen nur mit Zuordnung.
+- **BER-04:** Man lädt ein, wozu man gehört; Kreise auch für Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam nur, wenn sie darin sind.
+- **ADM-03:** zusätzlich die Protokolle der Strukturänderungen und der Kontosuchen; was das Protokoll der Kontosuchen nennt.
+
+**Begründung** (Sebastian, aus den Protokollen): eine einfache Regel statt Einzelfällen; Schutz vor unbekannten Erwachsenen bei Veranstaltungen mit Kindern (Grundsatz 5); niemand verschafft sich selbst Rechte (Grundsatz 2); Einheiten ohne Leitung bleiben handlungsfähig, ohne dass die Verbandsleitung Personendaten bekommt (Grundsatz 4, ROL-03); Mengenbegrenzung und Protokoll, damit die Suche über Mail und Benutzernamen nicht zum Durchprobieren taugt (Frage 15).
+
+**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen und die Spaltenüberschrift), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue, vorgemerkte Issues: #137 bis #149.
+
+## 2026-10-24 · Rechtematrix nach dem Review korrigiert (#136): Begriffe, Kennungen, technische Vorschläge
+
+**Entscheidung** (Sebastian, Teil 3, Frage 14): Die Korrekturen A1 bis A17 am Text der Matrix kommen alle in PR #135, angepasst an die Entscheidungen oben. A3 entfällt mit der Namenssuche (C2). Was für P3 entschieden ist (EH-03, EH-05, EH-07, Beitrittsanfrage), bekommt nur einen Vermerk „ändert sich ab P3 (#136)“; die Zeilen kommen mit den Daten (Entscheidung vom 23.10.2026, Nr. 2).
+
+**Technische Wahl** (KI):
+
+- **Zwei Begriffe statt „Pfad“** (A1): „Kette nach oben“ für das Sehen von Leitungen, „Leitungspfad (#89)“ dafür, wo jemand Leitung sein darf. Ein Test wird rot, wenn „Pfad“ in der Matrix anders vorkommt.
+- **Kennungen bleiben:** Entfällt ein Recht, wird seine Zeile zum Verbot und behält ihre Kennung (RO-12, RO-16, PK-11), weil Issues und Tests sie nennen. Neue Zeilen bekommen die nächste freie Nummer. Ein Test prüft, dass jede Kennung des ersten Entwurfs bleibt, und ein weiterer, dass jeder Verweis auf eine Zeile oder Anforderung auf etwas zeigt, das es gibt.
+- **„Gebaut“ heißt: alle Fälle** (A17): Nennt eine Zeile mehrere Rollen, Daten oder Aktionen, prüft je Fall ein eigener Test. Das kostet in #90 mehr Tests.
+- **Technische Vorschläge aus Sebastians Konzept** (F4, Teil 3, Frage 12): Die Rechteprüfung bleibt in Django (#90), mit einer Stelle, die für jedes Recht und Objekt gefragt wird; ein Umbau in Datenbankfunktionen kostete geschätzt 20 bis 30 Stunden (Annahme) und gebauten Code. `ltree` erst messen (#104). Absicherung gegen leere Werte und Negativtests je Recht (#90). Verschlüsselung der Gesundheitsangaben in P4 prüfen (#102, #121). Gast-Links mit 256 Bit Zufall (#84). Kein Rechte-Zwischenspeicher über Anfragen hinweg; Rollen und Bereiche werden einmal pro Anfrage geladen (Ergänzung von Sebastian, #90). Für die Zahl der Abfragen bleibt der Wachstumstest (1 gegen 10 Einträge, `tests/query_limit.py`) statt fester Zahlen, weil feste Zahlen bei jeder harmlosen Änderung rot würden.
+
+**Umsetzung:** `docs/rechtematrix.md`, `tests/rechtematrix.py`, `tests/test_rechtematrix.py`.
+
 ## 2026-10-23 · Rechtematrix (#87): Form, Regel „neue Daten → sofort Rechte klären“, Login-Tabellen, DPV-Veranstaltungsteam
 
 **Entscheidung** (Sebastian; Klärung von #87 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6343846888); [Fragen bei der Umsetzung](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6365683098) und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/87#issuecomment-6365733029) am 23.10.2026):
