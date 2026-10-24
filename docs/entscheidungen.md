@@ -6,7 +6,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
-## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): neun Anforderungen geändert, dazu Folgeänderungen
+## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): elf Anforderungen geändert, dazu Folgeänderungen
 
 **Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3 und 5) sowie die Klärungen in #9, #65, #93, #94, #95, #100, #117 und #118; die alten Einträge bleiben stehen.
 
@@ -21,25 +21,31 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 9. **Ab P3** (Teil 3, Fragen 2 bis 5): Beitrittsanfragen kommen mit #140. Dafür sieht ein Konto ohne Zuordnung die Namen der Bünde, Ringe und Stämme, ohne Gruppen und ohne Leitungsstatus; für Mitglieder gilt das über die Bundesgrenze hinaus. Ob eine Einheit gerade eine Leitung hat, sehen nur Mitglieder für die Einheiten ihres Bundes. In P2 bleibt das Sehen von Einheiten wie bisher.
 10. **Begriff „Kreis“** (Teil 3, Frage 8): „Kreis“ ist der Begriff für die „eigenen Kreise“ aus GRP-01, auch für die „Teams“ aus Sebastians Konzept. „Veranstaltungsteam“ und „DPV-Veranstaltungsteam“ bleiben davon getrennt. Wer einen Kreis verwaltet, heißt „Verwaltende“.
 11. **Leitungsrollen enden nur, wenn die Person selbst geht oder ausdrücklich entfernt wird** (Sebastian, 24.10.2026, beim Umsetzen in PR #135). Läge eine Leitungsrolle nach dem Verschieben eines Mitglieds nicht mehr auf seinem Leitungspfad, lehnt das Tool ab wie bisher (#89); die Meldung nennt die Rolle und weist darauf hin, dass sie zuerst beendet werden kann (ROL-02). Das Löschen einer Einheit und das Ausschalten von „hat Ringe“ nach ORG-06 bleiben davon unberührt (Abgrenzung der KI). Grund: Austritt, Wechsel per Anfrage und Entfernen sind bewusste Entscheidungen zu gehen; Verschieben ist ein organisatorischer Schritt, bei dem eine endende Rolle in einer anderen Einheit eine unbeabsichtigte Nebenwirkung wäre (PK-25).
-12. **Angezeigte Leitungsrollen verwalteter Personen** (Sebastian, 24.10.2026, beim Umsetzen in PR #135): Wer Leitungen benennen darf (ROL-02), trägt auch angezeigte Leitungsrollen ein. Die Anzeige gibt weiter keine Rechte, und die Einwilligung nach #98 und #99 gilt unabhängig davon, wer einträgt (VP-14). Die Verbandsleitung trägt keine ein, weil sie verwaltete Personen nicht sieht (ROL-03; Ableitung der KI).
+12. **Angezeigte Leitungsrollen verwalteter Personen** (Sebastian, 24.10.2026, beim Umsetzen in PR #135): Wer Leitungen benennen darf (ROL-02), trägt auch angezeigte Leitungsrollen ein. Die Anzeige gibt weiter keine Rechte, und die Einwilligung nach #98 und #99 gilt unabhängig davon, wer einträgt (VP-14). Die Verbandsleitung trägt keine angezeigten Rollen ein, weil sie die verwaltete Person selbst nicht sieht (ROL-03, VP-06); Name, Fahrtenname und Rolle einer angezeigten Bundesleitung sieht sie nach BER-01, Grund 3 (RO-09). Präzisiert von Sebastian nach der Prüfung von PR #135.
+13. **Angezeigte Leitungsrollen in BER-01, Grund 3** (Sebastian, 24.10.2026, nach der Prüfung von PR #135): Der Zusatz zu angezeigten Leitungsrollen verwalteter Personen steht am Ende von Grund 3 und gilt für alle Teile, auch für die Verbandsleitung (RO-05, RO-09).
+14. **Die Rolle Admin legt man nicht im Tool nieder** (Sebastian, 24.10.2026, nach der Prüfung von PR #135): ROL-02 erlaubt das Niederlegen der eigenen Rolle „außer der Rolle Admin, RO-19“; bis ADM-01 geht das nur per Befehl auf dem Server.
+15. **Löschen einer Einheit** (Sebastian, 24.10.2026, nach der Prüfung von PR #135): ORG-07 folgt ORG-06. Personen mit Account und verwaltete Personen kommen zur Ebene darüber; es enden nur die Leitungsrollen in dieser Einheit. „Wahlweise löschen“ entfällt; wer verwaltete Personen löschen will, tut das vorher einzeln (VP-09). „Untereinheiten“ fällt aus der Zusammenfassung weg, weil nur Einheiten ohne Einheiten darunter gelöscht werden.
+16. **Veranstaltungsleitung nur mit Zuordnung** (Sebastian, 24.10.2026, nach der Prüfung von PR #135): TEAM-01 folgt BER-03; als weitere Veranstaltungsleitung wird nur hinzugefügt, wer eine Zuordnung hat.
 
-**Geänderte Anforderungen** in `docs/anforderungen.md`, Wortlaut aus Teil 3, von Sebastian bestätigt:
+**Geänderte Anforderungen** in `docs/anforderungen.md`, Wortlaut aus Teil 3, von Sebastian bestätigt; ORG-07, TEAM-01 und die Ergänzungen zu ROL-02 und BER-01 nach der Prüfung von PR #135 (Nr. 13 bis 16):
 
 - **ROL-01:** Leitungsrollen nur auf dem Leitungspfad; Austritt jederzeit mit Wahl der Ebene; Entfernen wirkt eine Ebene nach oben; welche Rollen dabei enden; Anmeldungen bleiben.
-- **ROL-02:** Benennen in allen Einheiten unter der eigenen, nur auf dem Leitungspfad; keine Selbstvergabe; Einspringen bis höchstens zur Bundesleitung.
+- **ROL-02:** Benennen in allen Einheiten unter der eigenen, nur auf dem Leitungspfad; keine Selbstvergabe; die eigene Rolle niederlegen darf jede Person, außer der Rolle Admin; Einspringen bis höchstens zur Bundesleitung.
 - **ROL-03:** Die Verbandsleitung legt Bünde an und benennt sie um, gibt sich selbst keine Rolle, springt nie ein; Ausnahmen nach BER-01, Grund 3 und 4.
 - **ORG-01:** Weitere Bünde legt die Verbandsleitung an; Ringe „nur in Bünden mit Ringen, derzeit DPBM Mosaik“; Einzelmitglieder direkt in Bund, Ring oder Stamm.
 - **ORG-06:** Wer welche Einheiten anlegt, löscht und umbenennt; „hat Ringe“ einschalten und in einem Schritt ausschalten.
-- **BER-01:** geschlossene Liste von sieben Gründen, Personendaten zu sehen; Spalte „Fremde Einheiten“ heißt jetzt „Personen fremder Einheiten“.
+- **ORG-07:** Beim Löschen einer Einheit kommen alle Personen zur Ebene darüber; kein „wahlweise löschen“.
+- **BER-01:** geschlossene Liste von sieben Gründen, Personendaten zu sehen; Spalte „Fremde Einheiten“ heißt jetzt „Personen fremder Einheiten“; angezeigte Leitungsrollen verwalteter Personen gelten für alle Teile von Grund 3.
 - **BER-03:** Veranstaltungen nur mit Zuordnung.
 - **BER-04:** Man lädt ein, wozu man gehört; Kreise auch für Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam nur, wenn sie darin sind.
 - **ADM-03:** zusätzlich die Protokolle der Strukturänderungen und der Kontosuchen; was das Protokoll der Kontosuchen nennt.
+- **TEAM-01:** Weitere Veranstaltungsleitungen nur mit Zuordnung (BER-03).
 
-**Folgeänderungen ohne neue Entscheidung** (Sebastian, 24.10.2026, vor dem Übernehmen von PR #135): Der Einleitungssatz zu BER-01 nennt die Gründe nach BER-01; die Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3 und 4. ROL-05 und das Glossar sagen statt „jeden Teilnahmekreis wählen“ jetzt „bundesübergreifende Einheiten, Rollen und ‚alle‘ wählen; für Kreise gilt BER-04“.
+**Folgeänderungen ohne neue Entscheidung** (Sebastian, 24.10.2026, vor dem Übernehmen von PR #135): Der Einleitungssatz zu BER-01 nennt die Gründe nach BER-01; die Verbandsleitung sieht als Verbandsleitung Personendaten nur nach BER-01, Grund 3, 4 und 7, Admins nur für Support (Grund 6) und ab P8 die Protokolle (Grund 7). ROL-05: Die Rolle gilt als Zuordnung (BER-03). ROL-05 und das Glossar sagen statt „jeden Teilnahmekreis wählen“ jetzt „bundesübergreifende Einheiten, Rollen und ‚alle‘ wählen; für Kreise gilt BER-04“. Die Zielgruppe nennt Ringe wie ORG-01 „nur in Bünden mit Ringen, derzeit DPBM Mosaik“.
 
 **Begründung** (Sebastian, aus den Protokollen): eine einfache Regel statt Einzelfällen; Schutz vor unbekannten Erwachsenen bei Veranstaltungen mit Kindern (Grundsatz 5); niemand verschafft sich selbst Rechte (Grundsatz 2); Einheiten ohne Leitung bleiben handlungsfähig, ohne dass die Verbandsleitung Personendaten bekommt (Grundsatz 4, ROL-03); Mengenbegrenzung und Protokoll, damit die Suche über Mail und Benutzernamen nicht zum Durchprobieren taugt (Frage 15).
 
-**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen, die Spaltenüberschrift, der Einleitungssatz zu BER-01, ROL-05 und das Glossar), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue Issues: #137 bis #149, die meisten vorgemerkt.
+**Umsetzung:** `docs/anforderungen.md` (die elf Anforderungen, die Spaltenüberschrift, der Einleitungssatz zu BER-01, ROL-05, die Zielgruppe und das Glossar), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue Issues: #137 bis #149, die meisten vorgemerkt.
 
 ## 2026-10-24 · Rechtematrix nach dem Review korrigiert (#136): Begriffe, Kennungen, technische Vorschläge
 
