@@ -133,11 +133,11 @@ Personen gehören zu Einheiten der Hierarchie Verband → Bund → (Ring) → St
 | ROL-02 | Vertrauensprinzip: Leitungen benennen und entfernen Leitungen in allen Einheiten unter ihrer eigenen: die Bundesleitung im ganzen Bund, die Ringleitung in ihrem Ring, die Stammesleitung in den Gruppen ihres Stammes. Benannt werden kann nur, wer die Rolle danach auf seinem Leitungspfad hat (ROL-01). Leitungen benennen und entfernen weitere Leitungen derselben Einheit, auch gegenseitig. Niemand gibt sich selbst eine Rolle; die eigene Rolle niederlegen darf jede Person. Eine Einheit ohne Leitung mit Konto löst keinen Automatismus aus; es wird keine Rolle vergeben. Solange sie keine Leitung mit Konto hat, hat die Leitung der Einheit direkt darüber dort alle Rechte einer Leitung. Fehlt auch diese, gilt das für die nächsthöhere, höchstens bis zur Bundesleitung, nie für die Verbandsleitung. | Muss |
 | ROL-03 | Die Verbandsleitung hat als Verbandsleitung keinen Zugriff auf Personendaten der Bünde, Ringe, Stämme und Gruppen, außer nach BER-01, Grund 3 und 4. Sie legt Bünde an, benennt sie um und legt beim Anlegen fest, ob der Bund Ringe hat (ORG-01); danach entscheidet das die Bundesleitung (ORG-06). Sie benennt und entfernt Bundesleitungen, weitere Verbandsleitungen und die Mitglieder des DPV-Veranstaltungsteams; sich selbst gibt sie keine Rolle (ROL-02). Wird eine Person der Verbandsleitung von einer anderen zur Bundesleitung benannt, hat sie dort die Rechte der Bundesleitung, nicht als Verbandsleitung; die Benennung steht im Protokoll der Rollenänderungen. Für eine Einheit ohne Leitung springt sie nie ein. Ausnahme: Sie darf das Protokoll der Admin-Zugriffe einsehen (ADM-03). Die erste Verbandsleitung benennt ein Admin. | Muss |
 | ROL-04 | Jede Rollenänderung wird protokolliert. Wer aus einer Rolle entfernt wird, bekommt eine Benachrichtigung. | Soll |
-| ROL-05 | **DPV-Veranstaltungsteam**: Die Verbandsleitung benennt die Mitglieder. Die Rolle erlaubt nur, jeden Teilnahmekreis zu wählen (BER-04), und gibt keinen weiteren Zugriff auf Personendaten. | Muss |
+| ROL-05 | **DPV-Veranstaltungsteam**: Die Verbandsleitung benennt die Mitglieder. Die Rolle erlaubt nur, bundesübergreifende Einheiten, Rollen und „alle“ als Teilnahmekreis zu wählen; für Kreise gilt BER-04. Sie gibt keinen weiteren Zugriff auf Personendaten. | Muss |
 
 ## Berechtigungen und Sichtbarkeit
 
-Personendaten sieht nur, wer für die Einheit Leitung ist oder darüber steht. Die Verbandsleitung sieht keine Personendaten, Admins nur für Support und protokolliert.
+Personendaten sieht nur, wer einen Grund nach BER-01 hat, vor allem die Leitungen der Einheit und der Ebenen darüber. Die Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3 und 4, Admins nur für Support und protokolliert.
 
 **Beispiel:** Die Stammesleitung von Walhall sieht die Personen ihres Stammes, die Stammesleitung der Zugvögel nicht. Die Bundesleitung des Pfadfinderbunds Boreas sieht die Personen, die Stämmen und Gruppen in Boreas zugeordnet sind, nicht aber persönliche Adressbücher.
 
@@ -491,7 +491,7 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 | Anmeldeschluss | Ende des Zeitraums für neue Anmeldungen |
 | Änderungsschluss | Ende des Zeitraums, in dem Ansprechpersonen bestehende Anmeldungen ändern und Personen nachmelden dürfen |
 | Benachrichtigungskreis | Personen, die per Mail über eine neue Veranstaltung informiert werden |
-| DPV-Veranstaltungsteam | Von der Verbandsleitung benannte Rolle, die jeden Teilnahmekreis wählen darf |
+| DPV-Veranstaltungsteam | Von der Verbandsleitung benannte Rolle, die bundesübergreifende Einheiten, Rollen und „alle“ als Teilnahmekreis wählen darf; für Kreise gilt BER-04 |
 | Eigener Kreis | Frei gebildeter Personenkreis außerhalb der Hierarchie, z. B. Arbeitskreis, Planungsteam; kann bundesübergreifend sein |
 | Einheit | Organisationseinheit: Verband, Bund, Ring, Stamm oder Gruppe |
 | Gast | Person ohne Account und ohne gespeichertes Profil, angemeldet zu einer einzelnen Veranstaltung |

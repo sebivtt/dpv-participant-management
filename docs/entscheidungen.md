@@ -34,10 +34,11 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 - **BER-03:** Veranstaltungen nur mit Zuordnung.
 - **BER-04:** Man lädt ein, wozu man gehört; Kreise auch für Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam nur, wenn sie darin sind.
 - **ADM-03:** zusätzlich die Protokolle der Strukturänderungen und der Kontosuchen; was das Protokoll der Kontosuchen nennt.
+- **Folgeänderungen ohne neue Entscheidung** (Sebastian, 24.10.2026, vor dem Übernehmen von PR #135): Der Einleitungssatz zu BER-01 nennt die Gründe nach BER-01; die Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3 und 4. ROL-05 und das Glossar sagen statt „jeden Teilnahmekreis wählen“ jetzt „bundesübergreifende Einheiten, Rollen und ‚alle‘ wählen; für Kreise gilt BER-04“.
 
 **Begründung** (Sebastian, aus den Protokollen): eine einfache Regel statt Einzelfällen; Schutz vor unbekannten Erwachsenen bei Veranstaltungen mit Kindern (Grundsatz 5); niemand verschafft sich selbst Rechte (Grundsatz 2); Einheiten ohne Leitung bleiben handlungsfähig, ohne dass die Verbandsleitung Personendaten bekommt (Grundsatz 4, ROL-03); Mengenbegrenzung und Protokoll, damit die Suche über Mail und Benutzernamen nicht zum Durchprobieren taugt (Frage 15).
 
-**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen und die Spaltenüberschrift), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue Issues: #137 bis #149, die meisten vorgemerkt.
+**Umsetzung:** `docs/anforderungen.md` (die neun Anforderungen, die Spaltenüberschrift, der Einleitungssatz zu BER-01, ROL-05 und das Glossar), `docs/rechtematrix.md` (PR #135). Code in `roles/` und `units/` folgt mit #65 und #95; der Fahrplan mit #113. Neue Issues: #137 bis #149, die meisten vorgemerkt.
 
 ## 2026-10-24 · Rechtematrix nach dem Review korrigiert (#136): Begriffe, Kennungen, technische Vorschläge
 
