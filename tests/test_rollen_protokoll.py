@@ -103,6 +103,7 @@ def test_mitgliedschaft_beenden(org):
     assert entries()[1:] == [("Max Testmann", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", REMOVED)]
 
 
+@pytest.mark.rechtematrix("PR-02")
 @pytest.mark.parametrize(
     ("kind", "where", "unit_name"),
     [
@@ -336,6 +337,7 @@ def test_umbenennen_aendert_alte_eintraege_nicht(org):
     assert entries()[0] == ("Erika Testfrau", "Max Testmann", R.GROUP_LEAD, "Sippe Falken (Walhall)", GRANTED)
 
 
+@pytest.mark.rechtematrix("PR-02")
 def test_eintrag_laesst_sich_im_programm_nicht_aendern_oder_loeschen(org):
     """S7: auch nicht für Admins; einen Weg dafür gibt es im Tool nicht."""
     entry = stored_entry(org)
@@ -350,6 +352,7 @@ def test_eintrag_laesst_sich_im_programm_nicht_aendern_oder_loeschen(org):
     assert entries() == [("Erika Testfrau", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", GRANTED)]
 
 
+@pytest.mark.rechtematrix("PR-02")
 @pytest.mark.parametrize(
     "bulk",
     [
@@ -369,6 +372,7 @@ def test_sammelaenderungen_scheitern_an_der_datenbank(org, bulk):
     assert entries() == [("Erika Testfrau", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", GRANTED)]
 
 
+@pytest.mark.rechtematrix("PR-02")
 def test_aendern_per_sql_scheitert_an_der_datenbank(org):
     """S7."""
     stored_entry(org)
