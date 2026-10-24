@@ -267,8 +267,8 @@ def test_verweise_zeigen_auf_vorhandene_zeilen_und_anforderungen():
 
 
 def test_verweis_ins_leere_ist_rot():
-    """Gegenprobe: eine entfallene Kennung und eine vertippte Anforderung."""
-    text = matrix_text().replace("(RO-01)", "(RO-99)", 1).replace("ORG-06", "ORG-66", 1)
+    """Gegenprobe: eine entfallene Kennung und vertippte Anforderungen, auch mit vier Buchstaben."""
+    text = matrix_text().replace("(RO-01)", "(RO-99)", 1).replace("ORG-06", "ORG-66", 1).replace("TEAM-01", "TEAM-99", 1)
     known = requirement_ids(REQUIREMENTS.read_text(encoding="utf-8"))
 
-    assert dangling_references(text, known) == ["ORG-66", "RO-99"]
+    assert dangling_references(text, known) == ["ORG-66", "RO-99", "TEAM-99"]
