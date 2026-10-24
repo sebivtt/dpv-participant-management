@@ -6,7 +6,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
-## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): neun Anforderungen geändert
+## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): neun Anforderungen geändert, dazu Folgeänderungen
 
 **Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3 und 5) sowie die Klärungen in #9, #65, #93, #94, #95, #100, #117 und #118; die alten Einträge bleiben stehen.
 
@@ -34,7 +34,8 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 - **BER-03:** Veranstaltungen nur mit Zuordnung.
 - **BER-04:** Man lädt ein, wozu man gehört; Kreise auch für Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam nur, wenn sie darin sind.
 - **ADM-03:** zusätzlich die Protokolle der Strukturänderungen und der Kontosuchen; was das Protokoll der Kontosuchen nennt.
-- **Folgeänderungen ohne neue Entscheidung** (Sebastian, 24.10.2026, vor dem Übernehmen von PR #135): Der Einleitungssatz zu BER-01 nennt die Gründe nach BER-01; die Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3 und 4. ROL-05 und das Glossar sagen statt „jeden Teilnahmekreis wählen“ jetzt „bundesübergreifende Einheiten, Rollen und ‚alle‘ wählen; für Kreise gilt BER-04“.
+
+**Folgeänderungen ohne neue Entscheidung** (Sebastian, 24.10.2026, vor dem Übernehmen von PR #135): Der Einleitungssatz zu BER-01 nennt die Gründe nach BER-01; die Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3 und 4. ROL-05 und das Glossar sagen statt „jeden Teilnahmekreis wählen“ jetzt „bundesübergreifende Einheiten, Rollen und ‚alle‘ wählen; für Kreise gilt BER-04“.
 
 **Begründung** (Sebastian, aus den Protokollen): eine einfache Regel statt Einzelfällen; Schutz vor unbekannten Erwachsenen bei Veranstaltungen mit Kindern (Grundsatz 5); niemand verschafft sich selbst Rechte (Grundsatz 2); Einheiten ohne Leitung bleiben handlungsfähig, ohne dass die Verbandsleitung Personendaten bekommt (Grundsatz 4, ROL-03); Mengenbegrenzung und Protokoll, damit die Suche über Mail und Benutzernamen nicht zum Durchprobieren taugt (Frage 15).
 
