@@ -40,6 +40,7 @@ Sebastian zuerst eine kurze Übersicht geben, bevor die erste Frage kommt:
 
 Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrifft:
 - **Ziel:** Welches Problem löst es, für wen? Woran merkt man, dass es erfüllt ist?
+- **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird festgehalten, dass keine Szenarien nötig sind. Fehlt diese Angabe, sind Szenarien nötig.
 - **Rollen und Rechte:** Wer darf es sehen, wer ändern, und wer ausdrücklich nicht? Rollen nach ROL-01, dazu Veranstaltungsleitung und Ansprechperson. Welche Zeile der Rechtematrix (`docs/rechtematrix.md`) ändert sich? Bringt das Issue neue Daten, werden beim Klären ihre Zeilen festgelegt: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten (`CONTRIBUTING.md`, Abschnitt 4).
 - **Ablauf:** Wo im Tool, in welchem Schritt, was passiert vorher und danach?
 - **Grenzfälle:** leere Eingaben, null, sehr große Werte, Fristen abgelaufen, nachträgliche Änderungen, Personen entfernt, mehrere Bearbeitende gleichzeitig, bestehende Veranstaltungen und Anmeldungen.
@@ -64,7 +65,15 @@ Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrif
 
 Alle Entscheidungen kurz als Liste zeigen und fragen, ob das so stimmt. Erst nach Sebastians Bestätigung weiter.
 
-## 5. Issue überarbeiten
+## 5. Szenarien
+
+Aus den Szenarien entstehen später die Tests (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3). Sie werden hier gesammelt, solange Sebastian im Thema ist. Der Schritt entfällt nur, wenn die Übersicht festgehalten hat, dass das Issue kein fachliches Verhalten hat.
+
+- Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
+- Sebastian entscheidet je Szenario, ob es passt, geändert werden muss oder ein Fall fehlt.
+- Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt (Abschnitt 7), kommen sie in das Unter-Issue, zu dem sie gehören.
+
+## 6. Issue überarbeiten
 
 - Den Text des Issues so neu schreiben, dass er ohne das Gespräch vollständig und eindeutig ist. Aufbau und Überschriften der passenden Vorlage (`.github/ISSUE_TEMPLATE/`) beibehalten, keine neuen Überschriften erfinden. Antworten landen dort, wo sie passen:
   - **Anforderung:** als Akzeptanzkriterium, als Beispiel, unter „Wer darf das nicht?“ oder unter „Nicht Teil dieser Anforderung“. Unter „Offene Fragen“ steht danach „Keine, geklärt am <Datum>“.
@@ -79,7 +88,7 @@ gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<nummer> -F body
 gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/comments -F body=@<protokoll.md>
 ```
 
-## 6. Ein Issue oder mehrere?
+## 7. Ein Issue oder mehrere?
 
 Aufteilen, wenn mindestens eines zutrifft:
 - Es betrifft mehrere Seiten oder Dialoge, die sich einzeln ändern und prüfen lassen.
@@ -99,9 +108,9 @@ gh api repos/sebivtt/dpv-participant-management/issues/<teil> --jq '.id'
 gh api repos/sebivtt/dpv-participant-management/issues/<sammel>/sub_issues -F sub_issue_id=<id des Teils>
 ```
 
-## 7. Freigeben
+## 8. Freigeben
 
-Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Aufteilung an jedes Unter-Issue (das Sammel-Issue selbst wird nicht umgesetzt):
+Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Aufteilung an jedes Unter-Issue (das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht.
 
 ```bash
 gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/labels -f 'labels[]=geklärt'
@@ -112,6 +121,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/labels -f 'label
 Diese Regeln stehen auch in `CLAUDE.md`:
 - Umgesetzt wird nur ein Issue mit dem Label `geklärt`, und erst, wenn es laut `docs/fahrplan.md` dran ist. Das Label heißt nur „fertig geklärt“, nicht „jetzt dran“.
 - Direkt vor dem Start die Abhängigkeiten erneut prüfen. Ist ein blockierendes Issue noch offen, nicht anfangen, sondern Sebastian fragen.
+- Direkt vor dem Start auch prüfen, ob der Kommentar „Szenarien (Datum)“ im Issue steht. Fehlt er, anhalten und Sebastian Szenarien vorlegen (Abschnitt 5), statt mit Tests oder Code zu beginnen, auch wenn der Auftrag den Schritt nicht nennt. Ausgenommen ist nur ein Issue, für das die Klärung festhält, dass es kein fachliches Verhalten hat.
 - Ein Issue = ein Pull Request mit eigenem Test. Die Beschreibung des Pull Requests nennt „Closes #<nummer>“, dann schließt GitHub das Issue bei der Übernahme.
 - Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist. Ein Issue ist dran, wenn seine Anforderungen zur laufenden Phase in `docs/fahrplan.md` gehören. Fehler, die einen wichtigen Ablauf blockieren, gehen vor. Im Zweifel fragt die KI Sebastian.
 - Ein Sammel-Issue wird geschlossen, wenn sein letztes Unter-Issue erledigt ist.
