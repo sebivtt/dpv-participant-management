@@ -38,9 +38,16 @@ def profile(request: HttpRequest) -> HttpResponse:
     Grundregel (Sebastian, 22.10.2026): Die Seite zeigt alles, was das Tool über die Person
     speichert; neue Angaben kommen hier dazu. Ändern lässt sich nichts: Name und Mail kommen
     bei jedem Login aus dem DPV-Konto (EP-05). Rollen und Einheiten liest die Seite bei jedem
-    Aufruf frisch über die zentrale Rechteprüfung.
+    Aufruf frisch über die zentrale Rechteprüfung. Die Mitgliedschaft steht in einer eigenen
+    Fläche, die übrigen Rollen als Kacheln darunter (#161).
     """
-    context = {"name_incomplete": _name_incomplete(request.user), "roles": request.rights.own_roles()}
+    roles = request.rights.own_roles()
+    membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
+    context = {
+        "name_incomplete": _name_incomplete(request.user),
+        "membership": membership,
+        "roles": [role for role in roles if role is not membership],
+    }
     return render(request, "core/profil.html", context)
 
 
@@ -97,11 +104,15 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
     orgs = ["Stamm Walhall", "Stamm Zugvögel", "Stamm Boreas"]
     role = Role.Kind
     profile_example = {
-        "details": [(_("Vorname"), "Kim"), (_("Nachname"), ""), (_("Mail"), "kim.beispiel@example.org")],
+        "name": "Kim",
+        "details": [(_("Vorname"), "Kim", "person"), (_("Nachname"), "", "person"),
+                    (_("E-Mail-Adresse"), "kim.beispiel@example.org", "mail")],
+        "membership": ("Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall"),
         "roles": [
-            (role.MEMBER.label, "Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall"),
-            (role.TROOP_LEAD.label, "Stamm Walhall", "Pfadfinderbund Boreas"),
+            (role.GROUP_LEAD.label, "Meute Wölfe", "Pfadfinderbund Boreas › Stamm Walhall"),
+            (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand", "Pfadfinderbund Boreas"),
             (role.EVENT_TEAM.label, "DPV", ""),
+            (role.ADMIN.label, "", ""),
         ],
     }
     context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,
