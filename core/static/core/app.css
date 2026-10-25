@@ -118,21 +118,47 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-abschnitt { margin: 0 0 44px; }
 .a-abschnitt > h2 { margin: 0 0 4px; font-size: 1.25rem; }
 .a-unterzeile { margin: 0 0 16px; color: var(--text-leise); font-size: .95rem; }
-.a-hinweis { margin: 12px 0 0; color: var(--text-leise); font-size: .95rem; max-width: 62ch; }
 
-/* Mein Profil (#96): Angaben als Beschriftung und Wert, am Handy untereinander */
-.a-angaben { margin: 0; display: flex; flex-direction: column; gap: 14px; }
-.a-angaben > div { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr); gap: 2px 16px; }
-.a-angaben dt { font-weight: 700; color: var(--text-leise); }
-.a-angaben dd { margin: 0; overflow-wrap: anywhere; }
-.a-leer { color: var(--text-leise); font-style: italic; }
-/* Rollen: je Zeile „Rolle · Organisation“, klein darunter der Weg nach oben */
-.a-rollen { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 0; }
-.a-rollen li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--linie); }
-.a-rollen li:first-child { border-top: 0; padding-top: 0; }
-.a-rollen li:last-child { padding-bottom: 0; }
-.a-rolle { font-weight: 700; overflow-wrap: anywhere; }
+/* Mein Profil (#96), gestaltet nach Sebastians Zielbild (#161, docs/zielbilder/mein-profil.html) */
+.a-profilflaeche { margin: 0 0 18px; }
+.a-flaeche-kopf { display: flex; align-items: center; gap: 12px; margin: 0 0 17px; }
+.a-flaeche-kopf h2, .a-flaeche-kopf h3 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+.a-flaeche-ic { width: 36px; height: 36px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); }
+/* Kopfzeile: Profilkreis wie in der Seitenleiste, daneben groß der Name */
+.a-identitaet { display: flex; align-items: center; gap: 14px; margin: 0 0 18px; }
+.a-identitaet .a-avatar { width: 56px; height: 56px; font-size: 1.25rem; }
+.a-identitaet .a-avatar .ic { width: 28px; height: 28px; }
+.a-anzeigename { margin: 0; min-width: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; overflow-wrap: anywhere; }
+/* Angaben als graue, gesperrte Felder: links ein Symbol, rechts das Schloss; keine Eingabefelder (EP-05) */
+.a-felder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
+.a-felder dt { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
+.a-felder dd { display: flex; align-items: center; gap: 8px; min-height: 46px; margin: 0; padding-left: 11px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--zu-grund); color: var(--zu-text); }
+.a-felder dd > span { flex: 1; min-width: 0; padding: 10px 0; font-size: .9rem; overflow-wrap: anywhere; }
+.a-felder dd > .ic { width: 18px; height: 18px; color: var(--dpv); }
+.a-felder dd > .a-schloss { align-self: stretch; padding: 0; display: grid; place-items: center; width: 38px; flex: none; border-left: 1px solid var(--linie); color: var(--text-leise); }
+.a-schloss .ic { width: 17px; height: 17px; }
+.a-leer, .a-felder dd.a-leer { color: var(--text-leise); font-style: italic; }
+/* Hinweis in einer zart blauen Fläche, links ein Symbol */
+.a-hinweisflaeche { display: flex; align-items: center; gap: 12px; margin: 15px 0 0; padding: 13px 14px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--text-leise); }
+.a-hinweisflaeche > .ic { box-sizing: content-box; width: 18px; height: 18px; padding: 6px; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
+.a-hinweisflaeche p { margin: 0; font-size: .9rem; }
+/* Organisation und Rollen: die Mitgliedschaft als zart blaue Fläche, darunter die Rollen als Kacheln.
+   Kacheln weiß mit feinem Rand und blauem Streifen oben (Sebastian bei der Klärung von #161, bewusst
+   anders als „Flächen statt Rahmen“); keine weiteren Farben, Verläufe oder Schatten. */
+.a-mitgliedschaft, .a-rollenkacheln li { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.a-mitgliedschaft > *, .a-rollenkacheln li > * { max-width: 100%; }
+.a-mitgliedschaft { margin: 0 0 14px; padding: 16px 18px; border-radius: var(--radius-klein); background: var(--dpv-hauch); }
+.a-rollenkacheln { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 12px; }
+.a-rollenkacheln li { padding: 14px; border: 1px solid var(--linie); border-top: 3px solid var(--dpv); border-radius: var(--radius-klein); background: var(--flaeche); }
+.a-rollenmarke { margin: 0 0 3px; padding: 4px 8px; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); font-size: .82rem; font-weight: 700; line-height: 1.35; }
+.a-rollenkacheln .a-rollenmarke { background: var(--dpv-hauch); }
+.a-rollenorg { font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+.a-mitgliedschaft .a-rollenorg { font-size: 1.1rem; }
 .a-weg { color: var(--text-leise); font-size: .9rem; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .a-profilflaeche { padding: 18px; }
+  .a-felder { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}
 .a-trenner { margin: 8px 0 24px; padding-top: 24px; border-top: 1px solid var(--linie); color: var(--text-leise); font-weight: 700; }
 
 /* Statusmeldungen unter der Begrüßung */
@@ -269,7 +295,6 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
   .a-schritte li { flex: none; padding: 10px; }
   .a-schritte li[aria-current="step"] { flex: 1 1 auto; }
   .a-schritte li:not([aria-current="step"]) > span:not(.nr) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .a-angaben > div { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Teilnehmende am Handy als kompakte Karten */

@@ -1,0 +1,4 @@
+{# Inhalt einer Kachel unter „Organisation und Rollen“ (#161): klein die Rolle, groß die Organisation, darunter Weg oder fester Satz. Daten aus core/views.py, _tile(). #}
+<span class="a-rollenmarke">{{ tile.label }}</span>
+<span class="a-rollenorg">{{ tile.org }}</span>
+{% if tile.way %}<span class="a-weg">{{ tile.way }}</span>{% endif %}

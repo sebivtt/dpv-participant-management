@@ -109,18 +109,30 @@
 
   <section class="a-abschnitt" aria-labelledby="h-profil">
     <h2 id="h-profil">{% translate "Mein Profil" %}</h2>
-    <p class="a-unterzeile">{% translate "Bausteine: Angaben als Beschriftung und Wert, am Handy untereinander; Rollen je Zeile mit dem Weg nach oben." %}</p>
-    <dl class="a-flaeche a-angaben">
-      {% for label, value in profile_example.details %}
-        <div><dt>{{ label }}</dt>{% if value %}<dd>{{ value }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
-      {% endfor %}
-    </dl>
-    <p class="a-hinweis">{% translate "Ein leiser Hinweis unter einer Fläche." %}</p>
-    <ul class="a-flaeche a-rollen mt-3">
-      {% for kind, org, way in profile_example.roles %}
-        <li><span class="a-rolle">{{ kind }} · {{ org }}</span>{% if way %}<span class="a-weg">{{ way }}</span>{% endif %}</li>
-      {% endfor %}
-    </ul>
+    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#161): Kopfzeile mit Profilkreis, gesperrte Felder mit Schloss, Hinweis in blauer Fläche; Mitgliedschaft als eigene Fläche, Rollen als Kacheln. Am Handy untereinander." %}</p>
+    <div class="a-flaeche a-profilflaeche">
+      <div class="a-identitaet">
+        <span class="a-avatar" aria-hidden="true">{{ profile_example.name|first }}</span>
+        <p class="a-anzeigename">{{ profile_example.name }}</p>
+      </div>
+      <dl class="a-felder">
+        {% for label, value, symbol in profile_example.details %}
+          <div><dt>{{ label }}</dt><dd{% if not value %} class="a-leer"{% endif %}>{% icon symbol %}<span>{% if value %}{{ value }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
+        {% endfor %}
+      </dl>
+      <div class="a-hinweisflaeche">{% icon "schloss" %}<p>{% translate "Ein Hinweis in einer blauen Fläche, z. B. warum sich etwas nicht ändern lässt." %}</p></div>
+    </div>
+    <div class="a-flaeche a-profilflaeche">
+      <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h3>{% translate "Überschrift einer Fläche mit Symbol" %}</h3></div>
+      <div class="a-mitgliedschaft">
+        {% include "core/_rollenkachel.html" with tile=profile_example.membership %}
+      </div>
+      <ul class="a-rollenkacheln">
+        {% for tile in profile_example.tiles %}
+          <li>{% include "core/_rollenkachel.html" %}</li>
+        {% endfor %}
+      </ul>
+    </div>
   </section>
 
   <section class="a-abschnitt" aria-labelledby="h-formular">

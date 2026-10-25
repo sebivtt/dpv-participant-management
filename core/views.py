@@ -38,10 +38,39 @@ def profile(request: HttpRequest) -> HttpResponse:
     Grundregel (Sebastian, 22.10.2026): Die Seite zeigt alles, was das Tool über die Person
     speichert; neue Angaben kommen hier dazu. Ändern lässt sich nichts: Name und Mail kommen
     bei jedem Login aus dem DPV-Konto (EP-05). Rollen und Einheiten liest die Seite bei jedem
-    Aufruf frisch über die zentrale Rechteprüfung.
+    Aufruf frisch über die zentrale Rechteprüfung. Die Mitgliedschaft steht in einer eigenen
+    Fläche, die übrigen Rollen als Kacheln darunter (#161).
     """
-    context = {"name_incomplete": _name_incomplete(request.user), "roles": request.rights.own_roles()}
+    roles = request.rights.own_roles()
+    membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
+    context = {
+        "name_incomplete": _name_incomplete(request.user),
+        "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
+        "tiles": [_tile(role) for role in roles if role is not membership],
+    }
     return render(request, "core/profil.html", context)
+
+
+# Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
+# (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
+ROLE_NOTES = {
+    Role.Kind.FEDERATION_LEAD: _("Leitung des Verbands"),
+    Role.Kind.EVENT_TEAM: _("Veranstaltungen des Verbands"),
+    Role.Kind.ADMIN: _("Verwaltung des ganzen Tools"),
+}
+
+
+def _tile(role: Role, label=None) -> dict:
+    """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation, darunter der Weg (#161).
+
+    Admin hängt an keiner Organisation; dort steht groß „DPV Anmeldetool“. Rollen im Verband
+    und Admin zeigen statt des Wegs ihren festen Satz aus `ROLE_NOTES`.
+    """
+    return {
+        "label": label or role.get_kind_display(),
+        "org": role.unit.name if role.unit else _("DPV Anmeldetool"),
+        "way": ROLE_NOTES.get(role.kind) or " › ".join(role.unit.names_above() if role.unit else []),
+    }
 
 
 def _example(title, period, place, org, state, registered=None, capacity=None, picture=None, draft=False) -> dict:
@@ -97,11 +126,17 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
     orgs = ["Stamm Walhall", "Stamm Zugvögel", "Stamm Boreas"]
     role = Role.Kind
     profile_example = {
-        "details": [(_("Vorname"), "Kim"), (_("Nachname"), ""), (_("Mail"), "kim.beispiel@example.org")],
-        "roles": [
-            (role.MEMBER.label, "Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall"),
-            (role.TROOP_LEAD.label, "Stamm Walhall", "Pfadfinderbund Boreas"),
-            (role.EVENT_TEAM.label, "DPV", ""),
+        "name": "Kim",
+        "details": [(_("Vorname"), "Kim", "person"), (_("Nachname"), "", "person"),
+                    (_("E-Mail-Adresse"), "kim.beispiel@example.org", "mail")],
+        "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
+        "tiles": [
+            {"label": label, "org": org, "way": way} for label, org, way in [
+                (role.GROUP_LEAD.label, "Meute Wölfe", "Pfadfinderbund Boreas › Stamm Walhall"),
+                (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand", "Pfadfinderbund Boreas"),
+                (role.EVENT_TEAM.label, "DPV", ROLE_NOTES[role.EVENT_TEAM]),
+                (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
+            ]
         ],
     }
     context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,

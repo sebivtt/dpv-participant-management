@@ -259,21 +259,50 @@ def _erika_with_roles() -> None:
     give(erika, Role.Kind.EVENT_TEAM, dpv)
 
 
-# Szenario 14 zu #96: „Mein Profil“ am Handy ohne seitliches Wischen und nur mit der Tastatur
+# Szenario 14 zu #96 und Szenario 17 zu #161: „Mein Profil“ am Handy ohne seitliches Wischen und nur mit der Tastatur
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, device):
     page: Page = request.getfixturevalue(device)
     login(page)
     _erika_with_roles()
+    # Sehr lange Angaben ohne Trennstelle (unabhängige Prüfung zu #161); sie gelten bis zur nächsten Anmeldung.
+    get_user_model().objects.filter(username="erika.testfrau").update(
+        last_name="Testfrau-Mustermann-Beispielname-von-und-zu-Hohenlinden",
+        email="erika.testfrau.mit.einer.sehr.langen.adresse.ohne.trennstelle@example.org",
+    )
 
     page.goto(f"{BASE}/profil/")
 
     expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+    expect(page.locator(".a-anzeigename")).to_have_text("Erika Testfrau-Mustermann-Beispielname-von-und-zu-Hohenlinden")
+    expect(page.get_by_role("heading", level=2, name="Deine Angaben")).to_be_attached()
     expect(page.get_by_role("heading", level=2, name="Organisation und Rollen")).to_be_visible()
-    expect(page.get_by_text("Mitglied · Sippe Falkenhorst am Leuchtturm der Hallig Süderoog")).to_be_visible()
-    expect(page.get_by_text("Pfadfinderbund Boreas › Stamm Walhall vom Nordseestrand")).to_be_visible()
+    membership = page.locator(".a-mitgliedschaft")
+    expect(membership).to_contain_text("Mitgliedschaft")
+    expect(membership).to_contain_text("Sippe Falkenhorst am Leuchtturm der Hallig Süderoog")
+    expect(membership).to_contain_text("Pfadfinderbund Boreas › Stamm Walhall vom Nordseestrand")
+    expect(page.locator(".a-rollenkacheln > li")).to_have_count(2)
     width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
     assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
+    # Am Handy stehen Felder und Kacheln untereinander, am PC nebeneinander.
+    columns = 1 if device == "handy" else 2
+    tops = page.locator(".a-felder > div").evaluate_all("els => els.map(e => Math.round(e.getBoundingClientRect().top))")
+    assert len(set(tops)) == 4 // columns, tops
+    tiles = page.locator(".a-rollenkacheln > li").evaluate_all("els => els.map(e => Math.round(e.getBoundingClientRect().top))")
+    assert (len(set(tiles)) == 2) == (device == "handy"), tiles
+    # Farben nach Sebastians Vorgabe bei der Klärung von #161: Mitgliedschaft zart blau ohne Verlauf,
+    # Kacheln weiß mit feinem grauem Rand, oben ein schmaler blauer Streifen, ohne Schatten.
+    look = "e => { const s = getComputedStyle(e); return [s.backgroundColor, s.backgroundImage, s.boxShadow] }"
+    assert membership.evaluate(look) == ["rgb(233, 239, 246)", "none", "none"]
+    tile = page.locator(".a-rollenkacheln > li").first
+    assert tile.evaluate(look) == ["rgb(255, 255, 255)", "none", "none"]
+    borders = tile.evaluate(
+        "e => { const s = getComputedStyle(e); return ['Top', 'Right', 'Bottom', 'Left'].map("
+        "side => s['border' + side + 'Width'] + ' ' + s['border' + side + 'Style'] + ' ' + s['border' + side + 'Color']) }"
+    )
+    assert borders == ["3px solid rgb(26, 75, 126)"] + ["1px solid rgb(219, 226, 234)"] * 3
+    # Die Rollenmarke in der Kachel bleibt zart blau (Sebastian, Nachtrag vom 25.10.2026 in #161).
+    assert tile.locator(".a-rollenmarke").evaluate(look) == ["rgb(233, 239, 246)", "none", "none"]
     # axe vor dem Tabben: Direkt nach dem Fokus auf „Abmelden“ misst es die Farben des Knopfs mitten
     # im Übergang und meldet zu wenig Kontrast; kurz danach ist alles in Ordnung (geprüft am 25.10.2026).
     assert run_axe(page) == []

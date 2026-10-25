@@ -1,39 +1,47 @@
 {% extends "base_app.html" %}
-{% load i18n %}
+{% load i18n layout %}
 {% block title %}{% translate "Mein Profil" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Nach außen heißt eine Einheit „Organisation“, nie „Einheit“ (#96). #}
+  {# Nach außen heißt eine Einheit „Organisation“, nie „Einheit“ (#96). Aufbau nach Sebastians Zielbild, docs/zielbilder/ (#161). #}
   <div class="a-kopf">
     <h1>{% translate "Mein Profil" %}</h1>
   </div>
   {% if name_incomplete %}
     <p class="alert alert-warning" role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
   {% endif %}
-  <section class="a-abschnitt" aria-labelledby="h-angaben">
-    <h2 id="h-angaben">{% translate "Deine Angaben" %}</h2>
-    {# Hier kommt mit #111 der Fahrtenname als erste Angabe dazu, als einziges Feld zum Bearbeiten. #}
-    <dl class="a-flaeche a-angaben">
-      <div><dt>{% translate "Vorname" %}</dt>{% if user.first_name %}<dd>{{ user.first_name }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
-      <div><dt>{% translate "Nachname" %}</dt>{% if user.last_name %}<dd>{{ user.last_name }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
-      <div><dt>{% translate "Benutzername" %}</dt><dd>{{ user.username }}</dd></div>
-      <div><dt>{% translate "Mail" %}</dt><dd>{{ user.email }}</dd></div>
+  <section class="a-flaeche a-profilflaeche" aria-labelledby="h-angaben">
+    <h2 id="h-angaben" class="sr-nur">{% translate "Deine Angaben" %}</h2>
+    {# Mit #111 steht hier vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“. #}
+    <div class="a-identitaet">
+      <span class="a-avatar" aria-hidden="true">{% if user.first_name %}{{ user.first_name|first|upper }}{% else %}{% icon "person" %}{% endif %}</span>
+      <p class="a-anzeigename">{{ user.get_full_name|default:user.username }}</p>
+    </div>
+    {# Mit #111 kommt hier der Fahrtenname als erste Angabe dazu, als einziges Feld zum Bearbeiten. #}
+    <dl class="a-felder">
+      <div><dt>{% translate "Vorname" %}</dt><dd{% if not user.first_name %} class="a-leer"{% endif %}>{% icon "person" %}<span>{% if user.first_name %}{{ user.first_name }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
+      <div><dt>{% translate "Nachname" %}</dt><dd{% if not user.last_name %} class="a-leer"{% endif %}>{% icon "person" %}<span>{% if user.last_name %}{{ user.last_name }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
+      <div><dt>{% translate "Benutzername" %}</dt><dd>{% icon "at" %}<span>{{ user.username }}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
+      <div><dt>{% translate "E-Mail-Adresse" %}</dt><dd>{% icon "mail" %}<span>{{ user.email }}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
     </dl>
-    <p class="a-hinweis">{% translate "Name und Mail kommen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." %}</p>
+    <div class="a-hinweisflaeche">{% icon "schloss" %}<p>{% translate "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." %}</p></div>
   </section>
-  <section class="a-abschnitt" aria-labelledby="h-rollen">
-    <h2 id="h-rollen">{% translate "Organisation und Rollen" %}</h2>
-    {% if roles %}
-      {# Neben der Mitgliedschaft kommt mit #65 der Knopf zum Austreten dazu. #}
-      <ul class="a-flaeche a-rollen">
-        {% for role in roles %}
-          <li>
-            <span class="a-rolle">{{ role.get_kind_display }}{% if role.unit %} · {{ role.unit.name }}{% endif %}</span>
-            {% with above=role.unit.names_above %}{% if above %}<span class="a-weg">{{ above|join:" › " }}</span>{% endif %}{% endwith %}
-          </li>
+  <section class="a-flaeche a-profilflaeche" aria-labelledby="h-rollen">
+    <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h2 id="h-rollen">{% translate "Organisation und Rollen" %}</h2></div>
+    {% if membership %}
+      <div class="a-mitgliedschaft">
+        {% include "core/_rollenkachel.html" with tile=membership %}
+        {# Hier unten kommt mit #65 der Knopf „Austreten“ dazu, an der Stelle von „Organisation öffnen“ im Zielbild. #}
+      </div>
+    {% endif %}
+    {% if tiles %}
+      <ul class="a-rollenkacheln">
+        {% for tile in tiles %}
+          <li>{% include "core/_rollenkachel.html" %}</li>
         {% endfor %}
       </ul>
-    {% else %}
-      <p class="alert alert-info"><strong>{% translate "Du bist noch keiner Organisation zugeordnet." %}</strong> {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." %}</p>
+    {% endif %}
+    {% if not membership and not tiles %}
+      <p class="alert alert-info mb-0"><strong>{% translate "Du bist noch keiner Organisation zugeordnet." %}</strong> {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." %}</p>
     {% endif %}
   </section>
 {% endblock %}

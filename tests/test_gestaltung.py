@@ -354,3 +354,16 @@ def test_lilie_uebernimmt_die_farbe_ihrer_umgebung_und_enthaelt_nur_pfade():
     assert svg.count("<path ") == 8
     drawing = svg.split("#}", 1)[1]
     assert not re.search(r"<script|<image|<style|<foreignObject|href=|\son\w+=", drawing, re.IGNORECASE)
+
+
+def test_jedes_symbol_ist_sauber_geschrieben():
+    """Jedes Symbol hat Kennung und Bildausschnitt mit Leerzeichen dazwischen (unabhängige Prüfung zu #161).
+
+    Die Datei steht auf jeder Seite; ein fehlendes Leerzeichen zwischen zwei Angaben ist dort
+    ein HTML-Fehler, auch wenn Browser ihn übersehen.
+    """
+    symbols = (BASE_DIR / "core" / "templates" / "core" / "_symbole.svg").read_text()
+    tags = re.findall(r"<symbol\b[^>]*>", symbols)
+
+    assert tags
+    assert [tag for tag in tags if not re.fullmatch(r'<symbol id="i-[a-z]+" viewBox="0 0 24 24">', tag)] == []
