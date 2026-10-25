@@ -6,6 +6,19 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · Hängende Browser-Installation auf GitHub abfangen; Neustart ohne Rückfrage (#133)
+
+**Entscheidung** (Sebastian; Klärung von #133 am 23.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/133#issuecomment-6366796217)):
+
+1. **Abfangen statt Ursache beseitigen:** Der Schritt „Browser für den Rauchtest installieren“ in der Prüfung auf GitHub hat je Versuch ein Zeitlimit von 10 Minuten und höchstens drei Versuche. Die Browser kommen aus dem Zwischenspeicher von GitHub, solange die Playwright-Fassung aus `uv.lock` gleich ist. Scheitern alle Versuche, ist der Lauf rot und meldet, dass es an der Browser-Installation liegt und ein Neustart meist hilft. Die Prüfungen selbst und das Zeitlimit des ganzen Laufs (35 Minuten) bleiben gleich. Abgelehnt: das fertige Playwright-Abbild von Microsoft (großer Umbau, 2 GB von einem anderen fremden Server) und ein eigener Paketserver.
+2. **Neustart ohne Rückfrage** (gilt über #133 hinaus): Ist ein Lauf nur an der Browser-Installation gescheitert, ist kein einziger Test gelaufen und nennt die Meldung klar die Browser-Installation, darf eine KI-Sitzung den Lauf einmal pro Stand ohne Rückfrage neu starten. Scheitert auch der Neustart, fragt sie Sebastian. Der Pull Request nennt den Neustart.
+
+**Technische Wahl** (KI): drei einzelne Schritte statt einer Schleife, damit GitHub jeden Versuch mit eigenem Zeitlimit sichtbar zeigt; Zwischenspeicher mit `actions/cache` von GitHub, wie die anderen fremden Bausteine auf einen Commit festgelegt. Ein Test prüft, dass Zeitlimit, Wiederholung und Zwischenspeicher in `ci.yml` stehen.
+
+**Begründung:** Am 23.10.2026 hing der Schritt in PR #132 und PR #135, weil der Ubuntu-Paketserver langsam war; der Lauf brach jeweils erst nach 35 Minuten ab, der Neustart war grün. Ein Neustart ändert nichts am Code und übernimmt nichts.
+
+**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`, `CLAUDE.md` („Ablauf je Aufgabe“, Schritt 6).
+
 ## 2026-10-25 · Folgekorrekturen nach PR #135 (#150): Kette nach oben, Tabelle zu BER-01, „Kreis“
 
 **Entscheidung** (Sebastian; Klärung von #150 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/150#issuecomment-6394528633)). Die Einträge vom 24.10.2026 bleiben stehen; dieser legt nur fest, was dort mehrdeutig oder noch nicht nachgetragen war.

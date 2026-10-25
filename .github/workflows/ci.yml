@@ -77,9 +77,47 @@ jobs:
       - name: Python und Pakete aus uv.lock installieren
         run: uv sync --locked
       # Browser für den Rauchtest (#7) in der Fassung, die zu Playwright aus uv.lock gehört,
-      # samt den Systembibliotheken, die sie unter Linux brauchen.
-      - name: Browser für den Rauchtest installieren
+      # samt den Systembibliotheken, die sie unter Linux brauchen. Die Systembibliotheken kommen
+      # vom Ubuntu-Paketserver; ist der langsam, hing der Schritt früher bis zum Zeitlimit des
+      # ganzen Laufs (#133). Deshalb: je Versuch 10 Minuten, höchstens drei Versuche, und die
+      # Browser selbst kommen aus dem Zwischenspeicher von GitHub, solange die Fassung gleich ist.
+      - name: Playwright-Fassung aus uv.lock ermitteln
+        id: playwright
+        run: echo "version=$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")" >> "$GITHUB_OUTPUT"
+      - name: Browser aus dem Zwischenspeicher holen
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browser-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Browser für den Rauchtest installieren (Versuch 1 von 3)
+        id: browser_versuch_1
+        timeout-minutes: 10
+        continue-on-error: true
         run: uv run --locked playwright install --with-deps chromium firefox webkit
+      - name: Browser für den Rauchtest installieren (Versuch 2 von 3)
+        id: browser_versuch_2
+        if: steps.browser_versuch_1.outcome == 'failure'
+        timeout-minutes: 10
+        continue-on-error: true
+        run: |
+          echo "::warning title=Browser-Installation::Versuch 1 ist gescheitert oder hing länger als 10 Minuten; neuer Versuch (#133)."
+          # Reste des abgebrochenen Versuchs beenden, damit der Paketserver-Zugriff nicht gesperrt bleibt.
+          sudo pkill -x apt-get || true
+          uv run --locked playwright install --with-deps chromium firefox webkit
+      - name: Browser für den Rauchtest installieren (Versuch 3 von 3)
+        id: browser_versuch_3
+        if: steps.browser_versuch_2.outcome == 'failure'
+        timeout-minutes: 10
+        continue-on-error: true
+        run: |
+          echo "::warning title=Browser-Installation::Versuch 2 ist gescheitert oder hing länger als 10 Minuten; letzter Versuch (#133)."
+          sudo pkill -x apt-get || true
+          uv run --locked playwright install --with-deps chromium firefox webkit
+      - name: Browser-Installation gescheitert
+        if: steps.browser_versuch_3.outcome == 'failure'
+        run: |
+          echo "::error title=Browser-Installation gescheitert::Die Test-Browser ließen sich in drei Versuchen nicht installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen; am Code liegt es nicht. Ein Neustart des Laufs (Re-run jobs) hilft meist (#133)."
+          exit 1
       - name: Warten, bis Keycloak bereit ist
         run: |
           for attempt in $(seq 1 90); do

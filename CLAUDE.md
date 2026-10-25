@@ -27,7 +27,7 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 3. **Szenarien vor Code:** Sebastian schreibt die fachlichen Szenarien; die KI schlägt fehlende Fälle vor, er entscheidet. Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund (`CONTRIBUTING.md`, Abschnitt 3). Erst dann kommt der Code.
 4. **Tatsächlich prüfen:** alle automatischen Prüfungen lokal mit `./pruefen.sh` ausführen (Anleitung im `README.md`). Im Bericht trennen, was ausgeführt wurde und was nur empfohlen ist.
 5. **Unabhängige Prüfung** vor jedem Pull Request (siehe unten).
-6. **Pull Request** nach der Vorlage. Erst alles hochladen und warten, bis alle Prüfungen auf GitHub grün sind; dann den Link schicken und das Ergebnis der Prüfungen in der Beschreibung nennen. GitHub sperrt das Übernehmen roter Pull Requests bei diesem privaten Repo nicht; die Regel ersetzt die Sperre, bis das Repo veröffentlicht ist (#16).
+6. **Pull Request** nach der Vorlage. Erst alles hochladen und warten, bis alle Prüfungen auf GitHub grün sind; dann den Link schicken und das Ergebnis der Prüfungen in der Beschreibung nennen. GitHub sperrt das Übernehmen roter Pull Requests bei diesem privaten Repo nicht; die Regel ersetzt die Sperre, bis das Repo veröffentlicht ist (#16). Ist ein Lauf nur an der Browser-Installation gescheitert und kein Test gelaufen, darf die KI ihn einmal pro Stand ohne Rückfrage neu starten; scheitert auch das, fragt sie Sebastian, und der Pull Request nennt den Neustart (`docs/entscheidungen.md`, 25.10.2026).
 
 Für Phasen und Vorgemerktes gilt:
 
