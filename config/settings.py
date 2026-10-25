@@ -70,6 +70,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Vor der Login-Pflicht: Wessen Login 12 Stunden her ist, gilt ab hier als nicht angemeldet (#8).
+    "accounts.session.SessionMaxAgeMiddleware",
     # Jede Adresse verlangt einen Login, außer sie ist ausdrücklich als öffentlich markiert
     # (CONTRIBUTING.md, Abschnitt 4). Was jemand vergisst zu schützen, ist so trotzdem geschützt.
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
@@ -175,7 +177,10 @@ REGISTRATION_LINK_ENABLED = os.environ.get("REGISTRATION_LINK_ENABLED", "1") != 
 ACCOUNT_HELP_EMAIL = os.environ.get("ACCOUNT_HELP_EMAIL", "anmeldetool@dpvonline.de")
 
 # Nach so vielen Minuten ohne Aktivität endet die Sitzung (#5). Jede Anfrage verlängert sie.
+# Unabhängig davon endet sie spätestens so viele Stunden nach dem Login (#8), auch bei
+# laufender Aktivität; beim neuen Login merkt Keycloak gesperrte und gelöschte Konten.
 SESSION_IDLE_MINUTES = 120
+SESSION_MAX_HOURS = 12
 SESSION_COOKIE_AGE = SESSION_IDLE_MINUTES * 60
 SESSION_SAVE_EVERY_REQUEST = True
 
