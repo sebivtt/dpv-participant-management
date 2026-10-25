@@ -45,10 +45,32 @@ def profile(request: HttpRequest) -> HttpResponse:
     membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
     context = {
         "name_incomplete": _name_incomplete(request.user),
-        "membership": membership,
-        "roles": [role for role in roles if role is not membership],
+        "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
+        "tiles": [_tile(role) for role in roles if role is not membership],
     }
     return render(request, "core/profil.html", context)
+
+
+# Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
+# (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
+ROLE_NOTES = {
+    Role.Kind.FEDERATION_LEAD: _("Leitung des Verbands"),
+    Role.Kind.EVENT_TEAM: _("Veranstaltungen des Verbands"),
+    Role.Kind.ADMIN: _("Verwaltung des ganzen Tools"),
+}
+
+
+def _tile(role: Role, label=None) -> dict:
+    """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation, darunter der Weg (#161).
+
+    Admin hängt an keiner Organisation; dort steht groß „DPV Anmeldetool“. Rollen im Verband
+    und Admin zeigen statt des Wegs ihren festen Satz aus `ROLE_NOTES`.
+    """
+    return {
+        "label": label or role.get_kind_display(),
+        "org": role.unit.name if role.unit else _("DPV Anmeldetool"),
+        "way": ROLE_NOTES.get(role.kind) or " › ".join(role.unit.names_above() if role.unit else []),
+    }
 
 
 def _example(title, period, place, org, state, registered=None, capacity=None, picture=None, draft=False) -> dict:
@@ -107,12 +129,14 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
         "name": "Kim",
         "details": [(_("Vorname"), "Kim", "person"), (_("Nachname"), "", "person"),
                     (_("E-Mail-Adresse"), "kim.beispiel@example.org", "mail")],
-        "membership": ("Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall"),
-        "roles": [
-            (role.GROUP_LEAD.label, "Meute Wölfe", "Pfadfinderbund Boreas › Stamm Walhall"),
-            (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand", "Pfadfinderbund Boreas"),
-            (role.EVENT_TEAM.label, "DPV", ""),
-            (role.ADMIN.label, "", ""),
+        "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
+        "tiles": [
+            {"label": label, "org": org, "way": way} for label, org, way in [
+                (role.GROUP_LEAD.label, "Meute Wölfe", "Pfadfinderbund Boreas › Stamm Walhall"),
+                (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand", "Pfadfinderbund Boreas"),
+                (role.EVENT_TEAM.label, "DPV", ROLE_NOTES[role.EVENT_TEAM]),
+                (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
+            ]
         ],
     }
     context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,

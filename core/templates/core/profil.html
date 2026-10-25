@@ -29,29 +29,18 @@
     <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h2 id="h-rollen">{% translate "Organisation und Rollen" %}</h2></div>
     {% if membership %}
       <div class="a-mitgliedschaft">
-        <span class="a-rollenmarke">{% translate "Mitgliedschaft" %}</span>
-        <span class="a-rollenorg">{{ membership.unit.name }}</span>
-        {% with above=membership.unit.names_above %}{% if above %}<span class="a-weg">{{ above|join:" › " }}</span>{% endif %}{% endwith %}
+        {% include "core/_rollenkachel.html" with tile=membership %}
         {# Hier unten kommt mit #65 der Knopf „Austreten“ dazu, an der Stelle von „Organisation öffnen“ im Zielbild. #}
       </div>
     {% endif %}
-    {% if roles %}
+    {% if tiles %}
       <ul class="a-rollenkacheln">
-        {% for role in roles %}
-          <li>
-            {% if role.unit %}
-              <span class="a-rollenmarke">{{ role.get_kind_display }}</span>
-              <span class="a-rollenorg">{{ role.unit.name }}</span>
-              {% with above=role.unit.names_above %}{% if above %}<span class="a-weg">{{ above|join:" › " }}</span>{% endif %}{% endwith %}
-            {% else %}
-              {# Admin hängt an keiner Organisation: Die Kachel zeigt nur die Rolle (#161). #}
-              <span class="a-rollenorg">{{ role.get_kind_display }}</span>
-            {% endif %}
-          </li>
+        {% for tile in tiles %}
+          <li>{% include "core/_rollenkachel.html" %}</li>
         {% endfor %}
       </ul>
     {% endif %}
-    {% if not membership and not roles %}
+    {% if not membership and not tiles %}
       <p class="alert alert-info mb-0"><strong>{% translate "Du bist noch keiner Organisation zugeordnet." %}</strong> {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." %}</p>
     {% endif %}
   </section>

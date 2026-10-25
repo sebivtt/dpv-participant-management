@@ -125,13 +125,11 @@
     <div class="a-flaeche a-profilflaeche">
       <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h3>{% translate "Überschrift einer Fläche mit Symbol" %}</h3></div>
       <div class="a-mitgliedschaft">
-        <span class="a-rollenmarke">{% translate "Mitgliedschaft" %}</span>
-        <span class="a-rollenorg">{{ profile_example.membership.0 }}</span>
-        <span class="a-weg">{{ profile_example.membership.1 }}</span>
+        {% include "core/_rollenkachel.html" with tile=profile_example.membership %}
       </div>
       <ul class="a-rollenkacheln">
-        {% for kind, org, way in profile_example.roles %}
-          <li>{% if org %}<span class="a-rollenmarke">{{ kind }}</span><span class="a-rollenorg">{{ org }}</span>{% if way %}<span class="a-weg">{{ way }}</span>{% endif %}{% else %}<span class="a-rollenorg">{{ kind }}</span>{% endif %}</li>
+        {% for tile in profile_example.tiles %}
+          <li>{% include "core/_rollenkachel.html" %}</li>
         {% endfor %}
       </ul>
     </div>
