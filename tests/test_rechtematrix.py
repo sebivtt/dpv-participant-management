@@ -314,7 +314,7 @@ def test_kette_nach_oben_steht_im_glossar():
     meaning = glossary(requirements_text()).get("Kette nach oben", "")
 
     assert "Mitgliedschaft" in meaning
-    assert "leitet" in meaning
+    assert "jede Einheit, die sie leitet" in meaning
     assert "RO-01" in meaning
 
 
@@ -324,6 +324,7 @@ def test_kette_nach_oben_beginnt_auch_bei_der_geleiteten_einheit():
 
     assert "jede Einheit, die sie leitet" in reading
     assert "Berta" in reading
+    assert "Ein Mitglied ohne Leitungsrolle, das direkt im Bund ist" in reading
 
 
 def test_es_heisst_nur_noch_kreis():
