@@ -97,7 +97,7 @@ jobs:
         id: browser_versuch_1
         timeout-minutes: 10
         continue-on-error: true
-        run: sleep 900 && uv run --locked playwright install --with-deps chromium firefox webkit
+        run: uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser für den Rauchtest installieren (Versuch 2 von 3)
         id: browser_versuch_2
         if: steps.browser_versuch_1.outcome == 'failure'
