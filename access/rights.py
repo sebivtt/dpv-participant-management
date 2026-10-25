@@ -24,6 +24,7 @@ Zugriff“ (403). Meldet eine Seite an einer Adresse mit Kennung trotzdem „kei
 `RightsMiddleware` „nicht gefunden“ daraus.
 """
 
+import unicodedata
 from functools import cached_property
 
 from collections.abc import Callable
@@ -216,6 +217,21 @@ class Rights:
         if self.user is None or not allowed:
             raise PermissionDenied
 
+    def own_roles(self) -> list[Role]:
+        """Die eigenen Rollen der Person für „Mein Profil“, mit ihren Einheiten (EP-01, ORG-05).
+
+        Zuerst die Mitgliedschaft, dann die Leitungsrollen von der Gruppe bis zum Bund, danach
+        Verbandsleitung, DPV-Veranstaltungsteam und Admin; dieselbe Rolle mehrmals nach dem
+        Namen der Einheit (Szenarien vom 25.10.2026 in #96). Die Einheiten darüber bis zum
+        Verband sind vorab geladen, damit `Unit.names_above()` keine eigenen Abfragen braucht.
+        Jeder Aufruf liest frisch: Eine geänderte Rolle erscheint beim nächsten Klick.
+        """
+        if self.user is None:
+            return []
+        roles = Role.objects.filter(user_id=self.user.pk).select_related("unit__parent__parent__parent__parent")
+        order = list(R)
+        return sorted(roles, key=lambda role: (order.index(role.kind), _alphabetical(role.unit.name if role.unit else "")))
+
     # Leitungen (BER-01, Grund 3)
 
     def leads(self) -> QuerySet:
@@ -252,6 +268,15 @@ class Rights:
             return False
         membership = Role.objects.filter(user_id=person.pk, kind=R.MEMBER).select_related("unit").first()
         return membership is not None and self.leads_unit(membership.unit)
+
+
+def _alphabetical(name: str) -> str:
+    """Schlüssel für die Sortierung nach dem Alphabet: Ä bei A, É bei E, ohne Groß- und Kleinschreibung.
+
+    Python vergleicht sonst nach Zeichencode und stellt „Ährenfeld“ hinter „Zugvögel“.
+    """
+    without_marks = "".join(char for char in unicodedata.normalize("NFKD", name) if not unicodedata.combining(char))
+    return without_marks.casefold()
 
 
 def on_lead_path(person, unit: Unit | None) -> bool:

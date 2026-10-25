@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Abmelden (#7, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden (#7, #96, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -9,7 +9,12 @@ import sys
 import pytest
 from playwright.sync_api import Page, expect
 
+from django.contrib.auth import get_user_model
+
 from rauchtests.conftest import BASE, OHNE_NAME, focus_visible, login, run_axe
+from roles.models import Role
+from tests.test_rollen import give, unit
+from units.models import Unit
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -242,6 +247,40 @@ def test_eingaben_wie_am_handy_bleiben_stehen(handy):
     expect(field).to_have_value("Pfingstlager Sommer 2027")
 
 
+def _erika_with_roles() -> None:
+    """Gibt der angemeldeten Erika Mitgliedschaft und Rollen, mit langen Namen wie im echten Leben."""
+    erika = get_user_model().objects.get(username="erika.testfrau")
+    dpv = unit(Unit.Kind.FEDERATION, "DPV")
+    bund = unit(Unit.Kind.ASSOCIATION, "Pfadfinderbund Boreas", dpv)
+    stamm = unit(Unit.Kind.TROOP, "Stamm Walhall vom Nordseestrand", bund)
+    sippe = unit(Unit.Kind.GROUP, "Sippe Falkenhorst am Leuchtturm der Hallig Süderoog", stamm)
+    give(erika, Role.Kind.MEMBER, sippe)
+    give(erika, Role.Kind.TROOP_LEAD, stamm)
+    give(erika, Role.Kind.EVENT_TEAM, dpv)
+
+
+# Szenario 14 zu #96: „Mein Profil“ am Handy ohne seitliches Wischen und nur mit der Tastatur
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, device):
+    page: Page = request.getfixturevalue(device)
+    login(page)
+    _erika_with_roles()
+
+    page.goto(f"{BASE}/profil/")
+
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+    expect(page.get_by_role("heading", level=2, name="Organisation und Rollen")).to_be_visible()
+    expect(page.get_by_text("Mitglied · Sippe Falkenhorst am Leuchtturm der Hallig Süderoog")).to_be_visible()
+    expect(page.get_by_text("Pfadfinderbund Boreas › Stamm Walhall vom Nordseestrand")).to_be_visible()
+    width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
+    assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
+    # axe vor dem Tabben: Direkt nach dem Fokus auf „Abmelden“ misst es die Farben des Knopfs mitten
+    # im Übergang und meldet zu wenig Kontrast; kurz danach ist alles in Ordnung (geprüft am 25.10.2026).
+    assert run_axe(page) == []
+    stations = _tab_to(page, "Menü" if device == "handy" else "Abmelden")
+    _all_visible(stations)
+
+
 # Szenario 10
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name, device, settings):
@@ -252,6 +291,8 @@ def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name
     findings = {"Login-Seite": run_axe(page)}
     login(page)
     findings["Startseite"] = run_axe(page)
+    page.goto(f"{BASE}/profil/")
+    findings["Mein Profil ohne Organisation"] = run_axe(page)
     page.goto(f"{BASE}/muster/")
     findings["Musterseite"] = run_axe(page)
     if device == "handy":

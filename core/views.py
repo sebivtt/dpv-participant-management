@@ -5,19 +5,43 @@ from django.shortcuts import render
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
+from roles.models import Role
+
+
+def _name_incomplete(user) -> bool:
+    """Fehlt im DPV-Konto der Vor- oder Nachname? Dann steht ein Hinweis zum Ergänzen da (#5).
+
+    Startseite und „Mein Profil“ fragen beide hier, damit sie dieselbe Regel haben (#96);
+    Namen nur aus Leerzeichen regelt #77 an dieser Stelle.
+    """
+    return not (user.first_name and user.last_name)
 
 
 # Zeigt nur die angemeldete Person selbst (BER-01, Grund 1), nie eine andere.
 @checks_rights("EP-01", "EP-02")
 def start(request: HttpRequest) -> HttpResponse:
-    """Startseite nach dem Login: Begrüßung mit Name und Mail aus Keycloak (#5, ORG-03).
+    """Startseite nach dem Login: Begrüßung mit dem Vornamen aus Keycloak (#5, ORG-03).
 
     Nur mit Login erreichbar und zeigt nur die Daten der angemeldeten Person selbst. Fehlt
     in Keycloak der Vor- oder Nachname, steht dort ein Hinweis, ihn im DPV-Konto zu ergänzen.
+    Name und Mail stehen seit #96 auf „Mein Profil“, nicht mehr hier.
     """
-    name_incomplete = not (request.user.first_name and request.user.last_name)
-    return render(request, "core/start.html", {"name_incomplete": name_incomplete})
+    return render(request, "core/start.html", {"name_incomplete": _name_incomplete(request.user)})
 
+
+# Die Adresse hat keine Kennung: Die Seite zeigt immer die angemeldete Person und liest nichts
+# aus der Anfrage, auch keine angehängten Parameter oder Formularfelder (EP-02).
+@checks_rights("EP-01", "EP-02", "EP-05")
+def profile(request: HttpRequest) -> HttpResponse:
+    """„Mein Profil“ zum Ansehen (#96, PER-01, ORG-05): Angaben, Mitgliedschaft und Rollen.
+
+    Grundregel (Sebastian, 22.10.2026): Die Seite zeigt alles, was das Tool über die Person
+    speichert; neue Angaben kommen hier dazu. Ändern lässt sich nichts: Name und Mail kommen
+    bei jedem Login aus dem DPV-Konto (EP-05). Rollen und Einheiten liest die Seite bei jedem
+    Aufruf frisch über die zentrale Rechteprüfung.
+    """
+    context = {"name_incomplete": _name_incomplete(request.user), "roles": request.rights.own_roles()}
+    return render(request, "core/profil.html", context)
 
 
 def _example(title, period, place, org, state, registered=None, capacity=None, picture=None, draft=False) -> dict:
@@ -71,6 +95,15 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
                             (_("Einstellungen"), "einstellungen")]
     ]
     orgs = ["Stamm Walhall", "Stamm Zugvögel", "Stamm Boreas"]
+    role = Role.Kind
+    profile_example = {
+        "details": [(_("Vorname"), "Kim"), (_("Nachname"), ""), (_("Mail"), "kim.beispiel@example.org")],
+        "roles": [
+            (role.MEMBER.label, "Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall"),
+            (role.TROOP_LEAD.label, "Stamm Walhall", "Pfadfinderbund Boreas"),
+            (role.EVENT_TEAM.label, "DPV", ""),
+        ],
+    }
     context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,
-               "nav_example": True}
+               "nav_example": True, "profile_example": profile_example}
     return render(request, "core/muster.html", context)

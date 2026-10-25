@@ -107,6 +107,22 @@
     </div>
   </section>
 
+  <section class="a-abschnitt" aria-labelledby="h-profil">
+    <h2 id="h-profil">{% translate "Mein Profil" %}</h2>
+    <p class="a-unterzeile">{% translate "Bausteine: Angaben als Beschriftung und Wert, am Handy untereinander; Rollen je Zeile mit dem Weg nach oben." %}</p>
+    <dl class="a-flaeche a-angaben">
+      {% for label, value in profile_example.details %}
+        <div><dt>{{ label }}</dt>{% if value %}<dd>{{ value }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
+      {% endfor %}
+    </dl>
+    <p class="a-hinweis">{% translate "Ein leiser Hinweis unter einer Fläche." %}</p>
+    <ul class="a-flaeche a-rollen mt-3">
+      {% for kind, org, way in profile_example.roles %}
+        <li><span class="a-rolle">{{ kind }} · {{ org }}</span>{% if way %}<span class="a-weg">{{ way }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
   <section class="a-abschnitt" aria-labelledby="h-formular">
     <h2 id="h-formular">{% translate "Formular" %}</h2>
     <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehlermeldung direkt am Feld." %}</p>

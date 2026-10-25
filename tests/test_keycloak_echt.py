@@ -86,7 +86,7 @@ def test_erika_meldet_sich_wirklich_ueber_keycloak_an(client, browser):
     assert response["Location"] == "/"
     page = client.get("/").content.decode()
     assert "Hallo Erika!" in page
-    assert "erika.testfrau@example.org" in page
+    assert "erika.testfrau@example.org" in client.get("/profil/").content.decode()  # seit #96 auf „Mein Profil“
     assert SocialAccount.objects.get().uid != "erika.testfrau"
 
 

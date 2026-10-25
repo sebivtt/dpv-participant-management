@@ -118,6 +118,20 @@ class Unit(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def names_above(self) -> list[str]:
+        """Die Namen der Einheiten darüber, von oben nach unten, ohne den Verband (#96, ORG-05).
+
+        Für eine Gruppe in Walhall im Bund Boreas also ["Pfadfinderbund Boreas", "Walhall"]; für
+        einen Bund und den Verband selbst eine leere Liste. Ohne vorab geladene Einheiten darüber
+        (`select_related`) fragt jede Stufe die Datenbank einzeln.
+        """
+        names = []
+        unit = self.parent
+        while unit is not None and unit.kind != Kind.FEDERATION:
+            names.append(unit.name)
+            unit = unit.parent
+        return names[::-1]
+
     def save(self, *args, by, **kwargs) -> None:
         """Prüft die Regeln, speichert und schreibt ins Protokoll; lehnt mit `ValidationError` ab.
 
