@@ -67,11 +67,11 @@ Alle Entscheidungen kurz als Liste zeigen und fragen, ob das so stimmt. Erst nac
 
 ## 5. Szenarien
 
-Aus den Szenarien entstehen später die Tests (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3). Sie werden hier gesammelt, solange Sebastian im Thema ist. Der Schritt entfällt nur, wenn die Übersicht festgehalten hat, dass das Issue kein fachliches Verhalten hat.
+Aus den Szenarien entstehen später die Tests (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3). Sie werden hier gesammelt, solange Sebastian im Thema ist. Der Schritt entfällt nur, wenn die Klärung festgehalten hat, dass das Issue kein fachliches Verhalten hat.
 
 - Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
 - Sebastian entscheidet je Szenario, ob es passt, geändert werden muss oder ein Fall fehlt.
-- Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt (Abschnitt 7), kommen sie in das Unter-Issue, zu dem sie gehören.
+- Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 7) in das Unter-Issue, zu dem sie gehören.
 
 ## 6. Issue überarbeiten
 

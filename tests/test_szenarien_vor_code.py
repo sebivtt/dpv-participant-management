@@ -59,6 +59,7 @@ def test_grill_me_sammelt_die_szenarien_vor_dem_label_geklaert():
     scenarios = next(h for h in headings if "Szenarien" in h)
     release = next(h for h in headings if "Freigeben" in h)
 
+    assert "**Fachliches Verhalten:**" in text
     assert headings.index(scenarios) < headings.index(release)
     release_text = " ".join(text.split("## " + release, 1)[1].split("\n## ", 1)[0].split())
     assert "„Szenarien (Datum)“" in release_text
