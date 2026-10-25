@@ -22,6 +22,26 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Umsetzung:** `CLAUDE.md` („Ablauf je Aufgabe“, Schritt 3; „Für die Umsetzung gilt außerdem“; „Erfahrungen aus dem Vorgänger-Repo“), `.github/pull_request_template.md`, `.claude/skills/grill-me/SKILL.md` (Abschnitte 2, 5, 8 und „Danach“, bisherige Abschnitte 5 bis 7 jetzt 6 bis 8), `tests/test_szenarien_vor_code.py`.
 
+## 2026-10-25 · Sitzung endet spätestens 12 Stunden nach dem Login (#8)
+
+**Entscheidung** (Sebastian, Klärung von #8 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/8#issuecomment-6334870652), Frage 1). Ergänzt die Sitzungsdauer vom 21.10.2026 (Punkt 2), ersetzt sie nicht:
+
+1. **Obergrenze:** Eine Sitzung endet wie bisher nach 2 Stunden ohne Klick und zusätzlich spätestens 12 Stunden nach dem Login, auch wenn die Person die ganze Zeit klickt. Danach führt der nächste Klick zur Login-Seite mit dem bestehenden Hinweis „Sitzung abgelaufen“.
+2. **Gesperrte und gelöschte Keycloak-Konten:** Beim neuen Login entscheidet Keycloak. Ist das Konto dort gesperrt oder gelöscht, kommt die Person nicht mehr ins Tool. Eine in Keycloak gesperrte Person arbeitet so höchstens bis 12 Stunden nach ihrem letzten Login weiter.
+3. **Nichts wird automatisch entfernt:** Konto, Rollen, Profil und Anmeldungen im Tool bleiben unverändert. Lange nicht genutzte Konten regelt #66.
+
+**Technische Wahl** (KI):
+
+- **Beide Werte an einer Stelle:** `SESSION_IDLE_MINUTES` und neu `SESSION_MAX_HOURS` stehen untereinander in `config/settings.py`.
+- **Login-Zeitpunkt in der Sitzung:** Bei jedem Login merkt sich das Tool den Zeitpunkt in der Sitzung. Es nutzt dafür Djangos eigenes Signal zum Login, nicht das von allauth, damit kein Weg zum Login ihn auslässt. Abgelehnt: das Feld „letzter Login“ am Konto. Es gilt für alle Geräte zugleich; ein Login am Handy verlängerte sonst die Sitzung am Laptop.
+- **Ein kleiner Baustein vor der Login-Pflicht** (`accounts.session.SessionMaxAgeMiddleware`): Ist der Login 12 Stunden oder länger her, meldet er im Tool ab. Ab da läuft alles wie nach 2 Stunden ohne Klick: dieselbe Weiterleitung zur Login-Seite, auch bei htmx-Anfragen, derselbe Hinweis. Eine Sitzung ohne gemerkten Zeitpunkt (etwa von vor dieser Änderung) gilt als zu alt und endet beim nächsten Klick.
+- **Keine Nachfragen bei Keycloak:** Das Tool fragt Keycloak nie während der Sitzung, ob das Konto noch gilt. Abgelehnt: eine Prüfung alle 5 Minuten (mehr Aufwand, Keycloak wird zur Voraussetzung für jeden Klick) und eine Meldung von Keycloak ans Tool beim Sperren (Back-Channel-Logout; ungeprüft, mit der Obergrenze nicht nötig).
+- **Login ohne Passwort:** Ob der neue Login das Passwort verlangt, entscheidet Keycloak nach seinen eigenen Einstellungen. In der Grundeinstellung von Keycloak 26.7.5, die auch die Testumgebung nutzt, endet die Anmeldung bei Keycloak nach 30 Minuten ohne Aktivität dort und spätestens nach 10 Stunden. Nach 12 Stunden im Tool fragt Keycloak dann meist wieder nach dem Passwort. Wie der Keycloak des DPV eingestellt ist, ist nicht bekannt.
+
+**Begründung:** Protokoll der Klärung in #8. Bisher lief eine Sitzung ohne Ende, solange jemand klickte; eine in Keycloak gesperrte Person hätte so beliebig lange weiterarbeiten können. Die Obergrenze kostet kaum Aufwand und braucht keine Nachfragen bei Keycloak. Für den Ablauf danach gibt es keinen eigenen Weg, nur den bestehenden nach 2 Stunden ohne Klick; so verhält sich beides gleich, auch bei htmx.
+
+**Umsetzung:** `config/settings.py`, `accounts/session.py`, `accounts/signals.py`, Tests in `tests/test_sitzung_obergrenze.py` (nachgestellter Keycloak, verstellte Uhr) und `tests/test_sitzung_obergrenze_echt.py` (Keycloak-Testumgebung mit erfundenen, frisch registrierten Konten, die der Test sperrt oder löscht).
+
 ## 2026-10-25 · „Nicht gefunden“ für fremde Einträge, „kein Zugriff“ für ganze Bereiche, zufällige Kennungen in Adressen (#64)
 
 **Entscheidung** (Sebastian; Klärung von #21 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/21#issuecomment-6334628645), Frage 2; Klärung von #64 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/64#issuecomment-6344116521), und Nachklärung in [#106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6351698512)). Auslegung von BER-01, gilt für alle späteren Seiten:
