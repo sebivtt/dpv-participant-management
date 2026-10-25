@@ -73,6 +73,8 @@ MIDDLEWARE = [
     # Jede Adresse verlangt einen Login, außer sie ist ausdrücklich als öffentlich markiert
     # (CONTRIBUTING.md, Abschnitt 4). Was jemand vergisst zu schützen, ist so trotzdem geschützt.
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
+    # Jede Anfrage bekommt ihre eigenen Rechte, frisch berechnet, nie aus einer früheren (#90).
+    "access.rights.RightsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

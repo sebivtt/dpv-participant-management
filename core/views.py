@@ -4,7 +4,11 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils.translation import gettext_lazy as _
 
+from access.addresses import checks_rights, without_personal_data
 
+
+# Zeigt nur die angemeldete Person selbst (BER-01, Grund 1), nie eine andere.
+@checks_rights("EP-01", "EP-02")
 def start(request: HttpRequest) -> HttpResponse:
     """Startseite nach dem Login: Begrüßung mit Name und Mail aus Keycloak (#5, ORG-03).
 
@@ -26,6 +30,7 @@ def _example(title, period, place, org, state, registered=None, capacity=None, p
     }
 
 
+@without_personal_data("Musterseite: nur erfundene Beispiele (#7).")
 def pattern_library(request: HttpRequest) -> HttpResponse:
     """Musterseite (#7): alle Bausteine der Grundgestaltung mit erfundenen Beispielen.
 

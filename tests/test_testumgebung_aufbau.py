@@ -163,6 +163,7 @@ def test_ins_abbild_kommt_nur_was_ausdruecklich_erlaubt_ist():
 
     assert lines[0] == "*"
     assert allowed == {
+        "access",
         "accounts",
         "config",
         "core",
@@ -200,6 +201,19 @@ def test_jede_eigene_app_kommt_ins_abbild():
 
     assert own_apps
     assert own_apps <= allowed, own_apps - allowed
+
+
+def test_jeder_eigene_python_ordner_kommt_ins_abbild():
+    # Wie oben, auch für Ordner, die keine eingetragene App sind (passiert bei #90 mit „access“,
+    # das nur als Middleware eingetragen ist; erst der Container-Test bemerkte es).
+    allowed = {line[1:] for line in _dockerignore() if line.startswith("!")}
+    only_for_tests = {"tests", "rauchtests", "containertests"}
+    packages = {
+        path.parent.name for path in BASE_DIR.glob("*/__init__.py") if path.parent.name not in only_for_tests
+    }
+
+    assert "access" in packages
+    assert packages <= allowed, packages - allowed
 
 
 def test_abbild_enthaelt_nur_die_pakete_fuer_den_betrieb():

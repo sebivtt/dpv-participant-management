@@ -6,6 +6,29 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · Zentrale Rechteprüfung (#90): Grundstock, Markierung jeder Adresse, Begriffe im Code
+
+**Entscheidung** (Sebastian; Klärung von #90 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6344029090), und Nachklärung am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6394863197)):
+
+1. **Grundstock:** Die zentrale Rechteprüfung (`access/rights.py`) enthält mit #90 die Regeln zu Personen mit Konto, Einheiten und Leitungen. Das sind BER-01, Gründe 1 bis 3, Bereich, Kette nach oben, Leitungspfad, einspringende Leitung und „Leitung der eigenen Einheit einer Person“. Die übrigen Gründe und die einzelnen Aktionen bauen die späteren Issues an derselben Stelle ein, keines baut eine eigene Prüfung.
+2. **Hinweis zum Einspringen:** Ob eine Leitung im Tool sieht, wo sie gerade einspringt, wird in #93 geklärt.
+3. **Gesperrte Leitung** (Auslegung von ROL-02; Sebastian beim Umsetzen, [Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6395708845)): Eine im Tool gesperrte Leitung zählt nicht als „Leitung mit Konto“; die Leitung darüber springt ein. Sonst hätte in der Einheit niemand Rechte.
+
+**Technische Wahl** (KI, von Sebastian in der Nachklärung bestätigt):
+
+- **Einmal pro Anfrage:** Jede Anfrage bekommt ein eigenes Objekt `request.rights`. Es lädt Rollen, Einheiten und „welche Einheit hat eine Leitung“ beim ersten Bedarf, je mit einer Abfrage, und wird mit der Anfrage verworfen. Einen Zwischenspeicher über Anfragen hinweg gibt es nicht. Ändert sich eine Rolle während derselben Anfrage, wirkt das erst beim nächsten Klick.
+- **Leere Werte ergeben „verboten“:** Das gilt ohne Login, für ein gesperrtes oder nicht gespeichertes Konto, ohne Mitgliedschaft, für die Rolle Admin ohne Einheit und am Verband, der nie zu Bereich oder Kette gehört. Eine Kennung, die keine Zahl ist, ergibt „nicht gefunden“.
+- **Leitungen nur mit Name und Rolle:** Die Liste der sichtbaren Leitungen gibt nur Kennung, Vor- und Nachname, Rolle und Einheit heraus, nie die Mail (#136, B2). So kann keine Seite versehentlich mehr zeigen.
+- **Markierung jeder Adresse** (`access/addresses.py`): `@checks_rights("PK-01", …)` mit Kennungen der Rechtematrix oder `@without_personal_data("Begründung")`. Fehlt sie, ist sie leer oder stehen beide an einer Adresse, wird der Rundumtest rot. Eine Kennung, die es in der Matrix nicht gibt, ebenso.
+- **Lesen an der Stelle vorbei:** Ein Test durchsucht jeden Python-Ordner des Tools, auch spätere, nach den üblichen Wegen, Personendaten selbst zu lesen. Das betrifft Konten, Rollen, beide Protokolle, Sitzungen und die Daten des Logins. Gesucht wird nach `Modell.objects`, `.roles`, Abfragen über Rollen oder Konten, auch über mehrere Stufen (`parent__roles__user`, `prefetch_related("roles")`), und nach rohem SQL. Erlaubt ist das nur in der zentralen Stelle, in den Regeln des Rollenmodells und im Befehl für Admins auf dem Server. Der Test erkennt nicht jeden denkbaren Weg, etwa kein umbenanntes Modell (`import User as U`); den Rest prüft die unabhängige Prüfung.
+- **Verbote ohne Seite** (EP-09, RO-19, PR-01, PR-03, TD-01): Ein Test ruft jede Adresse lesend, mit htmx und mit einem manipulierten Formular auf. Er tut das als Mitglied, Leitung, Verbandsleitung, Admin, Konto ohne Zuordnung und als Person mit vielen Rollen zugleich. Danach muss die Datenbank unverändert sein, und keine Antwort darf zeigen, was niemand im Tool sieht. Neue Adressen prüft er mit.
+- **Begriffe im Code** (`CONTRIBUTING.md`, Abschnitt 1): Bereich heißt `area`, Kette nach oben `chain`, einspringen `covers`, Leitung einer Einheit (selbst oder einspringend) `leads_unit`, Leitungspfad `on_lead_path`, die Rechte einer Anfrage `rights`.
+- **Testmuster aus dem alten Repo** (sebivtt/scout-participant-management, Stand 9df4513):
+  - Aus `backend/tests/test_zugriffsschutz.py` übernommen: das Muster „nach dem verbotenen Versuch steht in der Datenbank noch dasselbe“. Nicht übernommen ist der Code, weil er an Veranstaltungen und Zusatzfeldern hing, die es hier noch nicht gibt. Ebenfalls nicht übernommen: „403, 404 oder 405“ als erlaubte Antworten, weil hier nach #64 genau „nicht gefunden“ gilt.
+  - Aus `backend/tests/test_abfragen.py` übernommen ist schon seit P1 der Wachstumstest (`tests/query_limit.py`). Nicht übernommen: die Toleranz von zwei Abfragen und die Markierung bekannter N+1-Fehler mit Messwert, weil der Wachstumstest streng bleibt (Eintrag vom 24.10.2026) und es keine bekannten Fehler gibt.
+
+**Umsetzung:** `access/rights.py`, `access/addresses.py`, `config/settings.py` (Middleware), Markierungen in `accounts/views.py` und `core/views.py`, `docs/rechtematrix.md` (EP-09, RO-19, PR-01, PR-03, TD-01 gebaut), Tests in `tests/test_rechtepruefung.py`, `tests/test_rechte_ohne_seite.py` und `tests/test_rundumtest.py`.
+
 ## 2026-10-25 · Hängende Browser-Installation auf GitHub abfangen; Neustart ohne Rückfrage (#133)
 
 **Entscheidung** (Sebastian; Klärung von #133 am 23.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/133#issuecomment-6366796217)):
