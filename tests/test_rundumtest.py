@@ -127,9 +127,19 @@ def test_markierung_ohne_begruendung_wird_abgelehnt(reason):
 
 # Personen- und Anmeldedaten nur über die zentrale Rechteprüfung (#90, CONTRIBUTING.md, Abschnitt 4)
 
-# Modelle mit Personen- oder Anmeldedaten. Kommen neue dazu (verwaltete Personen, Anmeldungen),
-# gehören sie hierher.
-PERSONAL_MODELS = {"User", "Role", "RoleChange", "get_user_model()"}
+# Modelle mit Personen- oder Anmeldedaten, auch die Protokolle (Namen der Urheber) und die Daten
+# des Logins (TD-01). Kommen neue dazu (verwaltete Personen, Anmeldungen), gehören sie hierher.
+PERSONAL_MODELS = {
+    "User",
+    "get_user_model()",
+    "Role",
+    "RoleChange",
+    "UnitChange",
+    "Session",
+    "SocialAccount",
+    "SocialToken",
+    "EmailAddress",
+}
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
     # Die zentrale Rechteprüfung selbst.
@@ -139,9 +149,14 @@ ALLOWED_FILES = {
     # Befehle auf dem Server, außerhalb des Tools (Rechtematrix, „Außerhalb des Tools“).
     "roles/management/commands/admin.py",
 }
-# Abfragen über einen Verweis auf Rollen oder Konten, z. B. filter(roles__user=…), order_by("-user__email").
-LOOKUP_THROUGH_PERSONS = re.compile(r"^-?(roles|user)__\w+")
-APP_FOLDERS = ("access", "accounts", "config", "core", "roles", "units")
+# Abfragen über einen Verweis auf Rollen oder Konten, auch über mehrere Stufen, z. B.
+# filter(roles__user=…), order_by("-user__email"), filter(parent__roles__kind=…),
+# prefetch_related("roles"). Ein bloßes "roles" oder "user" zählt nur als Angabe an eine Abfrage;
+# sonst heißen so auch die App und das Konto der Anfrage.
+LOOKUP_THROUGH_PERSONS = re.compile(r"(^-?|__)(roles|user)__\w|__(roles|user)$")
+QUERY_METHODS = {"select_related", "prefetch_related", "values", "values_list", "only", "order_by", "annotate"}
+# Ordner, die nur Tests enthalten; jeder andere Python-Ordner gehört zum Tool und wird durchsucht.
+ONLY_FOR_TESTS = {"tests", "rauchtests", "containertests"}
 
 
 def bypasses(source: str) -> list[str]:
@@ -149,8 +164,9 @@ def bypasses(source: str) -> list[str]:
 
     Erkannt werden die üblichen Wege: `Modell.objects`, die anderen Manager-Namen, die
     Rollen über ein Konto (`.roles`), rohes SQL (`.raw(`, `cursor(`) und Abfragen über einen
-    Verweis auf Rollen oder Konten (`roles__`, `user__`). Ein Test kann nicht jeden denkbaren
-    Weg erkennen; was er nicht erkennt, bleibt Sache der unabhängigen Prüfung.
+    Verweis auf Rollen oder Konten (`roles__`, `user__`, auch über mehrere Stufen). Ein Test kann
+    nicht jeden denkbaren Weg erkennen, z. B. kein umbenanntes Modell (`import User as U`); was
+    er nicht erkennt, bleibt Sache der unabhängigen Prüfung.
     """
     found = []
     for node in ast.walk(ast.parse(source)):
@@ -161,21 +177,39 @@ def bypasses(source: str) -> list[str]:
             elif node.attr == "roles" or node.attr in ("raw", "cursor"):
                 found.append(f"{owner}.{node.attr}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            if LOOKUP_THROUGH_PERSONS.match(node.value):
+            if LOOKUP_THROUGH_PERSONS.search(node.value):
                 found.append(node.value)
-        elif isinstance(node, ast.keyword) and node.arg and LOOKUP_THROUGH_PERSONS.match(node.arg):
+        elif isinstance(node, ast.keyword) and node.arg and LOOKUP_THROUGH_PERSONS.search(node.arg):
             found.append(node.arg)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in QUERY_METHODS:
+            found += [f"{node.func.attr}({arg.value!r})" for arg in node.args if _names_persons(arg)]
     return found
+
+
+def _names_persons(arg: ast.expr) -> bool:
+    return isinstance(arg, ast.Constant) and arg.value in ("roles", "user", "-user")
+
+
+def app_folders() -> set[str]:
+    """Jeder Python-Ordner des Tools, auch einer, der erst später dazukommt."""
+    root = Path(settings.BASE_DIR)
+    return {path.parent.name for path in root.glob("*/__init__.py")} - ONLY_FOR_TESTS
 
 
 def app_files() -> list[Path]:
     root = Path(settings.BASE_DIR)
     return sorted(
         path
-        for folder in APP_FOLDERS
+        for folder in app_folders()
         for path in (root / folder).rglob("*.py")
         if "migrations" not in path.parts
     )
+
+
+def test_jeder_ordner_des_tools_wird_durchsucht():
+    """Gegenprobe: Ein neuer Ordner fällt nicht still aus der Suche heraus."""
+    assert {"access", "accounts", "config", "core", "roles", "units"} <= app_folders()
+    assert not ONLY_FOR_TESTS & app_folders()
 
 
 def test_niemand_liest_personendaten_an_der_zentralen_stelle_vorbei():
@@ -212,6 +246,16 @@ def test_ausnahmen_gibt_es_noch():
         "Unit.objects.order_by('-roles__kind')",
         "Unit.objects.raw('SELECT 1')",
         "connection.cursor()",
+        "UnitChange.objects.all()",
+        "Session.objects.all()",
+        "SocialAccount.objects.all()",
+        "SocialToken.objects.all()",
+        "EmailAddress.objects.all()",
+        "Unit.objects.filter(parent__roles__user=1)",
+        "Unit.objects.filter(children__roles__kind='member')",
+        "Unit.objects.prefetch_related('roles')",
+        "Unit.objects.values('roles')",
+        "Unit.objects.filter(roles__user__email='x')",
     ],
 )
 def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):
@@ -221,3 +265,8 @@ def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):
 def test_lesen_von_einheiten_ist_kein_lesen_von_personendaten():
     """Gegenprobe: Namen von Einheiten sind keine Personendaten (BER-01)."""
     assert bypasses("Unit.objects.filter(kind='troop').values_list('name')") == []
+
+
+def test_app_namen_und_das_konto_der_anfrage_sind_kein_lesen():
+    """Gegenprobe: So heißen auch die App „roles“ und das Konto der Anfrage."""
+    assert bypasses("INSTALLED_APPS = ['roles']\nname = 'roles'\ngetattr(request, 'user', None)") == []

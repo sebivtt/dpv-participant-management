@@ -2,9 +2,11 @@
 
 Jede Seite trägt genau eine der beiden Markierungen:
 
-- `@checks_rights("PK-01", …)`: Die Seite zeigt oder ändert Personen- oder Anmeldedaten und
-  fragt dafür die zentrale Rechteprüfung (`request.rights`). Die Kennungen nennen die Zeilen der
-  Rechtematrix, die sie umsetzt; der Rundumtest prüft, dass es sie gibt.
+- `@checks_rights("PK-01", …)`: Die Seite zeigt oder ändert Personen- oder Anmeldedaten nach den
+  genannten Zeilen der Rechtematrix. Daten anderer Personen holt sie nur über die zentrale
+  Rechteprüfung (`request.rights`); ohne sie zeigt sie nur die angemeldete Person selbst (BER-01,
+  Grund 1) oder ist der Login, der das eigene Konto anlegt (EP-09, TD-01). Der Rundumtest prüft,
+  dass es die Kennungen gibt.
 - `@without_personal_data("…")`: Die Seite enthält keine Personendaten; die Begründung sagt,
   warum. Die Markierung ist eine Behauptung, die die unabhängige Prüfung nachliest.
 """

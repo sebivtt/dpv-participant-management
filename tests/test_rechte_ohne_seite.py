@@ -2,7 +2,8 @@
 
 Diese Zeilen der Rechtematrix gelten, weil keine Adresse das Verbotene tut. Die Tests rufen
 deshalb jede Adresse des Tools auf, wie der Rundumtest: mit und ohne htmx, lesend und mit einem
-manipulierten Formular, angemeldet mit vielen Rollen zugleich, auch als Admin. Danach muss die
+manipulierten Formular, angemeldet als Mitglied, Leitung, Verbandsleitung, Admin, Konto ohne
+Zuordnung und als Person mit vielen Rollen zugleich (#136, A17: je Fall). Danach muss die
 Datenbank unverändert sein, und keine Antwort darf zeigen, was niemand im Tool sieht. Kommt eine
 Adresse dazu, prüfen die Tests sie mit. Als erlaubten Fall prüfen sie die Gegenprobe: Der
 vorgesehene Weg (erster Login, Befehl auf dem Server, Schreiben ins Protokoll) geht weiter.
@@ -43,13 +44,21 @@ KEYCLOAK_DETAIL = "nur-im-login-baustein-7f3q9"
 
 @pytest.fixture
 def org():
-    """Einheiten und Rollen; Erika hat viele Rollen zugleich, auch Admin."""
+    """Einheiten und Rollen; Erika hat viele Rollen zugleich, auch Admin, die übrigen je eine."""
     o = build_org()
     give(o.erika, R.ASSOCIATION_LEAD, o.boreas)
     give(o.erika, R.TROOP_LEAD, o.walhall)
     give(o.erika, R.FEDERATION_LEAD, o.dpv)
     give(o.erika, R.ADMIN)
     give(o.max, R.MEMBER, o.falken)
+    o.lead = User.objects.create(username="zora.zugvogel", first_name="Zora", last_name="Zugvogel")
+    give(o.lead, R.TROOP_LEAD, o.zugvoegel)
+    o.federation_lead = User.objects.create(username="vera.verband", first_name="Vera", last_name="Verband")
+    give(o.federation_lead, R.FEDERATION_LEAD, o.dpv)
+    o.admin = User.objects.create(username="ada.admin", first_name="Ada", last_name="Admin")
+    give(o.admin, R.ADMIN)
+    o.without = User.objects.create(username="otto.ohne", first_name="Otto", last_name="Ohne")
+    o.everyone = [o.max, o.lead, o.federation_lead, o.admin, o.without, o.erika]
     # Einträge in beiden Protokollen, deren Namen danach nur noch dort stehen.
     o.ronja = User.objects.create(username="ronja.test", first_name="Ronja", last_name="Altname")
     give(o.ronja, R.MEMBER, o.woelfe)
@@ -86,7 +95,7 @@ def manipulated_form(org) -> dict:
 
 
 def every_attempt(org):
-    """Ruft jede Adresse auf viele Arten auf, jedes Mal frisch angemeldet als Erika.
+    """Ruft jede Adresse auf viele Arten auf, jedes Mal frisch angemeldet, als jede Person aus `org.everyone`.
 
     Gibt jede Adresse mit ihrem Namen und alle Antworten zurück.
     """
@@ -94,18 +103,19 @@ def every_attempt(org):
     for pattern, entry in ALL:
         address = _example_address(pattern)
         responses = []
-        for method, data, htmx in (
-            ("get", None, False),
-            ("get", None, True),
-            ("get", form, False),
-            ("post", form, False),
-            ("post", form, True),
-        ):
-            client = Client()
-            client.force_login(org.erika)
-            headers = {"HX-Request": "true"} if htmx else {}
-            call = getattr(client, method)
-            responses.append(call(address, data or {}, headers=headers))
+        for user in org.everyone:
+            for method, data, htmx in (
+                ("get", None, False),
+                ("get", None, True),
+                ("get", form, False),
+                ("post", form, False),
+                ("post", form, True),
+            ):
+                client = Client()
+                client.force_login(user)
+                headers = {"HX-Request": "true"} if htmx else {}
+                call = getattr(client, method)
+                responses.append(call(address, data or {}, headers=headers))
         yield entry.name, address, responses
 
 
@@ -155,7 +165,8 @@ def test_keine_adresse_vergibt_oder_entfernt_die_rolle_admin(org):
     list(every_attempt(org))
 
     assert snapshot(Role, "user_id", "kind", "unit_id") == before
-    assert list(Role.objects.filter(kind=R.ADMIN).values_list("user__username", flat=True)) == ["erika.testfrau"]
+    admins = sorted(Role.objects.filter(kind=R.ADMIN).values_list("user__username", flat=True))
+    assert admins == ["ada.admin", "erika.testfrau"]
 
 
 @pytest.mark.rechtematrix("RO-19")
