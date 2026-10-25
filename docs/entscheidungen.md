@@ -25,7 +25,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 - **Gegenprobe Byte für Byte:** Die Tests vergleichen Statuscode, Inhalt und alle Kopfzeilen. Ausgenommen ist nur der Wert des Formularschutzes (CSRF) auf Seiten mit Formular, weil Django ihn bei jeder Antwort neu verschlüsselt; die Fehlerseiten haben kein Formular. Auch die Zeile im Log ist für fremde und fehlende Einträge gleich.
 - **Begriffe im Code** (`CONTRIBUTING.md`, Abschnitt 1): Kennung (in Adressen) heißt `key`, Eintrag `entry`, ein ganzer Bereich des Tools `section` (nicht zu verwechseln mit dem Bereich einer Leitung, `area`).
 
-**Umsetzung:** `access/keys.py`, `access/rights.py`, `accounts/models.py` und `units/models.py` (Feld `key`), Migrationen `accounts/migrations/0002_key.py` und `units/migrations/0003_key.py`, `config/urls.py`, `units/management/common.py` (Hilfsname umbenannt), `docs/rechtematrix.md` (Lesehilfe, Tabellenliste), Tests in `tests/test_nicht_gefunden.py`, `tests/test_rechtepruefung.py`, `tests/test_rundumtest.py`, `tests/test_rechte_ohne_seite.py` und `tests/urls.py`.
+**Umsetzung:** `access/keys.py`, `access/rights.py`, `accounts/models.py` und `units/models.py` (Feld `key`), Migrationen `accounts/migrations/0002_key.py` und `units/migrations/0003_key.py`, `config/urls.py`, `units/management/common.py` (Hilfsname umbenannt), `docs/rechtematrix.md` (Lesehilfe, Tabellenliste bei den Konten), Tests in `tests/test_nicht_gefunden.py`, `tests/test_rechtepruefung.py`, `tests/test_rundumtest.py`, `tests/test_rechte_ohne_seite.py` und `tests/urls.py`.
 
 ## 2026-10-25 · Zentrale Rechteprüfung (#90): Grundstock, Markierung jeder Adresse, Begriffe im Code
 
