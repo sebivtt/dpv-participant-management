@@ -2,6 +2,7 @@
 # dem Stand auf GitHub; dort können Zugangsdaten, Exporte oder lokale Datenbanken liegen, die
 # .gitignore aus dem Repo fernhält. Deshalb erst alles ausschließen und nur das Nötige freigeben.
 *
+!access
 !accounts
 !config
 !core

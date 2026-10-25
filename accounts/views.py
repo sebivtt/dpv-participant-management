@@ -21,6 +21,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from requests import RequestException
 
+from access.addresses import checks_rights, without_personal_data
 from accounts import texts
 from accounts.adapter import logger
 from accounts.session import LOGOUT_HINT_SESSION_KEY, forget_login, session_expired
@@ -28,6 +29,7 @@ from accounts.session import LOGOUT_HINT_SESSION_KEY, forget_login, session_expi
 PROVIDER_ID = "keycloak"
 
 
+@without_personal_data("Login-Seite: Hinweise zum Login, keine Angaben einer Person (#5).")
 @login_not_required
 def login_page(request: HttpRequest) -> HttpResponse:
     """Login-Seite mit dem Knopf zum Login über Keycloak und dem Registrierungslink.
@@ -69,6 +71,7 @@ def _keycloak_unreachable(request: HttpRequest, error: Exception) -> HttpRespons
     return redirect("account_login")
 
 
+@without_personal_data("Startet nur den Login und leitet zu Keycloak weiter.")
 @login_not_required
 def keycloak_login(request: HttpRequest, provider_id: str) -> HttpResponse:
     """Startet den Login: leitet zu Keycloak weiter. Ist Keycloak nicht erreichbar, zurück zur Login-Seite.
@@ -104,6 +107,8 @@ class KeycloakAdapter(OpenIDConnectOAuth2Adapter):
         return sociallogin
 
 
+# Der Login selbst legt beim ersten Mal das Konto an und schreibt die Daten des Logins (EP-09, TD-01).
+@checks_rights("EP-09", "TD-01")
 @login_not_required
 def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
     """Rückkehr von Keycloak. Prüfung und Abschluss des Logins übernimmt allauth (accounts/adapter.py).
@@ -130,6 +135,7 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
         return _keycloak_unreachable(request, error)
 
 
+@without_personal_data("Beendet nur die Sitzung und leitet zu Keycloak weiter.")
 @login_not_required
 @require_POST
 def logout(request: HttpRequest) -> HttpResponse:
