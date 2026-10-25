@@ -1,12 +1,16 @@
-"""Tests für „Mein Profil“ zum Ansehen (#96, PER-01, ORG-05; EP-01, EP-02, EP-05).
+"""Tests für „Mein Profil“ zum Ansehen (#96, PER-01, ORG-05; EP-01, EP-02, EP-05) und seine Gestaltung nach Zielbild (#161).
 
-Die Nummern verweisen auf Sebastians Szenarien vom 25.10.2026 (Kommentar „Szenarien
-(25.10.2026)“ in #96). Was nur ein echter Browser zeigen kann (Handy, Tastatur, axe), prüft
-der Rauchtest in rauchtests/test_rauchtest.py. Alle Namen sind erfunden; die Einheiten stammen
-aus `build_org()` in tests/test_rollen.py.
+Die Nummern verweisen auf Sebastians Szenarien vom 25.10.2026: „Szenario n“ auf die in #96,
+„Szenario n zu #161“ auf die in #161. Wo #161 Aufbau oder Texte geändert hat (Mitgliedschaft
+als eigene Fläche, Rollen als Kacheln, „E-Mail-Adresse“), prüfen die Tests aus #96 den neuen
+Stand. Was nur ein echter Browser zeigen kann (Handy, Tastatur, axe, Farben), prüft der
+Rauchtest in rauchtests/test_rauchtest.py. Alle Namen sind erfunden; die Einheiten stammen aus
+`build_org()` in tests/test_rollen.py.
 """
 
+import hashlib
 import re
+from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -28,7 +32,7 @@ User = get_user_model()
 
 ADDRESS = "/profil/"
 HINT_ACCOUNT = (
-    "Name und Mail kommen aus deinem DPV-Konto und lassen sich hier nicht ändern. "
+    "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. "
     "Änderungen dort erscheinen hier nach deiner nächsten Anmeldung."
 )
 HINT_NAME = "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an."
@@ -67,26 +71,71 @@ def main(root):
     return _one(_by_tag(root, "main"))
 
 
+def with_class(root, name: str) -> list:
+    return _all(root, lambda e: name in _classes(e))
+
+
+def details_box(root):
+    return _one(_all(root, lambda e: e.name == "dl" and "a-felder" in _classes(e)))
+
+
 def details(root) -> dict[str, str]:
     """Die Angaben als „Beschriftung → Wert“, so wie sie auf der Seite stehen."""
-    box = _one(_all(root, lambda e: e.name == "dl" and "a-angaben" in _classes(e)))
+    box = details_box(root)
     labels = [_visible_text(e) for e in _by_tag(box, "dt")]
     values = [_visible_text(e) for e in _by_tag(box, "dd")]
     assert len(labels) == len(values)
     return dict(zip(labels, values, strict=True))
 
 
-def role_rows(root) -> list[tuple[str, str]]:
-    """Jede Zeile unter „Organisation und Rollen“ als (Rolle · Organisation, Weg darunter)."""
-    lists = _all(root, lambda e: e.name == "ul" and "a-rollen" in _classes(e))
-    if not lists:
-        return []
-    rows = []
-    for item in _by_tag(_one(lists), "li"):
-        line = _one(_all(item, lambda e: "a-rolle" in _classes(e)))
-        way = _all(item, lambda e: "a-weg" in _classes(e))
-        rows.append((_visible_text(line), _visible_text(way[0]) if way else ""))
-    return rows
+def display_name(root) -> str:
+    """Der große Name in der Kopfzeile der ersten Fläche (#161)."""
+    return _visible_text(_one(with_class(root, "a-anzeigename")))
+
+
+def avatar(root):
+    """Der Profilkreis in der Kopfzeile der ersten Fläche (#161)."""
+    return _one(with_class(_one(with_class(root, "a-identitaet")), "a-avatar"))
+
+
+def raw_text(element) -> str:
+    """Der ganze Text eines Elements, auch was für Bildschirmleser ausgeblendet ist."""
+    if isinstance(element, str):
+        return element.strip()
+    return "".join(raw_text(child) for child in element.children)
+
+
+def symbols(element) -> list[str]:
+    """Die Namen der Symbole in einem Element, z. B. ["person", "schloss"]."""
+    return [(_attr(use, "href") or "").removeprefix("#i-") for use in _by_tag(element, "use")]
+
+
+def _entry(box) -> tuple[str, str, str]:
+    label = with_class(box, "a-rollenmarke")
+    way = with_class(box, "a-weg")
+    return (
+        _visible_text(label[0]) if label else "",
+        _visible_text(_one(with_class(box, "a-rollenorg"))),
+        _visible_text(way[0]) if way else "",
+    )
+
+
+def membership_boxes(root) -> list:
+    return with_class(main(root), "a-mitgliedschaft")
+
+
+def role_tiles(root) -> list:
+    lists = _all(main(root), lambda e: e.name == "ul" and "a-rollenkacheln" in _classes(e))
+    return _by_tag(_one(lists), "li") if lists else []
+
+
+def entries(root) -> list[tuple[str, str, str]]:
+    """Was unter „Organisation und Rollen“ steht, als (klein, groß, Weg darunter) (#161).
+
+    Zuerst die Fläche der Mitgliedschaft („Mitgliedschaft“, Organisation, Weg), dann jede
+    Kachel (Rolle, Organisation, Weg); die Admin-Kachel ist ("", "Admin", "").
+    """
+    return [_entry(box) for box in membership_boxes(root)] + [_entry(tile) for tile in role_tiles(root)]
 
 
 def text(root) -> str:
@@ -104,9 +153,29 @@ def test_erika_sieht_vorname_nachname_benutzername_und_mail(org):
         "Vorname": "Erika",
         "Nachname": "Testfrau",
         "Benutzername": "erika.testfrau",
-        "Mail": "erika.testfrau@example.org",
+        "E-Mail-Adresse": "erika.testfrau@example.org",
     }
     assert _visible_text(_one(_by_tag(root, "h1"))) == "Mein Profil"
+
+
+def test_kopfzeile_zeigt_kreis_mit_anfangsbuchstaben_und_namen(org):
+    """Szenario 1 zu #161."""
+    root = page(org.erika)
+
+    assert display_name(root) == "Erika Testfrau"
+    assert raw_text(avatar(root)) == "E"
+    assert _attr(avatar(root), "aria-hidden") == "true"  # der Name steht gleich daneben
+
+
+def test_angaben_als_gesperrte_felder_mit_symbol_und_schloss(org):
+    """Szenario 1 zu #161: jedes Feld mit eigenem Symbol und einem Schloss, für Vorleseprogramme stumm."""
+    box = details_box(page(org.erika))
+
+    fields = [dd for dd in _by_tag(box, "dd")]
+    assert [symbols(dd) for dd in fields] == [
+        ["person", "schloss"], ["person", "schloss"], ["at", "schloss"], ["mail", "schloss"],
+    ]
+    assert all(_attr(svg, "aria-hidden") == "true" for svg in _by_tag(box, "svg"))
 
 
 def test_hinweis_zum_dpv_konto_ohne_link(org):
@@ -117,6 +186,14 @@ def test_hinweis_zum_dpv_konto_ohne_link(org):
     assert _by_tag(hint, "a") == []
     links = [_attr(a, "href") or "" for a in _by_tag(main(root), "a")]
     assert not [href for href in links if "realms" in href or "account" in href], links
+
+
+def test_hinweis_zum_dpv_konto_in_blauer_flaeche_mit_schloss(org):
+    """Szenario 1 zu #161."""
+    box = _one(with_class(main(page(org.erika)), "a-hinweisflaeche"))
+
+    assert re.sub(r"\s+", " ", _visible_text(box)) == HINT_ACCOUNT
+    assert symbols(box) == ["schloss"]
 
 
 def test_auf_der_seite_laesst_sich_nichts_bearbeiten(org):
@@ -140,6 +217,9 @@ def test_fehlender_nachname_hinweis_wie_auf_der_startseite_und_nicht_angegeben(o
     assert details(root)["Vorname"] == "Max"
     marked = _one(_all(root, lambda e: e.name == "dd" and _visible_text(e) == NOT_GIVEN))
     assert "a-leer" in _classes(marked)
+    # Szenario 2 zu #161: Die Kopfzeile zeigt, was da ist.
+    assert display_name(root) == "Max"
+    assert raw_text(avatar(root)) == "M"
 
 
 def test_fehlender_vorname_hinweis_und_nicht_angegeben(org):
@@ -150,6 +230,24 @@ def test_fehlender_vorname_hinweis_und_nicht_angegeben(org):
 
     assert HINT_NAME in text(root)
     assert details(root)["Vorname"] == NOT_GIVEN
+    # Szenario 3 zu #161: Personensymbol im Kreis, daneben der Nachname.
+    assert display_name(root) == "Testmann"
+    assert raw_text(avatar(root)) == ""
+    assert symbols(avatar(root)) == ["person"]
+
+
+def test_ohne_vor_und_nachname_steht_der_benutzername_in_der_kopfzeile(org):
+    """Szenario 4 zu #161."""
+    org.max.first_name = ""
+    org.max.last_name = ""
+    org.max.save()
+
+    root = page(org.max)
+
+    assert display_name(root) == "max.testmann"
+    assert symbols(avatar(root)) == ["person"]
+    assert details(root)["Vorname"] == details(root)["Nachname"] == NOT_GIVEN
+    assert HINT_NAME in text(root)
 
 
 def test_vollstaendiger_name_kein_hinweis_zum_ergaenzen(org):
@@ -169,12 +267,26 @@ def test_mitgliedschaft_zuerst_dann_rollen_mit_weg_nach_oben(org):
     give(org.erika, R.TROOP_LEAD, org.walhall)
     give(org.erika, R.EVENT_TEAM, org.dpv)
 
-    assert role_rows(page(org.erika)) == [
-        ("Mitglied · Sippe Falken", "Pfadfinderbund Boreas › Walhall"),
-        ("Gruppenleitung · Meute Wölfe", "Pfadfinderbund Boreas › Walhall"),
-        ("Stammesleitung · Walhall", "Pfadfinderbund Boreas"),
-        ("DPV-Veranstaltungsteam · DPV", ""),
+    assert entries(page(org.erika)) == [
+        ("Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Walhall"),
+        ("Gruppenleitung", "Meute Wölfe", "Pfadfinderbund Boreas › Walhall"),
+        ("Stammesleitung", "Walhall", "Pfadfinderbund Boreas"),
+        ("DPV-Veranstaltungsteam", "DPV", ""),
     ]
+
+
+def test_mitgliedschaft_in_eigener_flaeche_rollen_als_kacheln(org):
+    """Szenario 5 zu #161: die Mitgliedschaft in einer eigenen Fläche, jede Rolle als Kachel in einer Liste."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.woelfe)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+    give(org.erika, R.EVENT_TEAM, org.dpv)
+
+    root = page(org.erika)
+
+    assert len(membership_boxes(root)) == 1
+    assert len(role_tiles(root)) == 3
+    assert not _all(_one(membership_boxes(root)), lambda e: e.name == "li")
 
 
 # Szenario 4: Reihenfolge von klein nach groß, dieselbe Rolle nach dem Alphabet
@@ -190,17 +302,17 @@ def test_reihenfolge_der_rollen_von_klein_nach_gross(org):
     give(org.erika, R.GROUP_LEAD, org.falken)
     give(org.erika, R.GROUP_LEAD, org.woelfe)
 
-    rows = [line for line, _way in role_rows(page(org.erika))]
+    rows = [(label, name) for label, name, _way in entries(page(org.erika))]
 
     assert rows == [
-        "Mitglied · Pfadfinderbund Boreas",  # entstanden mit der ersten Leitungsrolle (ROL-01)
-        "Gruppenleitung · Meute Wölfe",
-        "Gruppenleitung · Sippe Falken",
-        "Stammesleitung · Walhall",
-        "Bundesleitung · Pfadfinderbund Boreas",
-        "Verbandsleitung · DPV",
-        "DPV-Veranstaltungsteam · DPV",
-        "Admin",
+        ("Mitgliedschaft", "Pfadfinderbund Boreas"),  # entstanden mit der ersten Leitungsrolle (ROL-01)
+        ("Gruppenleitung", "Meute Wölfe"),
+        ("Gruppenleitung", "Sippe Falken"),
+        ("Stammesleitung", "Walhall"),
+        ("Bundesleitung", "Pfadfinderbund Boreas"),
+        ("Verbandsleitung", "DPV"),
+        ("DPV-Veranstaltungsteam", "DPV"),
+        ("", "Admin"),
     ]
 
 
@@ -211,11 +323,11 @@ def test_ringleitung_steht_zwischen_stammes_und_bundesleitung(org):
     give(lena, R.RING_LEAD, org.kueste)
     give(lena, R.TROOP_LEAD, org.leuchtturm)
 
-    assert role_rows(page(lena)) == [
-        ("Mitglied · DPBM Mosaik", ""),
-        ("Stammesleitung · Leuchtturm", "DPBM Mosaik › Küste"),
-        ("Ringleitung · Küste", "DPBM Mosaik"),
-        ("Bundesleitung · DPBM Mosaik", ""),
+    assert entries(page(lena)) == [
+        ("Mitgliedschaft", "DPBM Mosaik", ""),
+        ("Stammesleitung", "Leuchtturm", "DPBM Mosaik › Küste"),
+        ("Ringleitung", "Küste", "DPBM Mosaik"),
+        ("Bundesleitung", "DPBM Mosaik", ""),
     ]
 
 
@@ -225,9 +337,9 @@ def test_umlaut_am_anfang_steht_im_alphabet_beim_grundbuchstaben(org):
     for name in ("Meute Zander", "Meute Ährenfeld", "Meute Biber"):
         give(org.erika, R.GROUP_LEAD, unit(U.GROUP, name, org.walhall))
 
-    rows = [line for line, _way in role_rows(page(org.erika))]
+    rows = [name for _label, name, _way in entries(page(org.erika))]
 
-    assert rows[1:] == ["Gruppenleitung · Meute Ährenfeld", "Gruppenleitung · Meute Biber", "Gruppenleitung · Meute Zander"]
+    assert rows[1:] == ["Meute Ährenfeld", "Meute Biber", "Meute Zander"]
 
 
 # Szenario 5: Bund mit Ringen
@@ -238,9 +350,9 @@ def test_bund_mit_ringen_zeigt_den_ring_im_weg(org):
     give(lena, R.MEMBER, org.leuchtturm)
     give(lena, R.GROUP_LEAD, org.moewen)
 
-    assert role_rows(page(lena)) == [
-        ("Mitglied · Leuchtturm", "DPBM Mosaik › Küste"),
-        ("Gruppenleitung · Meute Möwen", "DPBM Mosaik › Küste › Leuchtturm"),
+    assert entries(page(lena)) == [
+        ("Mitgliedschaft", "Leuchtturm", "DPBM Mosaik › Küste"),
+        ("Gruppenleitung", "Meute Möwen", "DPBM Mosaik › Küste › Leuchtturm"),
     ]
 
 
@@ -252,7 +364,8 @@ def test_admin_steht_ohne_organisation_und_ohne_weg(org):
 
     root = page(org.max)
 
-    assert role_rows(root) == [("Admin", "")]
+    assert entries(root) == [("", "Admin", "")]  # Szenario 8 zu #161: die Kachel zeigt nur „Admin“
+    assert membership_boxes(root) == []
     assert HINT_NO_ORG_BOLD not in text(root)
 
 
@@ -262,7 +375,8 @@ def test_admin_steht_ohne_organisation_und_ohne_weg(org):
 def test_ohne_mitgliedschaft_und_rolle_steht_der_hinweis(org):
     root = page(org.max)
 
-    assert role_rows(root) == []
+    assert entries(root) == []
+    assert role_tiles(root) == [] and membership_boxes(root) == []
     assert HINT_NO_ORG in text(root)
     bold = _one(_all(main(root), lambda e: e.name == "strong" and _visible_text(e) == HINT_NO_ORG_BOLD))
     assert bold is not None
@@ -275,7 +389,9 @@ def test_nur_rolle_im_verband_oder_admin_ohne_mitgliedschaft_kein_hinweis(org, k
     root = page(org.max)
 
     assert HINT_NO_ORG_BOLD not in text(root)
-    assert len(role_rows(root)) == 1
+    # Szenario 9 zu #161: nur die Kachel, keine Fläche für die Mitgliedschaft
+    assert len(role_tiles(root)) == 1
+    assert membership_boxes(root) == []
 
 
 def test_mit_mitgliedschaft_kein_hinweis(org):
@@ -284,7 +400,8 @@ def test_mit_mitgliedschaft_kein_hinweis(org):
     root = page(org.max)
 
     assert HINT_NO_ORG_BOLD not in text(root)
-    assert role_rows(root) == [("Mitglied · Sippe Adler", "Pfadfinderbund Boreas › Zugvögel")]
+    assert entries(root) == [("Mitgliedschaft", "Sippe Adler", "Pfadfinderbund Boreas › Zugvögel")]
+    assert role_tiles(root) == []
 
 
 # Szenario 8: Änderungen erscheinen beim nächsten Aufruf, ohne neue Anmeldung
@@ -295,14 +412,14 @@ def test_geaenderte_rolle_erscheint_beim_naechsten_aufruf_ohne_neue_anmeldung(or
     give(org.erika, R.GROUP_LEAD, org.falken)
     client = Client()
     client.force_login(org.erika)
-    assert len(role_rows(_tree(client.get(ADDRESS)))) == 2
+    assert len(entries(_tree(client.get(ADDRESS)))) == 2
 
     Role.objects.get(user=org.erika, kind=R.GROUP_LEAD).delete(by=BY)
     membership = Role.objects.get(user=org.erika, kind=R.MEMBER)
     membership.unit = org.woelfe
     membership.save(by=BY)
 
-    assert role_rows(_tree(client.get(ADDRESS))) == [("Mitglied · Meute Wölfe", "Pfadfinderbund Boreas › Walhall")]
+    assert entries(_tree(client.get(ADDRESS))) == [("Mitgliedschaft", "Meute Wölfe", "Pfadfinderbund Boreas › Walhall")]
 
 
 def test_umbenannte_organisation_erscheint_beim_naechsten_aufruf(org):
@@ -314,17 +431,27 @@ def test_umbenannte_organisation_erscheint_beim_naechsten_aufruf(org):
     org.walhall.name = "Walhall Nord"
     org.walhall.save(by=BY)
 
-    assert role_rows(_tree(client.get(ADDRESS))) == [("Mitglied · Sippe Falken", "Pfadfinderbund Boreas › Walhall Nord")]
+    assert entries(_tree(client.get(ADDRESS))) == [("Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Walhall Nord")]
 
 
-# Szenario 9: Wortwahl „Organisation“, nie „Einheit“
+# Szenario 9: Wortwahl „Organisation“, nie „Einheit“; Szenarien 1 und 12 zu #161: „Deine Angaben“ nur für Vorleseprogramme
 
 
 def test_ueberschriften_der_seite(org):
     root = page(org.erika)
 
     assert [_visible_text(h) for h in _by_tag(main(root), "h1")] == ["Mein Profil"]
-    assert [_visible_text(h) for h in _by_tag(main(root), "h2")] == ["Deine Angaben", "Organisation und Rollen"]
+    assert [raw_text(h) for h in _by_tag(main(root), "h2")] == ["Deine Angaben", "Organisation und Rollen"]
+    assert [_visible_text(h) for h in _by_tag(main(root), "h2")] == ["", "Organisation und Rollen"]
+
+
+def test_organisation_und_rollen_mit_symbol_in_der_ueberschrift(org):
+    """Szenario 12 zu #161: Die sichtbare Überschrift der zweiten Fläche trägt ein Symbol, wie im Zielbild."""
+    heading = _one(_by_tag(main(page(org.erika)), "h2", id="h-rollen"))
+    head = _one(_all(main(page(org.erika)), lambda e: "a-flaeche-kopf" in _classes(e) and _by_tag(e, "h2", id="h-rollen")))
+
+    assert _visible_text(heading) == "Organisation und Rollen"
+    assert symbols(head) == ["organisation"]
 
 
 def test_nirgends_das_wort_einheit(org):
@@ -335,6 +462,29 @@ def test_nirgends_das_wort_einheit(org):
     for user in (org.erika, org.max):
         response = open_profile(user)
         assert "einheit" not in response.content.decode().lower()
+
+
+# Szenario 13 zu #161: Teile des Zielbilds ohne Daten fehlen ganz, ohne leere Platzhalter
+
+ONLY_IN_TARGET_IMAGE = (
+    "Profil freigeben", "Freigabe", "Fahrtenname", "Geburtsdatum", "Wohnadresse", "Gesundheit", "Allergien",
+    "Unverträglichkeiten", "Medikamente", "Organisation öffnen", "Austritt", "Austreten", "Profilfoto",
+)
+
+
+@pytest.mark.parametrize("roles", [False, True])
+def test_keine_teile_des_zielbilds_ohne_daten(org, roles):
+    if roles:
+        give(org.erika, R.MEMBER, org.falken)
+        give(org.erika, R.TROOP_LEAD, org.walhall)
+        give(org.erika, R.ADMIN)
+
+    root = page(org.erika)
+    content = raw_text(main(root)) + " ".join(_attr(e, "aria-label") or "" for e in _all(main(root), lambda e: True))
+
+    assert [word for word in ONLY_IN_TARGET_IMAGE if word.lower() in content.lower()] == []
+    shown = [*_by_tag(details_box(root), "dd"), *_all(main(root), lambda e: "a-rollenorg" in _classes(e))]
+    assert all(_visible_text(e) for e in shown), "leerer Platzhalter"
 
 
 # Szenario 10: Kein fremdes Profil, auf keinem Weg (EP-02)
@@ -432,9 +582,11 @@ def test_geaenderter_name_und_mail_erscheinen_nach_der_naechsten_anmeldung(clien
 
     login(client)
 
-    shown = details(_tree(client.get(ADDRESS)))
+    root = _tree(client.get(ADDRESS))
+    shown = details(root)
     assert shown["Nachname"] == "Probe"
-    assert shown["Mail"] == "erika.neu@example.org"
+    assert shown["E-Mail-Adresse"] == "erika.neu@example.org"
+    assert display_name(root) == "Erika Probe"  # Szenario 15 zu #161: auch in der Kopfzeile
 
 
 # Szenario 11: Ohne Login zur Anmeldung
@@ -493,11 +645,42 @@ def test_abfragen_wachsen_nicht_mit_der_zahl_der_rollen(org):
 
 
 def test_bausteine_angaben_und_rollen_stehen_auf_der_musterseite(org):
-    """docs/gestaltung.md: Neue Bausteine kommen zuerst auf die Musterseite."""
+    """docs/gestaltung.md: Neue Bausteine kommen zuerst auf die Musterseite (Szenario 18 zu #161)."""
     client = Client()
     client.force_login(org.erika)
     root = _tree(client.get("/muster/"))
 
-    assert _all(root, lambda e: e.name == "dl" and "a-angaben" in _classes(e))
-    assert _all(root, lambda e: e.name == "ul" and "a-rollen" in _classes(e))
+    for name in ("a-identitaet", "a-anzeigename", "a-hinweisflaeche", "a-flaeche-kopf", "a-mitgliedschaft"):
+        assert with_class(root, name), name
+    assert _all(root, lambda e: e.name == "dl" and "a-felder" in _classes(e))
+    assert _all(root, lambda e: e.name == "ul" and "a-rollenkacheln" in _classes(e))
     assert _all(root, lambda e: "a-leer" in _classes(e) and _visible_text(e) == NOT_GIVEN)
+    # Auch die Admin-Kachel ohne Organisation und eine Kachel ohne Weg stehen dort als Beispiel.
+    tiles = [_entry(tile) for tile in _by_tag(_one(_all(root, lambda e: "a-rollenkacheln" in _classes(e))), "li")]
+    assert ("", "Admin", "") in tiles
+    assert any(label and not way for label, _name, way in tiles)
+
+
+# Szenario 18 zu #161: Sebastians Zielbild liegt unverändert im Repo
+
+TARGET_IMAGES = Path(__file__).resolve().parent.parent / "docs" / "zielbilder"
+
+
+def test_zielbild_liegt_unveraendert_mit_liste_im_repo():
+    image = TARGET_IMAGES / "mein-profil.html"
+    readme = (TARGET_IMAGES / "README.md").read_text()
+
+    checksum = hashlib.sha256(image.read_bytes()).hexdigest()
+    assert checksum in readme, "Das Zielbild ist nicht mehr die Fassung, die die Liste nennt."
+    section = readme.split("## Mein Profil", 1)[1]
+    for must in ("25.10.2026", "Orientierung, keine Anforderung", "Abweichungen", "#161"):
+        assert must in section, must
+
+
+def test_zielbild_laedt_nichts_von_fremden_servern_und_nennt_nur_erfundene_adressen():
+    content = (TARGET_IMAGES / "mein-profil.html").read_text()
+
+    assert not re.findall(r"""(?:src|href)\s*=\s*["']?(?:https?:)?//""", content, flags=re.I)
+    assert not re.findall(r"""(?:url\(|@import)\s*["']?(?:https?:)?//""", content, flags=re.I)
+    mails = set(re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", content))
+    assert mails and all(mail.endswith("@example.org") for mail in mails), mails
