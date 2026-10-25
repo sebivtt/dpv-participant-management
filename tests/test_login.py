@@ -66,8 +66,10 @@ def test_erika_sieht_nach_dem_login_begruessung_name_mail_und_abmelden(client, k
     assert response["Location"] == "/"
     page = _page(client.get("/"))
     assert "Hallo Erika!" in page
-    assert "Erika Testfrau" in page
-    assert "erika.testfrau@example.org" in page
+    # Name und Mail stehen seit #96 auf „Mein Profil“ statt im Kasten „Dein Konto“.
+    profile = _page(client.get("/profil/"))
+    assert "Erika" in profile and "Testfrau" in profile
+    assert "erika.testfrau@example.org" in profile
     assert GREETING_SENTENCE in page
     assert 'action="/abmelden/"' in page
     assert "Abmelden" in page
@@ -90,9 +92,9 @@ def test_geaenderter_name_steht_nach_dem_naechsten_login_da(client, keycloak):
 
     login(client)
 
-    page = _page(client.get("/"))
-    assert "Erika Probe" in page
-    assert "Erika Testfrau" not in page
+    page = _page(client.get("/profil/"))  # seit #96 statt der Startseite
+    assert "Probe" in page
+    assert "Testfrau" not in page
     assert User.objects.get().last_name == "Probe"
 
 
@@ -116,7 +118,7 @@ def test_ohne_namen_klappt_der_login_mit_hallo_und_hinweis(client, keycloak):
     page = _page(client.get("/"))
     assert "Hallo!" in page
     assert HINT_NAME in page
-    assert "erika.testfrau@example.org" in page
+    assert "erika.testfrau@example.org" in _page(client.get("/profil/"))  # seit #96 statt der Startseite
 
 
 # Szenario 21
@@ -309,9 +311,11 @@ def test_nach_dem_abmelden_sieht_die_naechste_person_nur_ihre_eigenen_daten(clie
 
     page = _page(client.get("/"))
     assert "Hallo Max!" in page
-    assert "max.testmann@example.org" in page
     assert "Erika" not in page
-    assert "erika.testfrau@example.org" not in page
+    profile = _page(client.get("/profil/"))  # Name und Mail seit #96 auf „Mein Profil“
+    assert "max.testmann@example.org" in profile
+    assert "Erika" not in profile
+    assert "erika.testfrau@example.org" not in profile
 
 
 def test_login_seite_zeigt_nach_dem_abmelden_nichts_von_der_vorigen_person(client, keycloak):

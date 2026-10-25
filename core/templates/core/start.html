@@ -8,8 +8,4 @@
   {% if name_incomplete %}
     <p class="alert alert-warning" role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
   {% endif %}
-  <section class="a-flaeche" aria-labelledby="h-konto">
-    <h2 id="h-konto">{% translate "Dein Konto" %}</h2>
-    <p class="mb-0">{% if user.get_full_name %}{{ user.get_full_name }}<br>{% endif %}{{ user.email }}</p>
-  </section>
 {% endblock %}

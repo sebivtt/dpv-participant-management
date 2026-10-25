@@ -118,6 +118,21 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-abschnitt { margin: 0 0 44px; }
 .a-abschnitt > h2 { margin: 0 0 4px; font-size: 1.25rem; }
 .a-unterzeile { margin: 0 0 16px; color: var(--text-leise); font-size: .95rem; }
+.a-hinweis { margin: 12px 0 0; color: var(--text-leise); font-size: .95rem; max-width: 62ch; }
+
+/* Mein Profil (#96): Angaben als Beschriftung und Wert, am Handy untereinander */
+.a-angaben { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.a-angaben > div { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr); gap: 2px 16px; }
+.a-angaben dt { font-weight: 700; color: var(--text-leise); }
+.a-angaben dd { margin: 0; overflow-wrap: anywhere; }
+.a-leer { color: var(--text-leise); font-style: italic; }
+/* Rollen: je Zeile „Rolle · Organisation“, klein darunter der Weg nach oben */
+.a-rollen { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 0; }
+.a-rollen li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--linie); }
+.a-rollen li:first-child { border-top: 0; padding-top: 0; }
+.a-rollen li:last-child { padding-bottom: 0; }
+.a-rolle { font-weight: 700; overflow-wrap: anywhere; }
+.a-weg { color: var(--text-leise); font-size: .9rem; overflow-wrap: anywhere; }
 .a-trenner { margin: 8px 0 24px; padding-top: 24px; border-top: 1px solid var(--linie); color: var(--text-leise); font-weight: 700; }
 
 /* Statusmeldungen unter der Begrüßung */
@@ -254,6 +269,7 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
   .a-schritte li { flex: none; padding: 10px; }
   .a-schritte li[aria-current="step"] { flex: 1 1 auto; }
   .a-schritte li:not([aria-current="step"]) > span:not(.nr) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .a-angaben > div { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Teilnehmende am Handy als kompakte Karten */

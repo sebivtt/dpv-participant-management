@@ -6,6 +6,27 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · „Mein Profil“ zum Ansehen, Grundregel des Profils und „Organisation“ statt „Einheit“ (#96)
+
+**Entscheidung** (Sebastian; W1 in der [Bestandsaufnahme zu P2](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6342842432) am 22.10.2026, ergänzt bei der Klärung von #111 und #65; [Klärung von #96](https://github.com/sebivtt/dpv-participant-management/issues/96#issuecomment-6348627990) am 22.10.2026 mit [Nachtrag zu Frage 5](https://github.com/sebivtt/dpv-participant-management/issues/96#issuecomment-6348932400); [Nachklärung P2](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6351698512), Frage 7; [Szenarien vom 25.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/96#issuecomment-6398658886)):
+
+1. **W1, eigene Daten:** In P2 gibt es eine schlichte Seite „Mein Profil“ zum Ansehen: Vorname, Nachname, Benutzername und Mail, dazu die Mitgliedschaft und alle Rollen. Name und Mail kommen aus dem DPV-Konto; der Hinweis dazu steht ohne Link, bis der DPV-Admin sagt, ob die Kontoseite im Keycloak abgeschaltet ist und wer Name und Mail ändert. „Meine Anmeldungen“ und „Profil löschen“ (DSG-09) kommen später.
+2. **Ergänzungen zu W1:** Zwei Bedienelemente kommen auf diese Seite, gebaut in eigenen Issues: den Fahrtennamen trägt die Person selbst ein (#111), und neben der Mitgliedschaft steht „Austreten“ (#65; wer austreten darf, regelt die Rechtematrix, EP-06). Sonst lässt sich dort in P2 nichts bearbeiten. Der Kasten „Dein Konto“ auf der Startseite entfällt; der Zugang zur Seite ist der Profilkreis (#13).
+3. **Grundregel:** „Mein Profil“ zeigt alles, was das Tool über die Person speichert. Kommt später eine Angabe dazu (z. B. Adresse, Geburtsdatum, Gesundheitsangaben nach FRM-04), erscheint sie dort ebenfalls.
+4. **„Organisation“ statt „Einheit“:** Texte für Nutzende sagen „Organisation“, nie „Einheit“ (z. B. „keiner Organisation zugeordnet“), weil „Einheit“ zu militärisch klingt. In Anforderungen, Issues und Code bleibt „Einheit“ der Fachbegriff (im Code `unit`). Ältere Texte für Nutzende werden angepasst, wenn ihre Seite ohnehin geändert wird.
+
+**Begründung:** Personen sollen sehen, was das Tool über sie weiß (PER-01, ORG-05), ohne dass P2 eine eigene Bearbeitung von Stammdaten braucht. Ein fester Ort für die eigenen Daten hält die Startseite frei für das Dashboard (#28). Die Kontoseite des DPV-Keycloak zeigte am 22.10.2026 nur eine Fehlermeldung; ein Link dorthin führte ins Leere.
+
+**Technische Wahl** (KI, mit der Klärung bestätigt):
+
+- **Adresse ohne Kennung** (`/profil/`): Die Seite zeigt immer die angemeldete Person und liest nichts aus der Anfrage, auch keine angehängten Parameter, htmx-Kopfzeilen oder Formularfelder. Ein fremdes Profil ist über diese Seite auf keinem Weg erreichbar (EP-02).
+- **Frisch gelesen:** Rollen und Organisationen liest die Seite bei jedem Aufruf über die zentrale Rechteprüfung (`Rights.own_roles()`); eine Änderung erscheint ohne neue Anmeldung. Name und Mail ändern sich erst mit dem nächsten Login.
+- **Reihenfolge der Rollen:** Mitgliedschaft, dann Gruppen-, Stammes-, Ring- und Bundesleitung, Verbandsleitung, DPV-Veranstaltungsteam, Admin; dieselbe Rolle mehrmals nach dem Namen der Organisation. Darunter klein der Weg nach oben ohne den Verband (`Unit.names_above()`).
+- **Fehlender Name:** derselbe Hinweis wie auf der Startseite, aus derselben Prüfung; an der leeren Stelle steht „nicht angegeben“. Namen nur aus Leerzeichen regelt #77 an dieser einen Stelle für beide Seiten.
+- **Code-Name:** „Mein Profil“ heißt im Code `profile` (Adresse `profile`, Vorlage `core/profil.html`).
+
+**Umsetzung:** `core/views.py`, `core/templates/core/profil.html`, `core/templates/core/start.html`, `config/urls.py`, `access/rights.py` (`own_roles()`), `units/models.py` (`names_above()`), `core/static/core/app.css` und `core/templates/core/muster.html` (Bausteine „Angaben“ und „Rollen“), `docs/rechtematrix.md` (EP-01, EP-02, EP-05 gebaut), Tests in `tests/test_mein_profil.py` und `rauchtests/test_rauchtest.py`.
+
 ## 2026-10-25 · Umsetzung nur mit vorher bestätigten Szenarien (#158)
 
 **Entscheidung** (Sebastian; Klärung von #158 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/158#issuecomment-6398277636)):

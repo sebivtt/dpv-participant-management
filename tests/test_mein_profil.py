@@ -479,3 +479,14 @@ def test_abfragen_wachsen_nicht_mit_der_zahl_der_rollen(org):
         give(org.erika, R.GROUP_LEAD, group)
 
     assert_queries_do_not_grow(create_role, lambda: open_profile(org.erika, client=client))
+
+
+def test_bausteine_angaben_und_rollen_stehen_auf_der_musterseite(org):
+    """docs/gestaltung.md: Neue Bausteine kommen zuerst auf die Musterseite."""
+    client = Client()
+    client.force_login(org.erika)
+    root = _tree(client.get("/muster/"))
+
+    assert _all(root, lambda e: e.name == "dl" and "a-angaben" in _classes(e))
+    assert _all(root, lambda e: e.name == "ul" and "a-rollen" in _classes(e))
+    assert _all(root, lambda e: "a-leer" in _classes(e) and _visible_text(e) == NOT_GIVEN)

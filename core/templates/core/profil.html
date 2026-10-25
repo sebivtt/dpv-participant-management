@@ -1,7 +1,39 @@
 {% extends "base_app.html" %}
 {% load i18n %}
+{% block title %}{% translate "Mein Profil" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
+  {# Nach außen heißt eine Einheit „Organisation“, nie „Einheit“ (#96). #}
   <div class="a-kopf">
     <h1>{% translate "Mein Profil" %}</h1>
   </div>
+  {% if name_incomplete %}
+    <p class="alert alert-warning" role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
+  {% endif %}
+  <section class="a-abschnitt" aria-labelledby="h-angaben">
+    <h2 id="h-angaben">{% translate "Deine Angaben" %}</h2>
+    {# Hier kommt mit #111 der Fahrtenname als erste Angabe dazu, als einziges Feld zum Bearbeiten. #}
+    <dl class="a-flaeche a-angaben">
+      <div><dt>{% translate "Vorname" %}</dt>{% if user.first_name %}<dd>{{ user.first_name }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
+      <div><dt>{% translate "Nachname" %}</dt>{% if user.last_name %}<dd>{{ user.last_name }}</dd>{% else %}<dd class="a-leer">{% translate "nicht angegeben" %}</dd>{% endif %}</div>
+      <div><dt>{% translate "Benutzername" %}</dt><dd>{{ user.username }}</dd></div>
+      <div><dt>{% translate "Mail" %}</dt><dd>{{ user.email }}</dd></div>
+    </dl>
+    <p class="a-hinweis">{% translate "Name und Mail kommen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." %}</p>
+  </section>
+  <section class="a-abschnitt" aria-labelledby="h-rollen">
+    <h2 id="h-rollen">{% translate "Organisation und Rollen" %}</h2>
+    {% if roles %}
+      {# Neben der Mitgliedschaft kommt mit #65 der Knopf zum Austreten dazu. #}
+      <ul class="a-flaeche a-rollen">
+        {% for role in roles %}
+          <li>
+            <span class="a-rolle">{{ role.get_kind_display }}{% if role.unit %} · {{ role.unit.name }}{% endif %}</span>
+            {% with above=role.unit.names_above %}{% if above %}<span class="a-weg">{{ above|join:" › " }}</span>{% endif %}{% endwith %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="alert alert-info"><strong>{% translate "Du bist noch keiner Organisation zugeordnet." %}</strong> {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." %}</p>
+    {% endif %}
+  </section>
 {% endblock %}
