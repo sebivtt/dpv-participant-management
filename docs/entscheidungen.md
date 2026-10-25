@@ -6,6 +6,27 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · „Nicht gefunden“ für fremde Einträge, „kein Zugriff“ für ganze Bereiche, zufällige Kennungen in Adressen (#64)
+
+**Entscheidung** (Sebastian; Klärung von #21 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/21#issuecomment-6334628645), Frage 2; Klärung von #64 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/64#issuecomment-6344116521), und Nachklärung in [#106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6351698512)). Auslegung von BER-01, gilt für alle späteren Seiten:
+
+1. **Adresse mit Kennung eines Eintrags** (Person, Einheit, Anmeldung, Veranstaltung, auch Unterseiten, htmx-Anfragen und Formulare): Fehlt das Recht, erscheint dieselbe Seite „nicht gefunden“ (404) wie bei einem Eintrag, den es nicht gibt, mit derselben Antwort. Das gilt auch, wenn jemand den Eintrag sieht, aber die gewünschte Aktion nicht darf.
+2. **Adresse ohne Kennung, also ein ganzer Bereich** (z. B. „Organisation“, #93, nur für Leitungen): Fehlt das Recht, erscheint „Dafür fehlt dir die Berechtigung.“ (403). Welche Bereiche es gibt, ist kein Geheimnis, der Code ist öffentlich.
+3. **Recht verloren:** Wer ein Recht mitten in der Arbeit verliert, bekommt beim nächsten Klick dieselbe Antwort; eine eigene Meldung gibt es nicht (#90).
+4. **Zufällige Kennungen:** Einträge stehen in Adressen mit einer zufälligen Kennung, nie mit einer laufenden Nummer, damit sich weder die Anzahl ablesen noch Adressen durchprobieren lassen. Für Nutzende werden Adressen nur länger.
+5. **Ausnahme BER-06, ab P3:** Wer über den Anmeldelink zu einer Veranstaltung kommt, aber nicht zum Teilnahmekreis gehört, sieht den Hinweis aus BER-06. In P2 gibt es keine Anmeldelinks; die Ausnahme wird in #122 weitergeführt.
+
+**Technische Wahl** (KI):
+
+- **Kennung:** 20 Zeichen aus Kleinbuchstaben und den Ziffern 2 bis 7 (Alphabet von Base32), gezogen mit `secrets`, also 100 Bit Zufall. Bei einer Million Einträgen und einer Milliarde Versuchen pro Sekunde dauerte es im Mittel rund 40 Millionen Jahre bis zu einem Treffer. Abgelehnt: UUID (36 Zeichen mit Bindestrichen, ohne Vorteil) und `secrets.token_urlsafe` (Groß- und Kleinschreibung, Sonderzeichen).
+- **Zusätzliches Feld statt neuer Primärschlüssel:** Konten und Einheiten bekommen ein eigenes, eindeutiges Feld, das beim Anlegen entsteht und das keine Seite und kein Befehl ändert (eine Sperre im Programm gibt es dafür nicht); die interne Nummer bleibt für Verweise zwischen Tabellen und in den Protokollen. Ein Umbau aller Verweise (Rollen, Login-Baustein, Protokolle) wäre viel riskanter und brächte nichts, weil die Nummer nie in einer Seite steht. Die Migration gibt vorhandenen Einträgen (Testumgebung) je eine eigene Kennung. Rollen bekommen eine Kennung erst, wenn eine Seite sie in eine Adresse schreibt.
+- **Ein gemeinsamer Weg an der zentralen Stelle** (`access/rights.py`): `request.rights.entry(einträge, kennung, allowed=…)` und `request.rights.person(kennung)` ergeben ohne Recht immer 404; `request.rights.require_section(recht)` ergibt ohne Recht 403. Meldet eine Seite an einer Adresse mit Kennung trotzdem „kein Zugriff“, macht die Middleware „nicht gefunden“ daraus. Kennungen in falscher Form und alte Nummern ergeben „nicht gefunden“.
+- **Adressen** schreiben Kennungen als `<key:…>`; Adressen mit Kennung in falscher Form gibt es dann gar nicht. Der Rundumtest wird rot, wenn eine Adresse mit Login etwas anderes nimmt, z. B. `<int:pk>`.
+- **Gegenprobe Byte für Byte:** Die Tests vergleichen Statuscode, Inhalt und alle Kopfzeilen. Ausgenommen ist nur der Wert des Formularschutzes (CSRF) auf Seiten mit Formular, weil Django ihn bei jeder Antwort neu verschlüsselt; die Fehlerseiten haben kein Formular. Auch die Zeile im Log ist für fremde und fehlende Einträge gleich.
+- **Begriffe im Code** (`CONTRIBUTING.md`, Abschnitt 1): Kennung (in Adressen) heißt `key`, Eintrag `entry`, ein ganzer Bereich des Tools `section` (nicht zu verwechseln mit dem Bereich einer Leitung, `area`).
+
+**Umsetzung:** `access/keys.py`, `access/rights.py`, `accounts/models.py` und `units/models.py` (Feld `key`), Migrationen `accounts/migrations/0002_key.py` und `units/migrations/0003_key.py`, `config/urls.py`, `units/management/common.py` (Hilfsname umbenannt), `docs/rechtematrix.md` (Lesehilfe, Tabellenliste bei den Konten), Tests in `tests/test_nicht_gefunden.py`, `tests/test_rechtepruefung.py`, `tests/test_rundumtest.py`, `tests/test_rechte_ohne_seite.py` und `tests/urls.py`.
+
 ## 2026-10-25 · Zentrale Rechteprüfung (#90): Grundstock, Markierung jeder Adresse, Begriffe im Code
 
 **Entscheidung** (Sebastian; Klärung von #90 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6344029090), und Nachklärung am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6394863197)):

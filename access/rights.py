@@ -15,15 +15,26 @@ verworfen. Einen Zwischenspeicher über Anfragen hinweg gibt es nicht: Wer eine 
 oder nicht mehr einspringt, verliert die Rechte beim nächsten Klick (Entscheidung vom 24.10.2026,
 F4.6). Fehlt eine Angabe (kein Login, keine Mitgliedschaft, keine Einheit), ist das Ergebnis
 immer „verboten“ (F4.3).
+
+Wie eine Seite „verboten“ zeigt, regelt diese Stelle für alle Seiten (#64, Auslegung von BER-01):
+Einträge holt eine Seite mit ihrer zufälligen Kennung über `entry()` oder `person()`; ohne Recht
+ist der Eintrag „nicht gefunden“ (404), genau wie einer, den es nicht gibt. Einen ganzen Bereich
+ohne Kennung in der Adresse öffnet sie über `require_section()`; ohne Recht heißt es „kein
+Zugriff“ (403). Meldet eine Seite an einer Adresse mit Kennung trotzdem „kein Zugriff“, macht
+`RightsMiddleware` „nicht gefunden“ daraus.
 """
 
 from functools import cached_property
 
+from collections.abc import Callable
+
 from django.contrib.auth import get_user_model
-from django.db.models import F, Q, QuerySet
+from django.core.exceptions import PermissionDenied
+from django.db.models import F, Model, Q, QuerySet
 from django.http import Http404
 from django.utils.functional import SimpleLazyObject
 
+from access.keys import has_key, is_key
 from roles.models import LEADS_IN_UNITS, Role, on_path
 from units.models import Kind as UnitKind
 from units.models import Unit
@@ -169,18 +180,41 @@ class Rights:
         members = Role.objects.filter(kind=R.MEMBER, unit_id__in=self.area).values("user_id")
         return users.filter(Q(pk=self.user.pk) | Q(pk__in=members))
 
-    def person(self, pk) -> object:
-        """Ein Konto aus `persons()`; ohne Recht „nicht gefunden“ wie bei einer Kennung, die es nicht gibt (#64)."""
-        if isinstance(pk, bool) or not isinstance(pk, int | str):
+    def person(self, key) -> object:
+        """Ein Konto aus `persons()` über seine Kennung; ohne Recht „nicht gefunden“ wie bei einer Kennung ohne Eintrag (#64)."""
+        return self.entry(self.persons(), key)
+
+    # Wie Seiten „verboten“ zeigen (#64)
+
+    def entry(self, entries: QuerySet, key, allowed: Callable[[Model], bool] | None = None) -> Model:
+        """Der Eintrag mit dieser Kennung aus `entries`, den Einträgen, die die Person sehen darf.
+
+        Ohne Recht ist das Ergebnis immer „nicht gefunden“ (404), genau wie bei einer Kennung, zu
+        der es keinen Eintrag gibt, und bei einer Kennung in falscher Form: Gibt es den Eintrag,
+        aber nicht in `entries`, oder sagt `allowed` für die gewünschte Aktion „nein“, erfährt
+        niemand, dass es ihn gibt. Die Kennung kommt aus der Adresse, nie aus dem Inhalt der
+        Anfrage (`CONTRIBUTING.md`, Abschnitt 4). Laufende Nummern nimmt die Stelle nicht an.
+        """
+        if self.user is None or not is_key(key):
             raise Http404
-        try:
-            number = int(pk)
-        except ValueError as error:
-            raise Http404 from error
-        found = self.persons().filter(pk=number).first() if number > 0 else None
-        if found is None:
+        found = entries.filter(key=key).first()
+        if found is None or (allowed is not None and not allowed(found)):
             raise Http404
         return found
+
+    def require_section(self, allowed: bool) -> None:
+        """Öffnet einen ganzen Bereich des Tools ohne Kennung in der Adresse, z. B. „Organisation“ (#93).
+
+        Ohne Recht „kein Zugriff“ (403): Welche Bereiche es gibt, ist kein Geheimnis, der Code ist
+        öffentlich. Adressen mit Kennung prüfen über `entry()`; meldet eine von ihnen trotzdem
+        „kein Zugriff“, zeigt `RightsMiddleware` „nicht gefunden“.
+
+        Seiten melden „kein Zugriff“ nur so oder mit `PermissionDenied`, nie mit einer selbst
+        gebauten Antwort mit Status 403: Die erkennt `RightsMiddleware` nicht, und an einer
+        Adresse mit Kennung verriete sie, dass es den Eintrag gibt.
+        """
+        if self.user is None or not allowed:
+            raise PermissionDenied
 
     # Leitungen (BER-01, Grund 3)
 
@@ -229,7 +263,11 @@ def on_lead_path(person, unit: Unit | None) -> bool:
 
 
 class RightsMiddleware:
-    """Gibt jeder Anfrage ihre eigenen Rechte als `request.rights`, erst beim ersten Zugriff geladen."""
+    """Gibt jeder Anfrage ihre eigenen Rechte als `request.rights`, erst beim ersten Zugriff geladen.
+
+    Außerdem wird „kein Zugriff“ an einer Adresse mit Kennung zu „nicht gefunden“ (#64), damit
+    keine Seite durch die Art der Fehlerseite verrät, dass es einen Eintrag gibt.
+    """
 
     def __init__(self, get_response) -> None:
         self.get_response = get_response
@@ -237,3 +275,10 @@ class RightsMiddleware:
     def __call__(self, request):
         request.rights = SimpleLazyObject(lambda: Rights(getattr(request, "user", None)))
         return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        """Macht aus „kein Zugriff“ einer Seite mit Kennung in der Adresse „nicht gefunden“ (#64)."""
+        match = getattr(request, "resolver_match", None)
+        if isinstance(exception, PermissionDenied) and match is not None and has_key(match.route):
+            raise Http404 from exception
+        return None

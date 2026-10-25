@@ -28,7 +28,7 @@ Erster Entwurf für P2 vom 23.10.2026 (#87), korrigiert am 24.10.2026 nach dem e
 - **Kennung:** zwei Großbuchstaben, ein Bindestrich und eine zweistellige Nummer, z. B. `VP-02`. Tests nennen die Kennung ihrer Zeile.
 - **Wer:** Rolle oder Art des Kontos (Begriffe unten).
 - **Daten** und **Aktion:** was genau gesehen oder getan wird.
-- **Ergebnis:** erlaubt oder verboten. Verbotene Einträge mit Kennung in der Adresse zeigen „nicht gefunden“ (404) wie ein nicht vorhandener Eintrag; ganze Bereiche ohne Kennung zeigen „kein Zugriff“ (403) (#64).
+- **Ergebnis:** erlaubt oder verboten. Verbotene Einträge mit Kennung in der Adresse zeigen „nicht gefunden“ (404) wie ein nicht vorhandener Eintrag; ganze Bereiche ohne Kennung zeigen „kein Zugriff“ (403) (#64). Das gilt auch für htmx-Anfragen, Formulare und Aktionen an einem Eintrag, den die Person zwar sieht, aber nicht bearbeiten darf. Einträge stehen in Adressen mit einer zufälligen Kennung, nie mit einer laufenden Nummer; wer einen Eintrag sehen darf, sieht auch seine Kennung, ein eigenes Recht dafür gibt es nicht (Entscheidung vom 25.10.2026).
 - **Quelle:** Anforderung aus `docs/anforderungen.md`, Entscheidung aus `docs/entscheidungen.md` oder das Issue, in dem die Regel geklärt wurde.
 - **Stand:** „geplant“ mit dem Issue, das die Zeile baut, oder „gebaut“ mit den Tests für den erlaubten und den verbotenen Fall.
 
@@ -262,7 +262,7 @@ Jede Tabelle der Datenbank steht hier mit dem Abschnitt, der ihre Rechte regelt.
 
 | Tabelle | Inhalt | Abschnitt |
 | --- | --- | --- |
-| `accounts.User` | Konten: Vorname, Nachname, Benutzername, Mail | Eigenes Profil; Personen mit Konto |
+| `accounts.User` | Konten: Vorname, Nachname, Benutzername, Mail, zufällige Kennung für Adressen | Eigenes Profil; Personen mit Konto |
 | `units.Unit` | Einheiten | Einheiten |
 | `roles.Role` | Rollen und Mitgliedschaften | Leitungen und Rollen; Personen mit Konto; Support-Zugang der Admins (Rolle Admin) |
 | `roles.RoleChange` | Protokoll der Rollenänderungen | Protokolle |

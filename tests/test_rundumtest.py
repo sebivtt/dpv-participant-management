@@ -5,7 +5,8 @@ ist ohne eigenes Zutun geschützt; wer sie öffentlich machen will, muss sie hie
 und begründen. Seit #90 muss außerdem jede Adresse markiert sein: „prüft Rechte“ mit den
 Kennungen ihrer Zeilen in der Rechtematrix oder „enthält keine Personendaten“ mit Begründung
 (`access/addresses.py`). Und kein Code außerhalb der zentralen Rechteprüfung liest Personen-
-oder Anmeldedaten selbst aus der Datenbank.
+oder Anmeldedaten selbst aus der Datenbank. Seit #64 nehmen Adressen mit Login Einträge nur über
+ihre zufällige Kennung (`<key:…>`), nie über eine laufende Nummer.
 """
 
 import ast
@@ -18,6 +19,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 from django.urls.resolvers import RoutePattern
 
 from access.addresses import checks_rights, without_personal_data
+from access.keys import KEY_CONVERTER, KEY_LENGTH
 from tests.rechtematrix import matrix_text, row_ids
 
 # Die einzigen Adressen, die ohne Login antworten dürfen, mit Begründung.
@@ -42,9 +44,14 @@ def _all_patterns(patterns, prefix: str = ""):
             yield prefix + str(entry.pattern), entry
 
 
+# Steht für jede Kennung (`<key:…>`) in einer Beispieladresse; zu ihr gehört kein Eintrag.
+EXAMPLE_KEY = "a" * KEY_LENGTH
+
+
 def _example_address(pattern: str) -> str:
     """Macht aus einem Muster wie anmelden/<str:provider_id>/start/ eine aufrufbare Adresse."""
-    address = re.sub(r"<(?:\w+:)?\w+>", "1", pattern)
+    address = re.sub(rf"<{KEY_CONVERTER}:\w+>", EXAMPLE_KEY, pattern)
+    address = re.sub(r"<(?:\w+:)?\w+>", "1", address)
     address = re.sub(r"\(\?P<\w+>[^)]*\)", "1", address).lstrip("^").rstrip("$")
     return "/" + address
 
@@ -123,6 +130,49 @@ def test_markierung_ohne_gueltige_kennung_wird_abgelehnt(rows):
 def test_markierung_ohne_begruendung_wird_abgelehnt(reason):
     with pytest.raises(ValueError, match="Begründung"):
         without_personal_data(reason)
+
+
+# Einträge in Adressen nur über ihre zufällige Kennung (#64)
+
+PARAMETER = re.compile(r"<(?:(\w+):)?\w+>|\(\?P<\w+>")
+
+
+def numbered_addresses(patterns) -> list[str]:
+    """Adressen mit Login, die eine andere Angabe als eine Kennung nehmen, z. B. <int:pk> oder <str:name>."""
+    found = []
+    for pattern, entry in patterns:
+        if entry.name in PUBLIC:
+            continue
+        if any(match.group(1) != KEY_CONVERTER for match in PARAMETER.finditer(pattern)):
+            found.append(pattern)
+    return found
+
+
+def test_adressen_mit_login_nehmen_eintraege_nur_ueber_ihre_kennung():
+    assert numbered_addresses(ALL) == []
+
+
+def test_laufende_nummer_in_einer_adresse_macht_den_rundumtest_rot():
+    """Gegenprobe: Nummer, Text, UUID und regulärer Ausdruck fallen auf, die Kennung nicht."""
+
+    def view(request):
+        return None
+
+    patterns = [
+        (route, URLPattern(RoutePattern(route), view, name=f"neu{number}"))
+        for number, route in enumerate(
+            ["person/<int:pk>/", "person/<str:name>/", "person/<uuid:id>/", "person/<pk>/", "einheit/<key:unit>/"]
+        )
+    ]
+    patterns.append((r"^alt/(?P<pk>\d+)/$", patterns[0][1]))
+
+    assert numbered_addresses(patterns) == [
+        "person/<int:pk>/", "person/<str:name>/", "person/<uuid:id>/", "person/<pk>/", r"^alt/(?P<pk>\d+)/$"
+    ]
+
+
+def test_beispieladresse_setzt_eine_kennung_in_der_richtigen_form_ein():
+    assert _example_address("einheit/<key:unit>/person/<key:person>/") == f"/einheit/{EXAMPLE_KEY}/person/{EXAMPLE_KEY}/"
 
 
 # Personen- und Anmeldedaten nur über die zentrale Rechteprüfung (#90, CONTRIBUTING.md, Abschnitt 4)

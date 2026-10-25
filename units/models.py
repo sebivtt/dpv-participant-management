@@ -13,6 +13,7 @@ from django.db.models import Q, Value
 from django.db.models.functions import Lower, Trim
 from django.utils.translation import gettext_lazy
 
+from access.keys import key_field
 from core import actors
 from core.actors import check_actor
 from roles.expressions import TransactionStart
@@ -80,6 +81,8 @@ class Unit(models.Model):
         "self", null=True, blank=True, editable=False, on_delete=models.PROTECT, related_name="+"
     )
     has_rings = models.BooleanField(default=False)
+    # Zufällige Kennung für Adressen (#64); sie ändert sich nie und kommt nicht ins Protokoll.
+    key = key_field()
 
     class Meta:
         constraints = [
@@ -299,7 +302,11 @@ class Unit(models.Model):
         if self.kind == Kind.FEDERATION:
             other = Unit.objects.filter(kind=Kind.FEDERATION).exclude(pk=self.pk).first()
             return texts.FEDERATION_EXISTS % {"name": other.name} if other else None
-        same_name = Unit.objects.alias(key=Lower("name")).filter(key=Lower(Value(self.name))).exclude(pk=self.pk)
+        same_name = (
+            Unit.objects.alias(lowered_name=Lower("name"))
+            .filter(lowered_name=Lower(Value(self.name)))
+            .exclude(pk=self.pk)
+        )
         if self.kind == Kind.ASSOCIATION:
             other = same_name.filter(kind=Kind.ASSOCIATION).first()
             return texts.ASSOCIATION_EXISTS % {"name": other.name} if other else None
