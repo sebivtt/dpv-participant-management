@@ -19,6 +19,11 @@ def start(request: HttpRequest) -> HttpResponse:
     return render(request, "core/start.html", {"name_incomplete": name_incomplete})
 
 
+@checks_rights("EP-01", "EP-02", "EP-05")
+def profile(request: HttpRequest) -> HttpResponse:
+    """Gerüst für „Mein Profil“ (#96)."""
+    return render(request, "core/profil.html")
+
 
 def _example(title, period, place, org, state, registered=None, capacity=None, picture=None, draft=False) -> dict:
     """Eine erfundene Veranstaltung für die Musterseite."""

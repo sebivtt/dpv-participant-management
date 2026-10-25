@@ -8,7 +8,7 @@ from django.urls import path, register_converter
 
 from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
-from core.views import pattern_library, start
+from core.views import pattern_library, profile, start
 
 # Eigene Fehlerseite statt der von Django: ohne technische Einzelheiten, mit Fehlernummer (#6).
 handler500 = "core.errors.server_error"
@@ -18,6 +18,7 @@ register_converter(KeyConverter, KEY_CONVERTER)
 
 urlpatterns = [
     path("", start, name="start"),
+    path("profil/", profile, name="profile"),
     path("muster/", pattern_library, name="pattern_library"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),
