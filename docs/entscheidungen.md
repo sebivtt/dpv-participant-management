@@ -6,6 +6,19 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · Abgleich mit Keycloak beim Login als Ausnahme vom „Lesen an der Stelle vorbei“ (#76)
+
+**Entscheidung** (Sebastian; Zustimmung über die Steuerungssession bei der Nachprüfung von PR #166 am 25.10.2026): Die Liste der Stellen, an denen Personen- und Anmeldedaten direkt aus der Datenbank gelesen werden dürfen (Eintrag zu #90, „Lesen an der Stelle vorbei“), bekommt einen vierten Eintrag: `accounts/keycloak_abgleich.py`. Freigegeben ist nur diese Datei, bewusst nicht der ganze Login-Adapter `accounts/adapter.py`.
+
+**Begründung:** Der Abgleich beim Login muss allauths Mail-Liste und den Benutzernamen in der Datenbank lesen und ändern. Er ändert nur das Konto, das sich gerade anmeldet, mit den Angaben aus Keycloak, zeigt nichts an und wird nur aus `accounts/adapter.py` aufgerufen. Das entspricht der bestehenden Ausnahme für die Regeln des Rollenmodells. Eine eigene kleine Datei hält die Ausnahme eng; der übrige Adapter bleibt unter der Aufsicht des Rundumtests.
+
+**Technische Wahl** (KI, Umsetzung von Sebastians Entscheidung in #76 vom 22.10.2026):
+
+- **Mail-Liste:** Bei jedem Login, auch dem ersten, steht in `account_emailaddress` genau ein Eintrag: die Mail aus Keycloak in genau dieser Schreibweise (allauth schriebe sie beim ersten Login sonst klein) und `email_verified` aus Keycloak. Ältere Einträge werden gelöscht. Dabei wird die eigene Kontozeile kurz gesperrt, damit gleichzeitige Logins derselben Person nacheinander laufen.
+- **Benutzername:** Bei jedem Login aus Keycloak übernommen, zu lange Namen gekürzt. Vergeben heißt wie bei allauths erstem Login auch in anderer Groß- und Kleinschreibung; dann bleibt der alte Name, der Login gelingt, und ins Log kommt eine Zeile ohne Benutzernamen, Mail und Kontonummer. Das Tool sieht vorher nach, statt nur auf die Datenbank zu bauen, weil deren eigenes Log bei einem abgelehnten Speichern den Namen nennen würde.
+
+**Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py` (Aufrufe in `pre_social_login` und `save_user`), `tests/test_rundumtest.py` (Ausnahmeliste), `docs/rechtematrix.md` (Zeile `account.EmailAddress`), Tests in `tests/test_login_angleichen.py`.
+
 ## 2026-10-25 · Zielbild vor Gestaltung, und „Mein Profil“ nach Zielbild (#161)
 
 **Entscheidung** (Sebastian; nach der Abnahme von PR #160 am 25.10.2026; Klärung von #161 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403102089), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403102282), [Nachklärung Kacheln](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403407168)):

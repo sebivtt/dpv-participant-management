@@ -271,7 +271,7 @@ Jede Tabelle der Datenbank steht hier mit dem Abschnitt, der ihre Rechte regelt.
 | `socialaccount.SocialAccount` | Verknüpfung mit dem DPV-Konto und was Keycloak beim Login mitschickt | Technische Daten des Logins |
 | `socialaccount.SocialApp` | Zugang zum Keycloak | Technische Daten des Logins |
 | `socialaccount.SocialToken` | Schlüssel aus dem Login; das Tool speichert keine | Technische Daten des Logins |
-| `account.EmailAddress` | Mail-Liste des Login-Bausteins | Technische Daten des Logins |
+| `account.EmailAddress` | Mail-Liste des Login-Bausteins; bei jedem Login an Keycloak angeglichen, genau ein Eintrag (#76) | Technische Daten des Logins |
 | `account.EmailConfirmation` | Mail-Bestätigungen des Login-Bausteins; ungenutzt, der Login läuft nur über Keycloak | Technische Daten des Logins |
 | `auth.Group` | Djangos Berechtigungsgruppen; ungenutzt, Rechte entstehen nur aus Rollen | Technische Daten des Logins |
 | `auth.Permission` | Djangos Liste von Berechtigungen; ungenutzt | Technische Daten des Logins |
