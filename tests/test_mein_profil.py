@@ -1,7 +1,7 @@
 """Tests für „Mein Profil“ zum Ansehen (#96, PER-01, ORG-05; EP-01, EP-02, EP-05) und seine Gestaltung nach Zielbild (#161).
 
 Die Nummern verweisen auf Sebastians Szenarien vom 25.10.2026: „Szenario n“ auf die in #96,
-„Szenario n zu #161“ auf die in #161. Wo #161 Aufbau oder Texte geändert hat (Mitgliedschaft
+„Szenario n zu #161“ auf die in #161, ab dem 25.10.2026 mit der „Nachklärung Kacheln“. Wo #161 Aufbau oder Texte geändert hat (Mitgliedschaft
 als eigene Fläche, Rollen als Kacheln, „E-Mail-Adresse“), prüfen die Tests aus #96 den neuen
 Stand. Was nur ein echter Browser zeigen kann (Handy, Tastatur, axe, Farben), prüft der
 Rauchtest in rauchtests/test_rauchtest.py. Alle Namen sind erfunden; die Einheiten stammen aus
@@ -133,7 +133,7 @@ def entries(root) -> list[tuple[str, str, str]]:
     """Was unter „Organisation und Rollen“ steht, als (klein, groß, Weg darunter) (#161).
 
     Zuerst die Fläche der Mitgliedschaft („Mitgliedschaft“, Organisation, Weg), dann jede
-    Kachel (Rolle, Organisation, Weg); die Admin-Kachel ist ("", "Admin", "").
+    Kachel (Rolle, Organisation, Weg oder fester Satz).
     """
     return [_entry(box) for box in membership_boxes(root)] + [_entry(tile) for tile in role_tiles(root)]
 
@@ -271,7 +271,7 @@ def test_mitgliedschaft_zuerst_dann_rollen_mit_weg_nach_oben(org):
         ("Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Walhall"),
         ("Gruppenleitung", "Meute Wölfe", "Pfadfinderbund Boreas › Walhall"),
         ("Stammesleitung", "Walhall", "Pfadfinderbund Boreas"),
-        ("DPV-Veranstaltungsteam", "DPV", ""),
+        ("DPV-Veranstaltungsteam", "DPV", "Veranstaltungen des Verbands"),  # Nachklärung Kacheln, Szenario 5
     ]
 
 
@@ -312,7 +312,7 @@ def test_reihenfolge_der_rollen_von_klein_nach_gross(org):
         ("Bundesleitung", "Pfadfinderbund Boreas"),
         ("Verbandsleitung", "DPV"),
         ("DPV-Veranstaltungsteam", "DPV"),
-        ("", "Admin"),
+        ("Admin", "DPV Anmeldetool"),
     ]
 
 
@@ -364,9 +364,17 @@ def test_admin_steht_ohne_organisation_und_ohne_weg(org):
 
     root = page(org.max)
 
-    assert entries(root) == [("", "Admin", "")]  # Szenario 8 zu #161: die Kachel zeigt nur „Admin“
+    # Szenario 8 zu #161, Nachklärung Kacheln: wie die anderen Kacheln, mit festen Texten
+    assert entries(root) == [("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools")]
     assert membership_boxes(root) == []
     assert HINT_NO_ORG_BOLD not in text(root)
+
+
+def test_verbandsleitung_mit_festem_satz(org):
+    """Szenario 8a zu #161, Nachklärung Kacheln."""
+    give(org.max, R.FEDERATION_LEAD, org.dpv)
+
+    assert entries(page(org.max)) == [("Verbandsleitung", "DPV", "Leitung des Verbands")]
 
 
 # Szenario 7: Ohne Zuordnung
@@ -382,15 +390,22 @@ def test_ohne_mitgliedschaft_und_rolle_steht_der_hinweis(org):
     assert bold is not None
 
 
-@pytest.mark.parametrize("kind", [R.FEDERATION_LEAD, R.EVENT_TEAM, R.ADMIN])
-def test_nur_rolle_im_verband_oder_admin_ohne_mitgliedschaft_kein_hinweis(org, kind):
+@pytest.mark.parametrize(
+    ("kind", "tile"),
+    [
+        (R.FEDERATION_LEAD, ("Verbandsleitung", "DPV", "Leitung des Verbands")),
+        (R.EVENT_TEAM, ("DPV-Veranstaltungsteam", "DPV", "Veranstaltungen des Verbands")),
+        (R.ADMIN, ("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools")),
+    ],
+)
+def test_nur_rolle_im_verband_oder_admin_ohne_mitgliedschaft_kein_hinweis(org, kind, tile):
     give(org.max, kind, None if kind == R.ADMIN else org.dpv)
 
     root = page(org.max)
 
     assert HINT_NO_ORG_BOLD not in text(root)
-    # Szenario 9 zu #161: nur die Kachel, keine Fläche für die Mitgliedschaft
-    assert len(role_tiles(root)) == 1
+    # Szenario 9 zu #161 (Nachklärung Kacheln): nur die Kachel mit festem Satz, keine Fläche für die Mitgliedschaft
+    assert entries(root) == [tile]
     assert membership_boxes(root) == []
 
 
@@ -469,6 +484,7 @@ def test_nirgends_das_wort_einheit(org):
 ONLY_IN_TARGET_IMAGE = (
     "Profil freigeben", "Freigabe", "Fahrtenname", "Geburtsdatum", "Wohnadresse", "Gesundheit", "Allergien",
     "Unverträglichkeiten", "Medikamente", "Organisation öffnen", "Austritt", "Austreten", "Profilfoto",
+    "Verantwortung auf Verbandsebene", "Verbandsweite Funktion",  # Nachklärung Kacheln, Szenario 13
 )
 
 
@@ -655,10 +671,9 @@ def test_bausteine_angaben_und_rollen_stehen_auf_der_musterseite(org):
     assert _all(root, lambda e: e.name == "dl" and "a-felder" in _classes(e))
     assert _all(root, lambda e: e.name == "ul" and "a-rollenkacheln" in _classes(e))
     assert _all(root, lambda e: "a-leer" in _classes(e) and _visible_text(e) == NOT_GIVEN)
-    # Auch die Admin-Kachel ohne Organisation und eine Kachel ohne Weg stehen dort als Beispiel.
+    # Auch eine Kachel mit festem Satz statt Weg steht dort als Beispiel (Nachklärung Kacheln).
     tiles = [_entry(tile) for tile in _by_tag(_one(_all(root, lambda e: "a-rollenkacheln" in _classes(e))), "li")]
-    assert ("", "Admin", "") in tiles
-    assert any(label and not way for label, _name, way in tiles)
+    assert ("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools") in tiles
 
 
 # Szenario 18 zu #161: Sebastians Zielbild liegt unverändert im Repo
