@@ -182,6 +182,16 @@ class Rights:
             raise Http404
         return found
 
+    def entry(self, entries: QuerySet, key, allowed=None):
+        """Gerüst (#64): findet jeden Eintrag über die Kennung, ohne Rechte; die Regel folgt."""
+        found = entries.model.objects.filter(key=key).first()
+        if found is None:
+            raise Http404
+        return found
+
+    def require_section(self, allowed: bool) -> None:
+        """Gerüst (#64); die Regel folgt."""
+
     # Leitungen (BER-01, Grund 3)
 
     def leads(self) -> QuerySet:

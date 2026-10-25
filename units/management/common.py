@@ -34,8 +34,8 @@ def association(name: str) -> Unit:
     """Der Bund mit diesem Namen, ohne Rücksicht auf Groß- und Kleinschreibung und Leerzeichen am Rand."""
     name = name.strip()
     found = (
-        Unit.objects.alias(key=Lower("name"))
-        .filter(kind=Kind.ASSOCIATION, key=Lower(Value(name)))
+        Unit.objects.alias(lowered_name=Lower("name"))
+        .filter(kind=Kind.ASSOCIATION, lowered_name=Lower(Value(name)))
         .first()
     )
     if found is None:

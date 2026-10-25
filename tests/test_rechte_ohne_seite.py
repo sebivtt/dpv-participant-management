@@ -91,6 +91,10 @@ def manipulated_form(org) -> dict:
         "delete": "1",
         "id": org.max.pk,
         "pk": org.max.pk,
+        # Seit #64 stehen Einträge mit ihrer zufälligen Kennung in Adressen und Formularen.
+        "key": org.max.key,
+        "person_key": org.max.key,
+        "unit_key": org.falken.key,
     }
 
 

@@ -215,12 +215,19 @@ def test_wer_mehrere_rollen_hat_darf_was_eine_davon_erlaubt(org):
 def test_einzelne_person_ohne_recht_ist_nicht_gefunden_wie_eine_nicht_vorhandene(org):
     """#64: Eine fremde und eine nicht vorhandene Person ergeben dieselbe Antwort."""
     rights = Rights(org.walhall_leitung)
-    missing = max(org.ohne.pk, org.sturmvogel_mitglied.pk) + 1000
 
-    assert rights.person(org.falke.pk) == org.falke
-    for pk in (org.adler_kind.pk, missing):
+    assert rights.person(org.falke.key) == org.falke
+    for key in (org.adler_kind.key, "a" * 20):
         with pytest.raises(Http404):
-            rights.person(pk)
+            rights.person(key)
+
+
+def test_laufende_nummer_fuehrt_nicht_mehr_zur_person(org):
+    """#64: Die zentrale Stelle nimmt nur die zufällige Kennung, auch nicht die Nummer eines sichtbaren Eintrags."""
+    with pytest.raises(Http404):
+        Rights(org.walhall_leitung).person(org.falke.pk)
+    with pytest.raises(Http404):
+        Rights(org.walhall_leitung).person(str(org.falke.pk))
 
 
 def test_wer_als_leitung_entfernt_wird_sieht_die_personen_beim_naechsten_klick_nicht_mehr(org):
@@ -587,10 +594,10 @@ def test_ohne_gueltiges_konto_ist_alles_verboten(org, who):
     assert not rights.leads_unit(org.walhall)
     assert not rights.leads_unit_of(org.falke)
     with pytest.raises(Http404):
-        rights.person(org.falke.pk)
+        rights.person(org.falke.key)
 
 
-@pytest.mark.parametrize("value", [None, "", "abc", "1; DROP", -1, 0, 3.5, [1]])
+@pytest.mark.parametrize("value", [None, "", "abc", "1; DROP", -1, 0, 3.5, [1], "A" * 20, "a" * 21, "a" * 19 + "1"])
 def test_unbrauchbare_kennung_ist_nicht_gefunden(org, value):
     """Manipulierte Kennungen ergeben „nicht gefunden“, nie eine Fehlerseite."""
     with pytest.raises(Http404):

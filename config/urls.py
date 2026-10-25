@@ -4,13 +4,17 @@
 Alles andere schützt LoginRequiredMiddleware; der Rundumtest in tests/test_login.py prüft das.
 """
 
-from django.urls import path
+from django.urls import path, register_converter
 
+from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
 from core.views import pattern_library, start
 
 # Eigene Fehlerseite statt der von Django: ohne technische Einzelheiten, mit Fehlernummer (#6).
 handler500 = "core.errors.server_error"
+
+# Einträge stehen in Adressen nur mit ihrer zufälligen Kennung: path("person/<key:person>/", …) (#64).
+register_converter(KeyConverter, KEY_CONVERTER)
 
 urlpatterns = [
     path("", start, name="start"),
