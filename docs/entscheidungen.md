@@ -12,6 +12,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 1. **Grundstock:** Die zentrale Rechteprüfung (`access/rights.py`) enthält mit #90 die Regeln zu Personen mit Konto, Einheiten und Leitungen. Das sind BER-01, Gründe 1 bis 3, Bereich, Kette nach oben, Leitungspfad, einspringende Leitung und „Leitung der eigenen Einheit einer Person“. Die übrigen Gründe und die einzelnen Aktionen bauen die späteren Issues an derselben Stelle ein, keines baut eine eigene Prüfung.
 2. **Hinweis zum Einspringen:** Ob eine Leitung im Tool sieht, wo sie gerade einspringt, wird in #93 geklärt.
+3. **Gesperrte Leitung** (Auslegung von ROL-02; Sebastian beim Umsetzen, [Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/90#issuecomment-6395708845)): Eine im Tool gesperrte Leitung zählt nicht als „Leitung mit Konto“; die Leitung darüber springt ein. Sonst hätte in der Einheit niemand Rechte.
 
 **Technische Wahl** (KI, von Sebastian in der Nachklärung bestätigt):
 

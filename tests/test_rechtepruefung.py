@@ -506,6 +506,16 @@ def test_einspringen_endet_mit_der_benennung_einer_leitung(org):
     assert not Rights(org.walhall_leitung).covers(org.falken)
 
 
+@pytest.mark.rechtematrix("EH-18")
+def test_fuer_eine_gesperrte_leitung_springt_die_leitung_darueber_ein(org):
+    """Sebastian, 25.10.2026: Eine im Tool gesperrte Leitung zählt nicht als Leitung mit Konto."""
+    org.falken_leitung.is_active = False
+    org.falken_leitung.save()
+
+    assert Rights(org.walhall_leitung).covers(org.falken)
+    assert not Rights(org.walhall_leitung).covers(org.woelfe)
+
+
 @pytest.mark.rechtematrix("EH-19")
 def test_leitung_springt_nicht_fuer_einheiten_ueber_oder_neben_ihr_ein(org):
     remove(org.bundesleitung, R.ASSOCIATION_LEAD, org.boreas)

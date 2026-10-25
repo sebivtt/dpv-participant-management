@@ -77,9 +77,12 @@ class Rights:
         """Einheiten mit mindestens einer Leitung mit Konto (ROL-02).
 
         Jede Rolle gehört zu einem Konto; angezeigte Leitungsrollen verwalteter Personen
-        (#99) stehen nicht in dieser Tabelle und zählen deshalb nie (VP-16).
+        (#99) stehen nicht in dieser Tabelle und zählen deshalb nie (VP-16). Ein im Tool
+        gesperrtes Konto zählt nicht, sonst hätte niemand in der Einheit Rechte (Sebastian,
+        25.10.2026, Kommentar in #90).
         """
-        return frozenset(Role.objects.filter(kind__in=LEADS_IN_UNITS).values_list("unit_id", flat=True))
+        leads = Role.objects.filter(kind__in=LEADS_IN_UNITS, user__is_active=True)
+        return frozenset(leads.values_list("unit_id", flat=True))
 
     # Bausteine
 
