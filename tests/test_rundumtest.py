@@ -196,6 +196,9 @@ ALLOWED_FILES = {
     "access/rights.py",
     # Die Regeln beim Speichern und Löschen einer Rolle; sie zeigen nichts an.
     "roles/models.py",
+    # Der Abgleich mit Keycloak beim Login: ändert nur das Konto, das sich gerade anmeldet,
+    # und zeigt nichts an (#76).
+    "accounts/keycloak_abgleich.py",
     # Befehle auf dem Server, außerhalb des Tools (Rechtematrix, „Außerhalb des Tools“).
     "roles/management/commands/admin.py",
 }
