@@ -6,6 +6,9 @@ from django.http import HttpRequest, HttpResponse
 # Rückfrage ab („Möchtest du dich wirklich abmelden?“ entfällt).
 LOGOUT_HINT_SESSION_KEY = "accounts_keycloak_id_token"
 
+# Zeitpunkt des Logins in der Sitzung (Sekunden seit 1970), für die Obergrenze von 12 Stunden (#8).
+LOGIN_TIME_SESSION_KEY = "accounts_login_time"
+
 # Cookie, das nur „war hier angemeldet“ bedeutet, ohne Bezug zur Person. Es überdauert die
 # Sitzung; so unterscheidet die Login-Seite „Sitzung abgelaufen“ von „nie angemeldet“.
 # Beim Abmelden und nach dem Hinweis wird es gelöscht.
