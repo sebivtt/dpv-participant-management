@@ -14,6 +14,7 @@ import pytest
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.contrib.sessions.models import Session
+from django.test import Client
 from django.utils import timezone
 
 from accounts.session import LOGIN_TIME_SESSION_KEY
@@ -71,10 +72,11 @@ def test_knapp_nach_zwoelf_stunden_fuehrt_der_naechste_klick_zum_login_mit_hinwe
 
 
 def test_genau_nach_zwoelf_stunden_ist_die_sitzung_zu_ende(client, keycloak, monkeypatch):
+    """Die Uhr steht still; so liegt der Login genau 12 Stunden zurück, der letzte Klick aber nicht."""
     login(client)
-    start = timezone.now()
-    _set_login_time(client, timedelta(0))
-    monkeypatch.setattr(timezone, "now", lambda: start + TWELVE_HOURS)
+    now = timezone.now()
+    monkeypatch.setattr(timezone, "now", lambda: now)
+    _set_login_time(client, TWELVE_HOURS)
 
     _assert_next_click_leads_to_login_with_hint(client)
 
@@ -158,10 +160,22 @@ def test_sitzung_ohne_login_zeitpunkt_endet_beim_naechsten_klick(client, keycloa
     """Etwa eine Sitzung von vor dieser Änderung: Ohne Zeitpunkt gilt sie als zu alt."""
     login(client)
     session = client.session
-    del session[LOGIN_TIME_SESSION_KEY]
+    session.pop(LOGIN_TIME_SESSION_KEY, None)
     session.save()
 
     _assert_next_click_leads_to_login_with_hint(client)
+
+
+def test_login_an_einem_anderen_geraet_verlaengert_die_sitzung_hier_nicht(keycloak):
+    """Die 12 Stunden zählen je Sitzung, nicht ab dem letzten Login der Person irgendwo."""
+    laptop, handy = Client(), Client()
+    login(laptop)
+    _set_login_time(laptop, TWELVE_HOURS + timedelta(seconds=1))
+
+    login(handy)
+
+    _assert_next_click_leads_to_login_with_hint(laptop)
+    _assert_still_logged_in(handy)
 
 
 def test_abmelden_nach_ablauf_fuehrt_weiter_zu_keycloak(client, keycloak, settings):
