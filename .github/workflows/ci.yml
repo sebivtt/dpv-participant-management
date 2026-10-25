@@ -81,9 +81,13 @@ jobs:
       # vom Ubuntu-Paketserver; ist der langsam, hing der Schritt früher bis zum Zeitlimit des
       # ganzen Laufs (#133). Deshalb: je Versuch 10 Minuten, höchstens drei Versuche, und die
       # Browser selbst kommen aus dem Zwischenspeicher von GitHub, solange die Fassung gleich ist.
+      # Die Systembibliotheken holt jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein
+      # verhindert den Hänger also nicht.
       - name: Playwright-Fassung aus uv.lock ermitteln
         id: playwright
-        run: echo "version=$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")" >> "$GITHUB_OUTPUT"
+        run: |
+          version="$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Browser aus dem Zwischenspeicher holen
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -101,8 +105,13 @@ jobs:
         continue-on-error: true
         run: |
           echo "::warning title=Browser-Installation::Versuch 1 ist gescheitert oder hing länger als 10 Minuten; neuer Versuch (#133)."
-          # Reste des abgebrochenen Versuchs beenden, damit der Paketserver-Zugriff nicht gesperrt bleibt.
+          # Reste des abgebrochenen Versuchs beenden. GitHub beendet beim Zeitlimit nur den Schritt
+          # selbst; Playwright und apt-get können weiterlaufen und apt gesperrt halten. Die eckigen
+          # Klammern verhindern, dass pkill seinen eigenen Aufruf trifft. apt wartet danach bis zu
+          # zwei Minuten auf die Sperre, statt sofort zu scheitern.
+          pkill -f '[p]laywright.*install' || true
           sudo pkill -x apt-get || true
+          echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
           uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser für den Rauchtest installieren (Versuch 3 von 3)
         id: browser_versuch_3
@@ -111,7 +120,9 @@ jobs:
         continue-on-error: true
         run: |
           echo "::warning title=Browser-Installation::Versuch 2 ist gescheitert oder hing länger als 10 Minuten; letzter Versuch (#133)."
+          pkill -f '[p]laywright.*install' || true
           sudo pkill -x apt-get || true
+          echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
           uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser-Installation gescheitert
         if: steps.browser_versuch_3.outcome == 'failure'
