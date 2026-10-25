@@ -41,7 +41,7 @@ def test_erstes_login_ergibt_genau_einen_eintrag_mit_bestaetigt_aus_keycloak(cli
 
 
 def test_erstes_login_uebernimmt_die_schreibweise_der_mail_aus_keycloak(client, keycloak):
-    # allauth schreibt die Mail beim ersten Login sonst klein, das Konto aber nicht.
+    # allauth schreibt die Mail beim ersten Login sonst klein, im Konto und in der Mail-Liste.
     keycloak.person["email"] = "Erika.Testfrau@Example.org"
 
     login(client)
@@ -162,6 +162,22 @@ def test_vergebener_benutzername_wird_uebernommen_sobald_er_frei_ist(client, key
     assert _erika().username == "max.testmann"
 
 
+def test_benutzername_in_anderer_schreibweise_gilt_als_vergeben(client, keycloak, log_output):
+    # Wie bei allauths erstem Login; sonst gäbe es „max.testmann“ und „Max.Testmann“.
+    keycloak.person = dict(MAX)
+    login(client)
+    client.post("/abmelden/")
+    keycloak.person = dict(ERIKA)
+    login(client)
+    keycloak.person["preferred_username"] = "Max.Testmann"
+
+    _login_again(client)
+
+    assert client.get("/").status_code == 200
+    assert _erika().username == "erika.testfrau"
+    assert "Benutzername aus Keycloak im Tool schon vergeben, alter bleibt" in log_output()
+
+
 # Szenario 7
 def test_sehr_langer_benutzername_wird_bei_jedem_login_gekuerzt_uebernommen(client, keycloak):
     login(client)
@@ -198,12 +214,16 @@ def test_ohne_benutzernamen_aus_keycloak_bleibt_der_bisherige_und_login_gelingt(
 
 
 # Szenario 9
-def test_abgelehnter_login_gleicht_nichts_an(client, keycloak):
+@pytest.mark.parametrize("reason", ["gesperrt", "ohne Mail"])
+def test_abgelehnter_login_gleicht_nichts_an(client, keycloak, reason):
     login(client)
-    User.objects.update(is_active=False)
+    if reason == "gesperrt":
+        User.objects.update(is_active=False)
     keycloak.person["email"] = "erika.neu@example.org"
     keycloak.person["email_verified"] = False
     keycloak.person["preferred_username"] = "erika.neu"
+    if reason == "ohne Mail":
+        del keycloak.person["email"]
 
     _login_again(client)
 

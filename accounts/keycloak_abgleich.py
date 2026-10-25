@@ -27,6 +27,9 @@ def align_mail_list(user, sociallogin: SocialLogin) -> None:
     provider = sociallogin.account.get_provider()
     address = provider.extract_email_addresses(sociallogin.account.extra_data)[0]
     with transaction.atomic():
+        # Sperrt die eigene Kontozeile: Zwei gleichzeitige Logins derselben Person mit
+        # verschiedenen Mails liefen sonst beide in die Regel „nur ein Haupteintrag“.
+        get_user_model().objects.select_for_update().filter(pk=user.pk).exists()
         EmailAddress.objects.filter(user=user).exclude(email=address.email).delete()
         EmailAddress.objects.update_or_create(
             user=user, email=address.email, defaults={"verified": bool(address.verified), "primary": True}
@@ -38,17 +41,24 @@ def take_over_username(user, data: dict) -> None:
 
     Die Suche nach Konten (#93) geht über den genauen Benutzernamen, deshalb muss er aktuell
     sein. Ist er im Tool schon an ein anderes Konto vergeben, bleibt der alte, und der Login
-    gelingt trotzdem; beim nächsten Login wird es erneut versucht. Ins Log kommt dann nur eine
+    gelingt trotzdem; beim nächsten Login wird es erneut versucht. Vergeben heißt wie bei
+    allauths erstem Login: auch in anderer Groß- und Kleinschreibung. Ins Log kommt dann nur eine
     Zeile ohne Benutzernamen, Mail und Kontonummer (#6). Liefert Keycloak keinen
     Benutzernamen, bleibt der bisherige.
     """
     username = (data.get("username") or "")[: get_user_model()._meta.get_field("username").max_length]
     if not username or username == user.username:
         return
+    users = get_user_model().objects
+    # Erst nachsehen statt nur auf die Datenbank zu bauen: Deren eigenes Log nennt bei einem
+    # abgelehnten Speichern den Namen. Die Sperre der Datenbank bleibt für den Wettlauf.
+    if users.filter(username__iexact=username).exclude(pk=user.pk).exists():
+        logger.warning("Benutzername aus Keycloak im Tool schon vergeben, alter bleibt")
+        return
     try:
         # Eigener Sicherungspunkt: Ein vergebener Name bricht sonst die ganze Anfrage ab.
         with transaction.atomic():
-            get_user_model().objects.filter(pk=user.pk).update(username=username)
+            users.filter(pk=user.pk).update(username=username)
     except IntegrityError:
         logger.warning("Benutzername aus Keycloak im Tool schon vergeben, alter bleibt")
         return
