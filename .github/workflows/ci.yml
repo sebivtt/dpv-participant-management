@@ -97,7 +97,7 @@ jobs:
         id: browser_versuch_1
         timeout-minutes: 10
         continue-on-error: true
-        run: uv run --locked playwright install --with-deps chromium firefox webkit
+        run: false && uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser für den Rauchtest installieren (Versuch 2 von 3)
         id: browser_versuch_2
         if: steps.browser_versuch_1.outcome == 'failure'
@@ -112,7 +112,7 @@ jobs:
           pkill -f '[p]laywright.*install' || true
           sudo pkill -x apt-get || true
           echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
-          uv run --locked playwright install --with-deps chromium firefox webkit
+          false && uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser für den Rauchtest installieren (Versuch 3 von 3)
         id: browser_versuch_3
         if: steps.browser_versuch_2.outcome == 'failure'
@@ -123,7 +123,7 @@ jobs:
           pkill -f '[p]laywright.*install' || true
           sudo pkill -x apt-get || true
           echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
-          uv run --locked playwright install --with-deps chromium firefox webkit
+          false && uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser-Installation gescheitert
         if: steps.browser_versuch_3.outcome == 'failure'
         run: |
