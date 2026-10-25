@@ -39,7 +39,11 @@ def is_key(value) -> bool:
 
 
 def key_field() -> models.CharField:
-    """Das Feld für die Kennung eines Eintrags: eindeutig, beim Anlegen gesetzt, danach unveränderlich."""
+    """Das Feld für die Kennung eines Eintrags: eindeutig und beim Anlegen gesetzt.
+
+    Keine Seite und kein Befehl ändert sie danach; `editable=False` hält sie aus Formularen heraus.
+    Im Programm ließe sie sich wie jedes Feld überschreiben, eine Sperre gibt es dafür nicht.
+    """
     return models.CharField(max_length=KEY_LENGTH, unique=True, default=new_key, editable=False)
 
 

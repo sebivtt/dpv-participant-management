@@ -271,6 +271,10 @@ def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
     """Ruft jede Adresse des Tools mit Login als viele Personen auf, einmal mit echten, einmal mit erfundenen Kennungen.
 
     Steht in einer Adresse eine Kennung (`<key:…>`), kommt dort ebenfalls eine echte bzw. erfundene hinein.
+    Heute hat keine Adresse des Tools eine Kennung; geprüft werden dann nur die Formulare. Der Teil
+    für Adressen ist Absicherung für spätere Seiten und setzt überall die erste Kennung aus `real`
+    ein, bei Personen-Adressen also womöglich die einer Einheit. Das schwächt den Vergleich, macht
+    ihn aber nicht falsch: Auch dann muss die Antwort gleich sein.
     """
     missing = dict.fromkeys(real, MISSING)
     give(org.max, R.ADMIN)

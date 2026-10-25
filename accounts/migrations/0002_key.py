@@ -11,13 +11,10 @@ def give_keys(apps, schema_editor):
     Protokoll gehört, und die Regeln beim Speichern betreffen sie nicht.
     """
     model = apps.get_model("accounts", "User")
-    used = set()
     for pk in model.objects.values_list("pk", flat=True):
-        key = access.keys.new_key()
-        while key in used:
-            key = access.keys.new_key()
-        used.add(key)
-        model.objects.filter(pk=pk).update(key=key)
+        # Eine doppelte Kennung (bei 100 Bit Zufall praktisch ausgeschlossen) lehnt der
+        # nächste Schritt ab, und die ganze Migration wird zurückgenommen.
+        model.objects.filter(pk=pk).update(key=access.keys.new_key())
 
 
 class Migration(migrations.Migration):

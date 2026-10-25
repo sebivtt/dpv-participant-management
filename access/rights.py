@@ -208,6 +208,10 @@ class Rights:
         Ohne Recht „kein Zugriff“ (403): Welche Bereiche es gibt, ist kein Geheimnis, der Code ist
         öffentlich. Adressen mit Kennung prüfen über `entry()`; meldet eine von ihnen trotzdem
         „kein Zugriff“, zeigt `RightsMiddleware` „nicht gefunden“.
+
+        Seiten melden „kein Zugriff“ nur so oder mit `PermissionDenied`, nie mit einer selbst
+        gebauten Antwort mit Status 403: Die erkennt `RightsMiddleware` nicht, und an einer
+        Adresse mit Kennung verriete sie, dass es den Eintrag gibt.
         """
         if self.user is None or not allowed:
             raise PermissionDenied
