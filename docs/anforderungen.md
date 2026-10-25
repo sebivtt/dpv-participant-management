@@ -96,15 +96,15 @@ Das Tool ist für den DPV e.V. gebaut, läuft später auf DPV-Servern, nutzt den
 
 ## Organisationsstruktur, Personen und Rollen
 
-Personen gehören zu Einheiten der Hierarchie Verband → Bund → (Ring) → Stamm → Gruppe. Rechte an Personendaten ergeben sich aus der Leitungsrolle in einer Einheit, nicht aus der Person, die Daten angelegt hat. Veranstaltungen, eigene Kreise und Orte gehören dagegen den Personen, die sie anlegen.
+Personen gehören zu Einheiten der Hierarchie Verband → Bund → (Ring) → Stamm → Gruppe. Rechte an Personendaten ergeben sich aus der Leitungsrolle in einer Einheit, nicht aus der Person, die Daten angelegt hat. Veranstaltungen, Kreise und Orte gehören dagegen den Personen, die sie anlegen.
 
 ### Organisationsstruktur und Login
 
 | ID | Anforderung | Priorität |
 | --- | --- | --- |
-| ORG-01 | Hierarchie Verband → Bund → Ring (nur in Bünden mit Ringen, derzeit DPBM Mosaik) → Stamm → Gruppe. Verband und Bünde sind Pflichtstruktur. Den Verband und die Bünde zum Start legen Admins an; weitere Bünde legt die Verbandsleitung an und legt dabei fest, ob der Bund Ringe hat (ROL-03); danach entscheidet das die Bundesleitung (ORG-06). Ringe, Stämme und Gruppen sind optional. Gruppen werden frei benannt (z. B. Meute, Sippe, Runde); das System unterscheidet keine Gruppentypen. Personen können direkt einem Bund, einem Ring oder einem Stamm angehören, auch wenn es darunter weitere Einheiten gibt (Einzelmitglieder, ROL-01). Bünde sind eindeutig benannt; Stämme und Gruppen dürfen gleich heißen und werden über ihre übergeordnete Einheit unterschieden. | Muss |
+| ORG-01 | Hierarchie Verband → Bund → Ring (nur in Bünden mit Ringen, derzeit DPBM Mosaik) → Stamm → Gruppe. Verband und Bünde sind Pflichtstruktur. Den Verband und die Bünde zum Start legen Admins an; weitere Bünde legt die Verbandsleitung an und legt dabei fest, ob der Bund Ringe hat (ROL-03); danach entscheidet das die Bundesleitung (ORG-06). Bis zur Seite für Bünde (#107) legt ein Admin weitere Bünde auf Bitte der Verbandsleitung an (Rechtematrix EH-22). Ringe, Stämme und Gruppen sind optional. Gruppen werden frei benannt (z. B. Meute, Sippe, Runde); das System unterscheidet keine Gruppentypen. Personen können direkt einem Bund, einem Ring oder einem Stamm angehören, auch wenn es darunter weitere Einheiten gibt (Einzelmitglieder, ROL-01). Bünde sind eindeutig benannt; Stämme und Gruppen dürfen gleich heißen und werden über ihre übergeordnete Einheit unterschieden. | Muss |
 | ORG-02 | Mitglieder melden sich ausschließlich per Single Sign-on über den Keycloak des DPV an. | Muss |
-| ORG-03 | Keycloak ist führend für Identität und Login (Name, Mail, Account). Das Tool ist führend für alles, was Keycloak nicht kennt (eigene Kreise, verwaltete Personen, Veranstaltungs- und Anmeldedaten, Ernährung). | Muss |
+| ORG-03 | Keycloak ist führend für Identität und Login (Name, Mail, Account). Das Tool ist führend für alles, was Keycloak nicht kennt (Kreise, verwaltete Personen, Veranstaltungs- und Anmeldedaten, Ernährung). | Muss |
 | ORG-04 | Ändert eine Person ihre Stammdaten (z. B. Name, Geburtsdatum), kommt die Änderung auch in Keycloak an. Variante A: Das Tool schreibt direkt zurück (falls der DPV Schreibrechte vergibt). Variante B: Weiterleitung zum Keycloak-Profil, Übernahme beim nächsten Login. | Soll |
 | ORG-05 | Die Zuordnung einer Person zur Organisationsstruktur wird im Tool mindestens angezeigt. Quelle: das Tool (OP-1, entschieden am 20.10.2026). | Muss |
 | ORG-06 | Das Tool pflegt die Struktur selbst (OP-1). Einheiten legen an und löschen: die Bundesleitung Ringe, in Bünden ohne Ringe auch Stämme, und Gruppen im ganzen Bund; die Ringleitung Stämme und Gruppen in ihrem Ring; die Stammesleitung Gruppen in ihrem Stamm. Gelöscht werden nur Einheiten ohne Einheiten darunter. Mitglieder und verwaltete Personen der gelöschten Einheit werden der Ebene darüber zugeordnet; ihre Leitungsrollen in dieser Einheit enden. Das Tool nennt beides vorher. Einzelheiten regelt #108. Umbenennen darf jede Leitung ihre eigene Einheit und alle Einheiten darunter. Die Bundesleitung ordnet Stämme einem Ring zu oder wechselt ihn und schaltet „hat Ringe“ ein. Ausgeschaltet wird „hat Ringe“ in einem Schritt: Alle Stämme werden aus ihren Ringen genommen, die Ringe gelöscht (ihre Mitglieder kommen zum Bund, die Ringleitungen enden, wie beim Löschen oben) und der Schalter ausgeschaltet; das Tool nennt vorher, was passiert. Bis zur Seite für Bünde (#107) tut das ein Admin per Befehl auf dem Server, auf Bitte der Bundesleitung. Hat eine Einheit keine Leitung mit Konto, springt die Leitung darüber ein (ROL-02). Jede Änderung an der Struktur (anlegen, umbenennen, löschen, Ring zuordnen oder wechseln, „hat Ringe“) wird protokolliert. | Muss |
@@ -143,11 +143,11 @@ Personendaten sieht nur, wer einen Grund nach BER-01 hat, vor allem die Leitunge
 
 | Wer | Verwaltete Personen | Personen fremder Einheiten | Adressbücher anderer | Veranstaltungen |
 | --- | --- | --- | --- | --- |
-| Gruppenleitung | eigene Gruppe | nein | nein | eigene Teilnahmekreise, geleitete Veranstaltungen |
-| Stammesleitung | eigener Stamm und seine Gruppen | nein | nein | wie oben |
-| Ring-/Bundesleitung | eigener Ring/Bund und alles darunter | nein | nein | wie oben |
-| Verbandsleitung | keine | nein | nein | wie oben |
-| DPV-Veranstaltungsteam | keine | nein | nein | wie oben |
+| Gruppenleitung | eigene Gruppe | nein (außer BER-01, Grund 3 und 4) | nein | Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen |
+| Stammesleitung | eigener Stamm und seine Gruppen | nein (außer BER-01, Grund 3 und 4) | nein | Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen |
+| Ring-/Bundesleitung | eigener Ring/Bund und alles darunter | nein (außer BER-01, Grund 3 und 4) | nein | Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen |
+| Verbandsleitung | keine | nein (außer BER-01, Grund 3 und 4) | nein | Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen |
+| DPV-Veranstaltungsteam | keine | nein | nein | Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen |
 | Admin | technisch alles, Zugriffe protokolliert | technisch ja | technisch ja | alle |
 
 ### Anforderungen
@@ -157,12 +157,12 @@ Personendaten sieht nur, wer einen Grund nach BER-01 hat, vor allem die Leitunge
 | BER-01 | Personendaten sieht nur, wer einen der folgenden Gründe hat; alles andere ist verboten:<br>1. die Person selbst ihre eigenen Daten;<br>2. die Leitungen ihrer Einheit und der Ebenen darüber (siehe Tabelle);<br>3. Name, Fahrtenname und Rolle einer Leitung: wer diese Leitung auf seiner Kette nach oben hat, mit ihr dieselbe Einheit leitet oder sie als Leitung einer Einheit in seinem Bereich hat (Rechtematrix RO-01 bis RO-03); die Verbandsleitung außerdem bei Bundesleitungen, weiteren Verbandsleitungen und dem DPV-Veranstaltungsteam (RO-05); in allen diesen Fällen auch bei angezeigten Leitungsrollen verwalteter Personen (RO-09);<br>4. Name und Fahrtenname eines Kontos und ob es schon woanders Mitglied ist, ohne die Einheit: Leitungen und Verbandsleitung, die es über die genaue Mail oder den genauen Benutzernamen finden (PK-13);<br>5. die Veranstaltungsleitung: die Anmeldungen zu ihrer Veranstaltung (AN-01); die Ansprechperson: ihre eigene Anmeldung mit den angemeldeten Personen (AN-02);<br>6. ein Admin im Support-Zugang, mit den Rechten der Leitung der gewählten Einheit (BER-02);<br>7. die Protokolle nach ADM-03: Admins ab P8; das Protokoll der Admin-Zugriffe auch die Verbandsleitung (ROL-03).<br><br>Gesundheitsangaben aus Anmeldungen sieht nur die Veranstaltungsleitung; im eigenen Profil gespeicherte Gesundheitsangaben sieht nur die Person selbst. Namen von Einheiten sind keine Personendaten; wer welche Einheiten sieht, regelt die Rechtematrix. Kommen neue Daten oder Rollen hinzu (z. B. Kreise, Veranstaltungsteam), werden ihre Gründe im selben Pull Request hier und in der Rechtematrix ergänzt (Entscheidung vom 23.10.2026, Nr. 2). | Muss |
 | BER-02 | Admins haben technischen Vollzugriff für Support und Fehlerbehebung. Jeder Zugriff auf Personendaten wird protokolliert. Admins können Protokolleinträge weder ändern noch löschen. | Muss |
 | BER-03 | Eine Veranstaltung planen, zu einer Veranstaltung einladen, sich oder andere anmelden und öffentliche Veranstaltungen sehen kann nur, wer eine Zuordnung hat. Zuordnung heißt: Mitglied einer Gruppe, eines Stammes, eines Rings oder eines Bundes, oder die Rolle Verbandsleitung oder DPV-Veranstaltungsteam. Admin, Veranstaltungsleitung, Ansprechperson und Verwaltende eines Kreises sind keine Zuordnung. Veranstaltungsleitung oder Mitglied eines Veranstaltungsteams wird nur, wer eine Zuordnung hat. Was ein Konto ohne Zuordnung darf, regelt die Rechtematrix. Gäste über einen Gast-Link (ANM-04) melden sich ohne Konto an. Was beim Verlust der Zuordnung mit bestehenden Anmeldungen geschieht, regelt ROL-01. | Muss |
-| BER-04 | **Teilnahmekreis:** legt fest, wer eine Veranstaltung sehen und sich anmelden darf (beides fällt immer zusammen). Bausteine, frei kombinierbar: Einheiten (auch mehrere), Rollen (z. B. „alle Bundesleitungen“ für eine MV), eigene Kreise oder „alle“. Wer eine Zuordnung hat (BER-03), wählt, wozu er gehört: Einheiten innerhalb des eigenen Bundes bzw. der eigenen Bünde sowie Kreise, in denen er Mitglied oder Verwaltende ist, auch bundesübergreifend. Andere Kreise kann man nicht wählen. Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam dürfen außerdem bundesübergreifende Einheiten, Rollen und „alle“ wählen; für Kreise gilt auch für sie die Regel oben. Wer nur über einen eigenen Kreis zum Teilnahmekreis gehört, meldet sich nur selbst an (keine Mitanmeldung verwalteter Personen). Setzt voraus: GRP-01, ROL-05. | Muss |
-| BER-05 | **Benachrichtigungskreis:** optional, legt fest, wer aktiv per Mail über die neue Veranstaltung informiert wird. Er ist gleich oder kleiner als der Teilnahmekreis. Wählbar sind nur Einheiten, in denen man selbst Leitung ist (und alles darunter), rollenbasierte Kreise im eigenen Bereich und selbst verwaltete eigene Kreise. Die Verbandsleitung darf jeden Benachrichtigungskreis wählen. „Alle“ ist als Benachrichtigungskreis nie wählbar. | Muss |
+| BER-04 | **Teilnahmekreis:** legt fest, wer eine Veranstaltung sehen und sich anmelden darf (beides fällt immer zusammen). Bausteine, frei kombinierbar: Einheiten (auch mehrere), Rollen (z. B. „alle Bundesleitungen“ für eine MV), Kreise oder „alle“. Wer eine Zuordnung hat (BER-03), wählt, wozu er gehört: Einheiten innerhalb des eigenen Bundes bzw. der eigenen Bünde sowie Kreise, in denen er Mitglied oder Verwaltende ist, auch bundesübergreifend. Andere Kreise kann man nicht wählen. Bundesleitungen, Verbandsleitung und DPV-Veranstaltungsteam dürfen außerdem bundesübergreifende Einheiten, Rollen und „alle“ wählen; für Kreise gilt auch für sie die Regel oben. Wer nur über einen Kreis zum Teilnahmekreis gehört, meldet sich nur selbst an (keine Mitanmeldung verwalteter Personen). Setzt voraus: GRP-01, ROL-05. | Muss |
+| BER-05 | **Benachrichtigungskreis:** optional, legt fest, wer aktiv per Mail über die neue Veranstaltung informiert wird. Er ist gleich oder kleiner als der Teilnahmekreis. Wählbar sind nur Einheiten, in denen man selbst Leitung ist (und alles darunter), rollenbasierte Kreise im eigenen Bereich und selbst verwaltete Kreise. Die Verbandsleitung darf jeden Benachrichtigungskreis wählen. „Alle“ ist als Benachrichtigungskreis nie wählbar. | Muss |
 | BER-06 | Sind Gäste nicht zugelassen, hebelt der Anmeldelink den Teilnahmekreis nicht aus. Wer nicht dazugehört, sieht: „Diese Veranstaltung richtet sich an … Bitte wende dich an die Veranstaltungsleitung.“ Ist der Teilnahmekreis ein privater Kreis, steht dort nur: „Diese Veranstaltung richtet sich an einen geschlossenen Personenkreis.“ Sind Gäste zugelassen (VER-11), kann sich bewusst jede Person mit dem Link als Gast anmelden. | Muss |
 | BER-07 | Admins sehen alle Veranstaltungen, unabhängig vom Teilnahmekreis. | Muss |
 
-*Beispiel Vorbereitungstreffen:* Teilnahmekreis „alle“ (gewählt vom DPV-Veranstaltungsteam), Benachrichtigungskreis ist der eigene Kreis „Planungsteam“. Das Planungsteam bekommt eine Mail, alle anderen sehen die Veranstaltung im Dashboard und dürfen sich anmelden.
+*Beispiel Vorbereitungstreffen:* Teilnahmekreis „alle“ (gewählt vom DPV-Veranstaltungsteam), Benachrichtigungskreis ist der Kreis „Planungsteam“. Das Planungsteam bekommt eine Mail, alle anderen sehen die Veranstaltung im Dashboard und dürfen sich anmelden.
 
 ## Veranstaltung planen
 
@@ -195,7 +195,7 @@ Eine Veranstaltung entsteht als Entwurf, wird per Schalter veröffentlicht und i
 | --- | --- | --- |
 | TEAM-01 | Wer eine Veranstaltung erstellt, ist automatisch Veranstaltungsleitung. Weitere Personen mit Zuordnung (BER-03) können als Veranstaltungsleitung hinzugefügt werden. Es gibt immer mindestens eine Veranstaltungsleitung; die letzte kann sich nicht selbst entfernen. Die Veranstaltungsleitung sieht und darf alles. Alle, die eine Veranstaltung mitleiten, bilden ihr Leitungsteam. | Muss |
 | TEAM-02 | Feineres Rollenmodell im Leitungsteam; eine Person kann mehrere Rollen haben: Mitleitung (bearbeiten, Anmeldungen ohne Gesundheitsdaten), Küche (Küchenübersicht, Ernährung), Gesundheit/Sani (Gesundheitsdaten, Notfallkontakte), Finanzen (Zahlungen, Budget, Ausgaben). Absagen, Löschen und das Verwalten des Leitungsteams bleiben der Veranstaltungsleitung vorbehalten. | Kann |
-| TEAM-03 | Eigene Kreise lassen sich als Ganzes ins Leitungsteam aufnehmen, aber nur private Kreise. Wer dem Kreis beitritt, erhält die Rechte im Leitungsteam. Setzt voraus: GRP-02. | Kann |
+| TEAM-03 | Kreise lassen sich als Ganzes ins Leitungsteam aufnehmen, aber nur private Kreise. Wer dem Kreis beitritt, erhält die Rechte im Leitungsteam. Setzt voraus: GRP-02. | Kann |
 
 Hinweis: Bis TEAM-02 umgesetzt ist, sieht jede Veranstaltungsleitung auch Gesundheitsdaten. Das Leitungsteam sollte daher bewusst klein gehalten werden; die Küche erhält von der Veranstaltungsleitung einen Auszug (Küchenliste, LIS-04).
 
@@ -378,13 +378,13 @@ Reihenfolge von oben nach unten (auch auf dem Handy):
 | DSH-08 | Bausteine des Dashboards ein- und ausblenden. | Kann |
 | DSH-09 | Kalenderdatei (.ics) pro Veranstaltung herunterladen. | Kann |
 
-## Eigene Kreise
+## Kreise
 
-Neben der festen Hierarchie kann jede Person eigene Kreise bilden, etwa Arbeitskreise oder Planungsteams. Sie dienen als Teilnahme- und Benachrichtigungskreise und können bundesübergreifend sein; die Generalprobe braucht sie für das Planungsteam.
+Neben der festen Hierarchie kann jede Person mit Zuordnung (BER-03) Kreise bilden, etwa Arbeitskreise oder Planungsteams. Sie dienen als Teilnahme- und Benachrichtigungskreise und können bundesübergreifend sein; die Generalprobe braucht sie für das Planungsteam.
 
 | ID | Anforderung | Priorität |
 | --- | --- | --- |
-| GRP-01 | Jede Person mit Account kann einen Kreis erstellen, gehört automatisch zu den Verwaltenden des Kreises und kann weitere Verwaltende benennen. Mitglieder sind nur Personen mit Account. | Muss |
+| GRP-01 | Jede Person mit Zuordnung (BER-03) kann einen Kreis erstellen, gehört automatisch zu den Verwaltenden des Kreises und kann weitere Verwaltende benennen. Mitglieder sind nur Personen mit Account. | Muss |
 | GRP-02 | **Privater Kreis:** für andere unsichtbar. Mitglieder kommen nur hinein, wenn die Verwaltenden sie aktiv hinzufügen; sie werden darüber benachrichtigt. Kein Einladungslink. | Muss |
 | GRP-03 | **Öffentlicher Kreis:** für alle sichtbar, jede Person kann beitreten; optional müssen die Verwaltenden den Beitritt bestätigen. | Soll |
 | GRP-04 | Mitglieder können einen Kreis jederzeit verlassen. | Muss |
@@ -492,11 +492,12 @@ Vier Klärungen mit dem DPV bestimmen, wie viel das Tool selbst verwalten muss; 
 | Änderungsschluss | Ende des Zeitraums, in dem Ansprechpersonen bestehende Anmeldungen ändern und Personen nachmelden dürfen |
 | Benachrichtigungskreis | Personen, die per Mail über eine neue Veranstaltung informiert werden |
 | DPV-Veranstaltungsteam | Von der Verbandsleitung benannte Rolle, die bundesübergreifende Einheiten, Rollen und „alle“ als Teilnahmekreis wählen darf; für Kreise gilt BER-04 |
-| Eigener Kreis | Frei gebildeter Personenkreis außerhalb der Hierarchie, z. B. Arbeitskreis, Planungsteam; kann bundesübergreifend sein |
 | Einheit | Organisationseinheit: Verband, Bund, Ring, Stamm oder Gruppe |
 | Gast | Person ohne Account und ohne gespeichertes Profil, angemeldet zu einer einzelnen Veranstaltung |
 | Gruppe | Unterste Einheit der Hierarchie, frei benannt (z. B. Meute, Sippe, Runde) |
+| Kette nach oben | Einheiten, deren Leitungen eine Person mit Name, Fahrtenname und Rolle sieht (BER-01, Grund 3): die Einheit ihrer Mitgliedschaft und jede Einheit, die sie leitet, jeweils mit allen Einheiten darüber bis zum Bund (Rechtematrix RO-01, RO-02) |
 | Keycloak | Zentrales Login-System des DPV |
+| Kreis | Frei gebildeter Personenkreis außerhalb der Hierarchie, z. B. Arbeitskreis, Planungsteam; kann bundesübergreifend sein |
 | Leitungsteam | Alle Personen, die eine Veranstaltung mitleiten |
 | Persönliches Adressbuch | Nur für die besitzende Person sichtbare Liste externer Personen |
 | Sammelanmeldung | Anmeldung mehrerer Personen durch eine Ansprechperson |

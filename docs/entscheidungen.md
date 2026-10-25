@@ -6,6 +6,20 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · Folgekorrekturen nach PR #135 (#150): Kette nach oben, Tabelle zu BER-01, „Kreis“
+
+**Entscheidung** (Sebastian; Klärung von #150 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/150#issuecomment-6394528633)). Die Einträge vom 24.10.2026 bleiben stehen; dieser legt nur fest, was dort mehrdeutig oder noch nicht nachgetragen war.
+
+1. **Kette nach oben** (C3): Sie beginnt bei der Einheit der eigenen Mitgliedschaft und, bei einer Leitung, außerdem bei jeder Einheit, die sie leitet, jeweils bis zum Bund. Beispiel: Berta ist Mitglied des Bundes und Stammesleitung von Walhall; sie sieht Name, Fahrtenname und Rolle der Ringleitung über Walhall und der Bundesleitung (RO-01). Für Mitglieder ohne Leitungsrolle bleibt es bei der Mitgliedschaft (RO-02). Grund: Eine Leitung braucht die Leitung über der Einheit, die sie leitet; als Mitglied sieht sie nicht weniger als andere Mitglieder.
+2. **Tabelle unter der Einleitung zu BER-01:** Bei allen Leitungen und der Verbandsleitung steht in der Spalte „Personen fremder Einheiten“ „nein (außer BER-01, Grund 3 und 4)“. Beim DPV-Veranstaltungsteam bleibt „nein“: Eine Ausnahme wäre dort ein neues Recht und widerspräche dem Eintrag vom 23.10.2026 zu #87, Nr. 5, und RO-07. Die Spalte „Veranstaltungen“ nennt in jeder Zeile außer Admin „Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen“.
+3. **„Kreis“ und Kreise nur mit Zuordnung** (Eintrag vom 24.10.2026, Nr. 4 und 10): „Eigener Kreis“ heißt in den Anforderungen jetzt überall „Kreis“. GRP-01 und der Einleitungssatz zu den Kreisen sagen „Jede Person mit Zuordnung (BER-03)“. Gebaut werden die Kreise weiter mit #141.
+4. **ORG-01** bekommt den Vermerk, dass bis zur Seite für Bünde (#107) ein Admin weitere Bünde auf Bitte der Verbandsleitung anlegt (EH-22).
+5. **BER-05** bleibt unverändert bis auf das Wort „Kreis“. Die Regel für Mails klärt #151 (P5).
+
+**Ohne neue Entscheidung** (Vorschläge der KI, von Sebastian bestätigt): Glossar-Eintrag „Kette nach oben“; Vermerk „ändert sich ab P3“ bei PK-16 nach ROL-01 und #136, Teil 3, Frage 5; Klarstellung bei EH-02, dass Mitglieder im eigenen Bund weiter alle Einheiten sehen, auch die Gruppen; bei EH-25 schaltet ab #107 die Bundesleitung „hat Ringe“ selbst aus (ROL-03). Zum Eintrag vom 24.10.2026, Nr. 1 kommt kein Zusatz: Nr. 3 gibt der einspringenden Leitung alle Rechte einer Leitung, auch Entfernen und endgültiges Löschen, und PK-21 und VP-09 nennen sie.
+
+**Umsetzung:** `docs/anforderungen.md` (Einleitungssatz „Organisationsstruktur, Personen und Rollen“, ORG-01, ORG-03, Tabelle unter der Einleitung zu BER-01, BER-04, BER-05, Beispiel Vorbereitungstreffen, TEAM-03, Abschnitt „Kreise“ mit GRP-01, Glossar), `docs/rechtematrix.md` (Einleitung, Kette nach oben, RO-01, PK-16, EH-02, EH-25), Tests in `tests/test_rechtematrix.py`. Neues Issue: #151.
+
 ## 2026-10-24 · Rechte nach dem externen Review der Rechtematrix (#136): elf Anforderungen geändert, dazu Folgeänderungen
 
 **Entscheidung** (Sebastian; Klärung in #136 am 24.10.2026, Protokolle [Teil 1](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6383778907), [Teil 2](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6384078749), [Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386790510) und [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/136#issuecomment-6386910794)). Sie ändert, soweit unten genannt, die Einträge vom 23.10.2026 zu #87 (Nr. 6), #88 (Nr. 2) und #89 (Nr. 3 und 5) sowie die Klärungen in #9, #65, #93, #94, #95, #100, #117 und #118; die alten Einträge bleiben stehen.

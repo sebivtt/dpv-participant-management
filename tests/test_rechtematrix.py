@@ -272,3 +272,84 @@ def test_verweis_ins_leere_ist_rot():
     known = requirement_ids(REQUIREMENTS.read_text(encoding="utf-8"))
 
     assert dangling_references(text, known) == ["ORG-66", "RO-99", "TEAM-99"]
+
+
+# Folgekorrekturen nach PR #135 (#150)
+
+
+def requirements_text() -> str:
+    return REQUIREMENTS.read_text(encoding="utf-8")
+
+
+def glossary(text: str) -> dict[str, str]:
+    """Begriff und Bedeutung aus dem Glossar am Ende von `docs/anforderungen.md`."""
+    part = text.split("\n## Glossar\n", 1)[1]
+    found = {}
+    for line in part.splitlines():
+        if line.startswith("| "):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            found[cells[0]] = cells[1]
+    return found
+
+
+def visibility_table(text: str) -> dict[str, list[str]]:
+    """Die Tabelle unter der Einleitung zu BER-01, je Zeile die Zellen nach „Wer“."""
+    part = text.split("| Wer | Verwaltete Personen |", 1)[1].split("\n\n", 1)[0]
+    found = {}
+    for line in part.splitlines()[2:]:
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        found[cells[0]] = cells[1:]
+    return found
+
+
+def requirement(text: str, requirement_id: str) -> str:
+    return re.search(rf"^\| {requirement_id} \| (.+?) \|", text, flags=re.MULTILINE).group(1)
+
+
+OWN_CIRCLE = re.compile(r"\beigene[nmrs]?\s+Kreis", flags=re.IGNORECASE)
+
+
+def test_kette_nach_oben_steht_im_glossar():
+    """Punkt 5 und C3: BER-01, Grund 3 nennt den Begriff; er beginnt auch bei der geleiteten Einheit."""
+    meaning = glossary(requirements_text()).get("Kette nach oben", "")
+
+    assert "Mitgliedschaft" in meaning
+    assert "jede Einheit, die sie leitet" in meaning
+    assert "RO-01" in meaning
+
+
+def test_kette_nach_oben_beginnt_auch_bei_der_geleiteten_einheit():
+    """C3: In der Lesehilfe der Matrix steht dieselbe Regel wie im Glossar, mit dem Beispiel Berta."""
+    reading = matrix_text().split("**Kette nach oben:**", 1)[1].split("\n- **", 1)[0]
+
+    assert "jede Einheit, die sie leitet" in reading
+    assert "Berta" in reading
+    assert "Ein Mitglied ohne Leitungsrolle, das direkt im Bund ist" in reading
+
+
+def test_es_heisst_nur_noch_kreis():
+    """Punkt 11: „Kreis“ statt „eigener Kreis“ (Entscheidung vom 24.10.2026, Nr. 10)."""
+    assert OWN_CIRCLE.findall(requirements_text()) == []
+    assert OWN_CIRCLE.findall(matrix_text()) == []
+
+
+def test_eigener_kreis_ist_rot():
+    """Gegenprobe."""
+    assert len(OWN_CIRCLE.findall("eigene Kreise, eigenen Kreis, Eigener Kreis, Kreise")) == 3
+
+
+def test_kreis_erstellen_nur_mit_zuordnung():
+    """Punkt 4: GRP-01 folgt der Entscheidung vom 24.10.2026, Nr. 4."""
+    assert requirement(requirements_text(), "GRP-01").startswith("Jede Person mit Zuordnung (BER-03)")
+
+
+def test_tabelle_zu_ber_01_nennt_grund_3_und_4():
+    """Punkte 1 und 2: Ausnahmen bei Personen fremder Einheiten, Veranstaltungen ausgeschrieben."""
+    table = visibility_table(requirements_text())
+
+    for who in ("Gruppenleitung", "Stammesleitung", "Ring-/Bundesleitung", "Verbandsleitung"):
+        assert table[who][1] == "nein (außer BER-01, Grund 3 und 4)", who
+    assert table["DPV-Veranstaltungsteam"][1] == "nein"
+    for who, cells in table.items():
+        if who != "Admin":
+            assert cells[3] == "Veranstaltungen, in deren Teilnahmekreis sie sind (BER-04), und geleitete Veranstaltungen", who
