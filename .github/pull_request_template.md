@@ -12,6 +12,7 @@
 
 <!-- Nur, was tatsächlich ausgeführt wurde, mit Ergebnis. Was nur empfohlen ist, gehört unter „Nicht geprüft und offen“. -->
 
+- Szenarien (Link zum Kommentar „Szenarien (Datum)“ und Tests, die darüber hinaus dazugekommen sind; ohne Szenarien der Grund aus der Klärung):
 - Test für den erlaubten Fall:
 - Test für den verbotenen Fall (wer darf das nicht?):
 - Lokal ausgeführte Prüfungen und Ergebnis (`./pruefen.sh`):

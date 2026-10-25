@@ -24,7 +24,7 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 
 1. **Eng fassen:** eine Anforderung oder ein Fehler je Aufgabe, als Issue (Skill `issue-anlegen`). Umgesetzt wird nur ein Issue mit dem Label `geklärt` (Skill `grill-me`), und erst, wenn es laut `docs/fahrplan.md` dran ist.
 2. **Erst lesen und planen:** betroffene Dateien, Risiken, offene Annahmen und Testfälle nennen, bevor Code entsteht.
-3. **Szenarien vor Code:** Sebastian schreibt die fachlichen Szenarien; die KI schlägt fehlende Fälle vor, er entscheidet. Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund (`CONTRIBUTING.md`, Abschnitt 3). Erst dann kommt der Code.
+3. **Szenarien vor Code:** Die KI schlägt die fachlichen Szenarien vor, Sebastian entscheidet je Szenario, ob es passt, geändert werden muss oder ein Fall fehlt. Vor dem ersten Test stehen sie als Kommentar „Szenarien (Datum)“ im Issue, mit seinen Entscheidungen; meist entstehen sie schon beim Klären (Skill `grill-me`). Daraus entstehen zuerst die Tests; sie müssen fehlschlagen, und zwar aus dem richtigen Grund (`CONTRIBUTING.md`, Abschnitt 3). Erst dann kommt der Code. Ohne Szenarien geht nur ein Issue, für das die Klärung festhält, dass es kein fachliches Verhalten hat (z. B. reine Doku oder CI).
 4. **Tatsächlich prüfen:** alle automatischen Prüfungen lokal mit `./pruefen.sh` ausführen (Anleitung im `README.md`). Im Bericht trennen, was ausgeführt wurde und was nur empfohlen ist.
 5. **Unabhängige Prüfung** vor jedem Pull Request (siehe unten).
 6. **Pull Request** nach der Vorlage. Erst alles hochladen und warten, bis alle Prüfungen auf GitHub grün sind; dann den Link schicken und das Ergebnis der Prüfungen in der Beschreibung nennen. GitHub sperrt das Übernehmen roter Pull Requests bei diesem privaten Repo nicht; die Regel ersetzt die Sperre, bis das Repo veröffentlicht ist (#16). Ist ein Lauf nur an der Browser-Installation gescheitert, kein Test gelaufen und nennt die Meldung klar die Browser-Installation, darf die KI ihn einmal pro Stand ohne Rückfrage neu starten; scheitert auch das, fragt sie Sebastian, und der Pull Request nennt den Neustart (`docs/entscheidungen.md`, 25.10.2026).
@@ -39,6 +39,9 @@ Für Phasen und Vorgemerktes gilt:
 Für die Umsetzung gilt außerdem:
 
 - Direkt vor dem Start die Abhängigkeiten des Issues erneut prüfen. Ist ein blockierendes Issue noch offen, nicht anfangen, sondern Sebastian fragen.
+- Direkt vor dem Start prüft die KI außerdem, ob im Issue der Kommentar „Szenarien (Datum)“ mit Sebastians Entscheidungen steht. Fehlt er, hält sie an und legt ihm Szenarien vor, statt mit Tests oder Code zu beginnen. Das gilt auch, wenn der Auftrag den Schritt nicht nennt; ein Auftrag hebt ihn nie auf.
+- Aufträge an andere Sessions nennen den Schritt „Szenarien vor Code“ ausdrücklich. Weglassen dürfen sie ihn nur, wenn die Klärung festhält, dass das Issue kein fachliches Verhalten hat; der Grund steht dann im Auftrag und im Pull Request.
+- Der Pull Request verlinkt den Kommentar mit den Szenarien und nennt die Tests, die über die Szenarien hinaus dazugekommen sind.
 - Ein Issue ergibt einen Pull Request mit eigenem Test. Die Beschreibung nennt „Closes #<nummer>“.
 - Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist.
 - Kommt zu einem geklärten Issue neuer Inhalt dazu, das Label `geklärt` entfernen und `grill-me` nur für den neuen Teil durchlaufen.
@@ -88,5 +91,6 @@ Diese Fehler sind dort tatsächlich passiert. Sie wiederholen sich leicht.
 - **Fehler, die nur auf Sebastians Mac auftreten:** zuerst die dort installierten Pakete prüfen.
 - **Pull Requests nicht aufeinander aufbauen.** Ein aufgebauter Pull Request landete nach der Übernahme im falschen Branch.
 - **Rauchtests im Browser mehrmals laufen lassen** (21.10.2026): Ein Test mit echtem Browser und echtem Keycloak war bei der KI und auf GitHub grün, bei Sebastian rot. Er tippte, bevor Keycloak fertig geladen hatte (#33). Neue oder geänderte Rauchtests vor dem Pull Request mehrmals hintereinander laufen lassen und erst tippen, wenn die Seite steht.
+- **Szenarien vor Code fiel aus** (25.10.2026): Bei #90, #64 und #8 nannten die Aufträge der Steuerungssession nur „prüfen, Tests, Code“, und nichts hielt die Umsetzung an. Deshalb lagen keine Szenarien von Sebastian vor. Für #90 und #64 wurden sie nachträglich aus den Tests aufgeschrieben; dabei kamen acht Lücken zutage (#156). Für #8 werden sie nicht nachgeholt (#158).
 
 Weitere Erfahrungen hier mit Datum ergänzen.

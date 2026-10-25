@@ -6,6 +6,22 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-25 · Umsetzung nur mit vorher bestätigten Szenarien (#158)
+
+**Entscheidung** (Sebastian; Klärung von #158 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/158#issuecomment-6398277636)):
+
+1. **Szenarien vor dem ersten Test:** Die KI schlägt Szenarien vor, Sebastian entscheidet je Szenario. Vor dem ersten Test stehen sie als Kommentar „Szenarien (Datum)“ im Issue, mit seinen Entscheidungen. Fehlt der Kommentar, hält die KI an und legt ihm Szenarien vor, auch wenn der Auftrag den Schritt nicht nennt; ein Auftrag hebt ihn nie auf.
+2. **Gesammelt beim Klären:** `grill-me` sammelt die Szenarien als Schritt vor dem Label `geklärt`. Fehlen sie trotzdem, holt die Umsetzung sie nach.
+3. **Ausnahme nur durch die Klärung:** Ohne Szenarien geht nur ein Issue, für das die Klärung mit Sebastian festhält, dass es kein fachliches Verhalten hat (z. B. reine Doku, CI oder Arbeitsregeln). Fehlt diese Angabe, sind Szenarien nötig. Aufträge an andere Sessions nennen den Schritt ausdrücklich; weglassen dürfen sie ihn nur mit dieser Angabe, der Grund steht dann im Auftrag und im Pull Request.
+4. **Im Pull Request:** Die Vorlage hat unter „Wie geprüft wurde“ eine Zeile „Szenarien“: Link zum Kommentar und Tests, die darüber hinaus dazugekommen sind, ohne Szenarien der Grund aus der Klärung.
+5. **#8:** Die Szenarien zu #8 werden nicht nachgeholt; dafür gibt es kein eigenes Issue.
+
+**Begründung:** Am 25.10.2026 fiel auf, dass bei #90, #64 und #8 keine Szenarien von Sebastian vorlagen. Die Aufträge der Steuerungssession nannten nur „prüfen, Tests, Code“, und nichts hielt die Umsetzung an. Die nachträglich aufgeschriebenen Szenarien zu #90 und #64 brachten acht Lücken zutage (#156). Liegt die Entscheidung über die Ausnahme bei der Klärung, kann sich keine Session selbst davon befreien.
+
+**Technische Wahl** (KI): Ein Test prüft, dass die Regeln in `CLAUDE.md`, in der Vorlage für Pull Requests und in `grill-me` stehen, nach dem Vorbild des Tests zur Regel für den Neustart (#133). Ob sich eine KI daran hält, kann er nicht prüfen.
+
+**Umsetzung:** `CLAUDE.md` („Ablauf je Aufgabe“, Schritt 3; „Für die Umsetzung gilt außerdem“; „Erfahrungen aus dem Vorgänger-Repo“), `.github/pull_request_template.md`, `.claude/skills/grill-me/SKILL.md` (Abschnitte 2, 5, 8 und „Danach“, bisherige Abschnitte 5 bis 7 jetzt 6 bis 8), `tests/test_szenarien_vor_code.py`.
+
 ## 2026-10-25 · Sitzung endet spätestens 12 Stunden nach dem Login (#8)
 
 **Entscheidung** (Sebastian, Klärung von #8 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/8#issuecomment-6334870652), Frage 1). Ergänzt die Sitzungsdauer vom 21.10.2026 (Punkt 2), ersetzt sie nicht:
