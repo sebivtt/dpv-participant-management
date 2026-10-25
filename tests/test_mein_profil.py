@@ -167,6 +167,17 @@ def test_kopfzeile_zeigt_kreis_mit_anfangsbuchstaben_und_namen(org):
     assert _attr(avatar(root), "aria-hidden") == "true"  # der Name steht gleich daneben
 
 
+def test_kopfzeile_kreis_mit_grossem_anfangsbuchstaben_auch_bei_kleinem_vornamen(org):
+    """Szenario 1 zu #161, wie der Profilkreis in der Seitenleiste (unabhängige Prüfung zu #161)."""
+    org.erika.first_name = "erika"
+    org.erika.save()
+
+    root = page(org.erika)
+
+    assert raw_text(avatar(root)) == "E"
+    assert display_name(root) == "erika Testfrau"
+
+
 def test_angaben_als_gesperrte_felder_mit_symbol_und_schloss(org):
     """Szenario 1 zu #161: jedes Feld mit eigenem Symbol und einem Schloss, für Vorleseprogramme stumm."""
     box = details_box(page(org.erika))

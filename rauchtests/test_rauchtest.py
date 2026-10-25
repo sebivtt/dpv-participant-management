@@ -265,10 +265,16 @@ def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, de
     page: Page = request.getfixturevalue(device)
     login(page)
     _erika_with_roles()
+    # Sehr lange Angaben ohne Trennstelle (unabhängige Prüfung zu #161); sie gelten bis zur nächsten Anmeldung.
+    get_user_model().objects.filter(username="erika.testfrau").update(
+        last_name="Testfrau-Mustermann-Beispielname-von-und-zu-Hohenlinden",
+        email="erika.testfrau.mit.einer.sehr.langen.adresse.ohne.trennstelle@example.org",
+    )
 
     page.goto(f"{BASE}/profil/")
 
     expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+    expect(page.locator(".a-anzeigename")).to_have_text("Erika Testfrau-Mustermann-Beispielname-von-und-zu-Hohenlinden")
     expect(page.get_by_role("heading", level=2, name="Deine Angaben")).to_be_attached()
     expect(page.get_by_role("heading", level=2, name="Organisation und Rollen")).to_be_visible()
     membership = page.locator(".a-mitgliedschaft")
@@ -295,6 +301,8 @@ def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, de
         "side => s['border' + side + 'Width'] + ' ' + s['border' + side + 'Style'] + ' ' + s['border' + side + 'Color']) }"
     )
     assert borders == ["3px solid rgb(26, 75, 126)"] + ["1px solid rgb(219, 226, 234)"] * 3
+    # Die Rollenmarke in der Kachel bleibt zart blau (Sebastian, Nachtrag vom 25.10.2026 in #161).
+    assert tile.locator(".a-rollenmarke").evaluate(look) == ["rgb(233, 239, 246)", "none", "none"]
     # axe vor dem Tabben: Direkt nach dem Fokus auf „Abmelden“ misst es die Farben des Knopfs mitten
     # im Übergang und meldet zu wenig Kontrast; kurz danach ist alles in Ordnung (geprüft am 25.10.2026).
     assert run_axe(page) == []
