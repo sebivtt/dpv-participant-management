@@ -24,6 +24,7 @@ Zugriff“ (403). Meldet eine Seite an einer Adresse mit Kennung trotzdem „kei
 `RightsMiddleware` „nicht gefunden“ daraus.
 """
 
+import unicodedata
 from functools import cached_property
 
 from collections.abc import Callable
@@ -229,7 +230,7 @@ class Rights:
             return []
         roles = Role.objects.filter(user_id=self.user.pk).select_related("unit__parent__parent__parent__parent")
         order = list(R)
-        return sorted(roles, key=lambda role: (order.index(role.kind), role.unit.name.casefold() if role.unit else ""))
+        return sorted(roles, key=lambda role: (order.index(role.kind), _alphabetical(role.unit.name if role.unit else "")))
 
     # Leitungen (BER-01, Grund 3)
 
@@ -267,6 +268,15 @@ class Rights:
             return False
         membership = Role.objects.filter(user_id=person.pk, kind=R.MEMBER).select_related("unit").first()
         return membership is not None and self.leads_unit(membership.unit)
+
+
+def _alphabetical(name: str) -> str:
+    """Schlüssel für die Sortierung nach dem Alphabet: Ä bei A, É bei E, ohne Groß- und Kleinschreibung.
+
+    Python vergleicht sonst nach Zeichencode und stellt „Ährenfeld“ hinter „Zugvögel“.
+    """
+    without_marks = "".join(char for char in unicodedata.normalize("NFKD", name) if not unicodedata.combining(char))
+    return without_marks.casefold()
 
 
 def on_lead_path(person, unit: Unit | None) -> bool:

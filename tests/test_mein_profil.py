@@ -187,8 +187,8 @@ def test_reihenfolge_der_rollen_von_klein_nach_gross(org):
     give(org.erika, R.EVENT_TEAM, org.dpv)
     give(org.erika, R.ASSOCIATION_LEAD, org.boreas)
     give(org.erika, R.TROOP_LEAD, org.walhall)
-    give(org.erika, R.GROUP_LEAD, org.woelfe)
     give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.woelfe)
 
     rows = [line for line, _way in role_rows(page(org.erika))]
 
@@ -217,6 +217,17 @@ def test_ringleitung_steht_zwischen_stammes_und_bundesleitung(org):
         ("Ringleitung · Küste", "DPBM Mosaik"),
         ("Bundesleitung · DPBM Mosaik", ""),
     ]
+
+
+def test_umlaut_am_anfang_steht_im_alphabet_beim_grundbuchstaben(org):
+    """Szenario 4: „im Alphabet“ heißt Ä bei A, nicht hinter Z (unabhängige Prüfung zu #96)."""
+    give(org.erika, R.MEMBER, org.walhall)
+    for name in ("Meute Zander", "Meute Ährenfeld", "Meute Biber"):
+        give(org.erika, R.GROUP_LEAD, unit(U.GROUP, name, org.walhall))
+
+    rows = [line for line, _way in role_rows(page(org.erika))]
+
+    assert rows[1:] == ["Gruppenleitung · Meute Ährenfeld", "Gruppenleitung · Meute Biber", "Gruppenleitung · Meute Zander"]
 
 
 # Szenario 5: Bund mit Ringen
