@@ -14,3 +14,9 @@ def no_mail() -> str:
         "Die Anmeldung ist nicht möglich, weil in deinem DPV-Konto keine Mail eingetragen ist. "
         "Wende dich an %(address)s."
     ) % {"address": settings.ACCOUNT_HELP_EMAIL}
+
+# Fahrtenname auf „Mein Profil“ (#111), Wortlaute von Sebastian (Nachklärung vom 26.10.2026).
+SCOUT_NAME_SAVED = gettext_lazy("Dein Fahrtenname ist gespeichert.")
+SCOUT_NAME_DELETED = gettext_lazy("Dein Fahrtenname ist gelöscht.")
+SCOUT_NAME_TOO_LONG = gettext_lazy("Dein Fahrtenname darf höchstens 50 Zeichen lang sein.")
+SCOUT_NAME_FAILED = gettext_lazy("Dein Fahrtenname konnte nicht gespeichert werden. Versuche es noch einmal.")

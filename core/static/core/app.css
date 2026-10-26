@@ -287,6 +287,14 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-blaettern { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; color: var(--text-leise); font-size: .92rem; }
 .a-formular { max-width: 640px; }
 .a-pflicht { color: var(--text-leise); font-weight: 600; font-size: .85em; }
+/* Baustein Textfeld (#111): Beschriftung, Feld, Fehler am Feld; so hoch wie die Felder auf „Mein Profil“,
+   weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild, docs/zielbilder/mein-profil.html) */
+.a-textfeld { margin: 0 0 1rem; }
+.a-textfeld .form-control { min-height: 46px; background-color: var(--flaeche); }
+/* Fahrtenname auf „Mein Profil“: das einzige Feld zum Bearbeiten, über den gesperrten Feldern (#111) */
+.a-fahrtenname { margin: 0 0 18px; }
+.a-fahrtenname .a-textfeld { max-width: 420px; margin-bottom: 10px; }
+.a-fahrtenname .form-label { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
 
 /* Fußbereich: flach, Impressum und Datenschutz links, Copyright rechts */
 .a-fuss { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--linie); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; font-size: .86rem; color: var(--text-leise); }

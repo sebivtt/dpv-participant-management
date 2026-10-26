@@ -16,7 +16,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 
 ### Abweichungen der Seite vom Zielbild
 
-1. **Fehlt, weil das Tool die Daten nicht hat:** „Profil freigeben“ und die Freigaben je Feld (#137), Fahrtenname als Feld und vor dem Namen (#111), Geburtsdatum (#143), Adresse und Gesundheitsangaben (FRM-02 bis FRM-04). Sie kommen mit ihren Issues und folgen dann dem Zielbild.
+1. **Fehlt, weil das Tool die Daten nicht hat:** „Profil freigeben“ und die Freigaben je Feld (#137), Geburtsdatum (#143), Adresse und Gesundheitsangaben (FRM-02 bis FRM-04). Sie kommen mit ihren Issues und folgen dann dem Zielbild. Den Fahrtennamen gibt es seit #111 (Punkt 10).
 2. **„Mitgliedschaft und Austritt verwaltest du in deiner Organisation.“ mit „Organisation öffnen“ fehlt.** Es widerspricht der Entscheidung zu #65: „Austreten“ kommt als Knopf direkt in die Fläche der Mitgliedschaft, an diese Stelle. Eine Seite „Organisation“ gibt es noch nicht (#93).
 3. **Reihenfolge der Rollen von klein nach groß** (Gruppenleitung zuerst, Admin zuletzt), nicht wie im Zielbild von groß nach klein; so in den Szenarien zu #96 entschieden und in #161 bestätigt.
 4. **Feste Sätze statt der Beschreibungen** unter Rollen im DPV ([Nachklärung Kacheln](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403407168)): Verbandsleitung „Leitung des Verbands“ statt „Verantwortung auf Verbandsebene“, DPV-Veranstaltungsteam „Veranstaltungen des Verbands“ statt „Verbandsweite Funktion“. Admin hängt an keiner Organisation und fehlt im Zielbild; die Kachel zeigt klein „Admin“, groß „DPV Anmeldetool“, darunter „Verwaltung des ganzen Tools“. Es sind feste Texte, keine gespeicherten Daten.
@@ -25,6 +25,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 7. **Keine Überschrift je Kachel:** Im Zielbild ist jede Organisation eine Unterüberschrift. Die Seite zeigt die Mitgliedschaft als eigene Fläche und die Kacheln als Liste, beide ohne eigene Überschriften; Vorleseprogramme lesen Rolle, Organisation und Weg zusammen vor, und die Liste der Überschriften bleibt kurz. Sichtbar ist es gleich.
 8. **Lange Namen brechen um,** statt mit „…“ abgeschnitten zu werden, damit am Handy nichts versteckt ist.
 9. **Symbole und Spalten:** eigene Symbole des Tools (Lizenz wie das Tool), für „Organisation und Rollen“ das Symbol der Navigation statt der Ebenen. Die Kacheln passen ihre Spaltenzahl der Breite an (am PC mehrere nebeneinander, am Handy untereinander), statt fester vier, zwei oder einer Spalte. Navigation und Fußbereich kommen wie auf jeder Seite aus dem Tool.
+10. **Fahrtenname** (#111): wie im Zielbild als erstes Feld über Vor- und Nachname und vor dem Namen in der Kopfzeile. Abweichend ist das Feld immer offen, mit einem Knopf „Speichern“ darunter, statt sich erst beim Antippen zu öffnen; ohne „Verwerfen“, ohne Knopf zum Leeren (Löschen heißt: Feld leeren und speichern) und ohne Personensymbol im Feld. So funktioniert es ohne Skript und am Handy wie jedes andere Formular. „Noch nicht angegeben“ steht als Platzhalter im leeren Feld. In der Kopfzeile ist „(Erika Testfrau)“ nicht kleiner und grauer gesetzt, sondern Teil des Namens, weil derselbe Name später auch in Listen steht.
 
 ## Meldungen
 

@@ -1,0 +1,6 @@
+{% load i18n %}{# Gemeinsamer Baustein für Textfelder (#111): Beschriftung, Pflicht-Hinweis, Feld und Fehler direkt darunter, mit dem Feld verknüpft. Eingebunden mit {% textfeld form.feld %} (core/templatetags/layout.py). #}
+<div class="a-textfeld">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if required %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span>{% endif %}</label>
+  {{ widget }}
+  {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
+</div>

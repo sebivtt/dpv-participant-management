@@ -88,7 +88,7 @@ def greeting(user) -> str:
 
 
 def circles(root) -> list[tuple[str, str]]:
-    """Profilkreise in Seitenleiste und Handy-Leiste als (Buchstabe, Name daneben)."""
+    """Profilkreise in Seitenleiste, Handy-Leiste und Handy-Menü als (Buchstabe, Name daneben)."""
     found = []
     for circle in _all(root, lambda e: e.name == "a" and "a-profil" in _classes(e)):
         letter = _one(_all(circle, lambda e: "a-avatar" in _classes(e)))
@@ -117,7 +117,7 @@ def test_erika_traegt_kiwi_ein_und_wird_ueberall_so_genannt(org):
     assert shown_name(root) == "Kiwi (Erika Testfrau)"
     assert raw_text(avatar(root)) == "K"
     assert _attr(field(root), "value") == "Kiwi"
-    assert circles(root) == [("K", "Kiwi"), ("K", "")]
+    assert set(circles(root)) == {("K", "Kiwi"), ("K", "")}
     assert greeting(org.erika) == "Hallo Kiwi!"
 
 
@@ -152,7 +152,7 @@ def test_erika_aendert_kiwi_in_kolibri(org):
     assert stored(org.erika) == "Kolibri"
     assert notices(root, "ist-erfolg") == [SAVED]
     assert shown_name(root) == "Kolibri (Erika Testfrau)"
-    assert circles(root) == [("K", "Kolibri"), ("K", "")]
+    assert set(circles(root)) == {("K", "Kolibri"), ("K", "")}
     assert greeting(org.erika) == "Hallo Kolibri!"
     assert "Kiwi" not in client.get(PROFILE).content.decode()
 
@@ -171,7 +171,7 @@ def test_erika_leert_das_feld_und_der_fahrtenname_ist_geloescht(org):
     assert stored(org.erika) == ""
     assert notices(root, "ist-erfolg") == [DELETED]
     assert shown_name(root) == "Erika Testfrau"
-    assert circles(root) == [("E", "Erika"), ("E", "")]
+    assert set(circles(root)) == {("E", "Erika"), ("E", "")}
     assert greeting(org.erika) == "Hallo Erika!"
 
 
@@ -199,7 +199,7 @@ def foreign_fields(target) -> dict:
     }
 
 
-@pytest.mark.rechtematrix("EP-04")
+@pytest.mark.rechtematrix("EP-04", "EP-03")
 @pytest.mark.parametrize("htmx", [False, True])
 def test_stammesleitung_aendert_mit_erikas_kennung_nur_den_eigenen_fahrtennamen(org, htmx):
     set_stored(org.erika, "Kiwi")
@@ -354,6 +354,9 @@ def test_einundfuenfzig_zeichen_fehler_am_feld_und_die_eingabe_bleibt(org, value
     # Der Fehler steht am Feld, nicht als Meldung oben auf der Seite.
     assert notices(root, "a-meldung") == notices(profile(org.erika), "a-meldung")
     assert shown_name(root) == "Kiwi (Erika Testfrau)"
+    # Auch unter der Adresse zum Speichern ist der Profilkreis als aktuelle Seite gekennzeichnet (#13).
+    marked = _all(root, lambda e: e.name == "a" and "a-profil" in _classes(e))
+    assert marked and all(_attr(circle, "aria-current") == "page" for circle in marked)
 
 
 def test_das_feld_begrenzt_die_eingabe_nicht_selbst(org):

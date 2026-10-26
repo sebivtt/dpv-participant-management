@@ -41,6 +41,16 @@ Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. E
 - **Ansagen:** Meldungen nach einer Handlung (Login-Seite) sagen Vorleseprogramme sofort an; fest auf einer Seite stehende nicht.
 - **Band der Testumgebung** ist keine Meldung: Sonnengelb mit schrägen Streifen wie ein Absperrband und eigenem Laborsymbol.
 
+### Textfelder (#111, 26.10.2026)
+
+Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Formular“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
+
+- **Beschriftung** über dem Feld, bei Pflichtfeldern mit „(Pflicht)“; freiwillige Felder ohne Zusatz.
+- **Fehler am Feld** rot direkt darunter, mit dem Feld verknüpft; die Eingabe bleibt stehen.
+- **Passende Handy-Tastatur:** Das Formular legt sie am Feld fest, z. B. bei Namen Großbuchstabe am Wortanfang, ohne Autokorrektur. Jedes neue Feld wird auch wie am Handy geprüft, mit Autokorrektur und Wortvorschlägen (Rauchtest).
+- **Weiß** auf grauem oder weißem Grund, damit es sich von gesperrten Feldern (grau, mit Schloss) abhebt.
+- Gleiches gilt später für Datumsfelder (#100) und das Adressfeld (#163).
+
 **Offener Widerspruch:** LIS-01 und das Abschlusskriterium von P5 verlangen, lebensbedrohliche Allergien in der Teilnehmendenliste hervorzuheben. Abschnitt 5 unten sagt, Gesundheitsdaten erscheinen nicht in der allgemeinen Übersicht. Geklärt wird das in #30, bevor die Liste gebaut wird.
 
 ## 2. Gestaltungskonzept: DPV Anmeldetool

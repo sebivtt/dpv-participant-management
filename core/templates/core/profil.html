@@ -6,18 +6,26 @@
   <div class="a-kopf">
     <h1>{% translate "Mein Profil" %}</h1>
   </div>
+  {# Meldungen nach dem Speichern des Fahrtennamens (#111): Vorleseprogramme sagen sie an (#165). #}
+  {% for message in messages %}{% meldung message.level_tag text=message.message live=True %}{% endfor %}
+  {% if save_failed %}{% meldung "error" text=save_failed live=True %}{% endif %}
   {% if name_incomplete %}
     {% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." as hint %}
     {% meldung "warning" title=hint %}
   {% endif %}
   <section class="a-flaeche a-profilflaeche" aria-labelledby="h-angaben">
     <h2 id="h-angaben" class="sr-nur">{% translate "Deine Angaben" %}</h2>
-    {# Mit #111 steht hier vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“. #}
+    {# Vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“ (#111). #}
     <div class="a-identitaet">
       <span class="a-avatar" aria-hidden="true">{% with name=user.short_name %}{% if name %}{{ name|first|upper }}{% else %}{% icon "person" %}{% endif %}{% endwith %}</span>
-      <p class="a-anzeigename">{{ user.get_full_name|default:user.username }}</p>
+      <p class="a-anzeigename">{{ user.display_name|default:user.username }}</p>
     </div>
-    {# Mit #111 kommt hier der Fahrtenname als erste Angabe dazu, als einziges Feld zum Bearbeiten. #}
+    {# Das einzige Feld zum Bearbeiten (W1, ergänzt mit #111); ohne Skript, ein Formular mit „Speichern“. #}
+    <form class="a-fahrtenname" method="post" action="{% url "profile_scout_name" %}" novalidate>
+      {% csrf_token %}
+      {% textfeld scout_name_form.scout_name %}
+      <button type="submit" class="btn btn-primary">{% translate "Speichern" %}</button>
+    </form>
     <dl class="a-felder">
       <div><dt>{% translate "Vorname" %}</dt><dd{% if not user.first_name %} class="a-leer"{% endif %}>{% icon "person" %}<span>{% if user.first_name %}{{ user.first_name }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
       <div><dt>{% translate "Nachname" %}</dt><dd{% if not user.last_name %} class="a-leer"{% endif %}>{% icon "person" %}<span>{% if user.last_name %}{{ user.last_name }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>

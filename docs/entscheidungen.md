@@ -6,6 +6,38 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-26 · Fahrtenname: die Person trägt ihn selbst ein, angezeigt als „Kiwi (Erika Testfrau)“ (#111, #112)
+
+**Entscheidung** (Sebastian, Klärung von #111 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6344762503); [Nachklärung vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6417655066); [Szenarien vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6417654692)):
+
+1. **Regel:** Personen haben neben Vor- und Nachnamen oft einen Fahrtennamen, unter Pfadfindern meist der bekanntere Name. Keycloak liefert ihn nicht; er wird im Tool gepflegt. Eine Person mit Konto trägt ihren Fahrtennamen selbst auf „Mein Profil“ ein, ändert oder löscht ihn; er ist freiwillig. Niemand sonst ändert ihn, auch keine Leitung und kein Admin (EP-03, EP-04). Den Fahrtennamen verwalteter Personen tragen die Leitungen ein, die die Person bearbeiten dürfen (#97).
+2. **Ergänzung von W1:** „Mein Profil“ bekommt in P2 genau ein Feld zum Bearbeiten, den Fahrtennamen (Eintrag vom 25.10.2026 zu #96, Nr. 2). Vorname, Nachname und Mail kommen weiter aus Keycloak.
+3. **Anzeige:** Wo eine Person mit vollem Namen erscheint, steht „Kiwi (Erika Testfrau)“, ohne Fahrtenname „Erika Testfrau“. Wo sonst der Vorname allein stünde (Begrüßung, Profilkreis, später Anreden in Mails), steht der Fahrtenname, wenn er eingetragen ist. Suche und Listen kommen mit ihren Seiten (#93, #94, #65, #117) und nutzen dieselbe Stelle.
+4. **Anforderungen:** PER-01 und PER-02 nennen den Fahrtennamen mit dem Wortlaut aus der Klärung (Frage 4, #112).
+5. **Grenzen und Meldungen:** höchstens 50 Zeichen; Leerzeichen am Rand werden entfernt, nur Leerzeichen gilt als kein Fahrtenname. Meldungen nach #165 mit Sebastians Wortlauten; zu lang ist ein Fehler am Feld. Der Fahrtenname steht nie im Fehlerprotokoll; Änderungen werden nicht protokolliert, weil er keine Rolle ist.
+
+**Begründung:** Es ist der Name der Person; trägt sie ihn selbst ein, gibt es keinen Streit, wessen Eintrag gilt, und neue Konten müssen auf niemanden warten.
+
+**Technische Wahl** (KI):
+
+- **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Fahrtenname heißt `scout_name`, der volle Name „Kiwi (Erika Testfrau)“ `display_name`. Die gemeinsame Stelle ist `display_name()` in `accounts/models.py` (auch als `User.display_name`); fehlen Vor- und Nachname, steht nur „Kiwi“, ohne leere Klammern. Den Namen für Begrüßung und Profilkreis liefert weiter `User.short_name`.
+- **Speichern** über ein Formular ohne Skript an `/profil/fahrtenname/` (nur POST). Die Adresse hat keine Kennung, und das Formular nimmt nur den Fahrtennamen an; wessen Konto sich ändert, bestimmt allein die Anmeldung. Gespeichert wird nur dieses eine Feld, damit ein zweiter Tab nichts anderes überschreibt; danach geht es zurück zu „Mein Profil“ mit der Erfolgsmeldung. Scheitert das Speichern, steht im Log nur „Fahrtenname nicht gespeichert“ mit der Art des Fehlers.
+- **Länge erst auf dem Server:** Das Feld hat kein `maxlength`; sonst schnitte der Browser beim Einfügen still ab, statt den Fehler am Feld zu zeigen. Leerzeichen am Rand entfernt dieselbe Funktion wie beim Namen aus Keycloak (`trimmed()`, #77).
+- **Gemeinsamer Baustein für Textfelder** (technischer Hinweis vom 25.10.2026): `{% textfeld form.feld %}` in `core/templatetags/layout.py` mit `core/templates/core/_textfeld.html`. Er zeigt Beschriftung, bei Pflichtfeldern „(Pflicht)“, und den Fehler direkt unter dem Feld, mit dem Feld verknüpft. Die passende Handy-Tastatur legt das Formular am Feld fest; beim Fahrtennamen Großbuchstabe am Wortanfang, ohne Autokorrektur und Rechtschreibprüfung, damit „Kiwi“ nicht zu einem anderen Wort wird. Das Feld ist weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild).
+- **Leitungen** liefern den Fahrtennamen mit (`LEAD_NAMES` in `access/rights.py`), weil BER-01, Grund 3 ihn nennt; angezeigt wird er erst mit den Seiten aus #93 und #94.
+
+**Umsetzung:** `accounts/models.py`, `accounts/forms.py`, `accounts/texts.py`, `accounts/migrations/0003_scout_name.py`, `core/views.py`, `core/forms.py` (Beispiel der Musterseite), `core/navigation.py`, `config/urls.py`, `access/rights.py`, `core/templatetags/layout.py`, `core/templates/core/_textfeld.html`, die Vorlagen von „Mein Profil“ und Musterseite, `core/static/core/app.css`, `docs/anforderungen.md` (PER-01, PER-02), `docs/rechtematrix.md` (EP-01, EP-03, EP-04 gebaut), `docs/gestaltung.md`, `docs/zielbilder/README.md`; Tests in `tests/test_fahrtenname.py` und `rauchtests/test_rauchtest.py`.
+
+## 2026-10-26 · Fahrtenname, Austreten und Aufgaben aus #136 aus dem Puffer; zwei Wortlaute im Fahrplan (#113)
+
+**Entscheidung** (Sebastian, 22.10.2026 bei der Klärung von Block 3 aus #106, [Nachtrag in #111](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6348444653) und [Nachklärung in #106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6351698512); 25.10.2026 [Zustimmung zu den Stunden aus #136](https://github.com/sebivtt/dpv-participant-management/issues/113#issuecomment-6390119705)):
+
+1. Fahrtenname (#111, rund 5 Stunden), Austreten aus der eigenen Einheit (#65, rund 3 Stunden) und die Aufgaben aus #136 (rund 6 bis 7 Stunden) kommen neu in P2. Sie verdrängen nichts, sondern kosten Stunden aus dem Puffer (Annahme), weil es in P2 nichts gleich Großes gibt, das sich sinnvoll streichen ließe. Rechnung: 611 + 5 + 3 = 619; 619 + 6 = 625 bzw. 619 + 7 = 626 Stunden; Puffer 658 − 625 = 33 bzw. 658 − 626 = 32 Stunden; 33 / 625 ≈ 5,3 %, 32 / 626 ≈ 5,1 %, rund 5 %. Die Stundenspalte der Phasen bleibt unverändert.
+2. Am Ende jeder Phase läuft der Leistungstest aus #145; seine Stunden kommen dazu, wenn #145 geklärt ist.
+3. **Vorschläge zum Wortlaut** (#113; gelten mit Sebastians Zustimmung im Pull Request zu #111): Das Abschlusskriterium von P2 heißt „Verbandsleitung sieht Personendaten nur nach BER-01, Grund 3, 4 und 7“ statt „Verbandsleitung sieht keine Personen“, weil die Verbandsleitung seit #136 Name, Fahrtenname und Rolle bestimmter Leitungen, Treffer der Kontosuche und das Protokoll der Admin-Zugriffe sieht. In den Übereinstimmungen heißt es „Kreise im Tool“ statt „Eigene Kreise“ (seit #150 „Kreis“); in der Tabelle zum alten Tool bleibt „eigene Kreise“, weil es dessen Stand beschreibt.
+
+**Umsetzung:** `docs/fahrplan.md`, Abschnitt 2 (Übereinstimmungen), Abschnitt 3 (neuer Absatz nach dem zu #131, Abschlusskriterium von P2) und Abschnitt 6 (Nr. 46, 48 und 49). Der Absatz zu #131 bleibt unverändert; wie die früheren nennt er den Stand nach seinem Schritt, der neue Absatz schreibt die Zahlen fort.
+
 ## 2026-10-26 · Leerzeichen am Rand von Name, Mail und Benutzername (#77)
 
 **Entscheidung** (Sebastian, Klärung von #77 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/77#issuecomment-6348998015); [Szenarien vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/77#issuecomment-6417176187)):

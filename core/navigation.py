@@ -36,6 +36,10 @@ def _current(request: HttpRequest) -> str | None:
     return match.url_name if match else None
 
 
+# Adressen, unter denen „Mein Profil“ steht: die Seite selbst und, mit Fehler, das Speichern des Fahrtennamens.
+PROFILE_PAGES = ("profile", "profile_scout_name")
+
+
 def items_for(request: HttpRequest) -> list[dict]:
     """Die Punkte, die diese Person sieht, mit Adresse und Markierung des aktiven Punkts."""
     current = _current(request)
@@ -53,9 +57,10 @@ def navigation(request: HttpRequest) -> dict:
     sie ab, bevor der Login-Baustein läuft. Auch dann gibt es keine Navigation (#58).
 
     „Mein Profil“ ist kein Punkt der Navigation; sein Zugang ist der Profilkreis, der
-    hervorgehoben ist, solange die Seite offen ist (#13, docs/gestaltung.md).
+    hervorgehoben ist, solange die Seite offen ist (#13, docs/gestaltung.md). Das gilt auch, wenn
+    die Seite nach dem Speichern des Fahrtennamens unter dessen Adresse steht (#111).
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:
         return {"nav_items": []}
-    return {"nav_items": items_for(request), "profile_active": _current(request) == "profile"}
+    return {"nav_items": items_for(request), "profile_active": _current(request) in PROFILE_PAGES}
