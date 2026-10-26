@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden (#7, #96, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden, Meldungen (#7, #96, #165, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -318,6 +318,10 @@ def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name
 
     page.goto(f"{BASE}/anmelden/")
     findings = {"Login-Seite": run_axe(page)}
+    # Login-Seite mit Fehlermeldung (#165): Unzulässige Angaben beim Start führen mit Hinweis zurück.
+    page.locator("form").first.evaluate("form => { form.action += '?scope=fremd'; form.submit(); }")
+    expect(page.get_by_role("alert")).to_contain_text("Die Anmeldung wurde abgebrochen.")
+    findings["Login-Seite mit Fehlermeldung"] = run_axe(page)
     login(page)
     findings["Startseite"] = run_axe(page)
     page.goto(f"{BASE}/profil/")
@@ -340,3 +344,47 @@ def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name
     findings["Kein Zugriff"] = run_axe(page)
 
     assert {name: found for name, found in findings.items() if found} == {}
+
+
+# Szenarien 10, 11 und 13 zu #165
+def _notices_fit(page: Page) -> list[str]:
+    """Was an den Meldungen der Seite nicht passt: über den Rand, Symbol nicht links, überlappend."""
+    return page.evaluate(
+        """() => {
+            const problems = [];
+            const width = document.documentElement.clientWidth;
+            if (document.documentElement.scrollWidth > width) problems.push('Seite breiter als der Bildschirm');
+            const boxes = [...document.querySelectorAll('main .a-meldung')].filter(e => e.offsetParent);
+            boxes.forEach((notice, i) => {
+                const box = notice.getBoundingClientRect();
+                const icon = notice.querySelector('.a-meldung-ic').getBoundingClientRect();
+                const text = notice.querySelector('.a-meldung-text').getBoundingClientRect();
+                const name = `Meldung ${i + 1}`;
+                if (box.left < 0 || box.right > width) problems.push(`${name} ragt über den Rand`);
+                if (notice.scrollWidth > notice.clientWidth) problems.push(`${name} läuft innen über`);
+                if (!(icon.right <= text.left && Math.abs(icon.top - box.top) < 20)) problems.push(`${name}: Symbol nicht links oben`);
+                const next = boxes[i + 1];
+                if (next && next.parentElement === notice.parentElement && next.getBoundingClientRect().top <= box.bottom) {
+                    problems.push(`${name} und die nächste stehen nicht getrennt`);
+                }
+            });
+            return boxes.length ? problems : ['keine Meldung gefunden'];
+        }"""
+    )
+
+
+def test_meldungen_am_handy_brechen_um_und_bestehen_die_pruefung(handy):
+    """Konto ohne Namen und ohne Organisation: zwei getrennte Warnmeldungen und die Informationsmeldung."""
+    login(handy, OHNE_NAME)
+
+    findings = {}
+    for address in ("/", "/profil/", "/muster/"):
+        handy.goto(f"{BASE}{address}")
+        findings[address] = _notices_fit(handy) + run_axe(handy)
+    handy.goto(f"{BASE}/profil/")
+    warnings = handy.locator("main .a-meldung.ist-warnung")
+    expect(warnings).to_have_count(2)
+    expect(warnings.nth(0)).to_contain_text("Ergänze deinen Namen")
+    expect(warnings.nth(1)).to_contain_text("Du bist noch keiner Organisation zugeordnet.")
+
+    assert {address: found for address, found in findings.items() if found} == {}

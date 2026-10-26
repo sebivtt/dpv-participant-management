@@ -7,7 +7,8 @@
     <h1>{% translate "Mein Profil" %}</h1>
   </div>
   {% if name_incomplete %}
-    <p class="alert alert-warning" role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
+    {% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." as hint %}
+    {% meldung "warning" title=hint %}
   {% endif %}
   <section class="a-flaeche a-profilflaeche" aria-labelledby="h-angaben">
     <h2 id="h-angaben" class="sr-nur">{% translate "Deine Angaben" %}</h2>
@@ -23,7 +24,8 @@
       <div><dt>{% translate "Benutzername" %}</dt><dd>{% icon "at" %}<span>{{ user.username }}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
       <div><dt>{% translate "E-Mail-Adresse" %}</dt><dd>{% icon "mail" %}<span>{{ user.email }}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
     </dl>
-    <div class="a-hinweisflaeche">{% icon "schloss" %}<p>{% translate "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." %}</p></div>
+    {% translate "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." as hint %}
+    {% meldung "info" text=hint icon="schloss" %}
   </section>
   <section class="a-flaeche a-profilflaeche" aria-labelledby="h-rollen">
     <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h2 id="h-rollen">{% translate "Organisation und Rollen" %}</h2></div>
@@ -41,7 +43,9 @@
       </ul>
     {% endif %}
     {% if not membership and not tiles %}
-      <p class="alert alert-info mb-0"><strong>{% translate "Du bist noch keiner Organisation zugeordnet." %}</strong> {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." %}</p>
+      {% translate "Du bist noch keiner Organisation zugeordnet." as title %}
+      {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." as hint %}
+      {% meldung "warning" title=title text=hint %}
     {% endif %}
   </section>
 {% endblock %}

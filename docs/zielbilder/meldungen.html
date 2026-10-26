@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DPV-Anmeldetool – Meldungsbausteine (Entwurf zu Issue #165)</title>
+  <style>
+    :root {
+      --dpv-blau: #1a4b7e;
+      --dpv-blau-dunkel: #12385f;
+      --info-flaeche: #e9eff6;
+      --sonnengelb: #f0ad2c;
+      --gelb-text: #1b2532;
+      --warn-text: #74500c;
+      --seitenhintergrund: #f4f6f9;
+      --flaeche: #ffffff;
+      --trennlinie: #dbe2ea;
+      --text: #1b2532;
+      --nebentext: #566375;
+      --ok-text: #245c3d;
+      --ok-flaeche: #e1f0e6;
+      --fehler-text: #8a2c2c;
+      --fehler-flaeche: #f7e2e2;
+      --radius-gross: 14px;
+      --radius-klein: 9px;
+      --seitenrand: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: light; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 28px 16px 48px;
+      background: var(--seitenhintergrund);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    main { width: min(100%, 1040px); margin-inline: auto; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 3.5vw, 2.25rem); line-height: 1.2; letter-spacing: -.025em; }
+    h2 { margin: 0 0 14px; font-size: 1.25rem; line-height: 1.3; }
+    h3 { margin: 20px 0 8px; font-size: 1.05rem; line-height: 1.35; }
+    p { margin: 0; }
+    a { color: var(--dpv-blau); text-underline-offset: 3px; }
+    a:hover { color: var(--dpv-blau-dunkel); }
+    button, input { font: inherit; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--dpv-blau); outline-offset: 3px; }
+
+    .intro { max-width: 68ch; margin-bottom: 20px; color: var(--nebentext); font-size: 1.03rem; }
+    .context { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 5px 9px; border-radius: 999px; background: #e6e9ee; color: #3f4a58; font-size: .82rem; font-weight: 750; }
+    .surface { margin: 18px 0; padding: 22px 24px; background: var(--flaeche); border-radius: var(--radius-gross); }
+    .section-lead { margin: -4px 0 14px; max-width: 76ch; color: var(--nebentext); }
+    .muted { color: var(--nebentext); font-size: .92rem; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .sample { min-width: 0; padding: 14px; border-radius: var(--radius-klein); background: #f8f9fb; }
+    .sample-label { margin: 0 0 8px; color: var(--nebentext); font-size: .82rem; font-weight: 750; letter-spacing: .015em; }
+    .stack { display: grid; gap: 12px; }
+    .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+
+    .icon { display: block; width: 24px; height: 24px; flex: 0 0 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-box { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 8px; background: rgb(255 255 255 / 78%); }
+    .notice { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 13px 14px; border-radius: var(--radius-klein); }
+    .notice__icon { flex: 0 0 32px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: rgb(255 255 255 / 78%); }
+    .notice__body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .notice__body p { margin-top: 4px; }
+    .notice__title { display: block; margin-bottom: 2px; font-weight: 750; }
+    .notice--info { background: var(--info-flaeche); color: var(--text); }
+    .notice--info .notice__icon { color: var(--dpv-blau); }
+    .notice--warning { background: #fbefd5; color: var(--warn-text); }
+    .notice--warning .notice__icon { color: var(--warn-text); }
+    .notice--error { background: var(--fehler-flaeche); color: var(--fehler-text); }
+    .notice--error .notice__icon { color: var(--fehler-text); }
+    .notice--success { background: var(--ok-flaeche); color: var(--ok-text); }
+    .notice--success .notice__icon { color: var(--ok-text); }
+
+    .test-banner {
+      display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; border-radius: var(--radius-klein);
+      background-color: var(--sonnengelb);
+      background-image: repeating-linear-gradient(-45deg, transparent, transparent 11px, rgb(27 37 50 / 13%) 11px, rgb(27 37 50 / 13%) 21px);
+      color: var(--gelb-text); font-weight: 750;
+    }
+    .test-banner .icon { flex: 0 0 26px; width: 26px; height: 26px; margin-top: 1px; }
+    .preview { min-width: 0; padding: 16px; border-radius: var(--radius-gross); background: var(--seitenhintergrund); }
+    .preview-header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 14px; }
+    .avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border-radius: 50%; background: var(--dpv-blau); color: white; font-weight: 800; }
+    .preview-title { font-size: 1.05rem; font-weight: 750; }
+    .preview-subtitle { color: var(--nebentext); font-size: .9rem; }
+    .simple-panel { padding: 16px; border-radius: var(--radius-klein); background: var(--flaeche); }
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 15px; border: 0; border-radius: var(--radius-klein); background: var(--dpv-blau); color: #fff; font-weight: 750; cursor: pointer; }
+    .button:hover { background: var(--dpv-blau-dunkel); }
+    .button.secondary { border: 1px solid var(--trennlinie); background: #fff; color: var(--dpv-blau); }
+    .button.secondary:hover { background: var(--info-flaeche); }
+    .contact { display: block; margin-top: 5px; font-size: .93rem; font-weight: 650; }
+
+    .field-group { max-width: 520px; }
+    label { display: block; margin-bottom: 6px; font-weight: 750; }
+    input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--trennlinie); border-radius: var(--radius-klein); background: #fff; color: var(--text); }
+    input[aria-invalid="true"] { border: 2px solid var(--fehler-text); }
+    .field-error { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; color: var(--fehler-text); font-size: .94rem; font-weight: 650; }
+    .field-error .icon { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 2px; }
+
+    .mobile-frame { width: min(100%, 390px); padding: 12px; border: 1px solid #cbd3dd; border-radius: 18px; background: #e9edf2; }
+    .mobile-screen { padding: 12px; border-radius: 11px; background: #fff; }
+    .rule-table { width: 100%; border-collapse: collapse; font-size: .94rem; }
+    .rule-table th, .rule-table td { padding: 10px 9px; border-bottom: 1px solid var(--trennlinie); text-align: left; vertical-align: top; }
+    .rule-table th { color: var(--nebentext); font-size: .82rem; }
+    .rule-table tr:last-child td { border-bottom: 0; }
+    .check-list { margin: 0; padding-left: 1.25rem; }
+    .check-list li { margin: 6px 0; }
+    .scenario-list { margin: 0; padding-left: 1.35rem; }
+    .scenario-list li { padding-left: 3px; margin: 8px 0; }
+    .live-demo { padding: 16px; border-radius: var(--radius-klein); background: var(--info-flaeche); }
+    #live-feedback { margin-top: 12px; }
+    #live-feedback:empty { display: none; }
+    .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+    .footer-note { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--trennlinie); color: var(--nebentext); font-size: .9rem; }
+    code { padding: 1px 4px; border-radius: 4px; background: #eef1f5; font-size: .92em; overflow-wrap: anywhere; }
+
+    @media (max-width: 680px) {
+      body { padding: 20px 12px 36px; }
+      .surface { padding: 18px 14px; }
+      .grid, .split { grid-template-columns: 1fr; }
+      .preview { padding: 12px; }
+      .notice { gap: 10px; padding: 12px; }
+      .notice__icon { flex-basis: 30px; width: 30px; height: 30px; }
+      .notice__icon .icon { width: 22px; height: 22px; }
+      .rule-table th, .rule-table td { padding: 8px 6px; }
+    }
+    @media (max-width: 390px) {
+      body { padding-inline: 8px; }
+      .surface { padding-inline: 10px; }
+      .mobile-frame { padding: 8px; }
+      .notice { gap: 8px; padding: 10px; }
+      .notice__icon { flex-basis: 28px; width: 28px; height: 28px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5h.01"></path></symbol>
+    <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19zM12 9.5v5M12 17.5h.01"></path></symbol>
+    <symbol id="icon-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path></symbol>
+    <symbol id="icon-success" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.5 2.5L16 9"></path></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></symbol>
+    <symbol id="icon-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"></path><path d="M8 18h8"></path></symbol>
+    <symbol id="icon-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"></circle><path d="M5 20c.7-3.8 3-5.7 7-5.7s6.3 1.9 7 5.7"></path></symbol>
+  </svg>
+
+  <main>
+    <span class="context">HTML-Entwurf · Issue #165 · Stand 26.10.2026</span>
+    <h1>Meldungen im DPV-Anmeldetool</h1>
+    <p class="intro">Vorschlag für gemeinsame, wiederverwendbare Meldungsbausteine. Die Beispiele verbinden die bisherige Musterseite mit den bestätigten Szenarien. Die Profil- und Login-Daten dienen der Darstellung; die Meldungen werden hier nicht tatsächlich versendet oder gespeichert.</p>
+
+    <section class="surface" aria-labelledby="bausteine">
+      <h2 id="bausteine">1. Die vier gemeinsamen Meldungsbausteine</h2>
+      <p class="section-lead">Die Bedeutung wird nicht allein über Farbe vermittelt: Jede Art hat ein eindeutiges Symbol und eine für Vorleseprogramme unsichtbare Ansage der Meldungsart.</p>
+      <div class="grid">
+        <article class="sample">
+          <p class="sample-label">Information · neutraler Hinweis</p>
+          <div class="notice notice--info" role="note">
+            <span class="sr-only">Information: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-info"></use></svg></span>
+            <div class="notice__body">Deine Profildaten werden aus deinem DPV-Konto übernommen.</div>
+          </div>
+        </article>
+        <article class="sample">
+          <p class="sample-label">Warnung · Person muss selbst etwas tun</p>
+          <div class="notice notice--warning" role="note">
+            <span class="sr-only">Warnung: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+            <div class="notice__body"><span class="notice__title">Du bist noch keiner Organisation zugeordnet.</span><p>Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt.</p></div>
+          </div>
+        </article>
+        <article class="sample">
+          <p class="sample-label">Fehler · Vorgang hat nicht geklappt</p>
+          <div class="notice notice--error" role="note">
+            <span class="sr-only">Fehler: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-error"></use></svg></span>
+            <div class="notice__body">Die Anmeldung ist gerade nicht möglich. Versuche es später noch einmal.</div>
+          </div>
+        </article>
+        <article class="sample">
+          <p class="sample-label">Erfolg · Vorgang hat geklappt</p>
+          <div class="notice notice--success" role="note">
+            <span class="sr-only">Erfolg: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-success"></use></svg></span>
+            <div class="notice__body">Deine Anmeldung zum Herbstlager ist eingegangen.</div>
+          </div>
+        </article>
+      </div>
+      <h3>Informationsmeldung mit passendem Symbol</h3>
+      <div class="notice notice--info" role="note">
+        <span class="sr-only">Information: </span>
+        <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-lock"></use></svg></span>
+        <div class="notice__body">Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung.</div>
+      </div>
+      <h3>Fehler direkt am Eingabefeld</h3>
+      <p class="section-lead">Dieser Fall bleibt getrennt von den vier allgemeinen Meldungsarten: Der Fehler steht unmittelbar beim betroffenen Feld.</p>
+      <div class="field-group">
+        <label for="event-name">Name der Veranstaltung</label>
+        <input id="event-name" name="event-name" type="text" value="" aria-invalid="true" aria-describedby="event-name-error">
+        <p class="field-error" id="event-name-error"><span class="sr-only">Fehler am Eingabefeld: </span><svg class="icon" aria-hidden="true"><use href="#icon-error"></use></svg><span>Gib einen Namen für die Veranstaltung ein.</span></p>
+      </div>
+    </section>
+
+    <section class="surface" aria-labelledby="profil-testumgebung">
+      <h2 id="profil-testumgebung">2. „Mein Profil“ in der Testumgebung</h2>
+      <p class="section-lead">Das gestreifte Band steht immer als eigener Umgebungshinweis ganz oben. Das Warndreieck bleibt den Warnmeldungen vorbehalten.</p>
+      <div class="preview">
+        <div class="test-banner" role="note">
+          <span class="sr-only">Hinweis zur Testumgebung: </span>
+          <svg class="icon" aria-hidden="true"><use href="#icon-test"></use></svg>
+          <span>Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.</span>
+        </div>
+        <div class="preview-header" style="margin-top:16px">
+          <span class="avatar" aria-hidden="true">MT</span>
+          <div><div class="preview-title">Max Testmann</div><div class="preview-subtitle">Mein Profil · Beispiel ohne Mitgliedschaft</div></div>
+        </div>
+        <div class="notice notice--info" role="note" style="margin-bottom:16px">
+          <span class="sr-only">Information: </span>
+          <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-lock"></use></svg></span>
+          <div class="notice__body">Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung.</div>
+        </div>
+        <div class="simple-panel">
+          <h3 style="margin-top:0">Organisation und Rollen</h3>
+          <div class="notice notice--warning" role="note">
+            <span class="sr-only">Warnung: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+            <div class="notice__body"><span class="notice__title">Du bist noch keiner Organisation zugeordnet.</span><p>Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="surface" aria-labelledby="startseite">
+      <h2 id="startseite">3. Warnung bei fehlendem Namen</h2>
+      <p class="section-lead">Die bestehende Warnung wird auf der Startseite und auf „Mein Profil“ verwendet. Ist zusätzlich keine Mitgliedschaft vorhanden, bleiben beide Warnmeldungen als getrennte Bausteine sichtbar.</p>
+      <div class="split">
+        <div class="sample">
+          <p class="sample-label">Startseite · Konto „ohne.name“</p>
+          <div class="notice notice--warning" role="note">
+            <span class="sr-only">Warnung: </span>
+            <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+            <div class="notice__body"><strong>Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an.</strong></div>
+          </div>
+        </div>
+        <div class="sample">
+          <p class="sample-label">Mein Profil · Name und Mitgliedschaft fehlen</p>
+          <div class="mobile-frame" aria-label="Schmale Vorschau mit 390 Pixeln Breite">
+            <div class="mobile-screen stack">
+              <div class="notice notice--warning" role="note">
+                <span class="sr-only">Warnung: </span>
+                <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+                <div class="notice__body"><strong>Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an.</strong></div>
+              </div>
+              <div class="notice notice--warning" role="note">
+                <span class="sr-only">Warnung: </span>
+                <span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+                <div class="notice__body"><strong>Du bist noch keiner Organisation zugeordnet.</strong><p>Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="surface" aria-labelledby="login">
+      <h2 id="login">4. Meldungen auf der Login-Seite</h2>
+      <p class="section-lead">Die Texte unten entsprechen den im Projekt hinterlegten Formulierungen. Die statischen Beispiele auf dieser Musterseite kündigen sich nicht ungefragt an; für die dynamische Ansage nach einer Login-Aktion gibt es weiter unten eine kleine Demo.</p>
+      <div class="preview">
+        <div class="simple-panel" style="max-width:560px;margin-inline:auto">
+          <div style="text-align:center;margin-bottom:14px">
+            <strong style="font-size:1.15rem">DPV Anmeldetool</strong>
+            <p class="muted">Anmeldung mit deinem DPV-Konto</p>
+          </div>
+          <div class="stack">
+            <div>
+              <p class="sample-label">Informationsmeldung · Sitzung ist abgelaufen</p>
+              <div class="notice notice--info" role="note">
+                <span class="sr-only">Information: </span><span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-info"></use></svg></span>
+                <div class="notice__body">Deine Sitzung ist abgelaufen. Bitte melde dich neu an.</div>
+              </div>
+            </div>
+            <div>
+              <p class="sample-label">Warnmeldung · E-Mail-Adresse fehlt</p>
+              <div class="notice notice--warning" role="note">
+                <span class="sr-only">Warnung: </span><span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-warning"></use></svg></span>
+                <div class="notice__body">Die Anmeldung ist nicht möglich, weil in deinem DPV-Konto keine Mail eingetragen ist. Wende dich an <a href="mailto:anmeldetool@dpvonline.de">anmeldetool@dpvonline.de</a>.</div>
+              </div>
+            </div>
+            <div>
+              <p class="sample-label">Fehlermeldung · Login bei DPV-Konto abgebrochen</p>
+              <div class="notice notice--error" role="note">
+                <span class="sr-only">Fehler: </span><span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-error"></use></svg></span>
+                <div class="notice__body">Die Anmeldung wurde abgebrochen. Du kannst es noch einmal versuchen.</div>
+              </div>
+            </div>
+            <div>
+              <p class="sample-label">Fehlermeldung · DPV-Konto vorübergehend nicht erreichbar</p>
+              <div class="notice notice--error" role="note">
+                <span class="sr-only">Fehler: </span><span class="notice__icon" aria-hidden="true"><svg class="icon"><use href="#icon-error"></use></svg></span>
+                <div class="notice__body">Die Anmeldung ist gerade nicht möglich. Versuche es später noch einmal.</div>
+              </div>
+            </div>
+          </div>
+          <div class="button-row" style="justify-content:center">
+            <button class="button" type="button" id="login-button-demo">Mit DPV-Konto anmelden (Beispiel)</button>
+          </div>
+          <p class="muted" style="margin-top:8px;text-align:center">Der Button startet keine echte Anmeldung.</p>
+        </div>
+      </div>
+
+      <h3>Ansage nach einer Aktion ausprobieren</h3>
+      <div class="live-demo">
+        <p>Wähle eine Situation. Die Meldung wird erst nach dem Klick eingesetzt und dann als Status bzw. Fehler von assistiven Technologien angekündigt.</p>
+        <div class="button-row">
+          <button class="button secondary" type="button" data-live-kind="info">Sitzung abgelaufen simulieren</button>
+          <button class="button secondary" type="button" data-live-kind="warning">E-Mail fehlt simulieren</button>
+          <button class="button secondary" type="button" data-live-kind="cancelled">Login-Abbruch simulieren</button>
+          <button class="button secondary" type="button" data-live-kind="unreachable">Verbindungsfehler simulieren</button>
+        </div>
+        <div id="live-feedback" aria-label="Dynamische Rückmeldung"></div>
+      </div>
+    </section>
+
+    <section class="surface" aria-labelledby="regeln">
+      <h2 id="regeln">5. Regeln für Auswahl und Barrierefreiheit</h2>
+      <table class="rule-table">
+        <thead><tr><th scope="col">Art</th><th scope="col">Wann verwenden?</th><th scope="col">Darstellung</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Information</strong></td><td>Neutraler Hinweis; keine eigene Aktion nötig.</td><td>Zartblau <code>#e9eff6</code>, „i“; ein passenderes Symbol wie das Schloss ist erlaubt.</td></tr>
+          <tr><td><strong>Warnung</strong></td><td>Etwas fehlt; die Person muss selbst etwas tun.</td><td>Helles Pastellgelb <code>#fbefd5</code>, Text und Symbol in Dunkelbraun <code>#74500c</code>, Warndreieck.</td></tr>
+          <tr><td><strong>Fehler</strong></td><td>Ein Vorgang hat nicht geklappt; erneut versuchen oder warten.</td><td>Gedecktes Rot, Kreuz.</td></tr>
+          <tr><td><strong>Erfolg</strong></td><td>Ein Vorgang hat geklappt.</td><td>Gedecktes Grün, Haken.</td></tr>
+          <tr><td><strong>Fehler am Feld</strong></td><td>Ein Pflichtfeld fehlt oder ein Wert passt nicht.</td><td>Rote Schrift unmittelbar unter dem Feld; mit <code>aria-describedby</code> verknüpft und <code>aria-invalid="true"</code>.</td></tr>
+        </tbody>
+      </table>
+      <h3>Umsetzungshinweise</h3>
+      <ul class="check-list">
+        <li>Alle Arten haben ein eindeutiges Symbol und einen Screenreader-Präfix, etwa „Warnung:“. Der Präfix ist visuell verborgen.</li>
+        <li>Auf einer fest dargestellten Seite werden Meldungen nicht als Live-Region angelegt. Meldungen, die nach einer Login-Aktion hinzukommen, werden dynamisch mit <code>role="status"</code> (Info/Erfolg) oder <code>role="alert"</code> (Warnung/Fehler) eingesetzt.</li>
+        <li>Warnmeldungen verwenden helles Pastellgelb <code>#fbefd5</code> mit Text und Symbol in Dunkelbraun <code>#74500c</code>. Das kräftige Sonnengelb <code>#f0ad2c</code> bleibt dem gestreiften Testumgebungsbanner und kleinen Akzenten vorbehalten. Symbol und Muster unterscheiden beide Flächen zusätzlich.</li>
+        <li>Mehrere Meldungen haben Abstand zueinander; bei 390 Pixeln Breite umbrechen Text und Links, während das Symbol links bleibt.</li>
+        <li>Die Prüfung mit Tastatur, Screenreader und Kontrastwerkzeugen muss vor der Umsetzung zusätzlich auf Startseite, „Mein Profil“, Login-Seite und Musterseite ausgeführt werden.</li>
+      </ul>
+      <h3>Abdeckung der 13 bestätigten Szenarien</h3>
+      <p class="section-lead">Die Liste ordnet die im Issue genannten Szenarien dem Entwurf zu. Die visuelle Darstellung ist hier abgedeckt; die abschließenden Prüfungen in der echten Anwendung bleiben Umsetzungsschritte.</p>
+      <ol class="scenario-list">
+        <li><strong>Max Testmann ohne Mitgliedschaft:</strong> Testumgebungsband und Warnung unter „Organisation und Rollen“ – Abschnitt 2.</li>
+        <li><strong>Konto „ohne.name“ ohne Vor- und Nachnamen:</strong> Warnung auf Startseite und „Mein Profil“ – Abschnitt 3.</li>
+        <li><strong>Erika Testfrau im Profil:</strong> zartblaue Informationsmeldung mit Schloss – Abschnitt 1 und 2.</li>
+        <li><strong>Sitzung abgelaufen:</strong> Informationsmeldung auf der Login-Seite – Abschnitt 4.</li>
+        <li><strong>DPV-Konto nicht erreichbar:</strong> rote Fehlermeldung mit Kreuz – Abschnitt 4 und Live-Demo.</li>
+        <li><strong>Login bei DPV-Konto abgebrochen:</strong> rote Fehlermeldung mit Kreuz – Abschnitt 4 und Live-Demo.</li>
+        <li><strong>Konto ohne E-Mail-Adresse:</strong> gelbe Warnmeldung mit Kontaktadresse – Abschnitt 4.</li>
+        <li><strong>Musterseite:</strong> alle vier Arten und der Feldfehler stehen gemeinsam auf dieser Seite – Abschnitt 1.</li>
+        <li><strong>Testumgebung mit fehlender Mitgliedschaft:</strong> schräg gestreiftes Sonnengelb und eigenes Laborsymbol, getrennt von der Warnung – Abschnitt 2.</li>
+        <li><strong>Name und Mitgliedschaft fehlen gleichzeitig:</strong> zwei getrennte Warnmeldungen, nicht zu einem Hinweis verschmolzen – schmale Vorschau in Abschnitt 3.</li>
+        <li><strong>Handy mit 390 Pixeln Breite:</strong> mobile Vorschau und Umbruchregeln – Abschnitt 3; endgültig in echten Browsern prüfen.</li>
+        <li><strong>Graustufen und Vorleseprogramme:</strong> unterscheidbare Symbole und unsichtbare Präfixe wie „Warnung:“ sind im Entwurf vorgesehen.</li>
+        <li><strong>Barrierefreiheitsprüfung:</strong> Startseite, „Mein Profil“, Login-Seite und Musterseite müssen nach der Umsetzung noch mit Tastatur, Screenreader und Kontrastwerkzeug geprüft werden. Dieser HTML-Entwurf allein ist kein bestandener Audit.</li>
+      </ol>
+      <div class="footer-note">Entwurfsseite zur Erarbeitung des Zielbilds. Sie ersetzt weder die Umsetzung der Bausteine in der Anwendung noch die Änderung an <code>docs/gestaltung.md</code> und <code>docs/entscheidungen.md</code>. Dashboard-Status wie „Warteliste“ und eigene Fehlerseiten (403/404/500) sind bewusst nicht Teil dieses Entwurfs.</div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const feedback = document.getElementById('live-feedback');
+      const messages = {
+        info: {
+          role: 'status', cls: 'notice--info', icon: 'icon-info', prefix: 'Information: ',
+          text: 'Deine Sitzung ist abgelaufen. Bitte melde dich neu an.'
+        },
+        warning: {
+          role: 'alert', cls: 'notice--warning', icon: 'icon-warning', prefix: 'Warnung: ',
+          text: 'Die Anmeldung ist nicht möglich, weil in deinem DPV-Konto keine Mail eingetragen ist. Wende dich an anmeldetool@dpvonline.de.'
+        },
+        cancelled: {
+          role: 'alert', cls: 'notice--error', icon: 'icon-error', prefix: 'Fehler: ',
+          text: 'Die Anmeldung wurde abgebrochen. Du kannst es noch einmal versuchen.'
+        },
+        unreachable: {
+          role: 'alert', cls: 'notice--error', icon: 'icon-error', prefix: 'Fehler: ',
+          text: 'Die Anmeldung ist gerade nicht möglich. Versuche es später noch einmal.'
+        }
+      };
+
+      function renderMessage(kind) {
+        const message = messages[kind];
+        if (!message) return;
+        feedback.replaceChildren();
+        const notice = document.createElement('div');
+        notice.className = `notice ${message.cls}`;
+        notice.setAttribute('role', message.role);
+        notice.setAttribute('aria-atomic', 'true');
+
+        const hiddenPrefix = document.createElement('span');
+        hiddenPrefix.className = 'sr-only';
+        hiddenPrefix.textContent = message.prefix;
+
+        const iconBox = document.createElement('span');
+        iconBox.className = 'notice__icon';
+        iconBox.setAttribute('aria-hidden', 'true');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'icon');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', `#${message.icon}`);
+        svg.appendChild(use);
+        iconBox.appendChild(svg);
+
+        const body = document.createElement('div');
+        body.className = 'notice__body';
+        body.textContent = message.text;
+        notice.append(hiddenPrefix, iconBox, body);
+        feedback.appendChild(notice);
+      }
+
+      document.querySelectorAll('[data-live-kind]').forEach((button) => {
+        button.addEventListener('click', () => renderMessage(button.dataset.liveKind));
+      });
+      document.getElementById('login-button-demo').addEventListener('click', () => renderMessage('unreachable'));
+    })();
+  </script>
+</body>
+</html>

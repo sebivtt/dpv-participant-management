@@ -8,7 +8,7 @@
   --dpv: #1a4b7e;          /* Grundfarbe des DPV */
   --dpv-tief: #12385f;     /* beim Darüberfahren und Drücken */
   --dpv-hauch: #e9eff6;    /* zarte Fläche in DPV-Blau */
-  --akzent: #f0ad2c;       /* Sonnengelb, sparsam; trägt nie Text auf Weiß (zu wenig Kontrast) */
+  --akzent: #f0ad2c;       /* Sonnengelb, sparsam; trägt nie Text auf Weiß (zu wenig Kontrast); als Fläche nur das Band der Testumgebung, nie Meldungen (#165) */
   --akzent-text: #1b2532;  /* Text und Symbole auf Sonnengelb */
   --grund: #f4f6f9;        /* Hintergrund der Seite */
   --flaeche: #ffffff;      /* Flächen und Leisten */
@@ -16,6 +16,7 @@
   --text: #1b2532;
   --text-leise: #566375;   /* Nebentexte; Kontrast auf --grund rund 5,6 : 1 */
   --fokus: #1a4b7e;        /* Fokusrahmen */
+  /* Statusfarben: dieselbe Farbfamilie für Statuskennzeichen und Meldungen (#165) */
   --ok-text: #245c3d;      --ok-grund: #e1f0e6;
   --warte-text: #74500c;   --warte-grund: #fbefd5;
   --ab-text: #8a2c2c;      --ab-grund: #f7e2e2;
@@ -53,7 +54,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .table { --bs-table-bg: transparent; margin: 0; }
 .table > :not(caption) > * > * { padding: .85rem .6rem; vertical-align: middle; }
 .table thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-leise); }
-.alert { border-radius: var(--radius-klein); }
 
 /* ---------- Fokus: immer sichtbar (NFA-03) ----------
    DPV-Blau hat auf Weiß und auf dem Grund mehr als 8 : 1. Sonnengelb dort nur rund 2 : 1,
@@ -72,9 +72,11 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-flaeche > h2 { font-size: 1.1rem; }
 
 /* ---------- Schlichte Seiten: Login und Fehler, ruhig und mittig ---------- */
-/* Band der Testumgebung (#58): Sonnengelb als Fläche, Text dunkel (Kontrast rund 8 : 1). */
-.a-testband { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-klein); background: var(--akzent); color: var(--akzent-text); font-weight: 700; line-height: 1.4; }
-.a-testband .ic { stroke-width: 2.2; }
+/* Band der Testumgebung (#58): Sonnengelb als Fläche, Text dunkel (Kontrast rund 8 : 1, auf den Streifen
+   rund 6 : 1). Schräge Streifen wie ein Absperrband und das Laborsymbol unterscheiden es von einer
+   Warnmeldung (#165). */
+.a-testband { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-klein); background-color: var(--akzent); background-image: repeating-linear-gradient(-45deg, transparent 0 11px, rgb(27 37 50 / 13%) 11px 21px); color: var(--akzent-text); font-weight: 700; line-height: 1.4; }
+.a-testband .ic { width: 26px; height: 26px; stroke-width: 2.2; }
 .a-einfach-main .a-testband { width: 100%; max-width: 420px; margin: 0; box-sizing: border-box; }
 .a-einfach-main { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 32px 16px; box-sizing: border-box; }
 .a-einfach-karte { width: 100%; max-width: 420px; background: var(--flaeche); border-radius: var(--radius); padding: 32px 28px; display: flex; flex-direction: column; gap: 14px; text-align: center; }
@@ -138,10 +140,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-felder dd > .a-schloss { align-self: stretch; padding: 0; display: grid; place-items: center; width: 38px; flex: none; border-left: 1px solid var(--linie); color: var(--text-leise); }
 .a-schloss .ic { width: 17px; height: 17px; }
 .a-leer, .a-felder dd.a-leer { color: var(--text-leise); font-style: italic; }
-/* Hinweis in einer zart blauen Fläche, links ein Symbol */
-.a-hinweisflaeche { display: flex; align-items: center; gap: 12px; margin: 15px 0 0; padding: 13px 14px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--text-leise); }
-.a-hinweisflaeche > .ic { box-sizing: content-box; width: 18px; height: 18px; padding: 6px; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
-.a-hinweisflaeche p { margin: 0; font-size: .9rem; }
 /* Organisation und Rollen: die Mitgliedschaft als zart blaue Fläche, darunter die Rollen als Kacheln.
    Kacheln weiß mit feinem Rand und blauem Streifen oben (Sebastian bei der Klärung von #161, bewusst
    anders als „Flächen statt Rahmen“); keine weiteren Farben, Verläufe oder Schatten. */
@@ -160,6 +158,33 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
   .a-felder { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
 .a-trenner { margin: 8px 0 24px; padding-top: 24px; border-top: 1px solid var(--linie); color: var(--text-leise); font-weight: 700; }
+
+/* Meldungen (#165, docs/gestaltung.md): vier Arten, je Fläche, Schrift und Symbol in einem hellen Kästchen
+   links; ein fetter erster Satz steht als eigene Zeile über dem Rest. Gestaltet nach Sebastians Zielbild
+   (docs/zielbilder/meldungen.html). Die Farben sind die der Statuskennzeichen; unterschieden wird über die
+   Form (Fläche mit Satz gegen kleine Pille). */
+.a-meldung { display: flex; align-items: flex-start; gap: 12px; min-width: 0; margin: 0 0 16px; padding: 13px 14px; border-radius: var(--radius-klein); text-align: left; }
+.a-meldung:last-child { margin-bottom: 0; }
+.a-felder + .a-meldung { margin-top: 15px; }
+.a-meldung-ic { flex: 0 0 32px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: rgb(255 255 255 / 78%); }
+.a-meldung-ic .ic { width: 22px; height: 22px; }
+.a-meldung-text { flex: 1; min-width: 0; align-self: center; overflow-wrap: anywhere; }
+.a-meldung-text p { margin: 0; }
+.a-meldung-titel { display: block; font-weight: 800; }
+.a-meldung-titel + p { margin-top: 4px; }
+.a-meldung.ist-info { background: var(--dpv-hauch); color: var(--text); }
+.a-meldung.ist-info .a-meldung-ic { color: var(--dpv); }
+.a-meldung.ist-warnung { background: var(--warte-grund); color: var(--warte-text); }
+.a-meldung.ist-fehler { background: var(--ab-grund); color: var(--ab-text); }
+.a-meldung.ist-erfolg { background: var(--ok-grund); color: var(--ok-text); }
+@media (max-width: 680px) {
+  .a-meldung { gap: 10px; padding: 12px; }
+  .a-meldung-ic { flex-basis: 30px; width: 30px; height: 30px; }
+}
+@media (max-width: 390px) {
+  .a-meldung { gap: 8px; padding: 10px; }
+  .a-meldung-ic { flex-basis: 28px; width: 28px; height: 28px; }
+}
 
 /* Statusmeldungen unter der Begrüßung */
 .a-meldungen { margin: 0 0 32px; }
