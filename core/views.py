@@ -94,7 +94,7 @@ def _scout_name_just_saved(request: HttpRequest) -> bool:
     Die Meldungen gelten dabei schon als gelesen; die Seite zeigt sie trotzdem, weil sie in
     derselben Anfrage dieselben bleiben, und beim nächsten Aufruf fehlen Meldung und Fokus.
     """
-    return any(SCOUT_NAME_TAG in message.extra_tags.split() for message in messages.get_messages(request))
+    return any(SCOUT_NAME_TAG in (message.extra_tags or "").split() for message in messages.get_messages(request))
 
 
 def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False) -> HttpResponse:

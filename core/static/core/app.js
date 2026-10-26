@@ -131,16 +131,25 @@
     discard.addEventListener("click", function () {
       close(false);
     });
-    box.addEventListener("keydown", function (event) {
+    // Escape wirkt auch, wenn der Fokus mit Tab schon aus dem offenen Feld hinaus ist.
+    document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && isOpen) {
         event.preventDefault();
         close(false);
       }
     });
-    document.addEventListener("click", function (event) {
+    // „pointerdown“ statt „click“: Safari am iPhone meldet ein Antippen von Flächen ohne eigene
+    // Funktion (Überschrift, leerer Rand) nicht als Klick. Ob das Angetippte den Fokus selbst
+    // nimmt, steht am Ziel fest; Safari gibt angeklickten Knöpfen und Links keinen Fokus.
+    // Den Fokus erst danach zurückgeben: Das Antippen selbst nimmt ihn sonst gleich wieder weg.
+    document.addEventListener("pointerdown", function (event) {
       if (isOpen && !box.contains(event.target)) {
-        var focused = document.activeElement;
-        close(Boolean(focused) && focused !== document.body && !box.contains(focused));
+        close(true);
+        if (!event.target.closest("a, button, input, select, textarea, label, [tabindex]")) {
+          window.setTimeout(function () {
+            rest.focus();
+          }, 0);
+        }
       }
     });
 

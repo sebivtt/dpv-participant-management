@@ -229,6 +229,27 @@ def test_zu_lang_das_feld_bleibt_offen_mit_fehler_und_eingabe(org):
     assert _attr(box(root), "data-fokus") is None
 
 
+def test_speichern_scheitert_das_feld_bleibt_offen_mit_der_eingabe(org, monkeypatch):
+    """Unabhängige Prüfung: Auch nach einem technischen Fehler kommt das Feld offen, in Ruhe stünde der alte Wert."""
+    from django.contrib.auth import get_user_model
+    from django.db import DatabaseError
+
+    set_stored(org.erika, "Falkenflug")
+    client = client_for(org.erika)
+
+    def fail(self, *args, **kwargs):
+        raise DatabaseError("Datenbank weg")
+
+    monkeypatch.setattr(get_user_model(), "save", fail)
+
+    root = _tree(save(org.erika, "Kolibri", client=client))
+
+    assert _attr(box(root), "data-offen") is not None
+    assert _attr(field(root), "value") == "Kolibri"
+    assert _attr(box(root), "data-gespeichert") == "Falkenflug"
+    assert shown_value(root) == "Falkenflug"
+
+
 # Szenario 8: Kopfzeile wie im Zielbild
 
 

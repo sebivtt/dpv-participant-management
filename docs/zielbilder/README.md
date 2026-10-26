@@ -28,7 +28,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 10. **Fahrtenname** (#111, seit #180 wie im Zielbild): als erstes Feld über Vor- und Nachname; in Ruhe mit Personensymbol, dem Fahrtennamen oder „Noch nicht angegeben“ und rechts dem Knopf zum Leeren; Antippen öffnet die Eingabe mit „Verwerfen“ und „Speichern“ darunter. In der Kopfzeile steht der Fahrtenname groß, „(Erika Testfrau)“ kleiner und grauer dahinter. Es bleiben diese Abweichungen:
     - **Knopf zum Leeren in Ruhe:** Er öffnet das Feld leer; gelöscht wird erst mit „Speichern“ (Sebastian, Klärung von #180). Im Zielbild leert er in Ruhe nur die Vorschau.
     - **Texte:** Meldungen nach dem Speichern wie in #111 statt „Vorschau aktualisiert …“; die Ansage beim Leeren heißt „Feld geleert. Mit Speichern übernehmen oder verwerfen.“, beim Verwerfen immer „Änderungen verworfen.“, auch nach Tippen außerhalb. Sie sind nur für Vorleseprogramme zu hören, ohne die schwarze Einblendung am unteren Rand.
-    - **Fokus nach Tippen außerhalb:** Er geht zurück aufs Feld, außer man hat einen Link oder Knopf angetippt, der ihn selbst nimmt.
+    - **Fokus nach Tippen außerhalb:** Er geht zurück aufs Feld, außer man hat einen Link, Knopf oder ein Eingabefeld angetippt. Esc verwirft auch, wenn der Fokus schon außerhalb des Felds liegt.
     - **Ohne Skript** bleibt das einfache Formular aus #111: Eingabe mit „Speichern“ darunter, ohne Knopf zum Leeren und ohne „Verwerfen“.
     - **Lange Namen** brechen in Ruhe um wie in Punkt 8, statt mit „…“ abgeschnitten zu werden.
     - **Fehler am Feld** (mehr als 50 Zeichen) steht rot unter dem Feld, das offen bleibt; das Zielbild zeigt keinen Fehler.

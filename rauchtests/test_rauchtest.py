@@ -369,8 +369,17 @@ def test_fahrtenname_antippen_verwerfen_leeren_und_speichern(request, browser_na
     field.fill("Kolibri")
     _press(page, page.get_by_role("heading", level=1), device)
     expect(field).to_be_hidden()
-    expect(rest).to_be_visible()
+    expect(rest).to_be_focused()
+    expect(announcement).to_have_text("Änderungen verworfen.")
     assert get_user_model().objects.get(username="erika.testfrau").scout_name == "Falkenflug"
+    if device == "handy":
+        # Wer außerhalb einen Knopf antippt, behält ihn: Das Feld schließt, nimmt aber den Fokus nicht (unabhängige Prüfung).
+        _press(page, rest, device)
+        _press(page, page.get_by_role("button", name="Menü"), device)
+        expect(page.get_by_role("dialog", name="Menü")).to_be_visible()
+        expect(field).to_be_hidden()
+        expect(rest).not_to_be_focused()
+        _press(page, page.get_by_role("button", name="Menü schließen"), device)
 
     # Szenario 6: × öffnet das Feld leer; „Verwerfen“ lässt „Falkenflug“ stehen.
     _press(page, page.get_by_role("button", name="Fahrtenname leeren"), device)
@@ -425,6 +434,15 @@ def test_fahrtenname_nur_mit_der_tastatur(pc):
     expect(rest).to_be_focused()
     expect(rest).to_contain_text("Noch nicht angegeben")
     assert focus_visible(pc)["sichtbar"]
+    # Esc verwirft auch, wenn der Fokus mit Tab schon aus dem Feld hinaus ist (unabhängige Prüfung).
+    pc.keyboard.press("Enter")
+    pc.keyboard.type("Kiwi")
+    for _ in range(4):
+        pc.keyboard.press(_tab_key(pc))
+    assert not pc.evaluate("document.querySelector('[data-antippfeld]').contains(document.activeElement)")
+    pc.keyboard.press("Escape")
+    expect(rest).to_be_focused()
+    expect(rest).to_contain_text("Noch nicht angegeben")
 
     pc.keyboard.press("Enter")
     pc.keyboard.type("Kiwi")
