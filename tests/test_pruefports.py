@@ -10,11 +10,14 @@ import json
 import socket
 from pathlib import Path
 
+import pytest
+
 from tests.check_ports import (
     CONTAINER_KEYCLOAK_PORT,
     CONTAINER_TOOL_PORT,
     SMOKE_TEST_PORT,
     busy_port_message,
+    fail_if_busy,
     is_busy,
 )
 
@@ -85,3 +88,17 @@ def test_meldung_nennt_den_port_und_was_zu_tun_ist():
     assert "lsof -i :8010" in message
     # Port 8000 bleibt dem eigenen Tool; das muss niemand beenden.
     assert "8000" not in message
+
+
+def test_belegter_pruefport_bricht_mit_der_meldung_ab():
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+
+        with pytest.raises(pytest.fail.Exception, match=f"Port {port} ist belegt; die Prüfung braucht ihn für den Test"):
+            fail_if_busy(port, "den Test")
+
+
+def test_freier_pruefport_laesst_die_pruefung_weiterlaufen():
+    fail_if_busy(_free_port(), "den Test")

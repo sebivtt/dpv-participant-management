@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT, busy_port_message, is_busy
+from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT, fail_if_busy
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 COMPOSE_FILE = BASE_DIR / "testumgebung" / "docker-compose.yml"
@@ -99,9 +99,8 @@ def env_file(tmp_path_factory) -> Path:
 def testumgebung(env_file) -> Iterator[Path]:
     """Baut und startet die Testumgebung, wartet, bis sie antwortet, und räumt danach alles ab."""
     compose("down", "--volumes", "--remove-orphans", env_file=env_file, check=False)
-    for port, purpose in ((CONTAINER_TOOL_PORT, "das Tool"), (CONTAINER_KEYCLOAK_PORT, "Keycloak")):
-        if is_busy(port):
-            pytest.fail(busy_port_message(port, f"{purpose} in der Prüfung der Testumgebung"))
+    fail_if_busy(CONTAINER_TOOL_PORT, "das Tool in der Prüfung der Testumgebung")
+    fail_if_busy(CONTAINER_KEYCLOAK_PORT, "Keycloak in der Prüfung der Testumgebung")
     started = compose("up", "--detach", "--build", "--wait", env_file=env_file, check=False)
     try:
         assert started.returncode == 0, started.stdout + started.stderr

@@ -10,6 +10,8 @@ Ohne Django, damit es auch die Prüfung der Testumgebung im Container (container
 
 import socket
 
+import pytest
+
 # Das Tool im Rauchtest (rauchtests/).
 SMOKE_TEST_PORT = 8010
 # Tool und Keycloak der Testumgebung in der Container-Prüfung (containertests/).
@@ -45,3 +47,12 @@ def busy_port_message(port: int, purpose: str) -> str:
         "andere Prüfung (./pruefen.sh) oder ihr Container räumt gerade auf: eine Minute warten und "
         f"neu starten. Welches Programm den Port belegt, zeigt im Terminal: lsof -i :{port}"
     )
+
+
+def fail_if_busy(port: int, purpose: str) -> None:
+    """Bricht die Prüfung mit busy_port_message ab, wenn der Port belegt ist.
+
+    Sonst scheiterte sie später mit „Address already in use“ oder „port is already allocated“.
+    """
+    if is_busy(port):
+        pytest.fail(busy_port_message(port, purpose))

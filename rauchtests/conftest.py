@@ -15,7 +15,6 @@ eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167).
 """
 
 import os
-import socket
 import sys
 from pathlib import Path
 
@@ -25,7 +24,7 @@ import pytest
 from django.conf import settings
 from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
-from tests.check_ports import SMOKE_TEST_PORT, busy_port_message, is_busy
+from tests.check_ports import SMOKE_TEST_PORT, fail_if_busy
 
 # Keycloak lässt die Rückkehr zu diesem Port zu (dev/keycloak/dpv-realm.json), deshalb läuft das
 # Tool im Rauchtest genau dort. pytest-django liest die Adresse beim ersten Start.
@@ -59,8 +58,7 @@ def _vorbedingungen():
             f"Keycloak unter {settings.KEYCLOAK_REALM_URL} nicht erreichbar ({type(error).__name__}). "
             "Erst die Keycloak-Testumgebung starten (README.md, „Projekt starten“, Schritt 7)."
         )
-    if is_busy(SMOKE_TEST_PORT):
-        pytest.fail(busy_port_message(SMOKE_TEST_PORT, "das Tool im Rauchtest"))
+    fail_if_busy(SMOKE_TEST_PORT, "das Tool im Rauchtest")
 
 
 @pytest.fixture(scope="session")
@@ -94,24 +92,8 @@ def browser(_playwright, browser_name) -> Browser:
     browser.close()
 
 
-@pytest.fixture(scope="session")
-def _port_8000_wie_das_eigene_tool():
-    """Belegt Port 8000 für den ganzen Lauf, wie das eigene Tool aus README Schritt 9 (#167).
-
-    So zeigt jeder Rauchtest, dass er neben dem eigenen Tool läuft. Läuft das Tool wirklich,
-    ist der Port schon belegt; das ist derselbe Fall.
-    """
-    with socket.socket() as listener:
-        try:
-            listener.bind(("127.0.0.1", 8000))
-            listener.listen()
-        except OSError:
-            pass
-        yield
-
-
 @pytest.fixture
-def tool(_port_8000_wie_das_eigene_tool, live_server, transactional_db, settings):
+def tool(live_server, transactional_db, settings):
     """Das Tool auf dem Port des Rauchtests (BASE), mit leerer Datenbank für jeden Test."""
     settings.ALLOWED_HOSTS = ["localhost"]
     return BASE
