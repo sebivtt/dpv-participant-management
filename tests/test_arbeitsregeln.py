@@ -1,0 +1,295 @@
+"""Tests für die Arbeitsregeln in CLAUDE.md, den Skills und den Vorlagen (#158, #169).
+
+Diese Tests sorgen dafür, dass die Kernregeln nicht still aus CLAUDE.md verschwinden, dass die
+Skills auf CLAUDE.md verweisen, statt Regeln zu wiederholen (ein Ort je Angabe, #169), und dass
+die Vorlagen ihre Felder haben. Ob sich eine Session an die Regeln hält, prüfen sie nicht.
+
+Bis #169 hieß die Datei `test_szenarien_vor_code.py` und verlangte die Regeln zu „Szenarien vor
+Code“ zusätzlich in grill-me. Seit #169 stehen sie nur in CLAUDE.md und der Vorlage für Pull
+Requests; grill-me verweist darauf (`docs/entscheidungen.md`, 26.10.2026).
+"""
+
+import re
+from pathlib import Path
+
+import pytest
+import yaml
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+CLAUDE_MD = BASE_DIR / "CLAUDE.md"
+PR_TEMPLATE = BASE_DIR / ".github" / "pull_request_template.md"
+PHASE_TEMPLATE = BASE_DIR / ".github" / "ISSUE_TEMPLATE" / "phase.yml"
+SKILL_DIR = BASE_DIR / ".claude" / "skills"
+GRILL_ME = SKILL_DIR / "grill-me" / "SKILL.md"
+ISSUE_ANLEGEN = SKILL_DIR / "issue-anlegen" / "SKILL.md"
+PHASE_STEUERN = SKILL_DIR / "phase-steuern" / "SKILL.md"
+SKILLS = [GRILL_ME, ISSUE_ANLEGEN, PHASE_STEUERN]
+
+# So viele Wörter in Folge darf ein Skill aus CLAUDE.md übernehmen, ohne dass es als
+# wiederholte Regel gilt. Kürzere Folgen sind Verweise und feste Begriffe wie
+# „das Label `geklärt`“; ab zehn Wörtern ist es fast immer ein abgeschriebener Satz.
+MAX_SHARED_WORDS = 9
+
+
+def _flat(text):
+    return " ".join(text.split())
+
+
+def _text(path):
+    return _flat(path.read_text(encoding="utf-8"))
+
+
+def _section(path, heading):
+    """Text eines Abschnitts (## oder ###) bis zur nächsten Überschrift gleicher oder höherer Ebene."""
+    text = path.read_text(encoding="utf-8")
+    match = re.search(rf"^(#+) (?:\d+\. )?{re.escape(heading)}[^\n]*\n", text, re.M)
+    assert match, f"Abschnitt „{heading}“ fehlt in {path.name}"
+    level = len(match.group(1))
+    body = re.split(rf"^#{{1,{level}}} ", text[match.end() :], flags=re.M)[0]
+    return _flat(body)
+
+
+def _sentence_after(text, start):
+    match = re.search(re.escape(start) + r"[^.]*\.(?:[^.]*\.){0,2}", text)
+    assert match, f"Regel fehlt: {start}"
+    return match.group(0)
+
+
+def _words(text):
+    return re.findall(r"\w+", text.lower())
+
+
+def _shared_passages(skill, rules, length):
+    """Wortfolgen der Länge `length`, die im Skill und in CLAUDE.md gleich vorkommen."""
+    rule_words = _words(rules)
+    known = {tuple(rule_words[i : i + length]) for i in range(len(rule_words) - length + 1)}
+    skill_words = _words(skill)
+    return sorted(
+        {
+            " ".join(skill_words[i : i + length])
+            for i in range(len(skill_words) - length + 1)
+            if tuple(skill_words[i : i + length]) in known
+        }
+    )
+
+
+# --- CLAUDE.md: Kernregeln -------------------------------------------------------------------
+
+
+# Je Angabe der Ort, der für sie zuständig ist, so wie #169 sie zuordnet.
+PLACES = {
+    "Was gilt": ["`docs/anforderungen.md`", "`docs/rechtematrix.md`"],
+    "Warum": ["`docs/entscheidungen.md`"],
+    "Phasen, Abschlusskriterien, Stunden": ["`docs/fahrplan.md`"],
+    "Arbeitsregeln": ["diese Datei"],
+    "Handgriffe": ["Skills"],
+    "Was ein Issue verlangt": ["Text des Issues"],
+    "Ob ein Issue geklärt ist": ["Label `geklärt`"],
+    "Ob ein Issue erledigt ist": ["geschlossen"],
+    "Reihenfolge einer Phase und Belege der Abschlusskriterien": ["Phasen-Issue", "Issue-Nummern"],
+    "Was technisch zuerst da sein muss": ["Abhängigkeiten auf GitHub"],
+}
+
+
+def test_ein_ort_je_angabe_ordnet_jeder_angabe_ihren_ort_zu():
+    section = _section(CLAUDE_MD, "Ein Ort je Angabe")
+    entries = dict(re.findall(r"- \*\*(.+?):\*\* (.*?)(?= - \*\*|$)", section))
+
+    assert entries.keys() == PLACES.keys()
+    for topic, places in PLACES.items():
+        for place in places:
+            assert place in entries[topic], (topic, place)
+    assert "verweisen nur darauf" in section
+    assert "Kommentare sind nur Protokoll" in section
+    assert "Eine Reihenfolge ohne technischen Grund steht nur im Phasen-Issue" in section
+
+
+def test_ablauf_einer_phase_von_start_bis_abschluss():
+    section = _section(CLAUDE_MD, "Ablauf einer Phase")
+
+    for part in ["**Start:**", "**Klären läuft voraus:**", "**Umsetzen:**", "**Neues während der Phase:**"]:
+        assert part in section, part
+    start = _sentence_after(section, "**Start:**")
+    assert "Phasen-Issue nach Vorlage" in start
+    assert "Widersprüche legt sie Sebastian mit Vorschlag vor" in start
+    assert "mit `issue-anlegen`" in start
+    assert "Zuerst werden die Grundlagen geklärt" in section
+    assert "zweite KI prüft die Planung, bevor die erste Umsetzung beginnt" in section
+    assert "nächsten drei Issues" in section
+    assert "spätestens in Klärung, wenn die Umsetzung der laufenden beginnt" in section
+    assert "etwa zwei Gruppen vorher" in section
+    assert "nur sein Häkchen mit Beleg" in section
+    assert "Stunden aus dem Puffer, die Stunden nur mit Sebastians Zustimmung" in section
+    assert "sofort in den Text des Issues, das Label `geklärt` kommt ab" in section
+    # Abschluss in dieser Reihenfolge: Belege, Review, Rückblick, erst dann der „Stand“.
+    closing = section.split("**Abschluss:**", 1)[1]
+    order = ["Beleg", "externe Review", "Rückblick", "„Stand“"]
+    positions = [closing.find(step) for step in order]
+    assert -1 not in positions, dict(zip(order, positions, strict=True))
+    assert positions == sorted(positions)
+
+
+def test_steuerungssession_entscheidet_nichts_fachliches_und_wechselt_rechtzeitig():
+    section = _section(CLAUDE_MD, "Steuerungssession und Umsetzungs-Sessions")
+
+    assert "entscheidet nichts Fachliches" in section
+    assert "in seinen eigenen Worten im Issue oder Pull Request" in section
+    assert "„Setze #123 um, nach `CLAUDE.md`.“" in section
+    assert "Was sonst wichtig ist, steht vorher im Issue" in section
+    assert "40 bis 50 %" in section
+    assert "nie mitten in einer Umsetzung" in section
+    assert "60 % ist die harte Grenze" in section
+    assert "automatisch zusammen" in section
+
+
+def test_umsetzung_in_einer_frischen_session_je_issue():
+    section = _section(CLAUDE_MD, "Steuerungssession und Umsetzungs-Sessions")
+    rule = _sentence_after(section, "**Umsetzungs-Sessions:**")
+
+    assert "frischen Session für genau ein Issue" in rule
+    assert "kein weiteres" in rule
+    assert "rund 60 %" in rule
+    assert "als Kommentar ins Issue" in rule
+
+
+def test_ohne_szenarien_haelt_die_ki_an_auch_wenn_der_auftrag_den_schritt_nicht_nennt():
+    rule = _sentence_after(_text(CLAUDE_MD), "Direkt vor dem Start prüft die KI außerdem")
+
+    assert "„Szenarien (Datum)“" in rule
+    assert "hält sie an" in rule
+    assert "statt mit Tests oder Code zu beginnen" in rule
+    assert "auch, wenn der Auftrag den Schritt nicht nennt" in rule
+    assert "ein Auftrag hebt ihn nie auf" in rule
+
+
+def test_ohne_szenarien_nur_wenn_die_klaerung_kein_fachliches_verhalten_festhaelt():
+    step = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    rule = step.split("Ohne Szenarien geht nur ein Issue", 1)[-1].split("\n", 1)[0][:300]
+
+    assert "Ohne Szenarien geht nur ein Issue" in step
+    assert "die Klärung festhält, dass es kein fachliches Verhalten hat" in rule
+    assert "Fehlt diese Angabe, sind Szenarien nötig" in rule
+
+
+# --- Skills: Verweis statt Wiederholung ------------------------------------------------------
+
+
+@pytest.mark.parametrize("path", SKILLS, ids=lambda path: path.parent.name)
+def test_skill_verweist_auf_claude_md_und_wiederholt_keine_regel(path):
+    skill = path.read_text(encoding="utf-8")
+    passages = _shared_passages(skill, CLAUDE_MD.read_text(encoding="utf-8"), MAX_SHARED_WORDS + 1)
+
+    assert skill.startswith("---\nname: "), "Kopf mit Name und Beschreibung fehlt"
+    assert "`CLAUDE.md`" in skill
+    assert not passages, "Aus CLAUDE.md wiederholt, bitte durch einen Verweis ersetzen:\n" + "\n".join(passages)
+
+
+def test_grill_me_verweist_fuer_die_umsetzung_nur_auf_claude_md():
+    after = _section(GRILL_ME, "Danach")
+
+    assert "`CLAUDE.md`" in after
+    assert len(after.split()) <= 40, "„Danach“ soll nur verweisen"
+
+
+def test_grill_me_hat_eine_kurzform_die_sebastian_bestaetigt():
+    short = _section(GRILL_ME, "Kurzform")
+
+    assert "höchstens einem neuen Punkt" in short
+    assert "ohne fachliches Verhalten" in short
+    assert "Abhängigkeiten" in short
+    for kept in ["Fragen", "Zusammenfassung", "Protokoll", "Szenarien"]:
+        assert kept in short, kept
+    assert "Sebastian bestätigt" in short
+    assert "volle Klärung" in short
+
+
+def test_grill_me_sammelt_die_szenarien_vor_dem_label_geklaert():
+    text = GRILL_ME.read_text(encoding="utf-8")
+    headings = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+    scenarios = next(h for h in headings if "Szenarien" in h)
+    release = next(h for h in headings if "Freigeben" in h)
+
+    assert "**Fachliches Verhalten:**" in text
+    assert headings.index(scenarios) < headings.index(release)
+    release_text = _section(GRILL_ME, release)
+    assert "„Szenarien (Datum)“" in release_text
+    assert "keine Szenarien braucht" in release_text
+
+
+def test_issue_anlegen_traegt_neue_issues_der_laufenden_phase_ins_phasen_issue_ein():
+    section = _section(ISSUE_ANLEGEN, "Laufende Phase")
+
+    assert "Phasen-Issue" in section
+    assert "im selben Schritt" in section
+    for part in ["Platz", "Abhängigkeiten", "Stunden"]:
+        assert part in section, part
+
+
+def test_phase_steuern_hat_die_handgriffe_fuer_die_ganze_phase():
+    text = PHASE_STEUERN.read_text(encoding="utf-8")
+    headings = " ".join(re.findall(r"^## (.+)$", text, flags=re.MULTILINE))
+
+    assert "name: phase-steuern" in text
+    for step in ["Phasenstart", "Aufträge", "Phasen-Issue pflegen", "Übergabe", "Abschluss"]:
+        assert step in headings, step
+    assert "phase.yml" in text
+    # Die Steuerungssession ändert keine Dateien selbst (CLAUDE.md); im Abschluss gibt sie
+    # Erfahrungen und den „Stand“ als Auftrag an eine Umsetzungs-Session.
+    closing = _section(PHASE_STEUERN, "Abschluss")
+    assert "Auftrag" in closing
+    assert "Umsetzungs-Session" in closing
+
+
+# --- Vorlagen --------------------------------------------------------------------------------
+
+
+def test_vorlage_fuer_pull_requests_fragt_nach_den_szenarien():
+    text = PR_TEMPLATE.read_text(encoding="utf-8")
+    checks = text.split("## Wie geprüft wurde", 1)[1].split("\n## ", 1)[0]
+    first = next(line for line in checks.splitlines() if line.startswith("- "))
+
+    assert first.startswith("- Szenarien")
+    assert "„Szenarien (Datum)“" in first
+
+
+def _phase_fields():
+    template = yaml.safe_load(PHASE_TEMPLATE.read_text(encoding="utf-8"))
+    return {field["id"]: field["attributes"] for field in template["body"] if field["type"] != "markdown"}
+
+
+def test_vorlage_phase_hat_reihenfolge_abschlusskriterien_und_stand():
+    fields = _phase_fields()
+
+    template = yaml.safe_load(PHASE_TEMPLATE.read_text(encoding="utf-8"))
+    types = {field["id"]: field for field in template["body"] if field["type"] != "markdown"}
+
+    assert {"phase", "reihenfolge", "abschlusskriterien", "stand"} <= fields.keys()
+    assert fields["stand"]["label"] == "Stand für die nächste Steuerungssession"
+    assert types["phase"]["type"] == "dropdown"
+    assert fields["phase"]["options"] == [f"P{n}" for n in range(11)]
+    for name in ["phase", "reihenfolge", "abschlusskriterien"]:
+        assert types[name].get("validations", {}).get("required") is True, name
+
+
+def test_vorlage_phase_reihenfolge_nur_als_issue_nummern():
+    example = _phase_fields()["reihenfolge"]["placeholder"]
+    lines = [line.strip() for line in example.splitlines() if line.strip()]
+
+    assert lines
+    assert all(re.fullmatch(r"\d+\. #\d+", line) for line in lines), lines
+
+
+def test_vorlage_phase_abschlusskriterien_als_haekchen_mit_beleg_und_verweis():
+    attributes = _phase_fields()["abschlusskriterien"]
+    lines = [line.strip() for line in attributes["placeholder"].splitlines() if line.strip()]
+
+    assert "`docs/fahrplan.md`" in attributes["description"]
+    assert lines
+    assert all(line.startswith("- [") and "Beleg:" in line for line in lines), lines
+
+
+def test_vorlage_phase_kennt_kein_geklaert_als_text():
+    # Ob ein Issue geklärt ist, zeigt allein das Label; das Phasen-Issue vermerkt es nicht.
+    for name, attributes in _phase_fields().items():
+        for key in ["label", "description", "placeholder"]:
+            assert "geklärt" not in attributes.get(key, ""), (name, key)
