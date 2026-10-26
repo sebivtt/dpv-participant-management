@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden, Meldungen (#7, #96, #165, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden, Meldungen (#7, #96, #165, #13, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -308,6 +308,46 @@ def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, de
     assert run_axe(page) == []
     stations = _tab_to(page, "Menü" if device == "handy" else "Abmelden")
     _all_visible(stations)
+
+
+def _tab_to_element(page: Page, selector: str, steps: int = 25) -> dict:
+    """Drückt Tab, bis der Fokus auf dem Element `selector` liegt; gibt diese Station zurück."""
+    for _ in range(steps):
+        page.keyboard.press(_tab_key(page))
+        if page.evaluate("s => document.activeElement.matches(s)", selector):
+            return focus_visible(page)
+    raise AssertionError(f"„{selector}“ nach {steps} Mal Tab nicht erreicht")
+
+
+def _ring(circle) -> str:
+    return circle.locator(".a-avatar").evaluate("e => getComputedStyle(e).boxShadow")
+
+
+# Szenarien 1, 2, 4 und 5 zu #13: Profilkreis am PC und am Handy, mit Maus und nur mit der Tastatur
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, browser_name, device):
+    page: Page = request.getfixturevalue(device)
+    login(page)
+    selector = "aside .a-profil" if device == "pc" else ".a-topbar .a-profil"
+    circle = page.locator(selector)
+    expect(circle).not_to_have_attribute("aria-current", "page")
+    assert _ring(circle) == "none", "auf der Startseite ist der Kreis hervorgehoben"
+
+    circle.click()
+
+    page.wait_for_url(f"{BASE}/profil/")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+    expect(circle).to_have_attribute("aria-current", "page")
+    # Nur ein gelber Ring direkt am Kreis, ohne weißen Spalt (Sebastian, 26.10.2026).
+    assert "rgb(240, 173, 44)" in _ring(circle), f"auf „Mein Profil“ ist der Kreis nicht hervorgehoben: {_ring(circle)}"
+
+    page.goto(f"{BASE}/")
+    station = _tab_to_element(page, selector)
+    assert station["sichtbar"] and station["kontrast"] >= 3, station
+    page.keyboard.press("Enter")
+
+    page.wait_for_url(f"{BASE}/profil/")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
 
 
 # Szenario 10
