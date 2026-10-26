@@ -30,10 +30,15 @@ NAV_ITEMS = [
 ]
 
 
+def _current(request: HttpRequest) -> str | None:
+    """Name der aufgerufenen Adresse in config/urls.py, z. B. "start"."""
+    match = getattr(request, "resolver_match", None)
+    return match.url_name if match else None
+
+
 def items_for(request: HttpRequest) -> list[dict]:
     """Die Punkte, die diese Person sieht, mit Adresse und Markierung des aktiven Punkts."""
-    match = getattr(request, "resolver_match", None)
-    current = match.url_name if match else None
+    current = _current(request)
     return [
         {"url": reverse(item.url_name), "label": item.label, "icon": item.icon, "active": item.url_name == current}
         for item in NAV_ITEMS
@@ -46,8 +51,11 @@ def navigation(request: HttpRequest) -> dict:
 
     Auf der Seite „ungültige Anfrage“ (400) kennt die Anfrage noch keine Person: Django lehnt
     sie ab, bevor der Login-Baustein läuft. Auch dann gibt es keine Navigation (#58).
+
+    „Mein Profil“ ist kein Punkt der Navigation; sein Zugang ist der Profilkreis, der
+    hervorgehoben ist, solange die Seite offen ist (#13, docs/gestaltung.md).
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:
         return {"nav_items": []}
-    return {"nav_items": items_for(request)}
+    return {"nav_items": items_for(request), "profile_active": _current(request) == "profile"}
