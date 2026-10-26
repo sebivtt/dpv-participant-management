@@ -1,6 +1,7 @@
 """Datenmodell der Konten."""
 
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 from access.keys import key_field
 
@@ -16,6 +17,7 @@ class User(AbstractUser):
     """
 
     key = key_field()
+    scout_name = models.CharField(max_length=50, blank=True, default="")
 
     @property
     def short_name(self) -> str:
@@ -26,3 +28,7 @@ class User(AbstractUser):
         der Login (`accounts/adapter.py`), ein Name nur aus Leerzeichen ist hier also leer.
         """
         return self.first_name
+
+
+def display_name(first_name: str, last_name: str, scout_name: str) -> str:
+    return ""

@@ -1,7 +1,7 @@
 """Seiten der App „core“."""
 
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
@@ -49,6 +49,11 @@ def profile(request: HttpRequest) -> HttpResponse:
         "tiles": [_tile(role) for role in roles if role is not membership],
     }
     return render(request, "core/profil.html", context)
+
+
+@checks_rights("EP-03", "EP-04")
+def profile_scout_name(request: HttpRequest) -> HttpResponse:
+    return redirect("profile")
 
 
 # Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
