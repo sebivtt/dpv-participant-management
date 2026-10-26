@@ -116,7 +116,7 @@ def test_unten_in_der_leiste_profilkreis_vorname_und_abmelden():
 
     sidebar = _sidebar(root)
     profile = _one(_all(sidebar, lambda e: e.name == "a" and "a-profil" in _classes(e)))
-    assert _attr(profile, "href") == "/"  # bis P5 zur Startseite (#13)
+    assert _attr(profile, "href") == "/profil/"  # seit #13 zu „Mein Profil“
     assert "Mein Profil" in _text(profile)
     circle = _one(_all(profile, lambda e: "a-avatar" in _classes(e)))
     assert _text(circle) == "E"
