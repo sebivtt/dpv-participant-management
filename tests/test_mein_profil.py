@@ -258,7 +258,8 @@ def test_vollstaendiger_name_kein_hinweis_zum_ergaenzen(org):
     root = page(org.erika)
 
     assert HINT_NAME not in text(root)
-    assert NOT_GIVEN not in text(root)
+    # Nur die Angaben aus dem DPV-Konto: Der leere Fahrtenname zeigt seit #180 „Noch nicht angegeben“.
+    assert all(NOT_GIVEN not in value for value in details(root).values())
 
 
 # Szenario 3: Erst die Mitgliedschaft, dann die Rollen, mit dem Weg nach oben ohne den Verband

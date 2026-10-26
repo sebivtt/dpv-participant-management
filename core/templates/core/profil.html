@@ -15,16 +15,15 @@
   {% endif %}
   <section class="a-flaeche a-profilflaeche" aria-labelledby="h-angaben">
     <h2 id="h-angaben" class="sr-nur">{% translate "Deine Angaben" %}</h2>
-    {# Vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“ (#111). #}
+    {# Vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“ (#111): der Fahrtenname groß, der Name kleiner und grauer dahinter (#180). Gleiche Regel wie display_name() in accounts/models.py. #}
     <div class="a-identitaet">
       <span class="a-avatar" aria-hidden="true">{% with name=user.short_name %}{% if name %}{{ name|first|upper }}{% else %}{% icon "person" %}{% endif %}{% endwith %}</span>
-      <p class="a-anzeigename">{{ user.display_name|default:user.username }}</p>
+      <p class="a-anzeigename">{% with full_name=user.get_full_name %}{% if user.scout_name and full_name %}{{ user.scout_name }} <span class="a-anzeigename-zusatz">({{ full_name }})</span>{% else %}{{ user.display_name|default:user.username }}{% endif %}{% endwith %}</p>
     </div>
-    {# Das einzige Feld zum Bearbeiten (W1, ergänzt mit #111); ohne Skript, ein Formular mit „Speichern“. #}
+    {# Das einzige Feld zum Bearbeiten (W1, ergänzt mit #111), zum Antippen wie im Zielbild (#180). Ohne Skript ein einfaches Formular mit „Speichern“. #}
     <form class="a-fahrtenname" method="post" action="{% url "profile_scout_name" %}" novalidate>
       {% csrf_token %}
-      {% textfeld scout_name_form.scout_name %}
-      <button type="submit" class="btn btn-primary">{% translate "Speichern" %}</button>
+      {% antippfeld scout_name_form.scout_name saved=user.scout_name icon="person" open=save_failed focus=scout_name_just_saved %}
     </form>
     <dl class="a-felder">
       <div><dt>{% translate "Vorname" %}</dt><dd{% if not user.first_name %} class="a-leer"{% endif %}>{% icon "person" %}<span>{% if user.first_name %}{{ user.first_name }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>

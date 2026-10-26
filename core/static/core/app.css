@@ -135,6 +135,12 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-identitaet .a-avatar { width: 56px; height: 56px; font-size: 1.25rem; }
 .a-identitaet .a-avatar .ic { width: 28px; height: 28px; }
 .a-anzeigename { margin: 0; min-width: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; overflow-wrap: anywhere; }
+/* Hinter dem Fahrtennamen der Name, kleiner und grauer (Zielbild, #180); ganz schmal in eigener Zeile */
+.a-anzeigename-zusatz { color: var(--text-leise); font-size: 1rem; font-weight: 600; letter-spacing: 0; }
+@media (max-width: 420px) {
+  .a-anzeigename { font-size: 1.15rem; }
+  .a-anzeigename-zusatz { display: block; margin-top: 3px; font-size: .9rem; }
+}
 /* Angaben als graue, gesperrte Felder: links ein Symbol, rechts das Schloss; keine Eingabefelder (EP-05) */
 .a-felder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; }
 .a-felder dt { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
@@ -291,10 +297,40 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
    weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild, docs/zielbilder/mein-profil.html) */
 .a-textfeld { margin: 0 0 1rem; }
 .a-textfeld .form-control { min-height: 46px; background-color: var(--flaeche); }
-/* Fahrtenname auf „Mein Profil“: das einzige Feld zum Bearbeiten, über den gesperrten Feldern (#111) */
-.a-fahrtenname { margin: 0 0 18px; }
-.a-fahrtenname .a-textfeld { max-width: 420px; margin-bottom: 10px; }
-.a-fahrtenname .form-label { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
+/* Feld zum Antippen (#180), nach dem Zielbild „Mein Profil“: in Ruhe so hoch und gebaut wie die
+   gesperrten Angaben, aber weiß und rechts der Knopf zum Leeren statt des Schlosses. Angetippt steht die
+   Eingabe im selben Rahmen, darunter „Verwerfen“ und „Speichern“ in einer kleinen Fläche, die wie im
+   Zielbild über dem Inhalt darunter liegt. Ohne Skript (ohne .ist-bereit) stehen Eingabe und
+   „Speichern“ einfach untereinander. Am PC so breit wie eine Spalte der Angaben darunter. */
+.a-antippfeld { position: relative; max-width: calc(50% - 8px); margin: 0 0 14px; }
+.a-antippfeld .form-label { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
+.a-antippfeld-gruppe { display: flex; align-items: stretch; min-width: 0; min-height: 46px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
+.a-antippfeld-gruppe:hover, .a-antippfeld.ist-offen .a-antippfeld-gruppe { border-color: var(--dpv); }
+.a-antippfeld-gruppe:has(.form-control:focus) { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
+.a-antippfeld-ruhe, .a-antippfeld-eingabe { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 0 0 11px; }
+.a-antippfeld-ruhe { border: 0; border-radius: var(--radius-klein) 0 0 var(--radius-klein); background: transparent; color: var(--text); font-size: .9rem; text-align: left; }
+.a-antippfeld-ruhe:hover { background: var(--dpv-hauch); }
+.a-antippfeld-ruhe > .ic, .a-antippfeld-eingabe > .ic { width: 18px; height: 18px; color: var(--dpv); }
+.a-antippfeld-wert { flex: 1; min-width: 0; padding: 10px 0; overflow-wrap: anywhere; }
+.a-antippfeld .form-control { min-width: 0; min-height: 44px; padding: 0 5px; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: .9rem; }
+.a-antippfeld-leeren { display: grid; place-items: center; width: 40px; flex: none; padding: 0; border: 0; border-left: 1px solid var(--linie); border-radius: 0 var(--radius-klein) var(--radius-klein) 0; background: transparent; color: var(--text-leise); }
+.a-antippfeld-leeren .ic { width: 17px; height: 17px; }
+.a-antippfeld-leeren:hover:not(:disabled) { background: var(--dpv-hauch); color: var(--dpv); }
+.a-antippfeld-leeren:disabled { color: var(--entwurf-rand); cursor: default; }
+/* Fokus innen, damit der Rahmen der Gruppe ihn nicht verdeckt */
+.a-antippfeld-gruppe :focus-visible { outline-offset: -3px; }
+.a-antippfeld .invalid-feedback { display: block; }
+/* Mit Fehler am Feld wird der äußere Rahmen rot, nicht die Eingabe darin */
+.a-antippfeld .form-control.is-invalid, .a-antippfeld .form-control.is-invalid:focus { border: 0; background-image: none; box-shadow: none; }
+.a-antippfeld-gruppe:has(.form-control.is-invalid) { border-color: var(--bs-form-invalid-border-color); }
+.a-antippfeld-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.a-antippfeld.ist-bereit .a-antippfeld-knoepfe { position: absolute; top: calc(100% + 7px); left: 0; z-index: 20; margin: 0; padding: 10px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); box-shadow: 0 10px 24px rgba(27, 37, 50, .12); }
+.a-antippfeld-knoepfe .btn { min-height: 40px; padding: 8px 13px; font-size: .9rem; }
+/* Zweiter Knopf neben einem Hauptknopf, z. B. „Verwerfen“: weiß mit feinem Rand (Zielbild „Mein Profil“) */
+.btn-zart { --bs-btn-color: var(--text); --bs-btn-bg: var(--flaeche); --bs-btn-border-color: var(--linie); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
+@media (max-width: 700px) {
+  .a-antippfeld { max-width: none; }
+}
 
 /* Fußbereich: flach, Impressum und Datenschutz links, Copyright rechts */
 .a-fuss { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--linie); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; font-size: .86rem; color: var(--text-leise); }

@@ -109,12 +109,15 @@
 
   <section class="a-abschnitt" aria-labelledby="h-profil">
     <h2 id="h-profil">{% translate "Mein Profil" %}</h2>
-    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#161): Kopfzeile mit Profilkreis, gesperrte Felder mit Schloss, Informationsmeldung mit Schloss; Mitgliedschaft als eigene Fläche, Rollen als Kacheln. Am Handy untereinander." %}</p>
+    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#161): Kopfzeile mit Profilkreis, der Fahrtenname groß und der Name kleiner dahinter; ein Feld zum Antippen mit „Verwerfen“ und „Speichern“ (#180); gesperrte Felder mit Schloss, Informationsmeldung mit Schloss; Mitgliedschaft als eigene Fläche, Rollen als Kacheln. Am Handy untereinander." %}</p>
     <div class="a-flaeche a-profilflaeche">
       <div class="a-identitaet">
-        <span class="a-avatar" aria-hidden="true">{{ profile_example.name|first }}</span>
-        <p class="a-anzeigename">{{ profile_example.name }}</p>
+        <span class="a-avatar" aria-hidden="true">{{ profile_example.scout_name|first }}</span>
+        <p class="a-anzeigename">{{ profile_example.scout_name }} <span class="a-anzeigename-zusatz">({{ profile_example.name }})</span></p>
       </div>
+      <form class="a-fahrtenname" novalidate data-nur-ansicht>
+        {% antippfeld profile_example.scout_name_form.scout_name saved=profile_example.scout_name icon="person" %}
+      </form>
       <dl class="a-felder">
         {% for label, value, symbol in profile_example.details %}
           <div><dt>{{ label }}</dt><dd{% if not value %} class="a-leer"{% endif %}>{% icon symbol %}<span>{% if value %}{{ value }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
