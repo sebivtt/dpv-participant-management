@@ -1,11 +1,20 @@
 """Seiten der App „core“."""
 
+import logging
+
+from django.contrib import messages
+from django.db import DatabaseError
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
+from accounts import texts as account_texts
+from accounts.forms import ScoutNameForm
+from core.forms import PatternForm
 from roles.models import Role
+
+logger = logging.getLogger(__name__)
 
 
 def _name_incomplete(user) -> bool:
@@ -33,20 +42,57 @@ def start(request: HttpRequest) -> HttpResponse:
 # aus der Anfrage, auch keine angehängten Parameter oder Formularfelder (EP-02).
 @checks_rights("EP-01", "EP-02", "EP-05")
 def profile(request: HttpRequest) -> HttpResponse:
-    """„Mein Profil“ zum Ansehen (#96, PER-01, ORG-05): Angaben, Mitgliedschaft und Rollen.
+    """„Mein Profil“ (#96, PER-01, ORG-05): Angaben, Mitgliedschaft und Rollen.
 
     Grundregel (Sebastian, 22.10.2026): Die Seite zeigt alles, was das Tool über die Person
-    speichert; neue Angaben kommen hier dazu. Ändern lässt sich nichts: Name und Mail kommen
-    bei jedem Login aus dem DPV-Konto (EP-05). Rollen und Einheiten liest die Seite bei jedem
-    Aufruf frisch über die zentrale Rechteprüfung. Die Mitgliedschaft steht in einer eigenen
-    Fläche, die übrigen Rollen als Kacheln darunter (#161).
+    speichert; neue Angaben kommen hier dazu. Ändern lässt sich nur der Fahrtenname (#111, W1);
+    Name und Mail kommen bei jedem Login aus dem DPV-Konto (EP-05). Rollen und Einheiten liest
+    die Seite bei jedem Aufruf frisch über die zentrale Rechteprüfung. Die Mitgliedschaft steht
+    in einer eigenen Fläche, die übrigen Rollen als Kacheln darunter (#161).
     """
+    return _profile_page(request, ScoutNameForm(initial={"scout_name": request.user.scout_name}))
+
+
+# Ändert nur das Konto der Anmeldung: Die Adresse hat keine Kennung, und das Formular nimmt nur
+# den Fahrtennamen an; Kennungen im Formular oder in der Adresse bleiben unbeachtet (EP-04).
+@checks_rights("EP-03", "EP-04")
+def profile_scout_name(request: HttpRequest) -> HttpResponse:
+    """Speichert den eigenen Fahrtennamen von „Mein Profil“ (#111, EP-03).
+
+    Gelingt es, geht es zurück zu „Mein Profil“ mit der Erfolgsmeldung; ein Neuladen schickt
+    das Formular dann nicht noch einmal. Ist die Eingabe zu lang, zeigt die Seite den Fehler am
+    Feld und behält die Eingabe. Scheitert das Speichern technisch, zeigt sie die
+    Fehlermeldung; ins Log kommt eine Zeile ohne den Fahrtennamen und ohne Konto (#6).
+
+    Ohne abgeschicktes Feld geht es ohne Speichern zu „Mein Profil“: Wer beim Speichern
+    abgemeldet war, landet nach dem Login mit einem einfachen Aufruf hier, und ein Formular ohne
+    das Feld ist kein leeres Feld, das den Fahrtennamen löschen dürfte (unabhängige Prüfung).
+    """
+    if request.method != "POST" or "scout_name" not in request.POST:
+        return redirect("profile")
+    form = ScoutNameForm(request.POST)
+    if not form.is_valid():
+        return _profile_page(request, form)
+    value = form.cleaned_data["scout_name"]
+    try:
+        request.user.set_scout_name(value)
+    except DatabaseError as error:
+        logger.error("Fahrtenname nicht gespeichert: %s", type(error).__name__)
+        return _profile_page(request, form, save_failed=True)
+    messages.success(request, account_texts.SCOUT_NAME_SAVED if value else account_texts.SCOUT_NAME_DELETED)
+    return redirect("profile")
+
+
+def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False) -> HttpResponse:
+    """„Mein Profil“ mit dem Formular für den Fahrtennamen, frisch oder mit der letzten Eingabe."""
     roles = request.rights.own_roles()
     membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
     context = {
         "name_incomplete": _name_incomplete(request.user),
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         "tiles": [_tile(role) for role in roles if role is not membership],
+        "scout_name_form": form,
+        "save_failed": account_texts.SCOUT_NAME_FAILED if save_failed else "",
     }
     return render(request, "core/profil.html", context)
 
@@ -140,5 +186,5 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
         ],
     }
     context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,
-               "nav_example": True, "profile_example": profile_example}
+               "nav_example": True, "profile_example": profile_example, "pattern_form": PatternForm.example()}
     return render(request, "core/muster.html", context)

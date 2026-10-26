@@ -207,13 +207,6 @@ def test_hinweis_zum_dpv_konto_in_blauer_flaeche_mit_schloss(org):
     assert symbols(box) == ["schloss"]
 
 
-def test_auf_der_seite_laesst_sich_nichts_bearbeiten(org):
-    content = main(page(org.erika))
-
-    assert _by_tag(content, "form") == []
-    assert [e.name for e in _all(content, lambda e: e.name in ("input", "textarea", "select", "button"))] == []
-
-
 # Szenario 2: Ein Name fehlt
 
 
@@ -490,10 +483,11 @@ def test_nirgends_das_wort_einheit(org):
         assert "einheit" not in response.content.decode().lower()
 
 
-# Szenario 13 zu #161: Teile des Zielbilds ohne Daten fehlen ganz, ohne leere Platzhalter
+# Szenario 13 zu #161: Teile des Zielbilds ohne Daten fehlen ganz, ohne leere Platzhalter. Den
+# Fahrtennamen hat das Tool seit #111; seine Tests stehen in tests/test_fahrtenname.py.
 
 ONLY_IN_TARGET_IMAGE = (
-    "Profil freigeben", "Freigabe", "Fahrtenname", "Geburtsdatum", "Wohnadresse", "Gesundheit", "Allergien",
+    "Profil freigeben", "Freigabe", "Geburtsdatum", "Wohnadresse", "Gesundheit", "Allergien",
     "Unverträglichkeiten", "Medikamente", "Organisation öffnen", "Austritt", "Austreten", "Profilfoto",
     "Verantwortung auf Verbandsebene", "Verbandsweite Funktion",  # Nachklärung Kacheln, Szenario 13
 )

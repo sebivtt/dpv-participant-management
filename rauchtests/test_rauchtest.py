@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Abmelden, Meldungen (#7, #96, #165, #13, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Fahrtenname, Abmelden, Meldungen (#7, #96, #165, #13, #111, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -245,6 +245,65 @@ def test_eingaben_wie_am_handy_bleiben_stehen(handy):
     handy.get_by_label("Organisation").focus()
 
     expect(field).to_have_value("Pfingstlager Sommer 2027")
+
+
+# Szenario 12 zu #111: Fahrtenname am Handy mit Autokorrektur und Wortvorschlägen
+def _type_like_a_phone(field, first: str, composed: str, replaced: str, last: str) -> None:
+    """Tippt wie ein Handy: Wörter als „Zusammensetzung“, eines ersetzt per Wortvorschlag oder Autokorrektur."""
+    field.press_sequentially(first)
+    field.evaluate(
+        """(el, [composed, replaced]) => {
+            el.dispatchEvent(new CompositionEvent('compositionstart', {data: ''}));
+            el.dispatchEvent(new CompositionEvent('compositionupdate', {data: composed}));
+            el.value += composed;
+            el.dispatchEvent(new InputEvent('input', {inputType: 'insertCompositionText', data: composed, bubbles: true}));
+            el.dispatchEvent(new InputEvent('beforeinput', {inputType: 'insertReplacementText', data: replaced, bubbles: true, cancelable: true}));
+            el.value = el.value.slice(0, -composed.length) + replaced;
+            el.dispatchEvent(new InputEvent('input', {inputType: 'insertReplacementText', data: replaced, bubbles: true}));
+            el.dispatchEvent(new CompositionEvent('compositionend', {data: replaced}));
+        }""",
+        [composed, replaced],
+    )
+    field.press_sequentially(last)
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_name, device):
+    page: Page = request.getfixturevalue(device)
+    login(page)
+    page.goto(f"{BASE}/profil/")
+    field = page.get_by_label("Fahrtenname")
+    expect(field).to_have_attribute("placeholder", "Noch nicht angegeben")
+    # Weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild zu #161).
+    assert field.evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(255, 255, 255)"
+
+    if device == "handy":
+        field.tap()
+    else:
+        field.click()
+    _type_like_a_phone(field, "Kleiner ", "Bä", "Bär", " vom See")
+    expect(field).to_have_value("Kleiner Bär vom See")
+    page.get_by_role("button", name="Speichern").click()
+
+    expect(page.get_by_role("status")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+    expect(page.locator(".a-anzeigename")).to_have_text("Kleiner Bär vom See (Erika Testfrau)")
+    expect(page.get_by_label("Fahrtenname")).to_have_value("Kleiner Bär vom See")
+    assert run_axe(page) == []
+    page.goto(f"{BASE}/")
+    expect(page.get_by_role("heading", level=1)).to_have_text("Hallo Kleiner Bär vom See!")
+
+    # Zu lang: Fehler am Feld, die Eingabe bleibt stehen, und die Seite besteht die Prüfung.
+    page.goto(f"{BASE}/profil/")
+    page.get_by_label("Fahrtenname").fill("K" * 51)
+    page.get_by_role("button", name="Speichern").click()
+    field = page.get_by_label("Fahrtenname")
+    expect(field).to_have_value("K" * 51)
+    expect(field).to_have_attribute("aria-invalid", "true")
+    expect(page.locator("#id_scout_name-fehler")).to_be_visible()
+    expect(page.locator("#id_scout_name-fehler")).to_have_text("Dein Fahrtenname darf höchstens 50 Zeichen lang sein.")
+    width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
+    assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
+    assert run_axe(page) == []
 
 
 def _erika_with_roles() -> None:

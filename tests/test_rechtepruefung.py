@@ -377,12 +377,15 @@ def test_admin_mit_mitgliedschaft_sieht_die_leitungen_seiner_kette(org):
 
 @pytest.mark.rechtematrix("RO-01", "RO-03")
 def test_leitungen_zeigen_nur_name_und_rolle_nicht_die_mail(org):
-    """#136, B2: Mail und weitere Angaben nur, wer die Person nach BER-01 ohnehin sieht."""
+    """#136, B2: Mail und weitere Angaben nur, wer die Person nach BER-01 ohnehin sieht.
+
+    Den Fahrtennamen nennt BER-01, Grund 3 schon; das Feld gibt es seit #111.
+    """
     entries = list(Rights(org.falke).leads())
 
     assert entries
     for entry in entries:
-        assert set(entry) == {"user_id", "first_name", "last_name", "kind", "unit_id", "unit_name"}
+        assert set(entry) == {"user_id", "first_name", "last_name", "scout_name", "kind", "unit_id", "unit_name"}
 
 
 @pytest.mark.rechtematrix("RO-02")

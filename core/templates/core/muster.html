@@ -154,13 +154,10 @@
 
   <section class="a-abschnitt" aria-labelledby="h-formular">
     <h2 id="h-formular">{% translate "Formular" %}</h2>
-    <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehler am Feld, als rote Schrift direkt unter dem Feld; keine Meldung im Sinne der vier Arten." %}</p>
+    <p class="a-unterzeile">{% translate "Baustein Textfeld (#111): Beschriftung, bei Pflichtfeldern „(Pflicht)“, und der Fehler am Feld als rote Schrift direkt darunter; keine Meldung im Sinne der vier Arten. Jedes Formular bindet ihn ein, statt sein Feld selbst zu schreiben." %}</p>
     <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
-      <div class="mb-3">
-        <label class="form-label" for="name">{% translate "Name der Veranstaltung" %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span></label>
-        <input class="form-control is-invalid" id="name" required aria-invalid="true" aria-describedby="name-fehler" autocomplete="off" autocapitalize="sentences">
-        <div class="invalid-feedback" id="name-fehler">{% translate "Gib einen Namen für die Veranstaltung ein." %}</div>
-      </div>
+      {% textfeld pattern_form.name %}
+      {% textfeld pattern_form.place %}
       <div class="mb-3">
         <label class="form-label" for="organisation">{% translate "Organisation" %}</label>
         <select class="form-select" id="organisation">{% for org in orgs %}<option>{{ org }}</option>{% endfor %}</select>

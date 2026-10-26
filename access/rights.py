@@ -44,10 +44,15 @@ R = Role.Kind
 # Wen die Verbandsleitung als Leitung sieht (RO-05): Bundesleitungen, Verbandsleitungen und das
 # DPV-Veranstaltungsteam, im ganzen Verband.
 SEEN_BY_FEDERATION_LEAD = (R.ASSOCIATION_LEAD, R.FEDERATION_LEAD, R.EVENT_TEAM)
-# Was über eine Leitung nach BER-01, Grund 3 sichtbar ist: Name und Rolle, nie die Mail (#136, B2).
-# Der Fahrtenname kommt mit #111 dazu.
+# Was über eine Leitung nach BER-01, Grund 3 sichtbar ist: Name, Fahrtenname und Rolle, nie die
+# Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`.
 LEAD_FIELDS = ("user_id", "kind", "unit_id")
-LEAD_NAMES = {"first_name": F("user__first_name"), "last_name": F("user__last_name"), "unit_name": F("unit__name")}
+LEAD_NAMES = {
+    "first_name": F("user__first_name"),
+    "last_name": F("user__last_name"),
+    "scout_name": F("user__scout_name"),
+    "unit_name": F("unit__name"),
+}
 
 
 class Rights:

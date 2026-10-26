@@ -1,4 +1,4 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Meldungen (#165), Fußbereich, Band der Testumgebung (#58).
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Meldungen (#165), Textfelder (#111), Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
@@ -70,6 +70,29 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
         "role": LIVE_ROLES[kind] if live else "note",
         "title": title,
         "text": text,
+    }
+
+
+@register.inclusion_tag("core/_textfeld.html")
+def textfeld(field) -> dict:
+    """Gemeinsamer Baustein für Textfelder (#111), den jedes Formular statt eines eigenen Felds einbindet.
+
+    `field` ist ein Feld eines Django-Formulars. Die Beschriftung steht über dem Feld, bei
+    Pflichtfeldern mit „(Pflicht)“. Ein Fehler steht rot direkt darunter, ist mit dem Feld
+    verknüpft und keine Meldung der vier Arten (docs/gestaltung.md). Die passende Tastatur am
+    Handy (z. B. `autocapitalize`, `autocorrect`, `inputmode`) legt das Formular am Feld fest,
+    weil nur es weiß, ob ein Name, ein Satz oder eine Mail hineingehört.
+    """
+    error_id = f"{field.auto_id}-fehler"
+    attrs = {"class": "form-control"}
+    if field.errors:
+        attrs = {"class": "form-control is-invalid", "aria-invalid": "true", "aria-describedby": error_id}
+    return {
+        "field": field,
+        "widget": field.as_widget(attrs=attrs),
+        "errors": field.errors,
+        "error_id": error_id,
+        "required": field.field.required,
     }
 
 
