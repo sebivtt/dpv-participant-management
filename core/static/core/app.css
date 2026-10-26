@@ -108,9 +108,9 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-profil { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: var(--radius-klein); color: var(--text); text-decoration: none; font-weight: 700; }
 .a-profil:hover { background: var(--grund); color: var(--text); }
 /* Solange „Mein Profil“ offen ist (#13): Fläche und gelber Ring wie beim aktiven Navigationspunkt, nicht nur eine Farbe.
-   Der blaue Außenrand gibt dem Ring genug Kontrast zur Leiste; Sonnengelb allein hat gegen Weiß nur rund 2 : 1. */
+   Der Ring liegt ohne Spalt direkt am Kreis (Sebastian, 26.10.2026). */
 .a-profil[aria-current="page"] { background: var(--dpv-hauch); color: var(--dpv); }
-.a-profil[aria-current="page"] .a-avatar { box-shadow: 0 0 0 2px var(--flaeche), 0 0 0 5px var(--akzent), 0 0 0 7px var(--dpv); }
+.a-profil[aria-current="page"] .a-avatar { box-shadow: 0 0 0 3px var(--akzent); }
 .a-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--dpv); color: #fff; display: grid; place-items: center; flex: none; font-weight: 800; font-size: 1.05rem; }
 .a-avatar .ic { width: 22px; height: 22px; }
 .a-abmelden { margin: 0; }

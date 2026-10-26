@@ -338,8 +338,8 @@ def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, br
     page.wait_for_url(f"{BASE}/profil/")
     expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
     expect(circle).to_have_attribute("aria-current", "page")
-    # Außen ein blauer Rand, damit der Ring auch gegen die weiße Leiste genug Kontrast hat.
-    assert "rgb(26, 75, 126)" in _ring(circle), f"auf „Mein Profil“ ist der Kreis nicht hervorgehoben: {_ring(circle)}"
+    # Nur ein gelber Ring direkt am Kreis, ohne weißen Spalt (Sebastian, 26.10.2026).
+    assert "rgb(240, 173, 44)" in _ring(circle), f"auf „Mein Profil“ ist der Kreis nicht hervorgehoben: {_ring(circle)}"
 
     page.goto(f"{BASE}/")
     station = _tab_to_element(page, selector)
