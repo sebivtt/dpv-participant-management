@@ -1,11 +1,12 @@
 {% extends "base_einfach.html" %}
-{% load i18n %}
+{% load i18n layout %}
 {% block title %}{% translate "Anmelden · DPV Anmeldetool" %}{% endblock %}
 {% block content %}
   <h1>{% translate "DPV Anmeldetool" %}</h1>
   <p class="a-einfach-text">{% translate "Melde dich mit deinem DPV-Konto an." %}</p>
-  {% if session_expired_hint %}<p class="alert alert-info" role="status">{{ session_expired_hint }}</p>{% endif %}
-  {% for message in messages %}<p class="alert alert-warning" role="alert">{{ message }}</p>{% endfor %}
+  {# Meldungen nach einer Handlung: Vorleseprogramme sagen sie sofort an (#165). #}
+  {% if session_expired_hint %}{% meldung "info" text=session_expired_hint live=True %}{% endif %}
+  {% for message in messages %}{% meldung message.level_tag text=message.message live=True %}{% endfor %}
   <form method="post" action="{{ start }}">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">

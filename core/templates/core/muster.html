@@ -109,7 +109,7 @@
 
   <section class="a-abschnitt" aria-labelledby="h-profil">
     <h2 id="h-profil">{% translate "Mein Profil" %}</h2>
-    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#161): Kopfzeile mit Profilkreis, gesperrte Felder mit Schloss, Hinweis in blauer Fläche; Mitgliedschaft als eigene Fläche, Rollen als Kacheln. Am Handy untereinander." %}</p>
+    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#161): Kopfzeile mit Profilkreis, gesperrte Felder mit Schloss, Informationsmeldung mit Schloss; Mitgliedschaft als eigene Fläche, Rollen als Kacheln. Am Handy untereinander." %}</p>
     <div class="a-flaeche a-profilflaeche">
       <div class="a-identitaet">
         <span class="a-avatar" aria-hidden="true">{{ profile_example.name|first }}</span>
@@ -120,7 +120,8 @@
           <div><dt>{{ label }}</dt><dd{% if not value %} class="a-leer"{% endif %}>{% icon symbol %}<span>{% if value %}{{ value }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>
         {% endfor %}
       </dl>
-      <div class="a-hinweisflaeche">{% icon "schloss" %}<p>{% translate "Ein Hinweis in einer blauen Fläche, z. B. warum sich etwas nicht ändern lässt." %}</p></div>
+      {% translate "Eine Informationsmeldung mit passendem Symbol, z. B. warum sich etwas nicht ändern lässt." as hint %}
+      {% meldung "info" text=hint icon="schloss" %}
     </div>
     <div class="a-flaeche a-profilflaeche">
       <div class="a-flaeche-kopf"><span class="a-flaeche-ic">{% icon "organisation" %}</span><h3>{% translate "Überschrift einer Fläche mit Symbol" %}</h3></div>
@@ -135,9 +136,25 @@
     </div>
   </section>
 
+  <section class="a-abschnitt" aria-labelledby="h-meldungen-bausteine">
+    <h2 id="h-meldungen-bausteine">{% translate "Meldungen" %}</h2>
+    <p class="a-unterzeile">{% translate "Bausteine nach dem Zielbild (#165): Information, wenn nichts zu tun ist; Warnung, wenn etwas fehlt und man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn etwas geklappt hat. Der Fehler am Feld steht gleich darunter im Formular." %}</p>
+    {% translate "Deine Profildaten werden aus deinem DPV-Konto übernommen." as hint %}
+    {% meldung "info" text=hint %}
+    {% translate "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern." as hint %}
+    {% meldung "info" text=hint icon="schloss" %}
+    {% translate "In deinem DPV-Konto fehlt eine Angabe." as title %}
+    {% translate "Ergänze sie dort und melde dich danach neu an." as hint %}
+    {% meldung "warning" title=title text=hint %}
+    {% translate "Das Speichern hat nicht geklappt. Versuche es noch einmal." as hint %}
+    {% meldung "error" text=hint %}
+    {% translate "Deine Anmeldung zum Herbstlager ist eingegangen." as hint %}
+    {% meldung "success" text=hint %}
+  </section>
+
   <section class="a-abschnitt" aria-labelledby="h-formular">
     <h2 id="h-formular">{% translate "Formular" %}</h2>
-    <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehlermeldung direkt am Feld." %}</p>
+    <p class="a-unterzeile">{% translate "Baustein: Pflichtfeld mit Fehler am Feld, als rote Schrift direkt unter dem Feld; keine Meldung im Sinne der vier Arten." %}</p>
     <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
       <div class="mb-3">
         <label class="form-label" for="name">{% translate "Name der Veranstaltung" %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span></label>

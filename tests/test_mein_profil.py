@@ -200,8 +200,8 @@ def test_hinweis_zum_dpv_konto_ohne_link(org):
 
 
 def test_hinweis_zum_dpv_konto_in_blauer_flaeche_mit_schloss(org):
-    """Szenario 1 zu #161."""
-    box = _one(with_class(main(page(org.erika)), "a-hinweisflaeche"))
+    """Szenario 1 zu #161; seit #165 als Informationsmeldung (zart blau, Schloss)."""
+    box = _one(with_class(main(page(org.erika)), "ist-info"))
 
     assert re.sub(r"\s+", " ", _visible_text(box)) == HINT_ACCOUNT
     assert symbols(box) == ["schloss"]
@@ -677,7 +677,7 @@ def test_bausteine_angaben_und_rollen_stehen_auf_der_musterseite(org):
     client.force_login(org.erika)
     root = _tree(client.get("/muster/"))
 
-    for name in ("a-identitaet", "a-anzeigename", "a-hinweisflaeche", "a-flaeche-kopf", "a-mitgliedschaft"):
+    for name in ("a-identitaet", "a-anzeigename", "a-meldung", "a-flaeche-kopf", "a-mitgliedschaft"):
         assert with_class(root, name), name
     assert _all(root, lambda e: e.name == "dl" and "a-felder" in _classes(e))
     assert _all(root, lambda e: e.name == "ul" and "a-rollenkacheln" in _classes(e))

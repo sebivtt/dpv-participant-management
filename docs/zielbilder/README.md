@@ -4,7 +4,7 @@ Ein Zielbild ist Sebastians fertiger Entwurf einer Seite als HTML-Datei, mit erf
 
 Ein Zielbild ist **Orientierung, keine Anforderung.** Was es zeigt, gibt niemandem ein Recht und ändert keine Entscheidung. Es gehen vor: `docs/rechtematrix.md`, `docs/anforderungen.md`, `docs/entscheidungen.md`, `docs/gestaltung.md`. Gebaut wird nur, was das Tool speichert; Teile ohne Daten fehlen ganz, ohne leere Platzhalter.
 
-Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie öffnen sich mit Doppelklick im Browser. Das Tool lädt sie nie. Für jede Datei steht hier, von wann sie ist, woher sie kommt, ihre Prüfsumme und wo die Seite bewusst abweicht. Eine neue Fassung ersetzt die Datei; die alte bleibt in der Versionsgeschichte, und Datum und Prüfsumme hier werden fortgeschrieben. Ein Test (`tests/test_mein_profil.py`) prüft, dass Datei und Prüfsumme zusammenpassen und die Datei nichts von fremden Servern lädt.
+Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie öffnen sich mit Doppelklick im Browser. Das Tool lädt sie nie. Für jede Datei steht hier, von wann sie ist, woher sie kommt, ihre Prüfsumme und wo die Seite bewusst abweicht. Eine neue Fassung ersetzt die Datei; die alte bleibt in der Versionsgeschichte, und Datum und Prüfsumme hier werden fortgeschrieben. Je Datei prüft ein Test (`tests/test_mein_profil.py`, `tests/test_meldungen.py`), dass Datei und Prüfsumme zusammenpassen und die Datei nichts von fremden Servern lädt.
 
 ## Mein Profil
 
@@ -25,3 +25,21 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 7. **Keine Überschrift je Kachel:** Im Zielbild ist jede Organisation eine Unterüberschrift. Die Seite zeigt die Mitgliedschaft als eigene Fläche und die Kacheln als Liste, beide ohne eigene Überschriften; Vorleseprogramme lesen Rolle, Organisation und Weg zusammen vor, und die Liste der Überschriften bleibt kurz. Sichtbar ist es gleich.
 8. **Lange Namen brechen um,** statt mit „…“ abgeschnitten zu werden, damit am Handy nichts versteckt ist.
 9. **Symbole und Spalten:** eigene Symbole des Tools (Lizenz wie das Tool), für „Organisation und Rollen“ das Symbol der Navigation statt der Ebenen. Die Kacheln passen ihre Spaltenzahl der Breite an (am PC mehrere nebeneinander, am Handy untereinander), statt fester vier, zwei oder einer Spalte. Navigation und Fußbereich kommen wie auf jeder Seite aus dem Tool.
+
+## Meldungen
+
+- **Datei:** [`meldungen.html`](meldungen.html)
+- **Stand:** 26.10.2026, von Sebastian aus dem groben Entwurf der Steuerungssession gebaut (`dpv-meldungen-issue-165-entwurf.html`), eingespielt mit #165 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416562863)).
+- **Prüfsumme (SHA-256):** `b0b5ad4a3071dbe24ad071236aa010887ae4b955fbe11e49ae73d00e9cb70498`
+- **Inhalt der Datei:** nur erfundene Personen (Max Testmann) und die Hilfeadresse des Tools (`anmeldetool@dpvonline.de`, Grundeinstellung in `config/settings.py`), keine Adresse einer Person. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript spielt nur die Ansagen für Vorleseprogramme vor; ins Tool ist davon nichts übernommen (`docs/entscheidungen.md`, Eintrag vom 25.10.2026 zu #161).
+- **Orientierung, keine Anforderung.** Geklärt in #165 ([Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6415185220), [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416568804), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416569177)).
+
+### Abweichungen der Seite vom Zielbild
+
+1. **Hilfeadresse ohne Link:** Die Warnmeldung „… keine Mail eingetragen ist. Wende dich an …“ nennt die Adresse wie bisher als Text; das Zielbild macht daraus einen Mail-Link. #165 bringt keine neuen Texte und kein neues Verhalten.
+2. **Fehler am Feld wie bisher:** rote Schrift direkt unter dem Feld, ohne das Kreuz davor und ohne das unsichtbare „Fehler am Eingabefeld:“ aus dem Zielbild (Tabelle in #165: „wie heute“). Vorleseprogramme lesen den Fehler weiter über die Verknüpfung mit dem Feld vor.
+3. **Band der Testumgebung ohne unsichtbares Vorwort:** Das Zielbild sagt vorweg „Hinweis zur Testumgebung:“ an. Der Text des Bands beginnt selbst mit „Testumgebung:“; doppelt angesagt wäre es nur länger.
+4. **Probe der Ansagen fehlt:** Die Knöpfe „… simulieren“, „Mit DPV-Konto anmelden (Beispiel)“ und das Skript dahinter zeigen im Zielbild nur, wie Vorleseprogramme Meldungen nach einer Handlung ansagen. Im Tool sagt die Login-Seite ihre Meldungen selbst an.
+5. **Erklärende Teile fehlen:** die Tabelle der Regeln, die Umsetzungshinweise, die Liste der Szenarien und der Rahmen „390 Pixel“. Die Regel steht in `docs/gestaltung.md`; die Musterseite zeigt die Bausteine selbst.
+6. **Beispieltexte der Musterseite:** Information und Erfolg wie im Zielbild; Warnung und Fehler mit eigenen erfundenen Texten, weil die Texte des Zielbilds echte Meldungen des Tools sind und auf ihren Seiten stehen.
+7. **Symbole und Schrift:** Informations-, Erfolgs- und Laborsymbol sind wie im Zielbild ins Symbolset des Tools übernommen (`core/templates/core/_symbole.svg`); Warndreieck, Kreuz und Schloss waren dort schon gleich. Der fette erste Satz nutzt die Schriftstärke des Tools (800 statt 750).

@@ -1,11 +1,12 @@
 {% extends "base_app.html" %}
-{% load i18n %}
+{% load i18n layout %}
 {% block content %}
   <div class="a-kopf">
     <h1>{% if user.first_name %}{% blocktranslate with first_name=user.first_name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}</h1>
     <p>{% translate "Hier entsteht das DPV Anmeldetool" %}</p>
   </div>
   {% if name_incomplete %}
-    <p class="alert alert-warning" role="alert"><strong>{% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." %}</strong></p>
+    {% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." as hint %}
+    {% meldung "warning" title=hint %}
   {% endif %}
 {% endblock %}

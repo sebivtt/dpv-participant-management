@@ -9,7 +9,7 @@ Wer eine Seite baut, nimmt die Bausteine der Musterseite (`core/templates/core/m
 Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 21.10.2026.
 
 - **Grundlage:** Bootstrap 5.3, ohne Build-Schritt, alle Dateien vom eigenen Server. Schrift: die Systemschrift des Geräts.
-- **Farben:** DPV-Blau `#1a4b7e` trägt die Gestaltung, dazu Weiß und kühle Grautöne. Eine Akzentfarbe, Sonnengelb `#f0ad2c`, sparsam: aktiver Navigationspunkt, Symbol von „Veranstaltung erstellen“, aktueller Schritt. Sonnengelb trägt nie Text auf Weiß. Statusfarben sind gedeckt und stehen immer mit Wort und Symbol. Alle Farben stehen an einer Stelle; nur heller Modus, ein dunkler ist vorbereitet (#15).
+- **Farben:** DPV-Blau `#1a4b7e` trägt die Gestaltung, dazu Weiß und kühle Grautöne. Eine Akzentfarbe, Sonnengelb `#f0ad2c`, sparsam: aktiver Navigationspunkt, Symbol von „Veranstaltung erstellen“, aktueller Schritt; als Fläche nur für das gestreifte Band der Testumgebung, nie für Meldungen (#165). Sonnengelb trägt nie Text auf Weiß. Statusfarben sind gedeckt und stehen immer mit Wort und Symbol. Alle Farben stehen an einer Stelle; nur heller Modus, ein dunkler ist vorbereitet (#15).
 - **Formen:** abgerundete Ecken, Flächen statt Rahmen, kaum Schatten, lieber Luft als Fülle.
 - **Aufbau am PC:** feste Seitenleiste links, keine Kopfzeile über dem Inhalt. Oben Lilie und „DPV Anmeldetool“, darunter die Navigation, unten Profilkreis mit Vornamen und „Abmelden“ mit Symbol und Wort.
 - **Aufbau am Handy:** schmale Leiste oben mit „Menü“, Lilie mit Namen und Profilkreis. „Menü“ öffnet die Navigation von links; „Abmelden“ steht darin mit Symbol und Wort. Die Leiste wechselt unter 992 Pixel Breite.
@@ -22,6 +22,24 @@ Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Ei
 - **Menüs:** öffnen am PC beim Darüberfahren und zusätzlich per Klick, Antippen und Tastatur; sie schließen mit kurzer Verzögerung.
 - **Sprache:** neutrale Wörter („Teilnehmende“, „Leitung“, „Person“), sonst beide Formen oder umformulieren; kein Sternchen, kein Doppelpunkt. Die Texte duzen.
 - **Browser:** die gängigen der letzten rund zwei Jahre: Safari auf iPhone und Mac, Chrome und Samsung Internet auf Android, Chrome, Firefox und Edge am PC.
+
+### Meldungen (Klärung von #165, 26.10.2026)
+
+Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #165. Jede Meldung im Tool gehört zu genau einer von vier Arten und nutzt deren Baustein (`{% meldung %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Meldungen“):
+
+| Art | Wann | Aussehen |
+|---|---|---|
+| Informationsmeldung | neutraler Hinweis, nichts zu tun | zart blaue Fläche, dunkle Schrift, Symbol „i“; ein passenderes Symbol darf stehen (z. B. Schloss) |
+| Warnmeldung | etwas fehlt, die Person muss selbst etwas tun | helles Gelb, Schrift und Symbol in Braun, Warndreieck |
+| Fehlermeldung | etwas hat nicht geklappt; nur neu versuchen oder warten | gedecktes Rot, Kreuz |
+| Erfolgsmeldung | etwas hat geklappt | gedecktes Grün, Haken |
+
+- **Fehler am Feld** ist keine Meldung dieser Arten: rote Schrift direkt unter dem Feld, mit dem Feld verknüpft (Musterseite, „Formular“).
+- **Eine Farbfamilie:** Meldungen und Statuskennzeichen teilen sich die Farben: Warnung wie „Warteliste“, Fehler wie „abgemeldet“, Erfolg wie „angemeldet“. Unterschieden wird über die Form, kleine Pille gegen Fläche mit Satz.
+- **Aufbau:** das Symbol in einem hellen Kästchen links, daneben der Text; ein fetter erster Satz steht als eigene Zeile über dem Rest. Mehrere Meldungen stehen getrennt untereinander, am Handy bricht der Text um und das Symbol bleibt links.
+- **Ohne Farbe erkennbar:** Jede Art hat ihr eigenes Symbol, und Vorleseprogramme hören vorweg ihr Wort („Information:“, „Warnung:“, „Fehler:“, „Erfolg:“), das unsichtbar bleibt.
+- **Ansagen:** Meldungen nach einer Handlung (Login-Seite) sagen Vorleseprogramme sofort an; fest auf einer Seite stehende nicht.
+- **Band der Testumgebung** ist keine Meldung: Sonnengelb mit schrägen Streifen wie ein Absperrband und eigenem Laborsymbol.
 
 **Offener Widerspruch:** LIS-01 und das Abschlusskriterium von P5 verlangen, lebensbedrohliche Allergien in der Teilnehmendenliste hervorzuheben. Abschnitt 5 unten sagt, Gesundheitsdaten erscheinen nicht in der allgemeinen Übersicht. Geklärt wird das in #30, bevor die Liste gebaut wird.
 

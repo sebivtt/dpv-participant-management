@@ -30,9 +30,14 @@ logger = logging.getLogger(__name__)
 KNOWN_AUTH_ERRORS = (AuthError.UNKNOWN, AuthError.CANCELLED, AuthError.DENIED)
 
 
-def back_to_login_page(request: HttpRequest, hint: str) -> ImmediateHttpResponse:
-    """Bricht den Login ab und führt mit dem Hinweis zurück zur Login-Seite."""
-    messages.warning(request, hint)
+def back_to_login_page(request: HttpRequest, hint: str, level: int = messages.ERROR) -> ImmediateHttpResponse:
+    """Bricht den Login ab und führt mit dem Hinweis zurück zur Login-Seite.
+
+    Ohne Angabe ist der Hinweis eine Fehlermeldung: Der Login hat nicht geklappt, man kann nur
+    neu versuchen oder warten. Eine Warnung ist er, wenn die Person selbst etwas tun muss
+    (#165, docs/gestaltung.md).
+    """
+    messages.add_message(request, level, hint)
     return ImmediateHttpResponse(HttpResponseRedirect(resolve_url("account_login")))
 
 
@@ -80,7 +85,7 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         data = keycloak_data(sociallogin)
         if not data.get("email"):
             logger.warning("Login abgelehnt: Keycloak liefert keine Mail")
-            raise back_to_login_page(request, texts.no_mail())
+            raise back_to_login_page(request, texts.no_mail(), level=messages.WARNING)
         if len(data["email"]) > _max_length("email"):
             logger.warning("Login abgelehnt: Mail aus Keycloak zu lang")
             raise back_to_login_page(request, texts.LOGIN_CANCELLED)

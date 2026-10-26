@@ -67,7 +67,7 @@ ALLOWED_START_QUERIES = [{}, {"auth_params": "prompt=create"}]
 def _keycloak_unreachable(request: HttpRequest, error: Exception) -> HttpResponse:
     """Zurück zur Login-Seite mit Hinweis, wenn Keycloak nicht antwortet; im Log nur die Art des Fehlers."""
     logger.warning("Login nicht möglich: Keycloak nicht erreichbar (%s)", type(error).__name__)
-    messages.warning(request, texts.KEYCLOAK_UNREACHABLE)
+    messages.error(request, texts.KEYCLOAK_UNREACHABLE)
     return redirect("account_login")
 
 
@@ -85,7 +85,7 @@ def keycloak_login(request: HttpRequest, provider_id: str) -> HttpResponse:
         return redirect("account_login")
     if request.GET.dict() not in ALLOWED_START_QUERIES:
         logger.warning("Login abgelehnt: unzulässige Angaben beim Start")
-        messages.warning(request, texts.LOGIN_CANCELLED)
+        messages.error(request, texts.LOGIN_CANCELLED)
         return redirect("account_login")
     try:
         return allauth_login(request, provider_id)
@@ -129,7 +129,7 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
         raise Http404 from error
     except IntegrityError:
         logger.warning("Login nicht abgeschlossen: gleichzeitiger Login mit demselben Konto")
-        messages.warning(request, texts.LOGIN_CANCELLED)
+        messages.error(request, texts.LOGIN_CANCELLED)
         return redirect("account_login")
     except KEYCLOAK_FAILURES as error:
         return _keycloak_unreachable(request, error)

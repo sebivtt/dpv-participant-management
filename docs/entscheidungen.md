@@ -6,6 +6,23 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-26 · Meldungen als gemeinsame Bausteine; Sonnengelb nie für Meldungen (#165)
+
+**Entscheidung** (Sebastian, Klärung von #165 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6415185220), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416562863), [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416568804)):
+
+1. **Vier Arten von Meldungen,** je ein gemeinsamer Baustein: Information (neutral, nichts zu tun; zart blau, „i“ oder ein passenderes Symbol), Warnung (etwas fehlt, die Person muss selbst etwas tun; helles Gelb `#fbefd5` mit Braun `#74500c`, Warndreieck), Fehler (hat nicht geklappt, nur neu versuchen oder warten; gedecktes Rot, Kreuz), Erfolg (hat geklappt; gedecktes Grün, Haken). Fehler am Feld bleiben rote Schrift direkt am Feld und sind keine dieser Arten. Die Zuordnung der bestehenden Meldungen steht im Text von #165.
+2. **Eine Farbfamilie** mit den Statuskennzeichen: Warnung wie „Warteliste“, Fehler wie „abgemeldet“, Erfolg wie „angemeldet“; unterschieden wird über die Form.
+3. **Sonnengelb** bleibt sparsam wie bisher (aktiver Navigationspunkt, Symbol von „Veranstaltung erstellen“, aktueller Schritt). Als Fläche nur für das Band der Testumgebung, nie für Meldungen. Das Band bekommt schräge Streifen und ein eigenes Laborsymbol statt des Warndreiecks.
+4. **Ohne Farbe erkennbar:** Jede Art hat ihr Symbol, Vorleseprogramme hören vorweg ihr Wort. Die Regel steht in `docs/gestaltung.md`, Abschnitt 1, „Meldungen“.
+
+Damit ist Frage 5 der ersten Klärung (Sonnengelb auch für Warnmeldungen) durch die Nachklärung nach dem Zielbild ersetzt; der Eintrag vom 21.10.2026 zur Grundgestaltung gilt sonst weiter.
+
+**Begründung:** Der Hinweis „Du bist noch keiner Organisation zugeordnet.“ stand im Türkis von Bootstrap, das nicht zu den Farben des Tools gehört, und jede Seite gestaltete ihre Hinweise selbst. Mit vier festen Arten sieht man an Farbe und Symbol sofort, ob man nur etwas erfährt, etwas tun muss, etwas schiefging oder etwas geklappt hat. Helles Gelb statt Sonnengelb, weil die Warnung so ruhiger wirkt und sich klar vom Band der Testumgebung abhebt; eine Farbfamilie, damit das Tool nicht noch mehr Farben bekommt.
+
+**Technische Wahl** (KI): Der Baustein ist ein Template-Tag `{% meldung art text=… title=… icon=… live=… %}` in `core/templatetags/layout.py` mit der Vorlage `core/templates/core/_meldung.html`; die Arten heißen im Code wie die Stufen von Djangos Meldungen (`info`, `warning`, `error`, `success`), damit die Login-Seite sie direkt weitergibt. Die Hinweise beim Login tragen deshalb jetzt die passende Stufe: Abbruch und „gerade nicht möglich“ als `error`, „keine Mail“ als `warning` (`accounts/adapter.py`, `accounts/views.py`). Fest stehende Meldungen sind `role="note"`; Meldungen nach einer Handlung (`live=True`) sind `role="alert"` (Warnung, Fehler) oder `role="status"` (Information, Erfolg), wie im Zielbild. Die Klassen `alert` von Bootstrap und die blaue Hinweisfläche (`a-hinweisflaeche`) sind entfernt; ein Test meldet, wenn eine Vorlage wieder `alert` nutzt.
+
+**Umsetzung:** `core/templatetags/layout.py`, `core/templates/core/_meldung.html`, `core/templates/core/_symbole.svg` (Symbole „info“, „erfolg“, „labor“), `core/templates/core/_testband.html`, `core/static/core/app.css`, die Vorlagen von Startseite, „Mein Profil“, Login und Musterseite, `docs/gestaltung.md`, `docs/zielbilder/meldungen.html` mit Eintrag in `docs/zielbilder/README.md`; Tests in `tests/test_meldungen.py` und im Rauchtest (`rauchtests/test_rauchtest.py`).
+
 ## 2026-10-26 · Eigene Ports für die Prüfungen (#167)
 
 **Entscheidung** (Sebastian, Klärung von #167 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/167#issuecomment-6414436246)): Port 8000 und 8081 gehören dem eigenen Tool (README, Schritt 9) und der eigenen Testumgebung im Container (README, Schritt T). Prüfungen belegen sie nie; das Tool und `./pruefen.sh` können gleichzeitig laufen. Ist ein Prüf-Port belegt, nennt die Prüfung den Port und was zu tun ist. Zwei Prüfläufe gleichzeitig gehen weiter nicht, weil sie sich die Testdatenbank teilen.
