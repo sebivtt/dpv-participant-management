@@ -210,3 +210,44 @@ def test_korrigierter_vorname_nach_dem_naechsten_login_ohne_warnmeldung(client, 
     assert _greeting(root) == "Hallo Erika!"
     assert HINT_NAME not in _visible_text(root)
 
+
+# Aus der unabhängigen Prüfung (B1): Das Kürzen überlanger Angaben darf das Leerzeichen
+# nicht wieder an den Rand setzen.
+@pytest.mark.parametrize("field", ["given_name", "family_name", "preferred_username"])
+def test_gekuerzte_angabe_endet_nicht_mit_einem_leerzeichen(client, keycloak, field):
+    limit = User._meta.get_field({"preferred_username": "username"}.get(field, "first_name")).max_length
+    keycloak.person[field] = "A" * (limit - 1) + " Erika"
+
+    login(client)
+
+    erika = User.objects.get()
+    assert getattr(erika, {"given_name": "first_name", "family_name": "last_name"}.get(field, "username")) == (
+        "A" * (limit - 1)
+    )
+
+
+# Aus der unabhängigen Prüfung (B3): Eine Mail-Liste aus der Zeit vor der Behebung.
+def test_mail_liste_mit_leerzeichen_wird_beim_naechsten_login_bereinigt(client, keycloak):
+    login(client)
+    client.post("/abmelden/")
+    erika = _erika()
+    EmailAddress.objects.filter(user=erika).delete()
+    EmailAddress.objects.create(user=erika, email=" erika.testfrau@example.org ", verified=True, primary=True)
+
+    login(client)
+
+    assert list(EmailAddress.objects.filter(user=erika).values_list("email", flat=True)) == [
+        "erika.testfrau@example.org"
+    ]
+
+
+# Aus der unabhängigen Prüfung (B3): Begrüßung und Profilkreis holen den Namen an einer
+# Stelle, damit #111 dort den Fahrtennamen vorschalten kann (Entscheidung vom 22.10.2026).
+def test_begruessung_und_profilkreis_holen_den_namen_an_einer_stelle(client, keycloak, monkeypatch):
+    login(client)
+    monkeypatch.setattr(User, "short_name", property(lambda self: "Falkenflug"))
+
+    root = _start(client)
+
+    assert _greeting(root) == "Hallo Falkenflug!"
+    assert raw_text(_circle(root)) == "F"

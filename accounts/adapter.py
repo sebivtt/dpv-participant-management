@@ -136,10 +136,10 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         user = sociallogin.user
         if not sociallogin.is_existing:
-            user.username = trimmed(data.get("username"))[: _max_length("username")]
+            user.username = trimmed(data.get("username"), _max_length("username"))
         user.email = trimmed(data.get("email"))
-        user.first_name = trimmed(data.get("first_name"))[: _max_length("first_name")]
-        user.last_name = trimmed(data.get("last_name"))[: _max_length("last_name")]
+        user.first_name = trimmed(data.get("first_name"), _max_length("first_name"))
+        user.last_name = trimmed(data.get("last_name"), _max_length("last_name"))
         return user
 
     def is_auto_signup_allowed(self, request: HttpRequest, sociallogin: SocialLogin) -> bool:

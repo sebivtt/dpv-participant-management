@@ -16,19 +16,27 @@ from django.db import IntegrityError, transaction
 
 logger = logging.getLogger(__name__)
 
-# Leerzeichen jeder Art: alles, was Python als Leerraum kennt (auch das geschützte Leerzeichen),
-# dazu die unsichtbaren, die es nicht dazu zählt (#77).
-_EDGE_SPACES = re.compile(r"^[\s\u180e\u200b\u2060\ufeff]+|[\s\u180e\u200b\u2060\ufeff]+$")
+# Leerzeichen jeder Art: alles, was Python als Leerraum kennt (auch das geschützte und das
+# schmale Leerzeichen), dazu die unsichtbaren Zeichen, die es nicht dazu zählt (#77).
+_INVISIBLE = r"\s\u00ad\u180e\u200b-\u200d\u2060\ufeff"
+_EDGE_SPACES = re.compile(f"^[{_INVISIBLE}]+|[{_INVISIBLE}]+$")
 
 
-def trimmed(value) -> str:
+def trimmed(value, max_length: int | None = None) -> str:
     """Entfernt Leerzeichen am Anfang und Ende einer Angabe aus Keycloak (#77).
 
     Gilt für Vorname, Nachname, Mail und Benutzername; was danach leer ist, gilt als fehlend.
     Innen bleibt alles, wie es im DPV-Konto steht, auch mehrere Leerzeichen hintereinander:
     Das Tool reinigt den Namen, verändert ihn aber nicht (Sebastian, 22.10.2026).
+
+    `max_length` kürzt zu lange Angaben auf die Länge, die das Tool speichert. Danach wird
+    erneut gereinigt: Fällt das Kürzen mitten in einen Namen, stünde sonst wieder ein
+    Leerzeichen am Ende („Anna Lena“ gekürzt zu „Anna “).
     """
-    return _EDGE_SPACES.sub("", value or "")
+    value = _EDGE_SPACES.sub("", value or "")
+    if max_length is None:
+        return value
+    return _EDGE_SPACES.sub("", value[:max_length])
 
 
 def align_mail_list(user, sociallogin: SocialLogin) -> None:
@@ -63,7 +71,7 @@ def take_over_username(user, data: dict) -> None:
     Zeile ohne Benutzernamen, Mail und Kontonummer (#6). Liefert Keycloak keinen
     Benutzernamen, bleibt der bisherige.
     """
-    username = trimmed(data.get("username"))[: get_user_model()._meta.get_field("username").max_length]
+    username = trimmed(data.get("username"), get_user_model()._meta.get_field("username").max_length)
     if not username or username == user.username:
         return
     users = get_user_model().objects

@@ -16,3 +16,13 @@ class User(AbstractUser):
     """
 
     key = key_field()
+
+    @property
+    def short_name(self) -> str:
+        """Der Name in Begrüßung und Profilkreis, leer, wenn er fehlt (#77).
+
+        Beide fragen nur hier, damit #111 an dieser einen Stelle den Fahrtennamen
+        vorschalten kann. Bis dahin ist es der Vorname; Leerzeichen am Rand entfernt schon
+        der Login (`accounts/adapter.py`), ein Name nur aus Leerzeichen ist hier also leer.
+        """
+        return self.first_name

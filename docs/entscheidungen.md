@@ -6,6 +6,21 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-26 · Leerzeichen am Rand von Name, Mail und Benutzername (#77)
+
+**Entscheidung** (Sebastian, Klärung von #77 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/77#issuecomment-6348998015); [Szenarien vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/77#issuecomment-6417176187)):
+
+1. **Nur am Rand reinigen:** Beim Übernehmen aus Keycloak entfernt das Tool Leerzeichen am Anfang und Ende von Vorname, Nachname, Mail und Benutzername; unsichtbare und geschützte Leerzeichen zählen mit. Innerhalb eines Namens bleibt alles, wie es im DPV-Konto steht („Anna  Lena“ bleibt). Abgelehnt: auch innen mehrere Leerzeichen zusammenfassen, weil das den Namen verändert.
+2. **Was danach leer ist, gilt als fehlend:** Warnmeldung „Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an.“ auf Startseite und „Mein Profil“, Begrüßung „Hallo!“, Personensymbol im Profilkreis, auf „Mein Profil“ „nicht angegeben“. Ohne Mail kein Login, wie bisher.
+3. **Eine Stelle für den angezeigten Namen,** damit #111 dort den Fahrtennamen vorschalten kann.
+4. **Gespeicherte Namen** werden beim nächsten Login bereinigt; eine eigene Bereinigung bestehender Daten gibt es nicht, weil es nur Testdaten gibt.
+
+**Begründung:** Ein Vorname nur aus Leerzeichen galt als vorhanden. Die Startseite begrüßte dann mit „Hallo  !“, der Hinweis zum Ergänzen fehlte, und eine Mail aus Leerzeichen bestand die Prüfung „ohne Mail kein Login“ (Befund K4 des externen Reviews, #73).
+
+**Technische Wahl** (KI): Gereinigt wird beim Übernehmen aus Keycloak, nicht erst bei der Anzeige, damit Suche, Listen und Hinweise dieselben Werte sehen (`trimmed()` in `accounts/keycloak_abgleich.py`, angewendet in `accounts/adapter.py`). Als Leerzeichen gilt alles, was Python als Leerraum kennt, dazu die unsichtbaren Zeichen U+00AD, U+180E, U+200B bis U+200D, U+2060 und U+FEFF. Überlange Angaben werden nach dem Kürzen erneut gereinigt, sonst stünde das Leerzeichen wieder am Ende (Befund der unabhängigen Prüfung). Den angezeigten Namen liefert `User.short_name` (`accounts/models.py`); Begrüßung und Profilkreis fragen nur dort. Das stellt die Stelle aus dem Eintrag vom 25.10.2026 zu #96 richtig: Dort hieß es, #77 regle das in der gemeinsamen Prüfung des fehlenden Namens (`core/views.py`); diese Prüfung bleibt gemeinsam, braucht aber keine eigene Regel mehr, weil die Werte schon beim Login gereinigt werden.
+
+**Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py`, `accounts/models.py`, `core/views.py`, die Vorlagen von Startseite, „Mein Profil“, Musterseite und Profilkreis; Tests in `tests/test_namen_leerzeichen.py`.
+
 ## 2026-10-26 · Meldungen als gemeinsame Bausteine; Sonnengelb nie für Meldungen (#165)
 
 **Entscheidung** (Sebastian, Klärung von #165 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6415185220), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416562863), [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/165#issuecomment-6416568804)):
