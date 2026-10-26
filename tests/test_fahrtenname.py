@@ -179,10 +179,13 @@ def test_erika_leert_das_feld_und_der_fahrtenname_ist_geloescht(org):
 
 
 def test_ohne_fahrtennamen_steht_noch_nicht_angegeben(org):
+    """Seit #180 steht „Noch nicht angegeben“ im Feld in Ruhe; die leere Eingabe zeigt „Fahrtennamen eingeben“."""
     root = profile(org.max)
 
     assert _attr(field(root), "value") in (None, "")
-    assert _attr(field(root), "placeholder") == NOT_GIVEN
+    assert _attr(field(root), "placeholder") == "Fahrtennamen eingeben"
+    rest = _one(_all(main(root), lambda e: _attr(e, "data-oeffnen") is not None))
+    assert _visible_text(rest) == NOT_GIVEN
     assert label_of(root, field(root)) == "Fahrtenname"
     assert shown_name(root) == "Max Testmann"
     assert greeting(org.max) == "Hallo Max!"
@@ -514,7 +517,11 @@ def test_leitungen_liefern_den_fahrtennamen_mit(org):
 
 
 def test_fahrtenname_ist_das_einzige_feld_zum_bearbeiten(org):
-    """W1 mit der Ergänzung zu #111: genau ein Feld und ein Knopf, nichts für Name und Mail."""
+    """W1 mit der Ergänzung zu #111: genau ein Feld, nichts für Name und Mail.
+
+    Seit #180 gehören zum Feld der Knopf zum Öffnen, der Knopf zum Leeren und „Verwerfen“;
+    abgeschickt wird weiter nur mit „Speichern“.
+    """
     content = main(profile(org.erika))
 
     form = _one(_by_tag(content, "form"))
@@ -525,7 +532,9 @@ def test_fahrtenname_ist_das_einzige_feld_zum_bearbeiten(org):
         ("csrfmiddlewaretoken", "hidden"), ("scout_name", "text"),
     ]
     buttons = _by_tag(content, "button")
-    assert [(_visible_text(b), _attr(b, "type")) for b in buttons] == [("Speichern", "submit")]
+    assert [(_visible_text(b), _attr(b, "type")) for b in buttons] == [
+        (NOT_GIVEN, "button"), ("", "button"), ("Verwerfen", "button"), ("Speichern", "submit"),
+    ]
 
 
 def test_feld_mit_beschriftung_ohne_pflicht_und_passender_tastatur(org):
