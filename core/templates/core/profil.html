@@ -14,7 +14,7 @@
     <h2 id="h-angaben" class="sr-nur">{% translate "Deine Angaben" %}</h2>
     {# Mit #111 steht hier vor dem Namen der Fahrtenname, wie im Zielbild „Falkenflug (Erika Testfrau)“. #}
     <div class="a-identitaet">
-      <span class="a-avatar" aria-hidden="true">{% if user.first_name %}{{ user.first_name|first|upper }}{% else %}{% icon "person" %}{% endif %}</span>
+      <span class="a-avatar" aria-hidden="true">{% with name=user|short_name %}{% if name %}{{ name|first|upper }}{% else %}{% icon "person" %}{% endif %}{% endwith %}</span>
       <p class="a-anzeigename">{{ user.get_full_name|default:user.username }}</p>
     </div>
     {# Mit #111 kommt hier der Fahrtenname als erste Angabe dazu, als einziges Feld zum Bearbeiten. #}

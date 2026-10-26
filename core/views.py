@@ -11,8 +11,8 @@ from roles.models import Role
 def _name_incomplete(user) -> bool:
     """Fehlt im DPV-Konto der Vor- oder Nachname? Dann steht ein Hinweis zum Ergänzen da (#5).
 
-    Startseite und „Mein Profil“ fragen beide hier, damit sie dieselbe Regel haben (#96);
-    Namen nur aus Leerzeichen regelt #77 an dieser Stelle.
+    Startseite und „Mein Profil“ fragen beide hier, damit sie dieselbe Regel haben (#96).
+    Ein Name nur aus Leerzeichen ist hier schon leer: Der Login entfernt Leerzeichen am Rand (#77).
     """
     return not (user.first_name and user.last_name)
 

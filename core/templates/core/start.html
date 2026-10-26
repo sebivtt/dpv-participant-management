@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block content %}
   <div class="a-kopf">
-    <h1>{% if user.first_name %}{% blocktranslate with first_name=user.first_name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}</h1>
+    <h1>{% with name=user|short_name %}{% if name %}{% blocktranslate with first_name=name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}{% endwith %}</h1>
     <p>{% translate "Hier entsteht das DPV Anmeldetool" %}</p>
   </div>
   {% if name_incomplete %}

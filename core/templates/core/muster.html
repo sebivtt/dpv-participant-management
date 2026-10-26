@@ -4,7 +4,7 @@
 {% block title %}{% translate "Musterseite · DPV Anmeldetool" %}{% endblock %}
 {% block content %}
   <div class="a-kopf">
-    <h1>{% if user.first_name %}{% blocktranslate with first_name=user.first_name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}</h1>
+    <h1>{% with name=user|short_name %}{% if name %}{% blocktranslate with first_name=name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}{% endwith %}</h1>
     <p>{% translate "Das ist die Musterseite mit allen Bausteinen, gefüllt mit erfundenen Beispielen." %}</p>
   </div>
 

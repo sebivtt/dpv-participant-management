@@ -73,6 +73,17 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
     }
 
 
+@register.filter
+def short_name(user) -> str:
+    """Der Name in Begrüßung und Profilkreis, leer, wenn er fehlt (#77).
+
+    Begrüßung und Profilkreis fragen nur hier, damit #111 an dieser einen Stelle den
+    Fahrtennamen vorschalten kann. Bis dahin der Vorname; Leerzeichen am Rand entfernt schon
+    der Login (accounts/adapter.py).
+    """
+    return user.first_name
+
+
 @register.inclusion_tag("core/_status.html")
 def status(kind: str, label: str) -> dict:
     """Statuskennzeichen mit Wort und Symbol, z. B. „Anmeldung offen“ mit Haken."""

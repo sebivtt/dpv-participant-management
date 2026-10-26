@@ -21,7 +21,7 @@ from django.shortcuts import resolve_url
 from requests import RequestException
 
 from accounts import texts
-from accounts.keycloak_abgleich import align_mail_list, take_over_username
+from accounts.keycloak_abgleich import align_mail_list, take_over_username, trimmed
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +46,18 @@ def _max_length(field: str) -> int:
     return get_user_model()._meta.get_field(field).max_length
 
 
+# Die Angaben, bei denen das Tool Leerzeichen am Rand entfernt (#77).
+TRIMMED_FIELDS = ("first_name", "last_name", "email", "username")
+
+
 def keycloak_data(sociallogin: SocialLogin) -> dict:
-    """Die Angaben, die Keycloak beim Login zur Person geliefert hat (Name, Mail, Kennung)."""
-    return sociallogin.account.get_provider().extract_common_fields(sociallogin.account.extra_data)
+    """Die Angaben, die Keycloak beim Login zur Person geliefert hat (Name, Mail, Kennung).
+
+    Name, Mail und Benutzername ohne Leerzeichen am Rand (#77), damit jede Prüfung danach,
+    etwa „ohne Mail kein Login“, eine Mail nur aus Leerzeichen als fehlend sieht.
+    """
+    data = sociallogin.account.get_provider().extract_common_fields(sociallogin.account.extra_data)
+    return {**data, **{field: trimmed(data.get(field)) for field in TRIMMED_FIELDS if field in data}}
 
 
 class AccountAdapter(DefaultAccountAdapter):
@@ -114,21 +123,23 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         return user
 
     def populate_user(self, request: HttpRequest, sociallogin: SocialLogin, data: dict):
-        """Übernimmt Benutzername, Mail, Vor- und Nachname aus Keycloak.
+        """Übernimmt Benutzername, Mail, Vor- und Nachname aus Keycloak, ohne Leerzeichen am Rand (#77).
 
         Anders als allauths Grundeinstellung nur aus den getrennten Feldern für Vor- und
         Nachname. allauth teilt sonst den ganzen Namen am ersten Leerzeichen; fehlt in
         Keycloak der Vorname, stünde der Nachname dann als Vorname da („Hallo Testfrau!“).
         Den Benutzernamen setzt diese Methode nur bei neuen Konten; bei bestehenden übernimmt
         ihn `take_over_username`, weil er dort schon vergeben sein kann. Keycloak erlaubt längere Namen,
-        als das Tool speichert; sie werden gekürzt statt mit einem Fehler abgewiesen.
+        als das Tool speichert; sie werden gekürzt statt mit einem Fehler abgewiesen. Beim
+        ersten Login ruft allauth diese Methode mit eigenen, noch ungereinigten Angaben auf;
+        deshalb reinigt sie selbst.
         """
         user = sociallogin.user
         if not sociallogin.is_existing:
-            user.username = (data.get("username") or "")[: _max_length("username")]
-        user.email = data.get("email") or ""
-        user.first_name = (data.get("first_name") or "")[: _max_length("first_name")]
-        user.last_name = (data.get("last_name") or "")[: _max_length("last_name")]
+            user.username = trimmed(data.get("username"))[: _max_length("username")]
+        user.email = trimmed(data.get("email"))
+        user.first_name = trimmed(data.get("first_name"))[: _max_length("first_name")]
+        user.last_name = trimmed(data.get("last_name"))[: _max_length("last_name")]
         return user
 
     def is_auto_signup_allowed(self, request: HttpRequest, sociallogin: SocialLogin) -> bool:
