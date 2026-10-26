@@ -13,6 +13,7 @@ import re
 import requests
 
 from containertests.conftest import TOOL, compose, wait_for
+from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT
 from tests.localhost_browser import BrowserOnLocalhost
 
 BAND = "Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein."
@@ -37,7 +38,7 @@ def _login(user: tuple[str, str]) -> requests.Response:
     login_page = session.get(f"{TOOL}/anmelden/", timeout=30)
     action, fields = _form(login_page.text, "Mit DPV-Konto anmelden")
     keycloak_page = session.post(f"{TOOL}{action}", data=fields, timeout=30)
-    assert "localhost:8081" in keycloak_page.url, keycloak_page.url
+    assert f"localhost:{CONTAINER_KEYCLOAK_PORT}" in keycloak_page.url, keycloak_page.url
     action, fields = _form(keycloak_page.text, 'name="username"')
     start_page = session.post(action, data={**fields, "username": user[0], "password": user[1]}, timeout=60)
     assert start_page.url == f"{TOOL}/", f"Login bei Keycloak gescheitert ({start_page.status_code})"
@@ -68,6 +69,16 @@ def test_login_seite_mit_band_und_hinweis_an_suchmaschinen(testumgebung):
     assert response.headers["X-Robots-Tag"] == "noindex, nofollow"
     # Gestaltung kommt auch im Container vom eigenen Server.
     assert requests.get(f"{TOOL}/static/core/app.css", timeout=30).status_code == 200
+
+
+# #167: Port 8000 und 8081 bleiben dem eigenen Tool und der eigenen Testumgebung.
+def test_pruefung_belegt_nur_ihre_eigenen_ports(testumgebung):
+    def published(service: str) -> set[int]:
+        listing = compose("ps", "--format", "json", service, env_file=testumgebung).stdout
+        return {p["PublishedPort"] for line in listing.splitlines() for p in json.loads(line)["Publishers"] or []}
+
+    assert published("tool") - {0} == {CONTAINER_TOOL_PORT}
+    assert published("keycloak") - {0} == {CONTAINER_KEYCLOAK_PORT}
 
 
 # Szenario 1

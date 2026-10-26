@@ -7,10 +7,15 @@ Zugangsdaten im Abbild und kein Zugriffsprotokoll mit echten Adressen (Entscheid
 Dass der Container wirklich startet, prüfen containertests/ (eigener Lauf in pruefen.sh).
 """
 
+import json
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import yaml
+
+from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 COMPOSE = BASE_DIR / "testumgebung" / "docker-compose.yml"
@@ -256,3 +261,62 @@ def test_webserver_hat_keinen_steuerzugang():
     # Webserver bedienen lässt. Gebraucht wird er nicht, und der Benutzer im Abbild hat
     # absichtlich keinen eigenen Ordner.
     assert _gunicorn_settings()["control_socket_disable"] is True
+
+
+# ---------- Eigene Ports für die Prüfung (#167) ----------
+
+
+def _compose_config(**ports: str) -> dict:
+    """Die Testumgebung, wie Docker Compose sie mit diesen Angaben startet (ohne zu starten)."""
+    env = {name: os.environ[name] for name in ("PATH", "HOME", "DOCKER_CONFIG") if name in os.environ}
+    command = ["docker", "compose", "--file", str(COMPOSE), "--profile", "lokal"]
+    command += ["--env-file", str(ENV_EXAMPLE), "config", "--format", "json"]
+    result = subprocess.run(  # noqa: S603 -- fester Befehl, die Angaben stammen aus diesem Repo
+        command,
+        env={**env, "TESTUMGEBUNG_ENV_FILE": str(ENV_EXAMPLE), **ports},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    return json.loads(result.stdout)["services"]
+
+
+def _published(service: dict) -> list[tuple[str, str, int]]:
+    return [(p["host_ip"], p["published"], p["target"]) for p in service["ports"]]
+
+
+def test_eigene_testumgebung_bleibt_ohne_angabe_auf_8000_und_8081():
+    services = _compose_config()
+
+    assert _published(services["tool"]) == [("127.0.0.1", "8000", 8000)]
+    assert _published(services["keycloak"]) == [("127.0.0.1", "8081", 8080)]
+    assert "--hostname=http://localhost:8081" in services["keycloak"]["command"]
+
+
+def test_pruefung_startet_die_testumgebung_auf_eigenen_ports(monkeypatch, tmp_path):
+    from containertests import conftest
+
+    calls = []
+    monkeypatch.setattr(conftest.subprocess, "run", lambda command, **kwargs: calls.append(kwargs["env"]))
+    conftest.compose("config", env_file=tmp_path / ".env")
+    monkeypatch.undo()
+    ports = {name: value for name, value in calls[0].items() if name.endswith("_PORT")}
+
+    services = _compose_config(**ports)
+
+    assert _published(services["tool"]) == [("127.0.0.1", str(CONTAINER_TOOL_PORT), 8000)]
+    assert _published(services["keycloak"]) == [("127.0.0.1", str(CONTAINER_KEYCLOAK_PORT), 8080)]
+    # Keycloak nennt dem Browser die Adresse, unter der er es wirklich erreicht.
+    assert f"--hostname=http://localhost:{CONTAINER_KEYCLOAK_PORT}" in services["keycloak"]["command"]
+
+
+def test_tool_der_pruefung_schickt_den_browser_zum_keycloak_der_pruefung():
+    from containertests.conftest import env_file_content
+
+    values = dict(line.split("=", 1) for line in env_file_content().splitlines() if line and not line.startswith("#"))
+
+    assert values["KEYCLOAK_REALM_URL"] == f"http://localhost:{CONTAINER_KEYCLOAK_PORT}/realms/dpv"
+    assert values["KEYCLOAK_REALM_URL_INTERN"] == "http://keycloak:8080/realms/dpv"
+    # Szenario 4 aus #58 bleibt: Die Prüfung schaltet die Fehleranzeige absichtlich ein.
+    assert values["DJANGO_DEBUG"] == "1"

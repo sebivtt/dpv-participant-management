@@ -65,12 +65,13 @@ check "Django-Systemprüfung" $run python manage.py check
 check "Fehlen Migrationen?" $run python manage.py makemigrations --check --dry-run
 check "Tests (pytest)" $run pytest -rfE
 # Eigener Lauf: Playwright betreibt eine Ereignisschleife, neben der Django Datenbankzugriffe
-# sonst abbricht (rauchtests/conftest.py). Braucht die Browser (README.md, Schritt 10).
+# sonst abbricht (rauchtests/conftest.py). Braucht die Browser (README.md, Schritt 10) und
+# einen eigenen Port (tests/check_ports.py), nicht Port 8000 des eigenen Tools (#167).
 check "Rauchtest im Browser mit Prüfung auf Barrierefreiheit (Playwright, axe)" \
     env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest rauchtests -rsfE
 # Eigener Lauf: baut das Container-Abbild und startet die Testumgebung so, wie sie nach dem
-# README startet (#58). Braucht Docker und die Ports 8000 und 8081; eine laufende Testumgebung
-# vorher anhalten (README.md).
+# README startet (#58). Braucht Docker und eigene Ports (tests/check_ports.py); das eigene Tool
+# und die eigene Testumgebung auf 8000 und 8081 dürfen weiterlaufen (#167).
 check "Testumgebung im Container (Docker)" $run pytest containertests -rfE
 check "Bekannte Sicherheitslücken in Paketen (pip-audit)" audit_packages
 

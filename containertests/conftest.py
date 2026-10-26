@@ -4,7 +4,8 @@ Gebaut und gestartet wird genau das, was Sebastian nach dem README startet
 (testumgebung/docker-compose.yml), mit der Keycloak-Testumgebung für den eigenen Rechner
 (Profil „lokal“). Damit eine schon laufende Testumgebung auf dem Mac unberührt bleibt, läuft
 die Prüfung unter einem eigenen Namen und mit eigener Ablage, die danach wieder gelöscht wird.
-Sie braucht wie die Testumgebung die Ports 8000 und 8081.
+Sie nutzt eigene Ports (tests/check_ports.py), nicht 8000 und 8081 der eigenen Testumgebung
+und des eigenen Tools; die laufen dabei weiter (#167).
 """
 
 import os
@@ -16,13 +17,17 @@ from pathlib import Path
 
 import pytest
 
+from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT, fail_if_busy
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 COMPOSE_FILE = BASE_DIR / "testumgebung" / "docker-compose.yml"
 ENV_EXAMPLE = BASE_DIR / "testumgebung" / ".env.example"
 PROJECT = "dpv-pruefung"
 
-TOOL = "http://localhost:8000"
-KEYCLOAK = "http://localhost:8081"
+TOOL = f"http://localhost:{CONTAINER_TOOL_PORT}"
+KEYCLOAK = f"http://localhost:{CONTAINER_KEYCLOAK_PORT}"
+# Die Ports der Testumgebung sind einstellbar (testumgebung/docker-compose.yml); ohne Angabe 8000 und 8081.
+PORTS = {"TESTUMGEBUNG_TOOL_PORT": str(CONTAINER_TOOL_PORT), "TESTUMGEBUNG_KEYCLOAK_PORT": str(CONTAINER_KEYCLOAK_PORT)}
 
 
 def compose(*arguments: str, env_file: Path, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -43,7 +48,7 @@ def compose(*arguments: str, env_file: Path, check: bool = True) -> subprocess.C
     ]
     return subprocess.run(  # noqa: S603 -- fester Befehl, die Angaben stammen aus diesem Repo
         command,
-        env={**_path_only(), "TESTUMGEBUNG_ENV_FILE": str(env_file), "TESTUMGEBUNG_TAG": PROJECT},
+        env={**_path_only(), "TESTUMGEBUNG_ENV_FILE": str(env_file), "TESTUMGEBUNG_TAG": PROJECT, **PORTS},
         capture_output=True,
         text=True,
         check=check,
@@ -70,13 +75,23 @@ def wait_for(url: str, seconds: int = 180) -> None:
             time.sleep(2)
 
 
+def env_file_content() -> str:
+    """Umgebungsdatei aus der Vorlage, dazu absichtlich die eingeschaltete Fehleranzeige (Szenario 4).
+
+    Der Browser erreicht Keycloak hier unter dem Port der Prüfung statt unter 8081 (#167).
+    """
+    example = ENV_EXAMPLE.read_text()
+    own_keycloak = "KEYCLOAK_REALM_URL=http://localhost:8081/realms/dpv\n"
+    assert own_keycloak in example, "Vorlage geändert: Adresse von Keycloak in der Prüfung anpassen."
+    example = example.replace(own_keycloak, f"KEYCLOAK_REALM_URL={KEYCLOAK}/realms/dpv\n")
+    return example + "\n# Nur in der Prüfung: Die Testumgebung muss das ignorieren.\nDJANGO_DEBUG=1\n"
+
+
 @pytest.fixture(scope="session")
 def env_file(tmp_path_factory) -> Path:
-    """Umgebungsdatei aus der Vorlage, dazu absichtlich die eingeschaltete Fehleranzeige (Szenario 4)."""
+    """Schreibt die Umgebungsdatei der Prüfung (env_file_content) in einen eigenen Ordner."""
     path = tmp_path_factory.mktemp("testumgebung") / ".env"
-    path.write_text(
-        ENV_EXAMPLE.read_text() + "\n# Nur in der Prüfung: Die Testumgebung muss das ignorieren.\nDJANGO_DEBUG=1\n"
-    )
+    path.write_text(env_file_content())
     return path
 
 
@@ -84,6 +99,8 @@ def env_file(tmp_path_factory) -> Path:
 def testumgebung(env_file) -> Iterator[Path]:
     """Baut und startet die Testumgebung, wartet, bis sie antwortet, und räumt danach alles ab."""
     compose("down", "--volumes", "--remove-orphans", env_file=env_file, check=False)
+    fail_if_busy(CONTAINER_TOOL_PORT, "das Tool in der Prüfung der Testumgebung")
+    fail_if_busy(CONTAINER_KEYCLOAK_PORT, "Keycloak in der Prüfung der Testumgebung")
     started = compose("up", "--detach", "--build", "--wait", env_file=env_file, check=False)
     try:
         assert started.returncode == 0, started.stdout + started.stderr

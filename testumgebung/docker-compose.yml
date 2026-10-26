@@ -52,7 +52,9 @@ services:
       - aussen
     ports:
       # Nur 127.0.0.1: Andere Geräte im selben WLAN erreichen die Testumgebung nicht.
-      - "127.0.0.1:8000:8000"
+      # Den Port wählt nur die Prüfung (containertests/) anders, damit sie neben der eigenen
+      # Testumgebung und dem eigenen Tool läuft (#167); ohne Angabe 8000.
+      - "127.0.0.1:${TESTUMGEBUNG_TOOL_PORT:-8000}:8000"
     healthcheck:
       # Nur „nimmt der Webserver Verbindungen an“; unabhängig vom eingestellten Servernamen.
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 3)"]
@@ -68,8 +70,8 @@ services:
     image: quay.io/keycloak/keycloak:26.7.5
     # Der Browser erreicht Keycloak unter localhost:8081, das Tool unter keycloak:8080.
     # Keycloak nennt dem Browser deshalb immer localhost:8081 und dem Tool die Adresse, unter
-    # der es fragt.
-    command: ["start-dev", "--import-realm", "--hostname=http://localhost:8081", "--hostname-backchannel-dynamic=true"]
+    # der es fragt. Den Port wählt nur die Prüfung anders (#167), wie beim Tool.
+    command: ["start-dev", "--import-realm", "--hostname=http://localhost:${TESTUMGEBUNG_KEYCLOAK_PORT:-8081}", "--hostname-backchannel-dynamic=true"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: nur-lokal-nicht-geheim
@@ -79,7 +81,7 @@ services:
     networks:
       - aussen
     ports:
-      - "127.0.0.1:8081:8080"
+      - "127.0.0.1:${TESTUMGEBUNG_KEYCLOAK_PORT:-8081}:8080"
     healthcheck:
       # Das Image enthält kein curl; bash kann über /dev/tcp selbst eine Verbindung öffnen.
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]

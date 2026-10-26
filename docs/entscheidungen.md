@@ -6,6 +6,16 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-26 · Eigene Ports für die Prüfungen (#167)
+
+**Entscheidung** (Sebastian, Klärung von #167 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/167#issuecomment-6414436246)): Port 8000 und 8081 gehören dem eigenen Tool (README, Schritt 9) und der eigenen Testumgebung im Container (README, Schritt T). Prüfungen belegen sie nie; das Tool und `./pruefen.sh` können gleichzeitig laufen. Ist ein Prüf-Port belegt, nennt die Prüfung den Port und was zu tun ist. Zwei Prüfläufe gleichzeitig gehen weiter nicht, weil sie sich die Testdatenbank teilen.
+
+**Begründung:** Am 25.10.2026 war `./pruefen.sh` zweimal rot, weil Sebastians Tool Port 8000 belegte, und sein Browser zeigte unter Port 8000 die Container-Prüfung einer anderen Session statt seines eigenen Tools.
+
+**Technische Wahl** (KI): Der Rauchtest nutzt Port 8010, die Container-Prüfung 8020 (Tool) und 8091 (Keycloak); die Zahlen stehen nur in `tests/check_ports.py`. Die Ports der Testumgebung sind über `TESTUMGEBUNG_TOOL_PORT` und `TESTUMGEBUNG_KEYCLOAK_PORT` einstellbar, ohne Angabe 8000 und 8081. Das lokale Keycloak (`dev/keycloak/dpv-realm.json`) lässt zusätzlich die Rückkehr zu `localhost:8010` und `localhost:8020` zu; nur dieses erfundene Keycloak, nie das des Verbands. Ob ein Port belegt ist, prüfen zwei Proben (antwortet dort etwas, lässt er sich selbst belegen), weil auf dem Mac ein Port nach der Container-Prüfung noch belegt sein kann, ohne zu antworten.
+
+**Umsetzung:** `tests/check_ports.py`, `rauchtests/conftest.py`, `containertests/conftest.py`, `testumgebung/docker-compose.yml`, `dev/keycloak/dpv-realm.json`, `pruefen.sh`, `README.md` (Schritt 11), Tests in `tests/test_pruefports.py`, `tests/test_testumgebung_aufbau.py`, `rauchtests/test_pruefport.py` und `containertests/test_testumgebung_container.py`.
+
 ## 2026-10-26 · Ein Ort je Angabe, Ablauf einer Phase und Steuerungssession (#169)
 
 **Entscheidung** (Sebastian; Klärung von #168 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/168#issuecomment-6410114588), [Szenarien in #169](https://github.com/sebivtt/dpv-participant-management/issues/169#issuecomment-6410122924)). Ergänzt den Eintrag zu #158 vom 25.10.2026, ändert ihn nicht:
