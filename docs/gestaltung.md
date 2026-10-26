@@ -51,6 +51,16 @@ Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% t
 - **Weiß** auf grauem oder weißem Grund, damit es sich von gesperrten Feldern (grau, mit Schloss) abhebt.
 - Gleiches gilt später für Datumsfelder (#100) und das Adressfeld (#163).
 
+### Felder zum Antippen (#180, 26.10.2026)
+
+Ein einzelnes Feld, das man auf einer Seite mit Angaben ändern kann, ist ein Feld zum Antippen (`{% antippfeld form.feld saved=… icon=… %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Mein Profil“). Vorbild ist das Zielbild „Mein Profil“; zuerst genutzt für den Fahrtennamen. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #180.
+
+- **In Ruhe** sieht es aus wie die gesperrten Angaben daneben, aber weiß: Beschriftung, Symbol, Wert oder „Noch nicht angegeben“, rechts ein ×-Knopf zum Leeren (ausgegraut, wenn leer).
+- **Antippen** öffnet die Eingabe im selben Rahmen, darunter „Verwerfen“ und „Speichern“ in einer kleinen Fläche über dem Inhalt darunter.
+- **Speichern** mit dem Knopf oder Enter; **Verwerfen** mit dem Knopf, Esc oder Tippen außerhalb, mit Ansage für Vorleseprogramme. Danach liegt der Fokus wieder auf dem Feld. Der ×-Knopf löscht nie selbst: Er öffnet das Feld leer, gelöscht wird erst mit „Speichern“.
+- **Ohne Skript** bleibt ein einfaches Formular mit Eingabe und „Speichern“; die Eingabe ist ein Textfeld wie oben.
+- **Kopfzeile** auf „Mein Profil“: der Fahrtenname groß, „(Vorname Nachname)“ kleiner und grauer dahinter.
+
 **Offener Widerspruch:** LIS-01 und das Abschlusskriterium von P5 verlangen, lebensbedrohliche Allergien in der Teilnehmendenliste hervorzuheben. Abschnitt 5 unten sagt, Gesundheitsdaten erscheinen nicht in der allgemeinen Übersicht. Geklärt wird das in #30, bevor die Liste gebaut wird.
 
 ## 2. Gestaltungskonzept: DPV Anmeldetool

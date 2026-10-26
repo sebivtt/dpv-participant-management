@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Fahrtenname, Abmelden, Meldungen (#7, #96, #165, #13, #111, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Fahrtenname, Abmelden, Meldungen (#7, #96, #165, #13, #111, #180, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -11,7 +11,7 @@ from playwright.sync_api import Page, expect
 
 from django.contrib.auth import get_user_model
 
-from rauchtests.conftest import BASE, OHNE_NAME, focus_visible, login, run_axe
+from rauchtests.conftest import BASE, OHNE_NAME, PC, focus_visible, login, run_axe
 from roles.models import Role
 from tests.test_rollen import give, unit
 from units.models import Unit
@@ -272,31 +272,37 @@ def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_
     page: Page = request.getfixturevalue(device)
     login(page)
     page.goto(f"{BASE}/profil/")
-    field = page.get_by_label("Fahrtenname")
-    expect(field).to_have_attribute("placeholder", "Noch nicht angegeben")
-    # Weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild zu #161).
-    assert field.evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(255, 255, 255)"
-
+    # Seit #180 öffnet sich das Feld erst beim Antippen (Zielbild „Mein Profil“).
+    rest = page.get_by_role("button", name="Fahrtenname bearbeiten: Noch nicht angegeben")
     if device == "handy":
-        field.tap()
+        rest.tap()
     else:
-        field.click()
+        rest.click()
+    field = page.get_by_label("Fahrtenname", exact=True)
+    expect(field).to_be_focused()
+    expect(field).to_have_attribute("placeholder", "Fahrtennamen eingeben")
+    # Weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild zu #161).
+    assert page.locator(".a-antippfeld-gruppe").evaluate("e => getComputedStyle(e).backgroundColor") == "rgb(255, 255, 255)"
+
     _type_like_a_phone(field, "Kleiner ", "Bä", "Bär", " vom See")
     expect(field).to_have_value("Kleiner Bär vom See")
     page.get_by_role("button", name="Speichern").click()
 
-    expect(page.get_by_role("status")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+    expect(page.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
     expect(page.locator(".a-anzeigename")).to_have_text("Kleiner Bär vom See (Erika Testfrau)")
-    expect(page.get_by_label("Fahrtenname")).to_have_value("Kleiner Bär vom See")
+    expect(page.get_by_role("button", name="Fahrtenname bearbeiten: Kleiner Bär vom See")).to_be_visible()
     assert run_axe(page) == []
     page.goto(f"{BASE}/")
     expect(page.get_by_role("heading", level=1)).to_have_text("Hallo Kleiner Bär vom See!")
 
     # Zu lang: Fehler am Feld, die Eingabe bleibt stehen, und die Seite besteht die Prüfung.
     page.goto(f"{BASE}/profil/")
-    page.get_by_label("Fahrtenname").fill("K" * 51)
+    page.get_by_role("button", name="Fahrtenname bearbeiten: Kleiner Bär vom See").click()
+    page.get_by_label("Fahrtenname", exact=True).fill("K" * 51)
     page.get_by_role("button", name="Speichern").click()
-    field = page.get_by_label("Fahrtenname")
+    field = page.get_by_label("Fahrtenname", exact=True)
+    # Szenario 7 zu #180: Das Feld bleibt offen, mit dem Fokus in der Eingabe.
+    expect(field).to_be_focused()
     expect(field).to_have_value("K" * 51)
     expect(field).to_have_attribute("aria-invalid", "true")
     expect(page.locator("#id_scout_name-fehler")).to_be_visible()
@@ -304,6 +310,152 @@ def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_
     width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
     assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
     assert run_axe(page) == []
+
+
+# Szenarien 1 bis 6, 8 und 10 zu #180: Feld zum Antippen und Kopfzeile wie im Zielbild, am PC und am Handy
+def _set_scout_name(value: str) -> None:
+    get_user_model().objects.filter(username="erika.testfrau").update(scout_name=value)
+
+
+def _press(page: Page, locator, device: str) -> None:
+    if device == "handy":
+        locator.tap()
+    else:
+        locator.click()
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_fahrtenname_antippen_verwerfen_leeren_und_speichern(request, browser_name, device):
+    page: Page = request.getfixturevalue(device)
+    login(page)
+    _set_scout_name("Falkenflug")
+    page.goto(f"{BASE}/profil/")
+    field = page.get_by_label("Fahrtenname", exact=True)
+    rest = page.get_by_role("button", name="Fahrtenname bearbeiten: Falkenflug")
+    announcement = page.locator("[data-ansage]")
+
+    # Szenario 1: in Ruhe wie die anderen Angaben, ohne Eingabe und ohne Knöpfe darunter.
+    expect(rest).to_be_visible()
+    expect(field).to_be_hidden()
+    expect(page.get_by_role("button", name="Speichern")).to_be_hidden()
+    expect(page.get_by_role("button", name="Fahrtenname leeren")).to_be_enabled()
+    # Szenario 8: Fahrtenname groß, der Name kleiner und grauer dahinter.
+    head = page.locator(".a-anzeigename")
+    addition = page.locator(".a-anzeigename-zusatz")
+    expect(addition).to_have_text("(Erika Testfrau)")
+    size = "e => parseFloat(getComputedStyle(e).fontSize)"
+    assert addition.evaluate(size) < head.evaluate(size)
+    assert addition.evaluate("e => getComputedStyle(e).color") == "rgb(86, 99, 117)"
+    assert run_axe(page) == []
+
+    # Szenario 3: Antippen öffnet die Eingabe mit „Verwerfen“ und „Speichern“ darunter.
+    _press(page, rest, device)
+    expect(field).to_be_focused()
+    expect(field).to_have_value("Falkenflug")
+    expect(page.get_by_role("button", name="Verwerfen")).to_be_visible()
+    expect(page.get_by_role("button", name="Speichern")).to_be_visible()
+    assert run_axe(page) == []
+
+    # Szenario 5: Verwerfen mit dem Knopf, mit Esc und mit Tippen außerhalb; nichts wird gespeichert.
+    field.fill("Kolibri")
+    _press(page, page.get_by_role("button", name="Verwerfen"), device)
+    expect(rest).to_be_focused()
+    expect(announcement).to_have_text("Änderungen verworfen.")
+    _press(page, rest, device)
+    field.fill("Kolibri")
+    page.keyboard.press("Escape")
+    expect(rest).to_be_focused()
+    _press(page, rest, device)
+    field.fill("Kolibri")
+    _press(page, page.get_by_role("heading", level=1), device)
+    expect(field).to_be_hidden()
+    expect(rest).to_be_visible()
+    assert get_user_model().objects.get(username="erika.testfrau").scout_name == "Falkenflug"
+
+    # Szenario 6: × öffnet das Feld leer; „Verwerfen“ lässt „Falkenflug“ stehen.
+    _press(page, page.get_by_role("button", name="Fahrtenname leeren"), device)
+    expect(field).to_be_focused()
+    expect(field).to_have_value("")
+    expect(announcement).to_have_text("Feld geleert. Mit Speichern übernehmen oder verwerfen.")
+    _press(page, page.get_by_role("button", name="Verwerfen"), device)
+    expect(rest).to_be_visible()
+
+    # Szenario 4: ändern und speichern, am PC mit Enter, am Handy mit dem Knopf.
+    _press(page, rest, device)
+    field.fill("Kolibri")
+    if device == "handy":
+        _press(page, page.get_by_role("button", name="Speichern"), device)
+    else:
+        field.press("Enter")
+    expect(page.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+    rest = page.get_by_role("button", name="Fahrtenname bearbeiten: Kolibri")
+    expect(rest).to_be_focused()
+    expect(head).to_have_text("Kolibri (Erika Testfrau)")
+
+    # Szenario 6: × und „Speichern“ löscht; danach „Noch nicht angegeben“, × ausgegraut, nur der Name oben.
+    _press(page, page.get_by_role("button", name="Fahrtenname leeren"), device)
+    _press(page, page.get_by_role("button", name="Speichern"), device)
+    expect(page.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gelöscht.")
+    expect(page.get_by_role("button", name="Fahrtenname bearbeiten: Noch nicht angegeben")).to_be_visible()
+    expect(page.get_by_role("button", name="Fahrtenname leeren")).to_be_disabled()
+    expect(head).to_have_text("Erika Testfrau")
+    expect(addition).to_have_count(0)
+
+    # Szenario 10: nichts ragt über den Rand, auch offen mit Knöpfen.
+    _press(page, page.get_by_role("button", name="Fahrtenname bearbeiten: Noch nicht angegeben"), device)
+    width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
+    assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
+    box = page.locator(".a-antippfeld-knoepfe").bounding_box()
+    assert box["x"] >= 0 and box["x"] + box["width"] <= width[1], box
+
+
+# Szenario 9 zu #180: nur mit der Tastatur
+def test_fahrtenname_nur_mit_der_tastatur(pc):
+    login(pc)
+    pc.goto(f"{BASE}/profil/")
+    rest = pc.locator("[data-oeffnen]")
+    field = pc.get_by_label("Fahrtenname", exact=True)
+
+    station = _tab_to_element(pc, "[data-oeffnen]")
+    assert station["sichtbar"] and station["kontrast"] >= 3, station
+    pc.keyboard.press("Enter")
+    expect(field).to_be_focused()
+    pc.keyboard.type("Kiwi")
+    pc.keyboard.press("Escape")
+    expect(rest).to_be_focused()
+    expect(rest).to_contain_text("Noch nicht angegeben")
+    assert focus_visible(pc)["sichtbar"]
+
+    pc.keyboard.press("Enter")
+    pc.keyboard.type("Kiwi")
+    pc.keyboard.press("Enter")
+    expect(pc.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+    expect(rest).to_contain_text("Kiwi")
+    expect(rest).to_be_focused()
+    # Weiter mit Tab zum Knopf zum Leeren, auch er mit sichtbarem Fokus.
+    pc.keyboard.press(_tab_key(pc))
+    expect(pc.get_by_role("button", name="Fahrtenname leeren")).to_be_focused()
+    assert focus_visible(pc)["sichtbar"]
+
+
+# Szenario 11 zu #180: ohne Skript das einfache Formular
+def test_fahrtenname_ohne_skript_speichern(pc, browser):
+    # Anmelden mit Skript wie sonst auch; danach dieselbe Sitzung in einem Browser ohne Skript.
+    login(pc)
+    context = browser.new_context(java_script_enabled=False, storage_state=pc.context.storage_state(), **PC)
+    page = context.new_page()
+    try:
+        page.goto(f"{BASE}/profil/")
+        field = page.get_by_label("Fahrtenname", exact=True)
+        expect(field).to_be_visible()
+        expect(page.locator("[data-oeffnen]")).to_be_hidden()
+        expect(page.get_by_role("button", name="Verwerfen")).to_be_hidden()
+        field.fill("Kiwi")
+        page.get_by_role("button", name="Speichern").click()
+        expect(page.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+        expect(page.locator(".a-anzeigename")).to_have_text("Kiwi (Erika Testfrau)")
+    finally:
+        context.close()
 
 
 def _erika_with_roles() -> None:

@@ -78,8 +78,10 @@ def test_in_ruhe_sieht_das_feld_aus_wie_die_anderen_angaben(org):
     assert symbols(rest(root)) == ["person"]
     assert shown_value(root) == "Falkenflug"
     assert "a-leer" not in _classes(_one(_all(rest(root), lambda e: "a-antippfeld-wert" in _classes(e))))
-    # Vorleseprogramme hören, was der Knopf tut, und den Wert dazu.
-    assert re.sub(r"\s+", " ", raw_text(rest(root))) == "Fahrtenname bearbeiten: Falkenflug"
+    # Vorleseprogramme hören, was der Knopf tut, und den Wert dazu; den genauen Namen prüft der Rauchtest.
+    hidden = _one(_all(rest(root), lambda e: "sr-nur" in _classes(e)))
+    assert raw_text(hidden).strip() == "Fahrtenname bearbeiten:"
+    assert raw_text(rest(root)).endswith("Falkenflug")
 
 
 def test_rechts_ein_leeren_knopf_der_vorgelesen_wird(org):

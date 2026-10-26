@@ -79,8 +79,22 @@ def profile_scout_name(request: HttpRequest) -> HttpResponse:
     except DatabaseError as error:
         logger.error("Fahrtenname nicht gespeichert: %s", type(error).__name__)
         return _profile_page(request, form, save_failed=True)
-    messages.success(request, account_texts.SCOUT_NAME_SAVED if value else account_texts.SCOUT_NAME_DELETED)
+    text = account_texts.SCOUT_NAME_SAVED if value else account_texts.SCOUT_NAME_DELETED
+    messages.success(request, text, extra_tags=SCOUT_NAME_TAG)
     return redirect("profile")
+
+
+# Kennzeichen der Meldung nach dem Speichern; daran erkennt „Mein Profil“, dass das Feld den Fokus bekommt.
+SCOUT_NAME_TAG = "fahrtenname"
+
+
+def _scout_name_just_saved(request: HttpRequest) -> bool:
+    """Kommt „Mein Profil“ gerade vom Speichern des Fahrtennamens? Dann bekommt das Feld den Fokus (#180, Szenario 9).
+
+    Die Meldungen gelten dabei schon als gelesen; die Seite zeigt sie trotzdem, weil sie in
+    derselben Anfrage dieselben bleiben, und beim nächsten Aufruf fehlen Meldung und Fokus.
+    """
+    return any(SCOUT_NAME_TAG in message.extra_tags.split() for message in messages.get_messages(request))
 
 
 def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False) -> HttpResponse:
@@ -92,6 +106,7 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,
+        "scout_name_just_saved": _scout_name_just_saved(request),
         "save_failed": account_texts.SCOUT_NAME_FAILED if save_failed else "",
     }
     return render(request, "core/profil.html", context)
@@ -173,6 +188,10 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
     role = Role.Kind
     profile_example = {
         "name": "Kim",
+        "scout_name": "Kiwi",
+        # Feld zum Antippen (#180) mit erfundenem Fahrtennamen; eigene Kennungen, damit nichts mit
+        # anderen Feldern der Seite zusammenfällt. Das Formular dort schickt nichts ab.
+        "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="muster_%s"),
         "details": [(_("Vorname"), "Kim", "person"), (_("Nachname"), "", "person"),
                     (_("E-Mail-Adresse"), "kim.beispiel@example.org", "mail")],
         "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},

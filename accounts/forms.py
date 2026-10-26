@@ -24,7 +24,8 @@ class ScoutNameForm(forms.Form):
         strip=False,
         widget=forms.TextInput(
             attrs={
-                "placeholder": _("Noch nicht angegeben"),
+                # Im leeren Feld in Ruhe steht „Noch nicht angegeben“, in der leeren Eingabe dies (#180).
+                "placeholder": _("Fahrtennamen eingeben"),
                 # Ein Name: Großbuchstabe am Wortanfang, keine Korrektur in ein bekanntes Wort.
                 "autocomplete": "nickname",
                 "autocapitalize": "words",

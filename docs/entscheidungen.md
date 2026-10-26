@@ -6,6 +6,27 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-26 · Fahrtenname auf „Mein Profil“ wie im Zielbild: Feld zum Antippen (#180)
+
+**Entscheidung** (Sebastian, Klärung von #180 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/180#issuecomment-6423072701), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/180#issuecomment-6423073029)):
+
+1. **Wie im Zielbild:** Das Feld „Fahrtenname“ sieht in Ruhe aus wie die anderen Angaben (Personensymbol, Fahrtenname oder „Noch nicht angegeben“, rechts ein ×-Knopf). Antippen öffnet die Eingabe mit dem Platzhalter „Fahrtennamen eingeben“, darunter „Verwerfen“ und „Speichern“. Speichern mit Knopf oder Enter; Verwerfen mit Knopf, Esc oder Tippen außerhalb, mit Ansage für Vorleseprogramme; danach liegt der Fokus wieder auf dem Feld. Damit gilt die Abweichung „immer offen, nur ‚Speichern‘“ aus dem Eintrag zu #111 (Technische Wahl, „Speichern“) und aus `docs/zielbilder/README.md` nicht mehr.
+2. **×-Knopf in Ruhe** öffnet das Feld leer; gelöscht wird erst mit „Speichern“. Verworfen: sofort löschen.
+3. **Kopfzeile wie im Zielbild:** Fahrtenname groß, „(Vorname Nachname)“ kleiner und grauer dahinter; ohne Fahrtenname nur der Name. Listen entscheiden später selbst (#117, #65).
+4. Meldungen, 50 Zeichen, Leerzeichen und Rechte bleiben wie in #111.
+
+**Begründung:** So war es mit dem Zielbild vereinbart; PR #177 war davon abgewichen, und Sebastian hat das erst nach der Übernahme bemerkt.
+
+**Technische Wahl** (KI):
+
+- **Baustein** `{% antippfeld form.feld saved=… icon=… open=… focus=… %}` in `core/templatetags/layout.py` mit `core/templates/core/_antippfeld.html`, damit spätere Felder (Geburtsdatum, Adresse) dasselbe Verhalten bekommen. Er baut auf dem Baustein Textfeld auf (gleiches Feld, gleicher Fehler am Feld).
+- **Kleines Skript** in `core/static/core/app.js` öffnet und schließt das Feld; gespeichert wird weiter mit dem Formular an `/profil/fahrtenname/`, ohne neue Adresse und ohne htmx. Was nur mit Skript geht (Ruhezustand, ×, „Verwerfen“), ist im HTML versteckt; ohne Skript bleibt das einfache Formular aus #111 (Szenario 11).
+- **Nach einem Fehler** (zu lang, Speichern gescheitert) kommt das Feld offen vom Server, mit dem Fokus in der Eingabe. **Nach dem Speichern** bekommt das Feld den Fokus; die Seite erkennt das an einem Kennzeichen an der Erfolgsmeldung (`extra_tags="fahrtenname"`).
+- **Tippen außerhalb** gibt den Fokus nur dann ans Feld zurück, wenn das Angetippte ihn nicht selbst nimmt (etwa ein Link), damit niemandem der Fokus weggenommen wird.
+- **Zweiter Knopf** „Verwerfen“ weiß mit feinem Rand wie im Zielbild (`btn-zart` in `core/static/core/app.css`).
+
+**Umsetzung:** `core/templatetags/layout.py`, `core/templates/core/_antippfeld.html`, `core/templates/core/profil.html`, `core/templates/core/muster.html`, `core/views.py`, `core/static/core/app.js`, `core/static/core/app.css`, `accounts/forms.py` (Platzhalter), `docs/gestaltung.md`, `docs/zielbilder/README.md` (Punkt 10); Tests in `tests/test_fahrtenname_feld.py`, `tests/test_fahrtenname.py`, `tests/test_mein_profil.py` und `rauchtests/test_rauchtest.py`.
+
 ## 2026-10-26 · Fahrtenname: die Person trägt ihn selbst ein, angezeigt als „Kiwi (Erika Testfrau)“ (#111, #112)
 
 **Entscheidung** (Sebastian, Klärung von #111 am 22.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6344762503); [Nachklärung vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6417655066); [Szenarien vom 26.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/111#issuecomment-6417654692)):

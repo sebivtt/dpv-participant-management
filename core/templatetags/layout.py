@@ -1,4 +1,4 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Meldungen (#165), Textfelder (#111), Fußbereich, Band der Testumgebung (#58).
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Meldungen (#165), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
@@ -94,6 +94,25 @@ def textfeld(field) -> dict:
         "error_id": error_id,
         "required": field.field.required,
     }
+
+
+@register.inclusion_tag("core/_antippfeld.html")
+def antippfeld(field, saved: str, icon: str, open: bool = False, focus: bool = False) -> dict:
+    """Feld zum Antippen (#180, Zielbild „Mein Profil“): in Ruhe wie eine Angabe, angetippt eine Eingabe.
+
+    In Ruhe steht der gespeicherte Wert `saved` (leer: „Noch nicht angegeben“) mit dem Symbol
+    `icon` und rechts dem Knopf zum Leeren. Antippen öffnet im selben Rahmen die Eingabe, darunter
+    „Verwerfen“ und „Speichern“. Das Öffnen und Schließen macht das Skript (core/static/core/app.js);
+    ohne Skript bleiben Eingabe und „Speichern“ wie beim Baustein Textfeld stehen, deshalb
+    nutzt es dessen Feld und Fehler. Gespeichert wird immer mit dem Formular drumherum.
+
+    `open`: Das Feld kommt offen vom Server, z. B. wenn das Speichern technisch scheiterte; mit
+    einem Fehler am Feld ist es immer offen, damit die Eingabe stehen bleibt. `focus`: Das Feld
+    bekommt beim Laden den Fokus, z. B. gleich nach dem Speichern.
+    """
+    context = textfeld(field)
+    context.update(saved=saved, icon=icon, open=open or bool(field.errors), focus=focus)
+    return context
 
 
 @register.inclusion_tag("core/_status.html")
