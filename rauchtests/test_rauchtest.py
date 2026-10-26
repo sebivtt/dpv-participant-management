@@ -325,7 +325,7 @@ def _ring(circle) -> str:
 
 # Szenarien 1, 2, 4 und 5 zu #13: Profilkreis am PC und am Handy, mit Maus und nur mit der Tastatur
 @pytest.mark.parametrize("device", ["pc", "handy"])
-def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, device):
+def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, browser_name, device):
     page: Page = request.getfixturevalue(device)
     login(page)
     selector = "aside .a-profil" if device == "pc" else ".a-topbar .a-profil"
