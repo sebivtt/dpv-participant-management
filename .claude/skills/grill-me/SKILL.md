@@ -42,7 +42,7 @@ Sebastian zuerst eine kurze Übersicht geben, bevor die erste Frage kommt:
 
 Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrifft:
 - **Ziel:** Welches Problem löst es, für wen? Woran merkt man, dass es erfüllt ist?
-- **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird das festgehalten. Was daraus für die Szenarien folgt, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3; Sebastian kann trotzdem Szenarien wollen (wie bei #169).
+- **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird das festgehalten. Was daraus für die Szenarien folgt, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3; Sebastian kann trotzdem Szenarien wollen, etwa für Abläufe bei reinen Arbeitsregeln.
 - **Rollen und Rechte:** Wer darf es sehen, wer ändern, und wer ausdrücklich nicht? Rollen nach ROL-01, dazu Veranstaltungsleitung und Ansprechperson. Welche Zeile der Rechtematrix (`docs/rechtematrix.md`) ändert sich? Bringt das Issue neue Daten, werden beim Klären ihre Zeilen festgelegt: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten (`CONTRIBUTING.md`, Abschnitt 4).
 - **Ablauf:** Wo im Tool, in welchem Schritt, was passiert vorher und danach?
 - **Grenzfälle:** leere Eingaben, null, sehr große Werte, Fristen abgelaufen, nachträgliche Änderungen, Personen entfernt, mehrere Bearbeitende gleichzeitig, bestehende Veranstaltungen und Anmeldungen.

@@ -66,7 +66,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<neu>/dependencies/blocke
 
 Gehört das neue Issue zur laufenden Phase (Phase im `README.md` unter „Stand“), trägt es die KI im selben Schritt ins Phasen-Issue ein (Regel in `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Neues während der Phase“):
 
-- **Platz:** seine Nummer an der passenden Stelle der Reihenfolge, nach Sebastians Okay zur Stelle.
+- **Platz:** seine Nummer an der passenden Stelle der Reihenfolge; die Stelle mit dem Issue in Abschnitt 4 Sebastian zeigen.
 - **Abhängigkeiten:** die aus Abschnitt 3, auf GitHub eingetragen.
 - **Stunden:** Schätzung aus dem Puffer, Sebastian vorgelegt. Steht seine Zustimmung in seinen eigenen Worten im Issue oder Pull Request, kommt der Verweis darauf ins Phasen-Issue; die Zahlen selbst stehen in `docs/fahrplan.md` und ändern sich nur mit seiner Zustimmung.
 

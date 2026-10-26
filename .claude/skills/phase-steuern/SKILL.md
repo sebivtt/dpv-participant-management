@@ -7,10 +7,10 @@ description: Eine Phase als Steuerungssession führen, vom Phasenstart über Auf
 
 Die Regeln dazu stehen in `CLAUDE.md`, Abschnitte „Ein Ort je Angabe“, „Ablauf einer Phase“ und „Steuerungssession und Umsetzungs-Sessions“. Dieser Skill enthält nur die Handgriffe. Was die Steuerungssession darf und wann sie wechselt, steht dort und wird hier nicht wiederholt.
 
-Das Phasen-Issue folgt der Vorlage `.github/ISSUE_TEMPLATE/phase.yml`. Für P2 ist es #106. Das Phasen-Issue einer späteren Phase trägt das Label der Phase und im Text die Überschrift „Stand für die nächste Steuerungssession“:
+Das Phasen-Issue folgt der Vorlage `.github/ISSUE_TEMPLATE/phase.yml`. Für P2 ist es #106 (bis zum Umbau nach der Vorlage in #170 noch ohne den Abschnitt „Stand für die nächste Steuerungssession“). Nach der Vorlage angelegte Phasen-Issues findet dieser Befehl; `<phase>` ist das Label der Phase, etwa `P3`:
 
 ```bash
-gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&labels=P3&per_page=100" \
+gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&labels=<phase>&per_page=100" \
   --jq '.[] | select(.pull_request == null) | select(.body // "" | contains("### Stand für die nächste Steuerungssession")) | "#\(.number) \(.title)"'
 ```
 
@@ -39,7 +39,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 ## 2. Aufträge
 
 - **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat und alles, was die Umsetzung wissen muss, in seinem Text steht. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
-- **Der Auftrag** lautet nur: „Setze #<nummer> um, nach `CLAUDE.md`.“, mit Link zum Issue.
+- **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
 - **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und grobe Entwürfe für neue Seiten rechtzeitig anstoßen.
 
 ## 3. Phasen-Issue pflegen
@@ -54,7 +54,7 @@ gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -
 
 - **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk.
 - **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub, Stunden mit Verweis auf Sebastians Zustimmung (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
-- **Nie ins Phasen-Issue:** ob ein Issue geklärt ist, was ein Issue verlangt, den Wortlaut eines Abschlusskriteriums oder eine Zustimmung von Sebastian ohne Link auf seine eigenen Worte.
+- **Was nicht ins Phasen-Issue gehört,** ergibt sich aus `CLAUDE.md`, „Ein Ort je Angabe“: Es steht an seinem eigenen Ort und wird hier höchstens verlinkt.
 - **Protokolle** (Bestandsaufnahme, Prüfung der Planung) kommen als Kommentar ins Phasen-Issue; der Text des Issues verlinkt sie.
 
 ## 4. Übergabe an die nächste Steuerungssession
@@ -73,5 +73,5 @@ Dann Sebastian sagen, dass die Session endet und eine neue mit diesem Skill weit
 
 1. Alle Abschlusskriterien im Phasen-Issue abgehakt, jedes mit Beleg; Sebastian die Liste zeigen.
 2. Externes Review nach `docs/review-leitfaden.md` anstoßen (Vorlage `externes-review.yml`); das Review-Issue verlinkt das Phasen-Issue.
-3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Neue Erfahrungen als Pull Request in `CLAUDE.md`, „Erfahrungen aus dem Vorgänger-Repo“, mit Datum.
-4. Erst dann den „Stand“ im `README.md` fortschreiben (eigener Pull Request) und das Phasen-Issue schließen.
+3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Die neuen Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen aus dem Vorgänger-Repo“.
+4. Erst danach geht der „Stand“ im `README.md` ebenso per Issue und Auftrag an eine Umsetzungs-Session. Ist er in `main`, das Phasen-Issue schließen.

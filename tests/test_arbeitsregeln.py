@@ -76,23 +76,29 @@ def _shared_passages(skill, rules, length):
 # --- CLAUDE.md: Kernregeln -------------------------------------------------------------------
 
 
-def test_ein_ort_je_angabe_nennt_jeden_ort_genau_einmal():
-    section = _section(CLAUDE_MD, "Ein Ort je Angabe")
+# Je Angabe der Ort, der für sie zuständig ist, so wie #169 sie zuordnet.
+PLACES = {
+    "Was gilt": ["`docs/anforderungen.md`", "`docs/rechtematrix.md`"],
+    "Warum": ["`docs/entscheidungen.md`"],
+    "Phasen, Abschlusskriterien, Stunden": ["`docs/fahrplan.md`"],
+    "Arbeitsregeln": ["diese Datei"],
+    "Handgriffe": ["Skills"],
+    "Was ein Issue verlangt": ["Text des Issues"],
+    "Ob ein Issue geklärt ist": ["Label `geklärt`"],
+    "Ob ein Issue erledigt ist": ["geschlossen"],
+    "Reihenfolge einer Phase und Belege der Abschlusskriterien": ["Phasen-Issue", "Issue-Nummern"],
+    "Was technisch zuerst da sein muss": ["Abhängigkeiten auf GitHub"],
+}
 
-    for place in [
-        "`docs/anforderungen.md`",
-        "`docs/rechtematrix.md`",
-        "`docs/entscheidungen.md`",
-        "`docs/fahrplan.md`",
-        "Arbeitsregeln",
-        "Skills",
-        "Text des Issues",
-        "Label `geklärt`",
-        "geschlossen",
-        "Phasen-Issue",
-        "Abhängigkeiten auf GitHub",
-    ]:
-        assert place in section, place
+
+def test_ein_ort_je_angabe_ordnet_jeder_angabe_ihren_ort_zu():
+    section = _section(CLAUDE_MD, "Ein Ort je Angabe")
+    entries = dict(re.findall(r"- \*\*(.+?):\*\* (.*?)(?= - \*\*|$)", section))
+
+    assert entries.keys() == PLACES.keys()
+    for topic, places in PLACES.items():
+        for place in places:
+            assert place in entries[topic], (topic, place)
     assert "verweisen nur darauf" in section
     assert "Kommentare sind nur Protokoll" in section
     assert "Eine Reihenfolge ohne technischen Grund steht nur im Phasen-Issue" in section
@@ -103,12 +109,18 @@ def test_ablauf_einer_phase_von_start_bis_abschluss():
 
     for part in ["**Start:**", "**Klären läuft voraus:**", "**Umsetzen:**", "**Neues während der Phase:**"]:
         assert part in section, part
-    assert "zweite KI prüft die Planung" in section
+    start = _sentence_after(section, "**Start:**")
+    assert "Phasen-Issue nach Vorlage" in start
+    assert "Widersprüche legt sie Sebastian mit Vorschlag vor" in start
+    assert "mit `issue-anlegen`" in start
+    assert "Zuerst werden die Grundlagen geklärt" in section
+    assert "zweite KI prüft die Planung, bevor die erste Umsetzung beginnt" in section
     assert "nächsten drei Issues" in section
     assert "spätestens in Klärung, wenn die Umsetzung der laufenden beginnt" in section
-    assert "Stunden aus dem Puffer" in section
-    assert "Zustimmung" in section
-    assert "`geklärt` kommt ab" in section
+    assert "etwa zwei Gruppen vorher" in section
+    assert "nur sein Häkchen mit Beleg" in section
+    assert "Stunden aus dem Puffer, die Stunden nur mit Sebastians Zustimmung" in section
+    assert "sofort in den Text des Issues, das Label `geklärt` kommt ab" in section
     # Abschluss in dieser Reihenfolge: Belege, Review, Rückblick, erst dann der „Stand“.
     closing = section.split("**Abschluss:**", 1)[1]
     order = ["Beleg", "externe Review", "Rückblick", "„Stand“"]
@@ -221,6 +233,11 @@ def test_phase_steuern_hat_die_handgriffe_fuer_die_ganze_phase():
     for step in ["Phasenstart", "Aufträge", "Phasen-Issue pflegen", "Übergabe", "Abschluss"]:
         assert step in headings, step
     assert "phase.yml" in text
+    # Die Steuerungssession ändert keine Dateien selbst (CLAUDE.md); im Abschluss gibt sie
+    # Erfahrungen und den „Stand“ als Auftrag an eine Umsetzungs-Session.
+    closing = _section(PHASE_STEUERN, "Abschluss")
+    assert "Auftrag" in closing
+    assert "Umsetzungs-Session" in closing
 
 
 # --- Vorlagen --------------------------------------------------------------------------------
@@ -243,8 +260,15 @@ def _phase_fields():
 def test_vorlage_phase_hat_reihenfolge_abschlusskriterien_und_stand():
     fields = _phase_fields()
 
+    template = yaml.safe_load(PHASE_TEMPLATE.read_text(encoding="utf-8"))
+    types = {field["id"]: field for field in template["body"] if field["type"] != "markdown"}
+
     assert {"phase", "reihenfolge", "abschlusskriterien", "stand"} <= fields.keys()
     assert fields["stand"]["label"] == "Stand für die nächste Steuerungssession"
+    assert types["phase"]["type"] == "dropdown"
+    assert fields["phase"]["options"] == [f"P{n}" for n in range(11)]
+    for name in ["phase", "reihenfolge", "abschlusskriterien"]:
+        assert types[name].get("validations", {}).get("required") is True, name
 
 
 def test_vorlage_phase_reihenfolge_nur_als_issue_nummern():
@@ -260,10 +284,12 @@ def test_vorlage_phase_abschlusskriterien_als_haekchen_mit_beleg_und_verweis():
     lines = [line.strip() for line in attributes["placeholder"].splitlines() if line.strip()]
 
     assert "`docs/fahrplan.md`" in attributes["description"]
+    assert lines
     assert all(line.startswith("- [") and "Beleg:" in line for line in lines), lines
 
 
 def test_vorlage_phase_kennt_kein_geklaert_als_text():
     # Ob ein Issue geklärt ist, zeigt allein das Label; das Phasen-Issue vermerkt es nicht.
     for name, attributes in _phase_fields().items():
-        assert "geklärt" not in attributes.get("placeholder", ""), name
+        for key in ["label", "description", "placeholder"]:
+            assert "geklärt" not in attributes.get(key, ""), (name, key)
