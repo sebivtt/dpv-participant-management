@@ -58,8 +58,10 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
     ist erlaubt (`icon`, z. B. das Schloss). Die Art ist nie nur Farbe: Jede hat ihr Symbol,
     und Vorleseprogramme hören vorweg ihr Wort, etwa „Warnung:“. `live` nur für Meldungen
     nach einer Handlung (Login-Seite); fest auf einer Seite stehende werden nicht ungefragt
-    angesagt.
+    angesagt. Eine unbekannte Art, etwa eine eigene Stufe einer Django-Meldung, erscheint als
+    Information, statt die Seite mit einem Serverfehler zu sperren.
     """
+    kind = kind if kind in MESSAGE_KINDS else "info"
     css_class, icon_name, prefix = MESSAGE_KINDS[kind]
     return {
         "css_class": css_class,

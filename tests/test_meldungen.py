@@ -372,3 +372,25 @@ def test_regel_steht_in_der_gestaltung_und_in_den_entscheidungen():
     entry = decisions.split("(#165)", 1)
     assert len(entry) == 2, "Eintrag zu #165 fehlt"
     assert "Sonnengelb" in entry[1].split("\n## ", 1)[0]
+
+
+def test_unbekannte_stufe_auf_der_login_seite_als_information_statt_serverfehler(rf):
+    """Unabhängige Prüfung zu #165: Eine Meldung mit eigener Stufe darf die Login-Seite nicht sperren."""
+    from django.contrib.auth.models import AnonymousUser
+    from django.contrib.messages import add_message
+    from django.contrib.messages.storage.fallback import FallbackStorage
+    from django.contrib.sessions.backends.db import SessionStore
+
+    from accounts.views import login_page
+
+    request = rf.get("/anmelden/")
+    request.user = AnonymousUser()
+    request.session = SessionStore()
+    request._messages = FallbackStorage(request)
+    add_message(request, 35, "Eine Meldung mit eigener Stufe.")
+
+    response = login_page(request)
+
+    assert response.status_code == 200
+    notice = notice_with(_tree(response), "Eine Meldung mit eigener Stufe.")
+    assert_is(notice, "info")
