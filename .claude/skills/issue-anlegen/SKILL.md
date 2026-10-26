@@ -7,7 +7,7 @@ description: Neuen Fehler oder neue Anforderung als GitHub-Issue anlegen, nach V
 
 Neue Fehler und Anforderungen stehen nur als Issue auf GitHub (aus dem Vorgänger-Repo übernommen, siehe `docs/entscheidungen.md`). Dieser Ablauf sorgt dafür, dass jedes Issue gleich aufgebaut ist und seine Abhängigkeiten von Anfang an sichtbar sind.
 
-Gesprochen wird mit Sebastian deutsch, in Alltagssprache, ohne Fachjargon. Er ist kein Programmierer.
+Gesprochen wird mit Sebastian nach `CLAUDE.md`, „Zusammenarbeit mit Sebastian“.
 
 ## 1. Einordnen
 
@@ -15,7 +15,7 @@ Gesprochen wird mit Sebastian deutsch, in Alltagssprache, ohne Fachjargon. Er is
 - **Anforderung** (Label `enhancement`): Das Tool soll etwas können, was bisher nicht vorgesehen ist. Vorlage `.github/ISSUE_TEMPLATE/anforderung.yml`.
 - **Befund aus einem externen Review** (Label `review-befund`): nur nach `docs/review-leitfaden.md`, Abschnitt 7, und erst nach Sebastians Einordnung. Vorlage `.github/ISSUE_TEMPLATE/review-befund.yml`; das Review-Issue einer Phase hat die Vorlage `externes-review.yml`.
 - Ein Thema pro Issue. Stecken mehrere Themen in einer Meldung, mehrere Issues vorschlagen.
-- Dazu das Label der Phase (`P0` bis `P10`), in die das Issue laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Wird es auf später verschoben oder ungeklärt für eine spätere Phase angelegt, zusätzlich `vorgemerkt` (`CLAUDE.md`, „Für Phasen und Vorgemerktes gilt“).
+- Dazu das Label der Phase und bei Bedarf `vorgemerkt`, nach `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Labels“.
 
 ## 2. Inhalt aufbauen
 
@@ -39,9 +39,9 @@ Eine Abhängigkeit liegt vor, wenn eines dieser Dinge zutrifft:
 - Das neue Issue lässt sich erst sinnvoll umsetzen, wenn ein anderes erledigt ist (**blockiert durch**).
 - Ein anderes Issue wartet auf das neue (**blockiert**).
 - Beide ändern dieselbe Seite, denselben Dialog, denselben Schritt im Anmeldeablauf oder dieselbe Regel, sodass sie sich widersprechen oder gegenseitig überschreiben können. Dann im Text unter „Nicht Teil dieser Anforderung“ bzw. „Bildschirmfotos und Hinweise“ darauf verweisen und Sebastian fragen, ob eine Reihenfolge nötig ist.
-- Es ist dasselbe Thema wie ein offenes Issue (Dublette). Dann kein neues Issue, sondern Sebastian vorschlagen, das bestehende zu ergänzen. Trägt es schon das Label `geklärt`, wird es dabei entfernt (siehe Skill `grill-me`, Abschnitt „Danach“).
+- Es ist dasselbe Thema wie ein offenes Issue (Dublette). Dann kein neues Issue, sondern Sebastian vorschlagen, das bestehende zu ergänzen. Für ein bestehendes Issue mit dem Label `geklärt` gilt dabei `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Neuer Inhalt zu einem geklärten Issue“.
 
-Gefundene Abhängigkeiten Sebastian in einem Satz je Abhängigkeit nennen, mit Begründung, und erst nach seinem Okay eintragen.
+Gefundene Abhängigkeiten Sebastian in einem Satz je Abhängigkeit nennen, mit Begründung, und erst nach seinem Okay eintragen. Was davon auf GitHub kommt und was nur ins Phasen-Issue, regelt `CLAUDE.md`, „Ein Ort je Angabe“.
 
 ## 4. Anlegen
 
@@ -62,6 +62,16 @@ gh api repos/sebivtt/dpv-participant-management/issues/<neu>/dependencies/blocke
   -F issue_id=<id der anderen>
 ```
 
-## 5. Abschluss
+## 5. Laufende Phase
 
-Sebastian den Link zum Issue nennen und in einem Satz, welche Abhängigkeiten eingetragen sind. Umgesetzt wird das Issue erst, nachdem es mit `grill-me` geklärt ist und das Label `geklärt` trägt.
+Gehört das neue Issue zur laufenden Phase (Phase im `README.md` unter „Stand“), trägt es die KI im selben Schritt ins Phasen-Issue ein (Regel in `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Neues während der Phase“):
+
+- **Platz:** seine Nummer an der passenden Stelle der Reihenfolge, nach Sebastians Okay zur Stelle.
+- **Abhängigkeiten:** die aus Abschnitt 3, auf GitHub eingetragen.
+- **Stunden:** Schätzung aus dem Puffer, Sebastian vorgelegt. Steht seine Zustimmung in seinen eigenen Worten im Issue oder Pull Request, kommt der Verweis darauf ins Phasen-Issue; die Zahlen selbst stehen in `docs/fahrplan.md` und ändern sich nur mit seiner Zustimmung.
+
+Wie das Phasen-Issue bearbeitet wird, steht im Skill `phase-steuern`, Abschnitt „Phasen-Issue pflegen“.
+
+## 6. Abschluss
+
+Sebastian den Link zum Issue nennen und in einem Satz, welche Abhängigkeiten eingetragen sind und welchen Platz es im Phasen-Issue hat. Umgesetzt wird es erst, wenn es geklärt ist (Skill `grill-me`).

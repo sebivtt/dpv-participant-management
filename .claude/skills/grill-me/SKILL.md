@@ -9,7 +9,9 @@ Umgesetzt wird nur, was vollständig geklärt ist (aus dem Vorgänger-Repo über
 
 Sebastian ist kein Programmierer. Gesprochen wird deutsch, in Alltagssprache. Fachbegriffe beim ersten Auftreten erklären.
 
-**Wer entscheidet was:** Fachliches entscheidet Sebastian (wer darf was, wie soll es aussehen, was passiert im Grenzfall). Technisches entscheidet die KI und begründet es. Hat eine technische Wahl spürbare Folgen für Nutzende, Aufwand oder Risiko, stellt die KI die Möglichkeiten in Alltagssprache vor und lässt Sebastian wählen.
+**Wer entscheidet was:** nach `CLAUDE.md`, „Zusammenarbeit mit Sebastian“. Fachlich ist hier alles, was regelt, wer was darf, wie etwas aussieht und was im Grenzfall passiert.
+
+**Kurzform oder volle Klärung:** Passt die Kurzform (Abschnitt „Kurzform“ unten), schlägt die KI sie in der Übersicht (Abschnitt 2) vor. Ohne Sebastians Bestätigung gilt die volle Klärung.
 
 ## 1. Vorbereiten, ohne zu fragen
 
@@ -40,7 +42,7 @@ Sebastian zuerst eine kurze Übersicht geben, bevor die erste Frage kommt:
 
 Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrifft:
 - **Ziel:** Welches Problem löst es, für wen? Woran merkt man, dass es erfüllt ist?
-- **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird festgehalten, dass keine Szenarien nötig sind. Fehlt diese Angabe, sind Szenarien nötig.
+- **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird das festgehalten. Was daraus für die Szenarien folgt, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3; Sebastian kann trotzdem Szenarien wollen (wie bei #169).
 - **Rollen und Rechte:** Wer darf es sehen, wer ändern, und wer ausdrücklich nicht? Rollen nach ROL-01, dazu Veranstaltungsleitung und Ansprechperson. Welche Zeile der Rechtematrix (`docs/rechtematrix.md`) ändert sich? Bringt das Issue neue Daten, werden beim Klären ihre Zeilen festgelegt: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten (`CONTRIBUTING.md`, Abschnitt 4).
 - **Ablauf:** Wo im Tool, in welchem Schritt, was passiert vorher und danach?
 - **Grenzfälle:** leere Eingaben, null, sehr große Werte, Fristen abgelaufen, nachträgliche Änderungen, Personen entfernt, mehrere Bearbeitende gleichzeitig, bestehende Veranstaltungen und Anmeldungen.
@@ -67,10 +69,10 @@ Alle Entscheidungen kurz als Liste zeigen und fragen, ob das so stimmt. Erst nac
 
 ## 5. Szenarien
 
-Aus den Szenarien entstehen später die Tests (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3). Sie werden hier gesammelt, solange Sebastian im Thema ist. Der Schritt entfällt nur, wenn die Klärung festgehalten hat, dass das Issue kein fachliches Verhalten hat.
+Aus den Szenarien entstehen später die Tests; wann sie nötig sind und wann nicht, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3. Sie werden hier gesammelt, solange Sebastian im Thema ist.
 
 - Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
-- Sebastian entscheidet je Szenario, ob es passt, geändert werden muss oder ein Fall fehlt.
+- Sebastian entscheidet je Szenario (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3).
 - Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 7) in das Unter-Issue, zu dem sie gehören.
 
 ## 6. Issue überarbeiten
@@ -79,7 +81,8 @@ Aus den Szenarien entstehen später die Tests (`CLAUDE.md`, „Ablauf je Aufgabe
   - **Anforderung:** als Akzeptanzkriterium, als Beispiel, unter „Wer darf das nicht?“ oder unter „Nicht Teil dieser Anforderung“. Unter „Offene Fragen“ steht danach „Keine, geklärt am <Datum>“.
   - **Fehler:** unter „Erwartetes Verhalten“, bei Bedarf ergänzt unter „Schritte zum Nachstellen“. Abgrenzungen, Abhängigkeiten und der Vermerk „Geklärt am <Datum>“ kommen unter „Bildschirmfotos und Hinweise“.
 - Abhängigkeiten über die eingebaute Funktion von GitHub eintragen (siehe Skill `issue-anlegen`, Abschnitt 4), zusätzlich im Text mit einem Satz Begründung.
-- Was in der Klärung auf später verschoben wurde, als eigenes Issue mit `vorgemerkt` anlegen (Skill `issue-anlegen`), mit Verweis auf das Protokoll. Nur unter „Nicht Teil dieser Anforderung“ ginge es verloren, sobald das Issue geschlossen ist.
+- Was in der Klärung auf später verschoben wurde, als eigenes Issue anlegen (Skill `issue-anlegen`; Regel in `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Was beim Klären auf später verschoben wird“).
+- Gehört das Issue zur laufenden Phase und ist es neu, seinen Platz im Phasen-Issue eintragen (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - Einen Kommentar mit dem Protokoll anhängen: jede Frage, die Antwort, bei Bedarf der Grund. So bleibt nachvollziehbar, warum etwas so entschieden wurde.
 - Regeln, die über dieses Issue hinaus gelten (z. B. „Alle Dialoge schließen mit ESC“), zusätzlich in `docs/entscheidungen.md` eintragen. Das geschieht im Pull Request der Umsetzung.
 
@@ -99,7 +102,7 @@ Aufteilen, wenn mindestens eines zutrifft:
 Jeder Teil muss für sich umsetzbar sein, einen eigenen Test bekommen und etwas liefern, das Sebastian ausprobieren kann. Den Vorschlag (Teile, Reihenfolge, Begründung) Sebastian zeigen und sein Okay abwarten. Dann:
 - jeden Teil als eigenes Issue nach Vorlage anlegen, mit den Kriterien, die zu ihm gehören,
 - die Teile als Unter-Issues an das ursprüngliche Issue hängen, das damit zum Sammel-Issue wird,
-- die Reihenfolge als „blockiert durch“ eintragen.
+- eine technisch nötige Reihenfolge als „blockiert durch“ eintragen, jede andere nur im Phasen-Issue (`CLAUDE.md`, „Ein Ort je Angabe“).
 
 ```bash
 # interne id des Teils (nicht die Nummer)
@@ -116,14 +119,14 @@ Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Auft
 gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/labels -f 'labels[]=geklärt'
 ```
 
-## Danach: Umsetzung
+## Kurzform
 
-Diese Regeln stehen auch in `CLAUDE.md`:
-- Umgesetzt wird nur ein Issue mit dem Label `geklärt`, und erst, wenn es laut `docs/fahrplan.md` dran ist. Das Label heißt nur „fertig geklärt“, nicht „jetzt dran“.
-- Direkt vor dem Start die Abhängigkeiten erneut prüfen. Ist ein blockierendes Issue noch offen, nicht anfangen, sondern Sebastian fragen.
-- Direkt vor dem Start auch prüfen, ob der Kommentar „Szenarien (Datum)“ im Issue steht. Fehlt er, anhalten und Sebastian Szenarien vorlegen (Abschnitt 5), statt mit Tests oder Code zu beginnen, auch wenn der Auftrag den Schritt nicht nennt. Ausgenommen ist nur ein Issue, für das die Klärung festhält, dass es kein fachliches Verhalten hat.
-- Ein Issue = ein Pull Request mit eigenem Test. Die Beschreibung des Pull Requests nennt „Closes #<nummer>“, dann schließt GitHub das Issue bei der Übernahme.
-- Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist. Ein Issue ist dran, wenn seine Anforderungen zur laufenden Phase in `docs/fahrplan.md` gehören. Fehler, die einen wichtigen Ablauf blockieren, gehen vor. Im Zweifel fragt die KI Sebastian.
-- Ein Sammel-Issue wird geschlossen, wenn sein letztes Unter-Issue erledigt ist.
-- Kommt zu einem geklärten Issue neuer Inhalt dazu (neue Anforderung, ergänzte Dublette, neue fachliche Frage), das Label `geklärt` entfernen und `grill-me` nur für den neuen Teil durchlaufen.
-- Taucht während der Umsetzung eine fachliche Frage auf, die das Issue nicht beantwortet, anhalten und Sebastian fragen, die Antwort ins Issue übernehmen. Nicht still selbst entscheiden.
+Für Issues mit höchstens einem neuen Punkt oder ohne fachliches Verhalten. Die KI schlägt sie in der Übersicht vor, Sebastian bestätigt; will er die volle Klärung, gilt die volle.
+
+- **Lesen** (Abschnitt 1) nur das Issue samt Kommentaren, seine eingetragenen Abhängigkeiten und die betroffenen Dateien, nicht alle offenen Issues und nicht die ganze Doku.
+- **Themen** (Abschnitt 2) nur, soweit sie zutreffen.
+- **Unverändert bleiben:** Fragen einzeln (Abschnitt 3), Zusammenfassung (Abschnitt 4), Szenarien, wenn nötig (Abschnitt 5), Protokoll (Abschnitt 6) und Sebastians Okay vor dem Label (Abschnitt 8).
+
+## Danach
+
+Für die Umsetzung gelten die Regeln in `CLAUDE.md`, „Ablauf je Aufgabe“ und „Ablauf einer Phase“.

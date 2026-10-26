@@ -1,0 +1,61 @@
+name: Phase
+description: Ein Issue je Phase für Reihenfolge, Belege der Abschlusskriterien und den Stand der Steuerung (CLAUDE.md, „Ablauf einer Phase“).
+title: "P3 „Kreise und Veranstaltung“: Reihenfolge und Abschlusskriterien"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ein Issue je Phase. Hier steht nur, was an keinem anderen Ort steht (`CLAUDE.md`, „Ein Ort je Angabe“): die Reihenfolge, die Belege der Abschlusskriterien und der Stand für die nächste Steuerungssession. Ob ein Issue geklärt ist, zeigt allein sein Label; ob es erledigt ist, allein, dass es geschlossen ist. Beides wird hier nicht vermerkt. Im Titel die Phase anpassen und das Label der Phase ergänzen. Handgriffe: Skill `phase-steuern`.
+
+        Der graue Text in den Feldern ist nur ein Beispiel und wird nicht übernommen.
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      description: Ziel, Anforderungen, Abschlusskriterien und Stunden stehen in `docs/fahrplan.md`, Abschnitt 3.
+      options:
+        - P1
+        - P2
+        - P3
+        - P4
+        - P5
+        - P6
+        - P7
+        - P8
+        - P9
+        - P10
+    validations:
+      required: true
+
+  - type: textarea
+    id: reihenfolge
+    attributes:
+      label: Reihenfolge
+      description: Nur Issue-Nummern, eine je Zeile, in der Reihenfolge der Umsetzung; keine Titel, kein Stand, keine Begründung. Was technisch zuerst da sein muss, steht zusätzlich als „blockiert durch“ auf GitHub.
+      placeholder: |
+        1. #171
+        2. #172
+        3. #175
+    validations:
+      required: true
+
+  - type: textarea
+    id: abschlusskriterien
+    attributes:
+      label: Abschlusskriterien
+      description: Je Abschlusskriterium aus `docs/fahrplan.md` ein Häkchen mit kurzem Stichwort und Beleg (Pull Request, Commit, Test oder Datei). Den Wortlaut nicht kopieren, er steht nur in `docs/fahrplan.md`. Abgehakt wird erst mit Beleg.
+      placeholder: |
+        - [ ] Szenario „Vorbereitungstreffen“ (docs/fahrplan.md, P3) – Beleg:
+        - [ ] Direktaufruf ohne Berechtigung (docs/fahrplan.md, P3) – Beleg:
+    validations:
+      required: true
+
+  - type: textarea
+    id: stand
+    attributes:
+      label: Stand für die nächste Steuerungssession
+      description: Wird bei jeder Übergabe neu geschrieben (Skill `phase-steuern`, Abschnitt 4). Was zuletzt eingetragen wurde, was gerade läuft, was als Nächstes kommt, mit Links.
+      placeholder: |
+        Übergabe am 03.11.2026, 18:40. Zuletzt eingetragen: #171 (PR #180). Läuft: Klärung von #172 und #175. Als Nächstes: Auftrag für #172.
