@@ -88,7 +88,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
     uv run playwright install chromium firefox webkit
     ```
     Danach: je Browser eine Zeile `... downloaded to ...`; ist ein Browser schon da, erscheint für ihn nichts.
-11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Vorher das Tool beenden, falls es aus Schritt 9 noch läuft, und eine laufende Testumgebung im Container anhalten (Schritt T5): Der Rauchtest und die Prüfung der Testumgebung brauchen dieselben Adressen (Ports 8000 und 8081). Die Prüfung baut die Testumgebung selbst und räumt sie danach wieder ab; deine eigene Testumgebung und ihre Daten berührt sie nicht.
+11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Das Tool aus Schritt 9 und deine eigene Testumgebung im Container dürfen dabei weiterlaufen: Die Prüfungen nutzen eigene Ports (`tests/check_ports.py`), nie 8000 und 8081. Die Prüfung baut eine eigene Testumgebung und räumt sie danach wieder ab; deine eigene Testumgebung und ihre Daten berührt sie nicht. Nur zwei Prüfläufe gleichzeitig gehen nicht.
     ```bash
     ./pruefen.sh
     ```

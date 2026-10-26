@@ -1,4 +1,4 @@
-"""Gemeinsames für den Rauchtest im Browser (#7): Browser, Tool auf localhost:8000, Login.
+"""Gemeinsames für den Rauchtest im Browser (#7): Browser, Tool auf eigenem Port, Login.
 
 Der Rauchtest bedient das Tool wie eine Person: in Chromium, Firefox und WebKit (die Technik
 hinter Safari), am PC und mit Handy-Bildschirm, mit Maus und nur mit der Tastatur. Er meldet
@@ -9,6 +9,9 @@ Er läuft in einem eigenen pytest-Lauf (pruefen.sh), weil Playwright in diesem L
 Ereignisschleife betreibt. Django hält Datenbankzugriffe daneben für unsicher und bricht sie
 ab; pruefen.sh schaltet diese Warnung nur für diesen Lauf mit DJANGO_ALLOW_ASYNC_UNSAFE ab.
 Die Datenbankzugriffe hier sind trotzdem sicher: Das Tool selbst läuft in einem eigenen Faden.
+
+Das Tool läuft hier auf einem eigenen Port (tests/check_ports.py), nicht auf Port 8000 des
+eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167).
 """
 
 import os
@@ -22,10 +25,12 @@ import pytest
 from django.conf import settings
 from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
-# Keycloak lässt nur die Rückkehr zu localhost:8000 zu (dev/keycloak/dpv-realm.json), deshalb
-# läuft das Tool im Rauchtest genau dort. pytest-django liest die Adresse beim ersten Start.
-os.environ["DJANGO_LIVE_TEST_SERVER_ADDRESS"] = "localhost:8000"
-BASE = "http://localhost:8000"
+from tests.check_ports import SMOKE_TEST_PORT, busy_port_message, is_busy
+
+# Keycloak lässt die Rückkehr zu diesem Port zu (dev/keycloak/dpv-realm.json), deshalb läuft das
+# Tool im Rauchtest genau dort. pytest-django liest die Adresse beim ersten Start.
+os.environ["DJANGO_LIVE_TEST_SERVER_ADDRESS"] = f"localhost:{SMOKE_TEST_PORT}"
+BASE = f"http://localhost:{SMOKE_TEST_PORT}"
 
 BROWSERS = ["chromium", "firefox", "webkit"]
 AXE = Path(__file__).resolve().parent.parent / "tests" / "vendor" / "axe-core" / "axe.min.js"
@@ -45,7 +50,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture(scope="session", autouse=True)
 def _vorbedingungen():
-    """Bricht mit einer verständlichen Meldung ab, wenn Keycloak fehlt oder Port 8000 belegt ist."""
+    """Bricht mit einer verständlichen Meldung ab, wenn Keycloak fehlt oder der Port des Rauchtests belegt ist."""
     address = f"{settings.KEYCLOAK_REALM_URL}/.well-known/openid-configuration"
     try:
         urllib.request.urlopen(address, timeout=5).close()  # noqa: S310 -- feste Adresse aus .env, nicht von außen
@@ -54,9 +59,8 @@ def _vorbedingungen():
             f"Keycloak unter {settings.KEYCLOAK_REALM_URL} nicht erreichbar ({type(error).__name__}). "
             "Erst die Keycloak-Testumgebung starten (README.md, „Projekt starten“, Schritt 7)."
         )
-    with socket.socket() as probe:
-        if probe.connect_ex(("127.0.0.1", 8000)) == 0:
-            pytest.fail("Port 8000 ist belegt. Läuft noch das Tool (runserver)? Dort mit ctrl + C beenden.")
+    if is_busy(SMOKE_TEST_PORT):
+        pytest.fail(busy_port_message(SMOKE_TEST_PORT, "das Tool im Rauchtest"))
 
 
 @pytest.fixture(scope="session")
@@ -90,9 +94,25 @@ def browser(_playwright, browser_name) -> Browser:
     browser.close()
 
 
+@pytest.fixture(scope="session")
+def _port_8000_wie_das_eigene_tool():
+    """Belegt Port 8000 für den ganzen Lauf, wie das eigene Tool aus README Schritt 9 (#167).
+
+    So zeigt jeder Rauchtest, dass er neben dem eigenen Tool läuft. Läuft das Tool wirklich,
+    ist der Port schon belegt; das ist derselbe Fall.
+    """
+    with socket.socket() as listener:
+        try:
+            listener.bind(("127.0.0.1", 8000))
+            listener.listen()
+        except OSError:
+            pass
+        yield
+
+
 @pytest.fixture
-def tool(live_server, transactional_db, settings):
-    """Das Tool auf http://localhost:8000, mit leerer Datenbank für jeden Test."""
+def tool(_port_8000_wie_das_eigene_tool, live_server, transactional_db, settings):
+    """Das Tool auf dem Port des Rauchtests (BASE), mit leerer Datenbank für jeden Test."""
     settings.ALLOWED_HOSTS = ["localhost"]
     return BASE
 

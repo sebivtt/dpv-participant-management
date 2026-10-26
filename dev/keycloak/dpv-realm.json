@@ -29,13 +29,15 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://127.0.0.1:8000/anmelden/keycloak/zurueck/",
-        "http://localhost:8000/anmelden/keycloak/zurueck/"
+        "http://localhost:8000/anmelden/keycloak/zurueck/",
+        "http://localhost:8010/anmelden/keycloak/zurueck/",
+        "http://localhost:8020/anmelden/keycloak/zurueck/"
       ],
       "webOrigins": [
         "+"
       ],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1:8000/anmelden/##http://localhost:8000/anmelden/",
+        "post.logout.redirect.uris": "http://127.0.0.1:8000/anmelden/##http://localhost:8000/anmelden/##http://localhost:8010/anmelden/##http://localhost:8020/anmelden/",
         "pkce.code.challenge.method": "S256"
       }
     }
