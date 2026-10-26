@@ -287,13 +287,28 @@ def test_ohne_login_geht_es_zur_anmeldung_und_nichts_wird_gespeichert(org):
     assert User.objects.exclude(scout_name="").count() == 0
 
 
-def test_aufruf_ohne_formular_aendert_nichts(org):
+def test_aufruf_ohne_formular_fuehrt_zu_mein_profil_und_aendert_nichts(org):
+    """Unabhängige Prüfung: Wer beim Speichern abgemeldet war, kommt nach dem Login hierher, nicht auf eine leere Seite."""
     set_stored(org.erika, "Kiwi")
 
     response = client_for(org.erika).get(SAVE, {"scout_name": "Kolibri"})
 
-    assert response.status_code == 405
+    assert response.status_code == 302
+    assert response["Location"] == PROFILE
     assert stored(org.erika) == "Kiwi"
+
+
+def test_formular_ohne_das_feld_loescht_nichts(org):
+    """Unabhängige Prüfung: Ein Formular ohne das Feld ist kein leeres Feld."""
+    set_stored(org.erika, "Kiwi")
+    client = client_for(org.erika)
+
+    response = client.post(SAVE, {"first_name": "Gekapert"})
+
+    assert response.status_code == 302
+    assert response["Location"] == PROFILE
+    assert stored(org.erika) == "Kiwi"
+    assert notices(profile(org.erika, client=client), "ist-erfolg") == []
 
 
 # Szenarien 8 und 9: Leerzeichen

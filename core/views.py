@@ -7,7 +7,6 @@ from django.db import DatabaseError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_POST
 
 from access.addresses import checks_rights, without_personal_data
 from accounts import texts as account_texts
@@ -57,7 +56,6 @@ def profile(request: HttpRequest) -> HttpResponse:
 # Ändert nur das Konto der Anmeldung: Die Adresse hat keine Kennung, und das Formular nimmt nur
 # den Fahrtennamen an; Kennungen im Formular oder in der Adresse bleiben unbeachtet (EP-04).
 @checks_rights("EP-03", "EP-04")
-@require_POST
 def profile_scout_name(request: HttpRequest) -> HttpResponse:
     """Speichert den eigenen Fahrtennamen von „Mein Profil“ (#111, EP-03).
 
@@ -65,7 +63,13 @@ def profile_scout_name(request: HttpRequest) -> HttpResponse:
     das Formular dann nicht noch einmal. Ist die Eingabe zu lang, zeigt die Seite den Fehler am
     Feld und behält die Eingabe. Scheitert das Speichern technisch, zeigt sie die
     Fehlermeldung; ins Log kommt eine Zeile ohne den Fahrtennamen und ohne Konto (#6).
+
+    Ohne abgeschicktes Feld geht es ohne Speichern zu „Mein Profil“: Wer beim Speichern
+    abgemeldet war, landet nach dem Login mit einem einfachen Aufruf hier, und ein Formular ohne
+    das Feld ist kein leeres Feld, das den Fahrtennamen löschen dürfte (unabhängige Prüfung).
     """
+    if request.method != "POST" or "scout_name" not in request.POST:
+        return redirect("profile")
     form = ScoutNameForm(request.POST)
     if not form.is_valid():
         return _profile_page(request, form)
