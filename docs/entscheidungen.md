@@ -6,6 +6,24 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-27 · Keine internen Nummern auf Seiten, Test „wie nicht vorhanden“ für jede Adresse mit Kennung, Liste der Leitungen ohne Nummern (#156)
+
+**Entscheidung** (Sebastian, Klärung von #156 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/156#issuecomment-6398716809), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/156#issuecomment-6398716981)). Ergänzt die Einträge zu #90 und #64 vom 25.10.2026:
+
+1. **Keine Nummern, auch nicht außerhalb des Adresspfads:** Keine Seite enthält die interne Nummer eines Kontos oder einer Einheit, weder in einem Link oder angehängten Parameter (`?einheit=17`) noch in einem Formularfeld (auch `hx-vals`) noch im Text oder einer Weiterleitung. Wählt eine Seite einen Eintrag über einen Parameter oder ein Formularfeld, etwa aus einer Auswahlliste, holt sie ihn über `entry()`, das nur Kennungen annimmt; eine Nummer ergibt „nicht gefunden“ wie eine erfundene Kennung.
+2. **Jede Adresse mit Kennung hat einen Test „genau gleich wie nicht vorhanden“:** Er prüft ihren verbotenen Fall mit dem Baustein `assert_like_missing` und trägt die Markierung `@pytest.mark.wie_nicht_vorhanden("<Muster der Adresse>")`. Fehlt er, wird der Rundumtest rot, auch für Adressen, die später dazukommen. Ob der Test den richtigen verbotenen Fall wählt, bleibt Sache der unabhängigen Prüfung.
+3. **Gleich viele Datenbankabfragen:** Ein Eintrag, den die Person nicht sehen darf, und ein nicht vorhandener lösen auf allen vier Wegen (öffnen, nachladen, Formular, Formular nachladend) gleich viele Abfragen aus. Gezählt wird, nicht gemessen. Ausgenommen sind Einträge, die die Person sieht, aber nicht bearbeiten darf (Protokoll, Frage 2); die Antwort ist dort trotzdem genau gleich „nicht gefunden“.
+4. **Liste der Leitungen ohne Nummern:** `leads()` gibt nur noch Vor- und Nachname, Fahrtenname, Rolle und Name der Einheit heraus, nicht mehr `user_id` und `unit_id`. Braucht #93 eine Kennung, kommt die Kennung der Rolle dazu. **Richtigstellung** zum Eintrag zu #90 („Leitungen nur mit Name und Rolle“): Die Liste enthielt dort keine Kennung, sondern die internen Nummern von Konto und Einheit; keine Seite und kein Code nutzte sie.
+
+**Technische Wahl** (KI, von Sebastian in der Klärung bestätigt):
+
+- **Suche an der Ausgabe:** Die Tests in `tests/test_rechte_ohne_seite.py` rufen ohnehin jede Adresse des Tools als sechs Personen auf vielen Wegen auf. Dort bekommen Konten und Einheiten auffällige Nummern ab 7000001 bzw. 7100001, und jede Antwort wird samt Kopfzeilen und Cookies nach diesen Nummern als ganzen Zahlen durchsucht. Adressen mit Kennung ruft die Suche außer mit einer erfundenen auch mit jeder echten Kennung auf, damit auch Seiten mit gefundenem Eintrag geprüft sind. Umkodierte Nummern (z. B. Base64) findet sie nicht; die bleiben Sache der unabhängigen Prüfung. Kennungen enthalten nur die Ziffern 2 bis 7 und können eine solche Nummer nie enthalten; Jahreszahlen und andere Zahlen stören nicht. Was keine Seite zeigt, kann kein Browser zurückschicken. Abgelehnt: eine Suche im Quelltext nach `pk=` oder Auswahllisten (fände nur die Wege, an die man denkt, und meldete erlaubte interne Nutzung) und das Durchprobieren von Parametern (die Namen späterer Parameter sind unbekannt).
+- **Prüfung der Tests „wie nicht vorhanden“** in `tests/test_rundumtest.py`, nach dem Vorbild der Prüfung der Rechtematrix: Sie liest die Testdateien und zählt nur Tests mit Markierung, die `assert_like_missing` aufrufen und nicht übersprungen werden. `assert_like_missing` ersetzt dafür jetzt genau die Kennungen in der Adresse; bisher tauschte es das vierte Stück der Adresse aus, was nur für die Testadressen passte.
+
+**Begründung:** Die nachträglichen Szenarien zu #90 und #64 zeigten acht Lücken (#156): Regeln, die der Code schon erfüllte, ohne dass ein Test sie belegte, und Regeln aus #64, die nur für den Adresspfad galten. Mit den Prüfungen aus Punkt 1 und 2 gilt die Regel aus #64 auch für die Seiten, die noch kommen (#65, #93, #117).
+
+**Umsetzung:** `access/rights.py` (`LEAD_FIELDS`, Text zu `entry()`), `pyproject.toml` (Markierung `wie_nicht_vorhanden`), `CONTRIBUTING.md` (Abschnitt 4), `docs/rechtematrix.md` (Tabellenliste bei `units.Unit`), Tests in `tests/test_rechtepruefung.py`, `tests/test_nicht_gefunden.py`, `tests/test_rundumtest.py`, `tests/test_rechte_ohne_seite.py`, `tests/test_rechtematrix.py` und `tests/urls.py`.
+
 ## 2026-10-26 · „Zielbild vor Gestaltung“ als feste Regel beim Klären (#162)
 
 **Entscheidung** (Sebastian, Klärung von #162 am 26.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/162#issuecomment-6421454032)):

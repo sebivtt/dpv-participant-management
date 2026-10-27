@@ -133,7 +133,7 @@ def test_tabellenliste_nennt_nur_vorhandene_abschnitte():
 
 def test_tabellenliste_mit_unbekanntem_abschnitt_ist_rot():
     """Gegenprobe."""
-    text = matrix_text().replace("| `units.Unit` | Einheiten | Einheiten |", "| `units.Unit` | Einheiten | Organisationen |")
+    text = matrix_text().replace("| `units.Unit` | Einheiten, zufällige Kennung für Adressen | Einheiten |", "| `units.Unit` | Einheiten, zufällige Kennung für Adressen | Organisationen |")
 
     assert unknown_sections(text) == ["Organisationen"]
 

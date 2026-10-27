@@ -14,6 +14,7 @@ Das Muster „nach dem verbotenen Versuch steht in der Datenbank noch dasselbe�
 """
 
 import io
+import re
 
 import pytest
 from allauth.account.models import EmailAddress, EmailConfirmation
@@ -23,13 +24,16 @@ from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.models import Session
 from django.core.management import call_command
+from django.db import connection
 from django.test import Client
 
 from roles.models import Role, RoleChange
 from tests.keycloak_fake import login
 from tests.test_rollen import BY, build_org, give
-from tests.test_rundumtest import ALL, _example_address
-from units.models import UnitChange
+from tests import urls as test_urls
+from access.keys import has_key
+from tests.test_rundumtest import ALL, EXAMPLE_KEY, _all_patterns, _example_address
+from units.models import Unit, UnitChange
 
 pytestmark = pytest.mark.django_db
 
@@ -42,9 +46,28 @@ OLD_UNIT_NAME = "Sippe Altname"
 KEYCLOAK_DETAIL = "nur-im-login-baustein-7f3q9"
 
 
+# Auffällige Nummern für Konten und Einheiten, damit die Suche nach Nummern sie sicher erkennt (#156).
+# Kennungen enthalten nur die Ziffern 2 bis 7, nie 0 oder 1; eine Nummer mit 0 und 1 kann also nie
+# Teil einer Kennung sein.
+FIRST_USER_NUMBER = 7000001
+FIRST_UNIT_NUMBER = 7100001
+
+
+def number_from(model, first: int) -> None:
+    """Die nächsten Einträge von `model` bekommen Nummern ab `first`.
+
+    PostgreSQL nimmt den Zähler beim Zurückrollen des Tests nicht zurück; spätere Tests zählen
+    deshalb von dort weiter, was keinem Test schadet.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT setval(pg_get_serial_sequence(%s, 'id'), %s, false)", [model._meta.db_table, first])
+
+
 @pytest.fixture
 def org():
     """Einheiten und Rollen; Erika hat viele Rollen zugleich, auch Admin, die übrigen je eine."""
+    number_from(User, FIRST_USER_NUMBER)
+    number_from(Unit, FIRST_UNIT_NUMBER)
     o = build_org()
     give(o.erika, R.ASSOCIATION_LEAD, o.boreas)
     give(o.erika, R.TROOP_LEAD, o.walhall)
@@ -98,29 +121,39 @@ def manipulated_form(org) -> dict:
     }
 
 
-def every_attempt(org):
+def every_attempt(org, patterns=ALL, keys=()):
     """Ruft jede Adresse auf viele Arten auf, jedes Mal frisch angemeldet, als jede Person aus `org.everyone`.
 
-    Gibt jede Adresse mit ihrem Namen und alle Antworten zurück.
+    Gibt jede Adresse mit ihrem Namen und alle Antworten zurück. `patterns` ist nur für die
+    Gegenproben mit Testadressen anders. Mit `keys` kommt in Adressen mit Kennung außer der
+    erfundenen Kennung auch jede dieser echten Kennungen, damit die Seiten auch mit einem
+    gefundenen Eintrag antworten.
     """
     form = manipulated_form(org)
-    for pattern, entry in ALL:
-        address = _example_address(pattern)
-        responses = []
-        for user in org.everyone:
-            for method, data, htmx in (
-                ("get", None, False),
-                ("get", None, True),
-                ("get", form, False),
-                ("post", form, False),
-                ("post", form, True),
-            ):
-                client = Client()
-                client.force_login(user)
-                headers = {"HX-Request": "true"} if htmx else {}
-                call = getattr(client, method)
-                responses.append(call(address, data or {}, headers=headers))
-        yield entry.name, address, responses
+    for pattern, entry in patterns:
+        example = _example_address(pattern)
+        addresses = [example, *(example.replace(EXAMPLE_KEY, key) for key in keys)] if has_key(pattern) else [example]
+        for address in addresses:
+            yield entry.name, address, _attempts(address, form, org)
+
+
+def _attempts(address: str, form: dict, org) -> list:
+    """Alle Antworten auf eine Adresse: lesend, per htmx, mit Formular, für jede Person aus `org.everyone`."""
+    responses = []
+    for user in org.everyone:
+        for method, data, htmx in (
+            ("get", None, False),
+            ("get", None, True),
+            ("get", form, False),
+            ("post", form, False),
+            ("post", form, True),
+        ):
+            client = Client()
+            client.force_login(user)
+            headers = {"HX-Request": "true"} if htmx else {}
+            call = getattr(client, method)
+            responses.append(call(address, data or {}, headers=headers))
+    return responses
 
 
 def snapshot(model, *fields) -> list:
@@ -266,3 +299,81 @@ def test_keine_adresse_zeigt_oder_aendert_eine_fremde_sitzung(org):
         for response in responses:
             assert key not in response.content.decode(errors="replace"), address
         assert Session.objects.get(session_key=key).session_data == stored, address
+
+
+# Keine Seite zeigt eine interne Nummer (#156, Lücke L2 aus #64)
+
+DIGITS = re.compile(r"\d+")
+
+
+def internal_numbers() -> set[str]:
+    """Die Nummern aller Konten und Einheiten."""
+    return {str(number) for model in (User, Unit) for number in model.objects.values_list("pk", flat=True)}
+
+
+def numbers_shown(response, numbers: set[str]) -> set[str]:
+    """Interne Nummern in der Antwort: in Links, angehängten Parametern, Formularfeldern (auch `hx-vals`), im Text, in den Kopfzeilen (z. B. einer Weiterleitung) und in Cookies.
+
+    Gesucht wird jede ganze Zahl der Antwort; eine Jahreszahl oder eine längere Zahl, die eine
+    Nummer nur enthält, ist kein Treffer. Verschlüsselte oder umkodierte Nummern (z. B. Base64)
+    findet die Suche nicht; die bleiben Sache der unabhängigen Prüfung.
+    """
+    headers = " ".join(f"{name}: {value}" for name, value in response.headers.items())
+    cookies = " ".join(cookie.OutputString() for cookie in response.cookies.values())
+    text = " ".join((response.content.decode(errors="replace"), headers, cookies))
+    return set(DIGITS.findall(text)) & numbers
+
+
+def pages_with_numbers(org, patterns=ALL) -> list[tuple[str, str]]:
+    """Adressen mit den Nummern, die sie zeigen; Adressen mit Kennung auch mit jeder echten Kennung aufgerufen."""
+    numbers = internal_numbers()
+    keys = [key for model in (User, Unit) for key in model.objects.values_list("key", flat=True)]
+    return sorted(
+        {
+            (address, number)
+            for _name, address, responses in every_attempt(org, patterns, keys)
+            for response in responses
+            for number in numbers_shown(response, numbers)
+        }
+    )
+
+
+def test_konten_und_einheiten_haben_auffaellige_nummern(org):
+    """Sonst fände die Suche Nummern wie 1 oder 12 überall und bewiese nichts."""
+    numbers = [int(number) for number in internal_numbers()]
+
+    assert numbers
+    assert min(numbers) >= FIRST_USER_NUMBER
+
+
+def test_keine_antwort_enthaelt_eine_interne_nummer(org):
+    """V6 und S7: keine Nummer einer Person oder Einheit, weder in Links noch in Formularfeldern noch im Text."""
+    assert pages_with_numbers(org) == []
+
+
+@pytest.mark.urls("tests.urls")
+@pytest.mark.parametrize("name", ["number_in_link", "number_in_hidden_field", "number_in_hx_vals", "number_in_redirect", "number_in_cookie"])
+def test_seite_mit_interner_nummer_macht_die_suche_rot(org, name):
+    """Gegenprobe zu V6: Link mit `?einheit=`, verstecktes Feld, `hx-vals`, Weiterleitung und Cookie mit der Nummer der Falken."""
+    patterns = [(pattern, entry) for pattern, entry in _all_patterns(test_urls.urlpatterns) if entry.name == name]
+
+    assert {number for _address, number in pages_with_numbers(org, patterns)} == {str(org.falken.pk)}
+
+
+@pytest.mark.urls("tests.urls")
+def test_kennungen_und_andere_zahlen_machen_die_suche_nicht_rot(org):
+    """G2 und S7: Kennung im Link und im Formularfeld, Jahreszahl und kleine Zahlen sind keine Nummern."""
+    patterns = [(pattern, entry) for pattern, entry in _all_patterns(test_urls.urlpatterns) if entry.name == "without_number"]
+
+    assert len(patterns) == 1
+    assert pages_with_numbers(org, patterns) == []
+
+
+@pytest.mark.urls("tests.urls")
+def test_seite_mit_kennung_die_eine_nummer_zeigt_macht_die_suche_rot(org):
+    """Gegenprobe zu V6 für Seiten mit Kennung: Gesucht wird auch mit echten Kennungen, nicht nur mit „nicht gefunden“."""
+    patterns = [(pattern, entry) for pattern, entry in _all_patterns(test_urls.urlpatterns) if entry.name == "number_of_person"]
+
+    found = {number for _address, number in pages_with_numbers(org, patterns)}
+
+    assert {str(user.pk) for user in org.everyone} <= found

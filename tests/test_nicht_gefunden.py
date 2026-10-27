@@ -23,9 +23,10 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.test.utils import CaptureQueriesContext
 from django.test import Client
 
-from access.keys import KEY_ALPHABET, KEY_LENGTH, has_key, is_key, new_key
+from access.keys import KEY_ALPHABET, KEY_LENGTH, KEY_PATTERN, has_key, is_key, new_key
 from roles.models import Role
 from tests.keycloak_fake import login
 from tests.test_rechtepruefung import member, remove
@@ -76,9 +77,18 @@ def answers(user, address: str, form: dict | None = None) -> list[tuple]:
     return found
 
 
+# Ein ganzes Stück einer Adresse in der Form einer Kennung.
+KEY_IN_ADDRESS = re.compile(rf"(?<=/){KEY_PATTERN}(?=/|$)")
+
+
+def with_missing_keys(address: str) -> str:
+    """Dieselbe Adresse, jede Kennung darin ersetzt durch eine, zu der es keinen Eintrag gibt."""
+    return KEY_IN_ADDRESS.sub(MISSING, address)
+
+
 def assert_like_missing(user, address_for) -> None:
     """Die Adresse eines vorhandenen Eintrags antwortet wie die eines Eintrags, den es nicht gibt."""
-    shown, missing = answers(user, address_for), answers(user, address_for.replace(address_for.split("/")[3], MISSING))
+    shown, missing = answers(user, address_for), answers(user, with_missing_keys(address_for))
     assert shown == missing
     for status, content, _headers in shown:
         assert status == 404
@@ -87,6 +97,16 @@ def assert_like_missing(user, address_for) -> None:
 
 def person_address(entry, suffix: str = "") -> str:
     return f"/test/person/{entry.key}/{suffix}"
+
+
+def test_vergleichsadresse_ersetzt_genau_die_kennungen():
+    """Befund der unabhängigen Prüfung zu #156: früher ersetzte der Baustein das vierte Stück der Adresse, egal was dort stand."""
+    first, second = new_key(), new_key()
+
+    assert with_missing_keys(f"/person/{first}/") == f"/person/{MISSING}/"
+    assert with_missing_keys(f"/einheit/{first}/person/{second}/") == f"/einheit/{MISSING}/person/{MISSING}/"
+    assert with_missing_keys(f"/test/person/{first}/entfernen/") == f"/test/person/{MISSING}/entfernen/"
+    assert with_missing_keys("/test/nummer/verstecktes-feld/") == "/test/nummer/verstecktes-feld/"
 
 
 # Personen (BER-01, Grund 1 und 2): Wer eine Person nicht sieht, erfährt nicht, dass es sie gibt
@@ -108,6 +128,7 @@ def test_jede_person_erreicht_sich_selbst_ueber_ihre_kennung(org):
 
 
 @pytest.mark.rechtematrix("PK-04")
+@pytest.mark.wie_nicht_vorhanden("test/person/<key:key>/")
 def test_person_ausserhalb_des_bereichs_ist_nicht_gefunden_wie_eine_nicht_vorhandene(org):
     """Die Stammesleitung von Walhall bei einem Kind der Zugvögel."""
     assert_like_missing(org.walhall_leitung, person_address(org.adler_kind))
@@ -167,6 +188,7 @@ def test_leitung_der_eigenen_einheit_erreicht_das_austragen(org):
 
 
 @pytest.mark.rechtematrix("PK-22")
+@pytest.mark.wie_nicht_vorhanden("test/person/<key:key>/entfernen/")
 def test_austragen_eines_sichtbaren_mitglieds_einer_gruppe_darunter_ist_nicht_gefunden(org):
     """Die Stammesleitung sieht Finn (PK-02), darf ihn aber nicht austragen; die Gruppe hat eine Leitung."""
     assert_like_missing(org.walhall_leitung, person_address(org.falke, "entfernen/"))
@@ -183,6 +205,7 @@ def test_einspringende_leitung_erreicht_die_einheit_ohne_leitung(org):
 
 
 @pytest.mark.rechtematrix("EH-19")
+@pytest.mark.wie_nicht_vorhanden("test/einheit/<key:key>/")
 def test_leitung_darueber_ist_bei_einer_einheit_mit_leitung_nicht_gefunden(org):
     assert_like_missing(org.walhall_leitung, f"/test/einheit/{org.falken.key}/")
 
@@ -205,6 +228,7 @@ def test_kaputte_kennungen_und_alte_nummern_sind_nicht_gefunden_wie_eine_nicht_v
     assert answers(org.walhall_leitung, "/gibt-es-nicht/") == missing
 
 
+@pytest.mark.wie_nicht_vorhanden("test/person/<key:key>/kein-zugriff/")
 def test_kein_zugriff_an_einer_adresse_mit_kennung_wird_nicht_gefunden(org):
     """Meldet eine Seite mit Kennung fälschlich „kein Zugriff“, macht die zentrale Stelle „nicht gefunden“ daraus."""
     assert_like_missing(org.walhall_leitung, person_address(org.falke, "kein-zugriff/"))
@@ -246,6 +270,15 @@ def test_ganzer_bereich_ohne_recht_zeigt_kein_zugriff(org):
         for status, content, _headers in answers(user, "/test/leitungen/"):
             assert status == 403
             assert NO_ACCESS_TEXT in content.decode()
+
+
+def test_admin_ohne_support_zugang_sieht_beim_bereich_leitungen_kein_zugriff(org):
+    """V5 (#156, Lücke L1 aus #64): Max öffnet den Bereich „Leitungen“."""
+    give(org.max, R.ADMIN)
+
+    for status, content, _headers in answers(org.max, "/test/leitungen/"):
+        assert status == 403
+        assert NO_ACCESS_TEXT in content.decode()
 
 
 def test_ganzer_bereich_mit_recht_ist_erreichbar(org):
@@ -395,3 +428,86 @@ def test_vorhandene_eintraege_bekommen_bei_der_migration_je_eine_kennung():
     assert all(is_key(key) for key in keys)
     assert len(set(keys)) == 5
 
+
+
+# Nummern in Parametern und Formularfeldern (#156, Lücke L2 aus #64)
+
+
+def answers_with_parameter(user, value: str) -> list[tuple]:
+    """Die Antworten der Testseite, die die Einheit aus `?einheit=` oder dem Formularfeld `einheit` nimmt."""
+    found = []
+    for method, address, data, htmx in (
+        ("get", f"/test/einheit/?einheit={value}", None, False),
+        ("get", f"/test/einheit/?einheit={value}", None, True),
+        ("post", "/test/einheit/", {"einheit": value}, False),
+        ("post", "/test/einheit/", {"einheit": value}, True),
+    ):
+        headers = {"HX-Request": "true"} if htmx else {}
+        found.append(answer(getattr(client_for(user), method)(address, data or {}, headers=headers)))
+    return found
+
+
+def test_einheit_aus_parameter_oder_formularfeld_mit_nummer_ist_nicht_gefunden_wie_eine_erfundene_kennung(org):
+    """V7: Auch die Gruppenleitung der Falken erreicht ihre Einheit nicht über deren Nummer."""
+    for user in (org.falken_leitung, org.walhall_leitung):
+        by_number = answers_with_parameter(user, str(org.falken.pk))
+        assert by_number == answers_with_parameter(user, MISSING)
+        for status, content, _headers in by_number:
+            assert status == 404
+            assert NOT_FOUND_TEXT in content.decode()
+
+
+def test_einheit_aus_parameter_oder_formularfeld_mit_kennung_ist_erreichbar(org):
+    """Gegenprobe zu V7: Mit der Kennung der Falken antwortet die Testseite der Gruppenleitung."""
+    for status, content, _headers in answers_with_parameter(org.falken_leitung, org.falken.key):
+        assert status == 200
+        assert content.decode() == "geleitet: Sippe Falken"
+
+
+# Gleich viele Datenbankabfragen (#156, Lücke L4 aus #64)
+
+
+def query_counts(user, address: str) -> list[int]:
+    """Die Zahl der Datenbankabfragen je Weg: lesend, per htmx, als Formular und als Formular per htmx."""
+    counts = []
+    for method, data, htmx in (
+        ("get", None, False),
+        ("get", None, True),
+        ("post", {"name": "Gekapert"}, False),
+        ("post", {"name": "Gekapert"}, True),
+    ):
+        client = client_for(user)
+        headers = {"HX-Request": "true"} if htmx else {}
+        with CaptureQueriesContext(connection) as queries:
+            getattr(client, method)(address, data or {}, headers=headers)
+        counts.append(len(queries))
+    return counts
+
+
+@pytest.mark.rechtematrix("PK-04")
+def test_fremder_und_nicht_vorhandener_eintrag_loesen_gleich_viele_abfragen_aus(org):
+    """V9: Wanda bei Anton, den sie nicht sehen darf, und bei einer erfundenen Kennung; gezählt wird, nicht gemessen."""
+    for suffix in ("", "entfernen/"):
+        foreign = query_counts(org.walhall_leitung, person_address(org.adler_kind, suffix))
+        missing = query_counts(org.walhall_leitung, f"/test/person/{MISSING}/{suffix}")
+        assert foreign == missing, suffix
+        assert all(foreign)
+
+
+@pytest.mark.rechtematrix("PK-22")
+def test_sichtbarer_eintrag_ohne_recht_zur_aktion_darf_eine_abfrage_mehr_ausloesen(org):
+    """G1: Wanda sieht Finn, darf ihn aber nicht austragen (Protokoll, Frage 2).
+
+    Hier darf eine Abfrage mehr anfallen, die Antwort ist trotzdem genau gleich „nicht gefunden“.
+    """
+    shown = query_counts(org.walhall_leitung, person_address(org.falke, "entfernen/"))
+    missing = query_counts(org.walhall_leitung, f"/test/person/{MISSING}/entfernen/")
+
+    assert all(more >= fewer for more, fewer in zip(shown, missing, strict=True))
+    assert_like_missing(org.walhall_leitung, person_address(org.falke, "entfernen/"))
+
+
+@pytest.mark.wie_nicht_vorhanden("test/nummer/<key:key>/")
+def test_testseite_mit_nummer_einer_fremden_person_ist_nicht_gefunden(org):
+    """Die Testseite für die Suche nach Nummern hält sich selbst an „nicht gefunden“ (Prüfung aus V8)."""
+    assert_like_missing(org.walhall_leitung, f"/test/nummer/{org.adler_kind.key}/")
