@@ -24,7 +24,11 @@ concurrency:
 jobs:
   pruefen:
     name: Alle Prüfungen (pruefen.sh)
-    runs-on: ubuntu-latest
+    # Feste Ubuntu-Fassung statt „ubuntu-latest“: Als GitHub am 27.10.2026 auf Ubuntu 26.04
+    # umstellte, startete WebKit von Playwright nicht mehr (fehlende Systembibliothek libicu 74),
+    # und jeder Rauchtest in WebKit war rot (#192). Ein Wechsel der Fassung kommt bewusst mit
+    # eigenem Pull Request, sobald Playwright sie unterstützt.
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
       postgres:
@@ -88,11 +92,15 @@ jobs:
         run: |
           version="$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "ubuntu=$ImageOS" >> "$GITHUB_OUTPUT"
       - name: Browser aus dem Zwischenspeicher holen
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browser-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          # Mit der Ubuntu-Fassung (ImageOS des Rechners, etwa „ubuntu24“) im Schlüssel, weil Playwright
+          # je Fassung eigene Browser lädt; sonst kämen nach einem Wechsel die alten aus dem
+          # Zwischenspeicher (#192).
+          key: playwright-browser-${{ steps.playwright.outputs.ubuntu }}-${{ steps.playwright.outputs.version }}
       - name: Browser für den Rauchtest installieren (Versuch 1 von 3)
         id: browser_versuch_1
         timeout-minutes: 10

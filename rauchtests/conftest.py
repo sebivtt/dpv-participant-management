@@ -152,7 +152,8 @@ def focus_visible(page: Page) -> dict:
 
     Ein Fokusrahmen braucht mindestens 3 : 1 Kontrast zu dem, was um ihn herum liegt
     (WCAG 1.4.11). Liegt er mit Abstand außen, ist das der Hintergrund des nächsten Elements
-    mit eigener Farbe darüber, meist die Seite selbst.
+    mit eigener Farbe darüber, meist die Seite selbst. Dazu kommt, wo das Element auf der
+    ganzen Seite steht (oben, unten, links), für die Reihenfolge der Halte (#78).
     """
     return page.evaluate(
         """() => {
@@ -170,6 +171,7 @@ def focus_visible(page: Page) -> dict:
             const [a, b] = [lum(rgb(s.outlineColor)), lum(ground)].sort((x, y) => y - x);
             return {text: (el.innerText || el.value || el.getAttribute('aria-label') || '').trim().split('\\n')[0],
                     tag: el.tagName, kontrast: Math.round((a + 0.05) / (b + 0.05) * 100) / 100,
-                    sichtbar: outline && box.width > 1 && box.height > 1};
+                    sichtbar: outline && box.width > 1 && box.height > 1,
+                    oben: box.top + scrollY, unten: box.bottom + scrollY, links: box.left};
         }"""
     )

@@ -52,9 +52,11 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 
 /* ---------- Fokus: immer sichtbar (NFA-03) ----------
    DPV-Blau hat auf Weiß und auf dem Grund mehr als 8 : 1. Sonnengelb dort nur rund 2 : 1,
-   deshalb nie als Fokusrahmen. */
+   deshalb nie als Fokusrahmen. Eingabefelder brauchen eine eigene Zeile, weil Bootstrap ihren
+   Rahmen sonst abschaltet und nur ein blasser Schatten bliebe (#78). */
 :focus-visible,
-.btn:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
+.btn:focus-visible,
+.form-control:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
 .a-sprung { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: var(--radius-klein); background: var(--dpv); color: #fff; font-weight: 700; text-decoration: none; }
 .a-sprung:focus { top: 12px; color: #fff; }
 
