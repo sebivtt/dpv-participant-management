@@ -263,7 +263,7 @@ Jede Tabelle der Datenbank steht hier mit dem Abschnitt, der ihre Rechte regelt.
 | Tabelle | Inhalt | Abschnitt |
 | --- | --- | --- |
 | `accounts.User` | Konten: Vorname, Nachname, Benutzername, Mail, Fahrtenname (#111), zufällige Kennung für Adressen | Eigenes Profil; Personen mit Konto |
-| `units.Unit` | Einheiten | Einheiten |
+| `units.Unit` | Einheiten, zufällige Kennung für Adressen | Einheiten |
 | `roles.Role` | Rollen und Mitgliedschaften | Leitungen und Rollen; Personen mit Konto; Support-Zugang der Admins (Rolle Admin) |
 | `roles.RoleChange` | Protokoll der Rollenänderungen | Protokolle |
 | `units.UnitChange` | Protokoll der Strukturänderungen | Protokolle |
