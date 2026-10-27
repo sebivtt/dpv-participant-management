@@ -6,6 +6,7 @@ Zugangsdaten und alles, was sich je Rechner unterscheidet, kommen aus Umgebungsv
 Meldung ab, statt mit einem unsicheren Ersatzwert weiterzulaufen.
 """
 
+import hashlib
 import os
 from pathlib import Path
 
@@ -22,6 +23,17 @@ def required_env(name: str) -> str:
             f"Die Umgebungsvariable {name} fehlt. Lokal: .env.example nach .env kopieren (README.md)."
         )
     return value
+
+
+def own_test_database(database: str, folder: Path) -> str:
+    """Name der Test-Datenbank für die Arbeitskopie im Ordner folder (#184).
+
+    Jede Arbeitskopie bekommt ihre eigene, damit zwei Prüfläufe gleichzeitig laufen können.
+    Der Name hängt nur am Ordner: Dieselbe Arbeitskopie nutzt immer dieselbe Test-Datenbank
+    wieder, es bleibt also höchstens eine je Arbeitskopie übrig (Aufräumen: README.md, „Übrige Test-Datenbanken entfernen“).
+    """
+    folder_key = hashlib.sha256(str(folder).encode()).hexdigest()[:12]
+    return f"test_{database}_{folder_key}"
 
 
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
@@ -113,6 +125,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": required_env("POSTGRES_DB"),
+        "TEST": {"NAME": own_test_database(required_env("POSTGRES_DB"), BASE_DIR)},
         "USER": required_env("POSTGRES_USER"),
         "PASSWORD": required_env("POSTGRES_PASSWORD"),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),

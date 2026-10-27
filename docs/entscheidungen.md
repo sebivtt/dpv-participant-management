@@ -6,6 +6,20 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-27 · Zwei Prüfläufe dürfen gleichzeitig laufen (#184)
+
+**Entscheidung** (Sebastian, Klärung von #184 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/184#issuecomment-6441965054)): Zwei `./pruefen.sh` aus verschiedenen Arbeitskopien dürfen gleichzeitig laufen, und keiner scheitert am anderen (Umfang B). Die normalen Tests laufen gleichzeitig, jede Arbeitskopie mit ihrer eigenen Test-Datenbank. Rauchtest und Container-Prüfung brauchen feste Ports und laufen nacheinander: Ein zweiter Lauf wartet mit einer Meldung, höchstens 30 Minuten, dann bricht er mit einer Meldung ab, was zu tun ist. Das gilt auch für `pytest rauchtests` und `pytest containertests` ohne `./pruefen.sh`. Zwei Läufe in derselben Arbeitskopie gehen weiter nicht gleichzeitig: Sie teilen sich deren Test-Datenbank. Nicht Teil: eigene Ports je Arbeitskopie (Umfang C) und Änderungen am lokalen Keycloak. Der Satz „Zwei Prüfläufe gleichzeitig gehen weiter nicht“ im Eintrag vom 26.10.2026 (#167) gilt damit nicht mehr; der Eintrag selbst bleibt unverändert.
+
+**Begründung:** Am 27.10.2026 brach `./pruefen.sh` bei der Umsetzung von #156 mit „database already exists“ ab, weil ein anderer Lauf gleichzeitig dieselbe Test-Datenbank `test_dpv` nutzte. Mit mehreren Sessions und der unabhängigen Prüfung laufen oft zwei Prüfläufe zugleich. Umfang C hätte etwa 3 bis 4 statt 1,5 Stunden gekostet und das lokale Keycloak geändert.
+
+**Technische Wahl** (KI):
+
+- **Name der Test-Datenbank:** `test_dpv_` und die ersten zwölf Zeichen einer Prüfsumme des Ordners der Arbeitskopie (`config/settings.py`). Derselbe Ordner bekommt immer denselben Namen; so bleibt je Arbeitskopie höchstens eine übrig. Das `README.md` erklärt das Aufräumen („Übrige Test-Datenbanken entfernen“). Eine Prüfsumme statt des Ordnernamens, weil Namen in PostgreSQL höchstens 63 Zeichen lang sind.
+- **Wartesperre als Port:** Wer dran ist, belegt Port 8019 (Rauchtest) oder 8029 (Container-Prüfung) auf `127.0.0.1` (`tests/check_ports.py`). Das Betriebssystem gibt den Port frei, sobald der Lauf endet, auch nach einem Absturz; eine Sperre bleibt so nie hängen. Eine Sperrdatei müsste an einem Ort liegen, den alle Arbeitskopien und Sessions gleich sehen; bei den abgeschirmten Sessions von Claude Code ist das nicht sicher, die Ports dieses Rechners aber teilen sich alle. Getrennte Sperren, damit der Rauchtest eines Laufs neben der Container-Prüfung des anderen laufen kann; sie nutzen verschiedene Ports.
+- **Ports nach dem vorigen Lauf:** Nach einer Container-Prüfung ist ein Port auf dem Mac noch rund 30 Sekunden belegt (#167). Deshalb wartet die Prüfung bis zu 90 Sekunden, ob ein Prüf-Port frei wird, bevor sie mit der Meldung aus #167 abbricht.
+
+**Umsetzung:** `config/settings.py`, `tests/check_ports.py`, `rauchtests/conftest.py`, `containertests/conftest.py`, `README.md` (Schritt 11); Tests in `tests/test_testdatenbank.py` und `tests/test_pruefports.py`.
+
 ## 2026-10-27 · Rauchtest am PC und am Handy, je einmal nur mit der Tastatur (#78)
 
 **Entscheidung** (Sebastian, Klärung von #176 und #78 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/176#issuecomment-6435571666), Fragen 5 und 6). Ersetzt die Entscheidungen 1 und 2 zu #78 vom 22.10.2026, die sich auf die Musterseite bezogen:
