@@ -27,16 +27,22 @@ def _name_incomplete(user) -> bool:
     return not (user.first_name and user.last_name)
 
 
+def _notices(request: HttpRequest) -> dict:
+    """Die beiden Warnungen, die Startseite und „Mein Profil“ gleich zeigen: Name fehlt (#5), keiner Organisation zugeordnet (#9)."""
+    return {"name_incomplete": _name_incomplete(request.user), "unassigned": not request.rights.has_roles()}
+
+
 # Zeigt nur die angemeldete Person selbst (BER-01, Grund 1), nie eine andere.
 @checks_rights("EP-01", "EP-02")
 def start(request: HttpRequest) -> HttpResponse:
     """Startseite nach dem Login: Begrüßung mit dem Vornamen aus Keycloak (#5, ORG-03).
 
     Nur mit Login erreichbar und zeigt nur die Daten der angemeldeten Person selbst. Fehlt
-    in Keycloak der Vor- oder Nachname, steht dort ein Hinweis, ihn im DPV-Konto zu ergänzen.
-    Name und Mail stehen seit #96 auf „Mein Profil“, nicht mehr hier.
+    in Keycloak der Vor- oder Nachname, steht dort ein Hinweis, ihn im DPV-Konto zu ergänzen;
+    ohne Mitgliedschaft und ohne Rolle der Hinweis, dass die Person noch keiner Organisation
+    zugeordnet ist (#9). Name und Mail stehen seit #96 auf „Mein Profil“, nicht mehr hier.
     """
-    return render(request, "core/start.html", {"name_incomplete": _name_incomplete(request.user)})
+    return render(request, "core/start.html", _notices(request))
 
 
 # Die Adresse hat keine Kennung: Die Seite zeigt immer die angemeldete Person und liest nichts
@@ -103,7 +109,7 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
     roles = request.rights.own_roles()
     membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
     context = {
-        "name_incomplete": _name_incomplete(request.user),
+        **_notices(request),
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,

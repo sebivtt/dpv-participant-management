@@ -52,7 +52,7 @@
         {% endfor %}
       </ul>
     {% endif %}
-    {% if not membership and not tiles %}
+    {% if unassigned %}
       {% translate "Du bist noch keiner Organisation zugeordnet." as title %}
       {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." as hint %}
       {% meldung "warning" title=title text=hint %}
