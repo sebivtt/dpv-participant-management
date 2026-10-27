@@ -165,7 +165,7 @@
     }
   });
 
-  // Formulare der Musterseite zeigen nur das Aussehen und schicken nichts ab.
+  // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {
       event.preventDefault();

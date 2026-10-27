@@ -348,12 +348,13 @@ def test_stammesleitung_aendert_erikas_fahrtennamen_auch_ueber_das_neue_feld_nic
     assert shown_value(profile(org.lead)) == "Gekapert"
 
 
-# Neuer Baustein zuerst auf der Musterseite (docs/gestaltung.md)
+# Neuer Baustein zuerst auf der Musterseite, seit #176 im Bausteinkatalog (docs/gestaltung.md)
 
 
-def test_musterseite_zeigt_das_feld_zum_antippen(org):
+def test_katalog_zeigt_das_feld_zum_antippen(org):
     """Mit erfundenem Fahrtennamen; das Formular dort schickt nichts ab."""
-    section = _one(_by_tag(_tree(client_for(org.erika).get("/muster/")), "section", aria_labelledby="h-profil"))
+    root = _tree(client_for(org.erika).get("/bausteine/"))
+    section = _one(_by_tag(root, "section", aria_labelledby="h-antippfeld"))
 
     form = _one(_by_tag(section, "form"))
     assert _attr(form, "data-nur-ansicht") is not None
@@ -362,5 +363,5 @@ def test_musterseite_zeigt_das_feld_zum_antippen(org):
     assert [_visible_text(b) for b in _by_tag(container, "button") if _attr(b, "data-oeffnen") is None] == [
         "", "Verwerfen", "Speichern",
     ]
-    head_ = _one(_all(section, lambda e: "a-anzeigename" in _classes(e)))
+    head_ = _one(_all(_one(_by_tag(root, "section", aria_labelledby="h-kopfzeile")), lambda e: "a-anzeigename" in _classes(e)))
     assert _all(head_, lambda e: "a-anzeigename-zusatz" in _classes(e))

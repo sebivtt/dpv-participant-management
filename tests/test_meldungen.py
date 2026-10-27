@@ -243,15 +243,15 @@ def test_login_seite_ohne_anlass_ohne_meldung(client):
     assert HINT_EXPIRED not in _clean(_visible_text(root))
 
 
-# ---------- Szenario 8: Musterseite ----------
+# ---------- Szenario 8: Musterseite, seit #176 der Bausteinkatalog ----------
 
 
-def test_musterseite_zeigt_alle_vier_arten_und_den_fehler_am_feld(org):
+def test_katalog_zeigt_alle_vier_arten_und_den_fehler_am_feld(org):
     client = Client()
     client.force_login(org.erika)
-    root = _tree(client.get("/muster/"))
+    root = _tree(client.get("/bausteine/"))
 
-    section = _one(_by_tag(root, "section", aria_labelledby="h-meldungen-bausteine"))
+    section = _one(_by_tag(root, "section", aria_labelledby="h-meldungen"))
     found = notices(section)
     assert {kind(n) for n in found} == set(KINDS)
     for notice in found:
@@ -259,10 +259,10 @@ def test_musterseite_zeigt_alle_vier_arten_und_den_fehler_am_feld(org):
         assert visible(notice)
     assert [n for n in found if symbols(n) == ["schloss"]], "Informationsmeldung mit passendem Symbol fehlt"
     assert [n for n in found if _by_tag(n, "strong")], "Meldung mit fettem ersten Satz fehlt"
-    # Der Fehler am Feld steht gleich darunter im Formular, als rote Schrift unter dem Feld, nicht als Meldung.
+    # Der Fehler am Feld steht gleich darunter beim Textfeld, als rote Schrift unter dem Feld, nicht als Meldung.
     sections = _by_tag(root, "section")
     following = sections[sections.index(section) + 1]
-    assert _attr(following, "aria-labelledby") == "h-formular"
+    assert _attr(following, "aria-labelledby") == "h-textfeld"
     field = _one(_all(following, lambda e: e.name == "input" and _attr(e, "aria-invalid") == "true"))
     error = _one(_by_tag(following, "div", id=_attr(field, "aria-describedby")))
     assert "invalid-feedback" in _classes(error)

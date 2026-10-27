@@ -177,13 +177,13 @@ def test_ohne_schalter_kein_band(settings, client, keycloak):
     assert BAND not in client.get("/").content.decode()
 
 
-def test_musterseite_zeigt_das_band_als_baustein_auch_ohne_schalter(settings, client, keycloak):
-    # Neue Bausteine stehen zuerst auf der Musterseite (CLAUDE.md); dort prüft auch der Rauchtest
+def test_katalog_zeigt_das_band_als_baustein_auch_ohne_schalter(settings, client, keycloak):
+    # Entschiedene Bausteine stehen im Bausteinkatalog (#176); dort prüft auch der Rauchtest
     # die Barrierefreiheit, z. B. den Kontrast des Bands.
     settings.TEST_ENVIRONMENT = False
     login(client)
 
-    assert BAND in client.get("/muster/").content.decode()
+    assert BAND in client.get("/bausteine/").content.decode()
 
 
 def test_testumgebung_ist_nur_mit_ausdruecklichem_schalter_an():

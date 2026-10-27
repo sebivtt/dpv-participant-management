@@ -1,4 +1,4 @@
-"""Beispielformular für die Musterseite (#7): zeigt den Baustein Textfeld mit erfundenen Werten (#111)."""
+"""Beispielformular für den Bausteinkatalog (#176): zeigt den Baustein Textfeld mit erfundenen Werten (#111)."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _

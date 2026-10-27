@@ -1,0 +1,4 @@
+{% load i18n %}{# Kopf eines Eintrags im Bausteinkatalog (#176): Name, Zweck, die Issues, die den Baustein entschieden haben, und die echten Seiten, die ihn nutzen. Daten aus core/views.py, BUILDING_BLOCKS. #}
+<h2 id="{{ block.id }}">{{ block.name }}</h2>
+<p class="a-baustein-zweck">{{ block.purpose }}</p>
+<p class="a-unterzeile"><span class="a-baustein-herkunft">{% translate "Entschieden in" %} {% for issue in block.issues %}<a href="https://github.com/sebivtt/dpv-participant-management/issues/{{ issue }}">#{{ issue }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span> · <span class="a-baustein-seiten">{% if block.pages %}{% translate "Genutzt auf:" %} {{ block.pages|join:", " }}{% else %}{% translate "noch auf keiner Seite" %}{% endif %}</span></p>

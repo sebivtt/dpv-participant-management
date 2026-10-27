@@ -1,0 +1,2 @@
+{% load i18n layout %}{# Gesperrte Angabe (#161): Beschriftung, Symbol, Wert oder „nicht angegeben“, rechts das Schloss; keine Eingabe (EP-05). Steht in einer Liste <dl class="a-felder">. #}
+<div><dt>{{ label }}</dt><dd{% if not value %} class="a-leer"{% endif %}>{% icon symbol %}<span>{% if value %}{{ value }}{% else %}{% translate "nicht angegeben" %}{% endif %}</span><span class="a-schloss">{% icon "schloss" %}</span></dd></div>

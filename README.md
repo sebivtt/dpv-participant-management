@@ -67,7 +67,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    ```bash
    uv run --env-file .env python manage.py runserver
    ```
-   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Es erscheint die Login-Seite mit „Mit DPV-Konto anmelden“. Anmelden mit einem der erfundenen Konten aus der Tabelle unten; danach steht dort „Hallo Erika!“. Die Musterseite mit allen Bausteinen der Gestaltung liegt unter http://127.0.0.1:8000/muster/. Beenden mit `ctrl` + `C` im Terminal.
+   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`, darunter eine englische Warnung, dass dies nur ein Server für die Entwicklung ist; das ist so gewollt. Im Browser http://127.0.0.1:8000/ öffnen: Es erscheint die Login-Seite mit „Mit DPV-Konto anmelden“. Anmelden mit einem der erfundenen Konten aus der Tabelle unten; danach steht dort „Hallo Erika!“. Der Bausteinkatalog mit allen entschiedenen Bausteinen der Gestaltung liegt unter http://127.0.0.1:8000/bausteine/. Beenden mit `ctrl` + `C` im Terminal.
 
    Erfundene Konten der Keycloak-Testumgebung (`dev/keycloak/dpv-realm.json`):
 

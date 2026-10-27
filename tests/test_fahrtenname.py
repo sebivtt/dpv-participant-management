@@ -397,7 +397,7 @@ def test_html_im_fahrtennamen_erscheint_als_gewoehnlicher_text(org):
     client = client_for(org.erika)
     save(org.erika, "<b>Kiwi</b>", client=client)
 
-    for address in ("/", PROFILE, "/muster/"):
+    for address in ("/", PROFILE, "/bausteine/"):
         content = client.get(address).content.decode()
         assert "<b>Kiwi</b>" not in content, address
         root = _tree(client.get(address))
@@ -554,10 +554,10 @@ def test_feld_mit_beschriftung_ohne_pflicht_und_passender_tastatur(org):
     assert _attr(input_, "aria-describedby") is None
 
 
-def test_musterseite_zeigt_den_baustein_textfeld(org):
-    """Szenario 16: Beschriftung, Pflicht-Hinweis und Fehler am Feld, gebaut mit demselben Baustein."""
-    root = _tree(client_for(org.erika).get("/muster/"))
-    section = _one(_by_tag(root, "section", aria_labelledby="h-formular"))
+def test_katalog_zeigt_den_baustein_textfeld(org):
+    """Szenario 16: Beschriftung, Pflicht-Hinweis und Fehler am Feld, gebaut mit demselben Baustein (seit #176 im Katalog)."""
+    root = _tree(client_for(org.erika).get("/bausteine/"))
+    section = _one(_by_tag(root, "section", aria_labelledby="h-textfeld"))
 
     fields = _all(section, lambda e: "a-textfeld" in _classes(e))
     assert len(fields) >= 2

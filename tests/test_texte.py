@@ -64,7 +64,7 @@ def test_pruefung_bemerkt_feste_texte_und_laesst_uebersetzte_durch():
 
 def test_es_gibt_vorlagen_zu_pruefen():
     names = {p.name for p in TEMPLATES}
-    assert {"login.html", "start.html", "500.html", "muster.html"} <= names
+    assert {"login.html", "start.html", "500.html", "bausteine.html"} <= names
 
 
 @pytest.mark.parametrize("template", TEMPLATES, ids=lambda p: str(p.relative_to(BASE_DIR)))

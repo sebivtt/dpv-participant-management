@@ -2,9 +2,10 @@
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import DatabaseError
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext_lazy as _
 
@@ -134,66 +135,90 @@ def _tile(role: Role, label=None) -> dict:
     }
 
 
-def _example(title, period, place, org, state, registered=None, capacity=None, picture=None, draft=False) -> dict:
-    """Eine erfundene Veranstaltung für die Musterseite."""
-    return {
-        "title": title, "period": period, "place": place, "org": org, "state": state,
-        "registered": registered, "capacity": capacity, "picture": picture, "draft": draft,
-        "full": capacity is not None and registered is not None and registered >= capacity,
-        "percent": min(100, round(registered / capacity * 100)) if capacity and registered is not None else None,
-    }
+# Einträge des Bausteinkatalogs (#176): nur Bausteine, die Sebastian an einem Zielbild oder in einer
+# Klärung ausdrücklich freigegeben hat. Je Baustein das Vorlagenstück, das Seiten und Katalog
+# einbinden, ein Satz zum Zweck, die Issues, die ihn entschieden haben, und die echten Seiten,
+# die ihn nutzen. Ohne Seite zeigt der Katalog „noch auf keiner Seite“; ob das stimmt, prüft
+# tests/test_bausteinkatalog.py an den Vorlagen.
+BUILDING_BLOCKS = {
+    "meldungen": {
+        "name": _("Meldungen"), "template": "core/_meldung.html", "issues": [165],
+        "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
+                     "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
+                     "geklappt hat."),
+        "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil")],
+    },
+    "textfeld": {
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
+        "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
+                     "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
+                     "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
+        "pages": [],
+    },
+    "antippfeld": {
+        "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180],
+        "purpose": _("Ein einzelnes Feld auf einer Seite mit Angaben: in Ruhe wie eine Angabe, angetippt eine "
+                     "Eingabe mit „Verwerfen“ und „Speichern“."),
+        "pages": [_("Mein Profil")],
+    },
+    "angabe": {
+        "name": _("Gesperrte Angabe"), "template": "core/_angabe.html", "issues": [161],
+        "purpose": _("Zeigt eine Angabe, die sich im Tool nicht ändern lässt: grau, mit Symbol und Schloss."),
+        "pages": [_("Mein Profil")],
+    },
+    "kopfzeile": {
+        "name": _("Kopfzeile mit Name"), "template": "core/_kopfzeile.html", "issues": [161, 180],
+        "purpose": _("Steht oben auf einer Seite zu einer Person: der Kreis mit dem Anfangsbuchstaben, der "
+                     "Fahrtenname groß und der Name kleiner und grauer dahinter."),
+        "pages": [_("Mein Profil")],
+    },
+    "flaechenkopf": {
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161],
+        "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor."),
+        "pages": [_("Mein Profil")],
+    },
+    "rollenkachel": {
+        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161],
+        "purpose": _("Zeigt eine Rolle mit Organisation und Weg darüber; die Mitgliedschaft als eigene "
+                     "Fläche, die übrigen Rollen als Kacheln."),
+        "pages": [_("Mein Profil")],
+    },
+    "profilkreis": {
+        "name": _("Profilkreis"), "template": "core/_profilkreis.html", "issues": [7, 13],
+        "purpose": _("Führt zu „Mein Profil“: der Kreis mit dem Anfangsbuchstaben, in der Seitenleiste mit dem "
+                     "Vornamen; ohne Namen ein Personensymbol."),
+        "pages": [_("jede Seite mit Login")],
+    },
+    "testband": {
+        "name": _("Band der Testumgebung"), "template": "core/_testband.html", "issues": [58, 165],
+        "purpose": _("Steht in der Testumgebung oben auf jeder Seite, damit niemand sie für das echte Tool "
+                     "hält."),
+        "pages": [_("jede Seite in der Testumgebung")],
+    },
+    "fehlerseite": {
+        "name": _("Knöpfe der Fehlerseite"), "template": "core/_fehler_knoepfe.html", "issues": [21],
+        "purpose": _("Führen von einer Fehlerseite zurück oder zur Startseite; „Zurück“ erscheint nur, wenn man "
+                     "von einer Seite des Tools kam."),
+        "pages": [_("Fehlerseiten")],
+    },
+}
 
 
-@without_personal_data("Musterseite: nur erfundene Beispiele (#7).")
-def pattern_library(request: HttpRequest) -> HttpResponse:
-    """Musterseite (#7): alle Bausteine der Grundgestaltung mit erfundenen Beispielen.
+@without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")
+def building_blocks(request: HttpRequest) -> HttpResponse:
+    """Bausteinkatalog (#176): jeder entschiedene Baustein mit erfundenen Beispielen.
 
-    Zeigt oben den Aufbau des späteren Dashboards (#28), darunter die übrigen Bausteine.
-    Die Navigation zeigt alle geplanten Bereiche, gekennzeichnet als Beispiel; auf echten
-    Seiten steht nur, was es gibt (core/navigation.py). Namen, Orte und Personen sind
-    erfunden; die Zustände sind vorläufig, die endgültigen klärt #29.
+    Jeder Baustein steht hier über dasselbe Vorlagenstück, das die echten Seiten einbinden,
+    damit der Katalog nie vom echten Aussehen abweicht. Nur auf dem eigenen Rechner und in der
+    Testumgebung; im Betrieb antwortet die Adresse wie eine, die es nicht gibt, für alle.
     """
-    open_ = ("ok", _("Anmeldung offen"))
-    soon = ("bald", _("Anmeldung ab 01.12."))
-    closed = ("zu", _("Anmeldung geschlossen"))
-    draft = ("entwurf", _("Entwurf"))
-    events = [
-        _example("Pfingstlager 2027", "Fr 14.05. – Mo 17.05.2027", "Jugendzeltplatz Erlengrund", "Stamm Walhall",
-                 open_, 23, 40, picture="lager"),
-        _example("Leitungsschulung Nord", "Sa 20.11.2027, 10–17 Uhr", "Pfadfinderheim Boreas", "Bund Nord",
-                 open_, 16, 16),
-        _example("Stammeswochenende Walhall", "Fr 05.11. – So 07.11.2027", "Burg Rabenstein", "Stamm Walhall",
-                 closed, 31),
-        _example("Bundesfahrt 2028", "Sa 15.07. – Sa 29.07.2028", "Südschweden", "Bund Nord", soon, picture="fahrt"),
-        _example("Stammesrat Zugvögel", "Sa 13.11.2027, 14–18 Uhr", "Gemeindehaus Lindenhof", "Stamm Zugvögel",
-                 open_, 12),
-        _example("Herbsttreffen der Zugvögel", "Fr 08.10. – So 10.10.2027", _("Ort noch offen"), "Stamm Zugvögel",
-                 draft, draft=True),
-    ]
-    registered, waiting, cancelled = ("ok", _("angemeldet")), ("warte", _("Warteliste")), ("ab", _("abgemeldet"))
-    participants = [
-        ("Erika Testfrau", "Stamm Walhall", 17, registered),
-        ("Kim Beispiel", "Stamm Walhall", 15, registered),
-        ("Noah Muster", "Stamm Zugvögel", 16, waiting),
-        ("Lina Probe", "Stamm Boreas", 14, cancelled),
-        ("Max Testmann", "Stamm Zugvögel", 19, registered),
-    ]
-    nav_example = [
-        {"url": "#inhalt", "label": label, "icon": icon, "active": icon == "home"}
-        for label, icon in [(_("Startseite"), "home"), (_("Veranstaltungen"), "kalender"),
-                            (_("Teilnehmende"), "personen"), (_("Organisation"), "organisation"),
-                            (_("Einstellungen"), "einstellungen")]
-    ]
-    orgs = ["Stamm Walhall", "Stamm Zugvögel", "Stamm Boreas"]
+    if not settings.BUILDING_BLOCKS_VISIBLE:
+        raise Http404
     role = Role.Kind
-    profile_example = {
-        "name": "Kim",
-        "scout_name": "Kiwi",
+    examples = {
         # Feld zum Antippen (#180) mit erfundenem Fahrtennamen; eigene Kennungen, damit nichts mit
-        # anderen Feldern der Seite zusammenfällt. Das Formular dort schickt nichts ab.
-        "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="muster_%s"),
-        "details": [(_("Vorname"), "Kim", "person"), (_("Nachname"), "", "person"),
-                    (_("E-Mail-Adresse"), "kim.beispiel@example.org", "mail")],
+        # anderen Feldern der Seite zusammenfällt. Das Formular hier schickt nichts ab.
+        "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="katalog_%s"),
         "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
         "tiles": [
             {"label": label, "org": org, "way": way} for label, org, way in [
@@ -203,7 +228,10 @@ def pattern_library(request: HttpRequest) -> HttpResponse:
                 (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
             ]
         ],
+        # Der Profilkreis liest nur den kurzen Namen; hier erfunden, nicht der der angemeldeten Person.
+        "named": {"short_name": "Kim"},
+        "unnamed": {"short_name": ""},
     }
-    context = {"events": events, "participants": participants, "orgs": orgs, "nav_items": nav_example,
-               "nav_example": True, "profile_example": profile_example, "pattern_form": PatternForm.example()}
-    return render(request, "core/muster.html", context)
+    blocks = {key: dict(block, id=f"h-{key}") for key, block in BUILDING_BLOCKS.items()}
+    context = {"blocks": blocks, "examples": examples, "pattern_form": PatternForm.example()}
+    return render(request, "core/bausteine.html", context)

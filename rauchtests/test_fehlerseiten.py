@@ -65,13 +65,13 @@ def test_aus_dem_tool_fuehrt_zurueck_auf_die_vorige_seite(pc, settings):
     ]
 
     for heading, open_error_page in pages:
-        pc.goto(f"{BASE}/muster/")
+        pc.goto(f"{BASE}/profil/")
         open_error_page()
         expect(pc.get_by_role("heading", level=1)).to_have_text(heading)
         expect(_home(pc)).to_be_visible()
         expect(_back(pc), heading).to_be_visible()
         _back(pc).click()
-        pc.wait_for_url(f"{BASE}/muster/")
+        pc.wait_for_url(f"{BASE}/profil/")
 
     pc.goto(f"{BASE}/gibt-es-nicht/")
     _home(pc).click()

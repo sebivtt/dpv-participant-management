@@ -1,4 +1,4 @@
-"""Tests für die Arbeitsregeln in CLAUDE.md, den Skills und den Vorlagen (#158, #162, #169).
+"""Tests für die Arbeitsregeln in CLAUDE.md, den Skills und den Vorlagen (#158, #162, #169, #176).
 
 Diese Tests sorgen dafür, dass die Kernregeln nicht still aus CLAUDE.md verschwinden, dass die
 Skills auf CLAUDE.md verweisen, statt Regeln zu wiederholen (ein Ort je Angabe, #169), und dass
@@ -185,7 +185,7 @@ def test_zielbild_noetig_bei_neuer_seite_oder_neuem_sichtbarem_baustein():
     rule = _zielbild_rule()
 
     assert "neue Seite mit eigener Adresse" in rule
-    assert "neuen sichtbaren gemeinsamen Baustein für die Musterseite" in rule
+    assert "neuen sichtbaren gemeinsamen Baustein für den Bausteinkatalog" in rule
     assert "Zielbild von Sebastian" in rule
     # Neuer Abschnitt einer bestehenden Seite: Sebastian wird gefragt; Proben und Erweiterungen ohne.
     assert "neuen Abschnitt einer bestehenden Seite" in rule
@@ -341,6 +341,49 @@ def test_entscheidung_zu_zielbild_vor_gestaltung_und_verweis_in_gestaltung():
     assert any("(#162)" in entry for entry in entries)
     assert any("(#161)" in entry for entry in entries), "Eintrag vom 25.10.2026 bleibt"
     assert "„Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162)" in _text(GESTALTUNG)
+
+
+# Bausteinkatalog (#176): Regeln in CLAUDE.md, docs/gestaltung.md und CONTRIBUTING.md
+
+CONTRIBUTING = BASE_DIR / "CONTRIBUTING.md"
+
+
+def test_katalog_statt_musterseite_in_claude_md_gestaltung_und_contributing():
+    for path in (CLAUDE_MD, GESTALTUNG, CONTRIBUTING, GRILL_ME):
+        text = _text(path)
+        assert "Bausteinkatalog" in text, path.name
+        assert "muster.html" not in text, path.name
+    assert "/muster/" not in _text(CLAUDE_MD)
+    assert "einbinden, nicht kopieren" in _text(CONTRIBUTING)
+
+
+def test_gestaltung_nennt_die_regeln_des_katalogs_und_den_alten_namen():
+    text = _text(GESTALTUNG)
+
+    assert "einbinden, nicht kopieren" in text
+    assert "sobald Sebastian ihn entschieden hat, spätestens mit seiner ersten Seite" in text
+    assert "noch auf keiner Seite" in text
+    assert "Wo ein Issue „Musterseite“ oder `/muster/` sagt, ist seit #176 der Bausteinkatalog gemeint." in text
+
+
+def test_ki_haelt_an_wenn_ein_baustein_nicht_genau_passt():
+    rules = _text(CLAUDE_MD)
+    rule = _sentence_after(rules, "Passt ein vorhandener Baustein nicht genau")
+
+    assert "hält die KI an und fragt Sebastian" in rule
+    assert "nie eine stille Kopie" in rule
+
+
+def test_unabhaengige_pruefung_prueft_selbst_gebaut_statt_baustein():
+    section = _section(CLAUDE_MD, "Unabhängige Prüfung")
+
+    assert "selbst gebaut statt Baustein eingebunden" in section
+
+
+def test_entscheidung_zum_bausteinkatalog():
+    entries = re.findall(r"^## (.+)$", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.MULTILINE)
+
+    assert any("(#176)" in entry for entry in entries)
 
 
 def _phase_fields():

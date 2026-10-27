@@ -1,2 +1,0 @@
-{# Erfundenes Beispielbild für die Musterseite (#7), eigene Zeichnung. #}
-<svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="120" height="120" fill="#f6e7c8"/><circle cx="34" cy="38" r="16" fill="#f0ad2c"/><path d="M0 76 H120 V120 H0z" fill="#2f6f9f"/><path d="M0 86 Q15 80 30 86 T60 86 T90 86 T120 86" stroke="#cfe3f1" stroke-width="3" fill="none"/><path d="M62 74 L80 40 L84 74z" fill="#ffffff"/><path d="M58 76 H92 L86 84 H64z" fill="#7a4b2a"/></svg>
