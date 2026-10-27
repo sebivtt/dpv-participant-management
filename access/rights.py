@@ -45,8 +45,10 @@ R = Role.Kind
 # DPV-Veranstaltungsteam, im ganzen Verband.
 SEEN_BY_FEDERATION_LEAD = (R.ASSOCIATION_LEAD, R.FEDERATION_LEAD, R.EVENT_TEAM)
 # Was über eine Leitung nach BER-01, Grund 3 sichtbar ist: Name, Fahrtenname und Rolle, nie die
-# Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`.
-LEAD_FIELDS = ("user_id", "kind", "unit_id")
+# Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`. Interne
+# Nummern von Konto und Einheit gibt die Liste nicht heraus, damit keine auf eine Seite gerät (#156);
+# braucht eine Seite eine Kennung, kommt die Kennung der Rolle dazu (#93).
+LEAD_FIELDS = ("kind",)
 LEAD_NAMES = {
     "first_name": F("user__first_name"),
     "last_name": F("user__last_name"),
@@ -198,8 +200,10 @@ class Rights:
         Ohne Recht ist das Ergebnis immer „nicht gefunden“ (404), genau wie bei einer Kennung, zu
         der es keinen Eintrag gibt, und bei einer Kennung in falscher Form: Gibt es den Eintrag,
         aber nicht in `entries`, oder sagt `allowed` für die gewünschte Aktion „nein“, erfährt
-        niemand, dass es ihn gibt. Die Kennung kommt aus der Adresse, nie aus dem Inhalt der
-        Anfrage (`CONTRIBUTING.md`, Abschnitt 4). Laufende Nummern nimmt die Stelle nicht an.
+        niemand, dass es ihn gibt. Laufende Nummern nimmt die Stelle nicht an. Das gilt auch, wenn
+        eine Seite einen Eintrag über einen angehängten Parameter oder ein Formularfeld wählt, z. B.
+        aus einer Auswahlliste (#156); die Zugehörigkeit eines neuen Eintrags kommt trotzdem aus der
+        Adresse (`CONTRIBUTING.md`, Abschnitt 4).
         """
         if self.user is None or not is_key(key):
             raise Http404
