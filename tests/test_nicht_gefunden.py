@@ -272,6 +272,7 @@ def test_ganzer_bereich_ohne_recht_zeigt_kein_zugriff(org):
             assert NO_ACCESS_TEXT in content.decode()
 
 
+@pytest.mark.rechtematrix("RO-08")
 def test_admin_ohne_support_zugang_sieht_beim_bereich_leitungen_kein_zugriff(org):
     """V5 (#156, Lücke L1 aus #64): Max öffnet den Bereich „Leitungen“."""
     give(org.max, R.ADMIN)
