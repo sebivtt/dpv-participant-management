@@ -5,7 +5,8 @@ Gebaut und gestartet wird genau das, was Sebastian nach dem README startet
 (Profil „lokal“). Damit eine schon laufende Testumgebung auf dem Mac unberührt bleibt, läuft
 die Prüfung unter einem eigenen Namen und mit eigener Ablage, die danach wieder gelöscht wird.
 Sie nutzt eigene Ports (tests/check_ports.py), nicht 8000 und 8081 der eigenen Testumgebung
-und des eigenen Tools; die laufen dabei weiter (#167).
+und des eigenen Tools; die laufen dabei weiter (#167). Name und Ports sind fest; eine
+Container-Prüfung aus einer anderen Arbeitskopie läuft deshalb erst, wenn diese fertig ist (#184).
 """
 
 import os
@@ -17,7 +18,15 @@ from pathlib import Path
 
 import pytest
 
-from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT, fail_if_busy
+from tests.check_ports import (
+    CONTAINER_KEYCLOAK_PORT,
+    CONTAINER_LOCK_PORT,
+    CONTAINER_TOOL_PORT,
+    PORT_RELEASE_SECONDS,
+    fail_if_busy,
+    tell,
+    wait_for_turn,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 COMPOSE_FILE = BASE_DIR / "testumgebung" / "docker-compose.yml"
@@ -96,16 +105,21 @@ def env_file(tmp_path_factory) -> Path:
 
 
 @pytest.fixture(scope="session")
-def testumgebung(env_file) -> Iterator[Path]:
-    """Baut und startet die Testumgebung, wartet, bis sie antwortet, und räumt danach alles ab."""
-    compose("down", "--volumes", "--remove-orphans", env_file=env_file, check=False)
-    fail_if_busy(CONTAINER_TOOL_PORT, "das Tool in der Prüfung der Testumgebung")
-    fail_if_busy(CONTAINER_KEYCLOAK_PORT, "Keycloak in der Prüfung der Testumgebung")
-    started = compose("up", "--detach", "--build", "--wait", env_file=env_file, check=False)
-    try:
-        assert started.returncode == 0, started.stdout + started.stderr
-        wait_for(f"{KEYCLOAK}/realms/dpv/.well-known/openid-configuration")
-        wait_for(f"{TOOL}/anmelden/")
-        yield env_file
-    finally:
+def testumgebung(env_file, request) -> Iterator[Path]:
+    """Baut und startet die Testumgebung, wartet, bis sie antwortet, und räumt danach alles ab.
+
+    Erst, wenn keine andere Container-Prüfung mehr läuft: Das Abräumen am Anfang träfe sonst
+    deren Container (#184).
+    """
+    with wait_for_turn(CONTAINER_LOCK_PORT, "Container-Prüfung", say=tell(request.config)):
         compose("down", "--volumes", "--remove-orphans", env_file=env_file, check=False)
+        fail_if_busy(CONTAINER_TOOL_PORT, "das Tool in der Prüfung der Testumgebung", seconds=PORT_RELEASE_SECONDS)
+        fail_if_busy(CONTAINER_KEYCLOAK_PORT, "Keycloak in der Prüfung der Testumgebung", seconds=PORT_RELEASE_SECONDS)
+        started = compose("up", "--detach", "--build", "--wait", env_file=env_file, check=False)
+        try:
+            assert started.returncode == 0, started.stdout + started.stderr
+            wait_for(f"{KEYCLOAK}/realms/dpv/.well-known/openid-configuration")
+            wait_for(f"{TOOL}/anmelden/")
+            yield env_file
+        finally:
+            compose("down", "--volumes", "--remove-orphans", env_file=env_file, check=False)

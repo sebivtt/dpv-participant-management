@@ -11,7 +11,8 @@ ab; pruefen.sh schaltet diese Warnung nur für diesen Lauf mit DJANGO_ALLOW_ASYN
 Die Datenbankzugriffe hier sind trotzdem sicher: Das Tool selbst läuft in einem eigenen Faden.
 
 Das Tool läuft hier auf einem eigenen Port (tests/check_ports.py), nicht auf Port 8000 des
-eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167).
+eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167). Ein Rauchtest aus
+einer anderen Arbeitskopie läuft erst, wenn dieser fertig ist (#184).
 """
 
 import os
@@ -24,7 +25,7 @@ import pytest
 from django.conf import settings
 from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
-from tests.check_ports import SMOKE_TEST_PORT, fail_if_busy
+from tests.check_ports import PORT_RELEASE_SECONDS, SMOKE_TEST_LOCK_PORT, SMOKE_TEST_PORT, fail_if_busy, tell, wait_for_turn
 
 # Keycloak lässt die Rückkehr zu diesem Port zu (dev/keycloak/dpv-realm.json), deshalb läuft das
 # Tool im Rauchtest genau dort. pytest-django liest die Adresse beim ersten Start.
@@ -48,8 +49,16 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _vorbedingungen():
-    """Bricht mit einer verständlichen Meldung ab, wenn Keycloak fehlt oder der Port des Rauchtests belegt ist."""
+def _vorbedingungen(request):
+    """Wartet, bis kein anderer Rauchtest läuft (#184), und bricht mit einer verständlichen
+    Meldung ab, wenn Keycloak fehlt oder der Port des Rauchtests belegt ist."""
+    with wait_for_turn(SMOKE_TEST_LOCK_PORT, "Rauchtest", say=tell(request.config)):
+        _keycloak_erreichbar()
+        fail_if_busy(SMOKE_TEST_PORT, "das Tool im Rauchtest", seconds=PORT_RELEASE_SECONDS)
+        yield
+
+
+def _keycloak_erreichbar():
     address = f"{settings.KEYCLOAK_REALM_URL}/.well-known/openid-configuration"
     try:
         urllib.request.urlopen(address, timeout=5).close()  # noqa: S310 -- feste Adresse aus .env, nicht von außen
@@ -58,7 +67,6 @@ def _vorbedingungen():
             f"Keycloak unter {settings.KEYCLOAK_REALM_URL} nicht erreichbar ({type(error).__name__}). "
             "Erst die Keycloak-Testumgebung starten (README.md, „Projekt starten“, Schritt 7)."
         )
-    fail_if_busy(SMOKE_TEST_PORT, "das Tool im Rauchtest")
 
 
 @pytest.fixture(scope="session")
