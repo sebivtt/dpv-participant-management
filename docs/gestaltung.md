@@ -2,7 +2,7 @@
 
 Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen. Gebaut ist bisher nur die Grundgestaltung mit Musterseite (`/muster/`). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
 
-Wer eine Seite baut, nimmt die Bausteine der Musterseite (`core/templates/core/muster.html`) und die Farben aus `core/static/core/app.css`. Neue Bausteine kommen zuerst auf die Musterseite.
+Wer eine Seite baut, nimmt die Bausteine der Musterseite (`core/templates/core/muster.html`) und die Farben aus `core/static/core/app.css`. Neue Bausteine kommen zuerst auf die Musterseite. Neue Seiten und neue sichtbare Bausteine bekommen vorher beim Klären ein Zielbild von Sebastian (Ablauf in `CLAUDE.md`, „Zielbild vor Gestaltung“; Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162; die Zielbilder liegen unter `docs/zielbilder/`).
 
 ## 1. Festgelegt bei der Klärung von #7
 

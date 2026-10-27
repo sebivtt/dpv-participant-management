@@ -4,6 +4,10 @@
 
 
 
+## Zielbild
+
+<!-- Braucht das Issue ein Zielbild (CLAUDE.md, „Zielbild vor Gestaltung“): Link zum Kommentar mit dem Zielbild im Issue und jede Abweichung der Seite davon mit Grund, wie in `docs/zielbilder/README.md`. Sonst „nicht nötig“ mit dem Grund aus der Klärung. -->
+
 ## Anforderungen und Entscheidungen
 
 <!-- IDs aus docs/anforderungen.md, das Issue mit „Closes #…“, neue Einträge in docs/entscheidungen.md -->

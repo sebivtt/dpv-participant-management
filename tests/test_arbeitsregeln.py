@@ -1,4 +1,4 @@
-"""Tests für die Arbeitsregeln in CLAUDE.md, den Skills und den Vorlagen (#158, #169).
+"""Tests für die Arbeitsregeln in CLAUDE.md, den Skills und den Vorlagen (#158, #162, #169).
 
 Diese Tests sorgen dafür, dass die Kernregeln nicht still aus CLAUDE.md verschwinden, dass die
 Skills auf CLAUDE.md verweisen, statt Regeln zu wiederholen (ein Ort je Angabe, #169), und dass
@@ -6,7 +6,8 @@ die Vorlagen ihre Felder haben. Ob sich eine Session an die Regeln hält, prüfe
 
 Bis #169 hieß die Datei `test_szenarien_vor_code.py` und verlangte die Regeln zu „Szenarien vor
 Code“ zusätzlich in grill-me. Seit #169 stehen sie nur in CLAUDE.md und der Vorlage für Pull
-Requests; grill-me verweist darauf (`docs/entscheidungen.md`, 26.10.2026).
+Requests; grill-me verweist darauf (`docs/entscheidungen.md`, 26.10.2026). Für „Zielbild vor
+Gestaltung“ (#162) hat grill-me die Handgriffe, die Regel selbst steht in CLAUDE.md.
 """
 
 import re
@@ -18,6 +19,8 @@ import yaml
 BASE_DIR = Path(__file__).resolve().parent.parent
 CLAUDE_MD = BASE_DIR / "CLAUDE.md"
 PR_TEMPLATE = BASE_DIR / ".github" / "pull_request_template.md"
+ENTSCHEIDUNGEN = BASE_DIR / "docs" / "entscheidungen.md"
+GESTALTUNG = BASE_DIR / "docs" / "gestaltung.md"
 PHASE_TEMPLATE = BASE_DIR / ".github" / "ISSUE_TEMPLATE" / "phase.yml"
 SKILL_DIR = BASE_DIR / ".claude" / "skills"
 GRILL_ME = SKILL_DIR / "grill-me" / "SKILL.md"
@@ -171,6 +174,61 @@ def test_ohne_szenarien_nur_wenn_die_klaerung_kein_fachliches_verhalten_festhael
     assert "Fehlt diese Angabe, sind Szenarien nötig" in rule
 
 
+def _zielbild_rule():
+    section = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    assert "**Zielbild vor Gestaltung:**" in section, "Regel „Zielbild vor Gestaltung“ fehlt"
+    return section.split("**Zielbild vor Gestaltung:**", 1)[1].split("Für die Umsetzung gilt außerdem", 1)[0]
+
+
+def test_zielbild_noetig_bei_neuer_seite_oder_neuem_sichtbarem_baustein():
+    rule = _zielbild_rule()
+
+    assert "neue Seite mit eigener Adresse" in rule
+    assert "neuen sichtbaren gemeinsamen Baustein für die Musterseite" in rule
+    assert "Zielbild von Sebastian" in rule
+    # Neuer Abschnitt einer bestehenden Seite: Sebastian wird gefragt; Proben und Erweiterungen ohne.
+    assert "neuen Abschnitt einer bestehenden Seite" in rule
+    assert "#100 bis #102" in rule
+    assert "Entscheidung F1" in rule
+    assert "reine Erweiterungen bestehender Seiten" in rule
+
+
+def test_zielbild_reihenfolge_bis_geklaert():
+    rule = _zielbild_rule()
+    assert "in dieser Reihenfolge:" in rule
+    steps = rule.split("in dieser Reihenfolge:", 1)[1]
+    order = ["Szenarien", "grober Entwurf", "Zielbild", "Nachklärung", "`geklärt`"]
+    positions = [steps.find(step) for step in order]
+
+    assert -1 not in positions, dict(zip(order, positions, strict=True))
+    assert positions == sorted(positions)
+    assert "von der klärenden Session als Kommentar im Issue" in rule
+    assert "als Kommentar mit Prüfsumme im Issue" in rule
+    assert "jede Abweichung einzeln mit Sebastian" in rule
+    assert "Issue und Szenarien angepasst" in rule
+
+
+def test_zielbild_ist_orientierung_mit_erfundenen_daten_unter_docs_zielbilder():
+    rule = _zielbild_rule()
+
+    assert "Orientierung für das Aussehen, keine Anforderung" in rule
+    for first in ["Rechtematrix", "Anforderungen", "Entscheidungen", "`docs/gestaltung.md`"]:
+        assert first in rule, first
+    assert "als Abweichung genannt" in rule
+    assert "nur erfundene Daten" in rule
+    assert "`docs/zielbilder/`" in rule
+    assert "`docs/zielbilder/README.md`" in rule
+
+
+def test_ohne_noetiges_zielbild_haelt_die_ki_vor_dem_start_an():
+    section = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    rule = _sentence_after(section.split("Für die Umsetzung gilt außerdem", 1)[1], "Braucht das Issue ein Zielbild")
+
+    assert "direkt vor dem Start" in rule
+    assert "hält sie an" in rule
+    assert "nur Link und Verweis" in rule
+
+
 # --- Skills: Verweis statt Wiederholung ------------------------------------------------------
 
 
@@ -216,6 +274,23 @@ def test_grill_me_sammelt_die_szenarien_vor_dem_label_geklaert():
     assert "keine Szenarien braucht" in release_text
 
 
+def test_grill_me_fragt_nach_dem_zielbild_und_fuehrt_die_schritte():
+    text = GRILL_ME.read_text(encoding="utf-8")
+    headings = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+    scenarios = next(h for h in headings if "Szenarien" in h)
+    target = next((h for h in headings if "Zielbild" in h), None)
+    release = next(h for h in headings if "Freigeben" in h)
+
+    assert target, "Abschnitt zum Zielbild fehlt in grill-me"
+    assert "**Zielbild:**" in _section(GRILL_ME, "Übersicht zeigen")
+    assert headings.index(scenarios) < headings.index(target) < headings.index(release)
+    steps = _section(GRILL_ME, target)
+    assert "`CLAUDE.md`" in steps
+    for part in ["Grober Entwurf", "Prüfsumme", "Nachklärung", "erfundene"]:
+        assert part in steps, part
+    assert "Zielbild" in _section(GRILL_ME, release)
+
+
 def test_issue_anlegen_traegt_neue_issues_der_laufenden_phase_ins_phasen_issue_ein():
     section = _section(ISSUE_ANLEGEN, "Laufende Phase")
 
@@ -250,6 +325,21 @@ def test_vorlage_fuer_pull_requests_fragt_nach_den_szenarien():
 
     assert first.startswith("- Szenarien")
     assert "„Szenarien (Datum)“" in first
+
+
+def test_vorlage_fuer_pull_requests_fragt_nach_zielbild_und_abweichungen():
+    section = _section(PR_TEMPLATE, "Zielbild")
+
+    assert "Abweichung" in section
+    assert "`docs/zielbilder/README.md`" in section
+
+
+def test_entscheidung_zu_zielbild_vor_gestaltung_und_verweis_in_gestaltung():
+    entries = re.findall(r"^## (.+)$", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.MULTILINE)
+
+    assert any("(#162)" in entry for entry in entries)
+    assert any("(#161)" in entry for entry in entries), "Eintrag vom 25.10.2026 bleibt"
+    assert "#162" in _text(GESTALTUNG)
 
 
 def _phase_fields():
