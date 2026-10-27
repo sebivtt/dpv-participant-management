@@ -379,6 +379,8 @@ def test_fahrtenname_nur_mit_der_tastatur(pc):
     assert station["sichtbar"] and station["kontrast"] >= 3, station
     pc.keyboard.press("Enter")
     expect(field).to_be_focused()
+    # Auch in der offenen Eingabe ist der Fokus zu sehen (#78).
+    _all_visible([focus_visible(pc)])
     pc.keyboard.type("Kiwi")
     pc.keyboard.press("Escape")
     expect(rest).to_be_focused()
@@ -539,7 +541,7 @@ def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, br
 def _in_display_order(stations: list[dict]) -> None:
     """Jeder Halt steht unter dem vorigen oder in derselben Zeile rechts davon (Anzeige von oben nach unten)."""
     where = [(s["text"], round(s["oben"]), round(s["links"])) for s in stations]
-    for before, after in zip(stations, stations[1:]):
+    for before, after in zip(stations, stations[1:], strict=False):
         same_row = after["oben"] < before["unten"] and after["unten"] > before["oben"]
         if same_row:
             assert after["links"] >= before["links"] - 1, f"„{after['text']}“ steht links von „{before['text']}“: {where}"
@@ -547,15 +549,22 @@ def _in_display_order(stations: list[dict]) -> None:
             assert after["oben"] >= before["oben"] - 1, f"„{after['text']}“ steht über „{before['text']}“: {where}"
 
 
-def _keycloak_marks_focus(page: Page) -> None:
+def _keycloak_look(page: Page, selector: str) -> list[str]:
+    """Rahmen und Strich unter einem Feld von Keycloak."""
+    return page.locator(selector).evaluate(
+        "el => { const line = getComputedStyle(el.parentElement, '::after');"
+        " return [getComputedStyle(el).outlineStyle, line.borderBottomWidth + ' ' + line.borderBottomColor] }"
+    )
+
+
+def _keycloak_marks_focus(page: Page, selector: str, without_focus: list[str]) -> None:
     """Keycloak gestaltet seine Seite selbst, das Tool ändert dort nichts (CLAUDE.md). Geprüft wird
     nur, dass der Fokus zu sehen ist: Keycloak lässt den Fokusrahmen des Browsers stehen und
-    unterstreicht das Feld dicker und blau."""
-    look = page.evaluate(
-        "() => { const el = document.activeElement;"
-        " return [getComputedStyle(el).outlineStyle, getComputedStyle(el.parentElement, '::after').borderBottomWidth] }"
+    unterstreicht das Feld dicker und blau, anders als ohne Fokus."""
+    look = _keycloak_look(page, selector)
+    assert look[0] != "none" and look[1] == "2px rgb(0, 102, 204)" and look != without_focus, (
+        f"Fokus bei Keycloak nicht zu sehen: {look}, ohne Fokus {without_focus}"
     )
-    assert look[0] != "none" and look[1] == "2px", f"Fokus bei Keycloak nicht zu sehen: {look}"
 
 
 # Szenarien 1 bis 4 zu #78: in Handy-Größe von der Anmeldung bis zum Abmelden nur mit der Tastatur
@@ -569,13 +578,14 @@ def test_nur_mit_der_tastatur_am_handy_von_der_anmeldung_bis_zum_abmelden(handy)
     username = handy.locator("#username")
     username.wait_for()
     handy.wait_for_load_state("load")
+    password_without_focus = _keycloak_look(handy, "#password")
     expect(username).to_be_focused()
-    _keycloak_marks_focus(handy)
+    _keycloak_marks_focus(handy, "#username", password_without_focus)
     handy.keyboard.type("erika.testfrau")
     expect(username, "Benutzername nicht vollständig im Feld").to_have_value("erika.testfrau")
     handy.keyboard.press(_tab_key(handy))
     expect(handy.locator("#password")).to_be_focused()
-    _keycloak_marks_focus(handy)
+    _keycloak_marks_focus(handy, "#password", password_without_focus)
     handy.keyboard.type("testpasswort-erika")
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{BASE}/")

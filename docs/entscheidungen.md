@@ -10,19 +10,19 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Entscheidung** (Sebastian, Klärung von #176 und #78 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/176#issuecomment-6435571666), Fragen 5 und 6). Ersetzt die Entscheidungen 1 und 2 zu #78 vom 22.10.2026, die sich auf die Musterseite bezogen:
 
-1. **Durchgang am Handy auf den echten Seiten:** In Handy-Größe nur mit der Tastatur von der Login-Seite über Keycloak zur Startseite („Zum Inhalt springen“), über den Profilkreis zu „Mein Profil“, dort den Fahrtennamen öffnen, mit Esc verwerfen und mit Enter speichern, dann über das Menü abmelden.
+1. **Durchgang am Handy auf den echten Seiten:** In Handy-Größe nur mit der Tastatur von der Login-Seite über Keycloak zur Startseite („Zum Inhalt springen“), über den Profilkreis zu „Mein Profil“, dort den Fahrtennamen öffnen, tippen, mit Esc verwerfen und mit Enter speichern, dann über das Menü abmelden.
 2. **Regel für neue Rauchtests:** Jede neue Seite und jede Seite, die neue Bedienelemente bekommt (Knopf, Feld, Dialog), bekommt ihren Rauchtest am PC und am Handy, je einmal nur mit der Tastatur. Ein Durchgang darf mehrere Seiten abdecken. Abgelehnt: nur für neue Seiten.
 3. **Gefundene Fehler:** Kleine im selben Pull Request beheben und nennen, größere als eigenes Issue nach Rückfrage (wie am 22.10.2026).
 
 **Technische Wahl** (KI):
 
 - **Reihenfolge von oben nach unten** prüft der Test an der Lage jedes Halts auf der Seite: Er steht unter dem vorigen oder in derselben Zeile rechts davon.
-- **Keycloak** gestaltet seine Seite selbst, und das Tool ändert dort nichts (`CLAUDE.md`). Der Test prüft dort nur, dass der Fokus zu sehen ist (Rahmen des Browsers, dicker blauer Strich unter dem Feld), nicht die strengere Regel des Tools (Rahmen ab 2 px, Kontrast ab 3 : 1).
-- **Mitbehoben (Entscheidung 3):** Eingabefelder des Tools zeigten den Fokus nur mit einem blassen Schatten, weil Bootstrap ihren Rahmen abschaltet. Sie bekommen jetzt denselben blauen Rahmen wie Knöpfe und Links, wie im Zielbild „Meldungen“.
+- **Keycloak** gestaltet seine Seite selbst, und das Tool ändert dort nichts (`CLAUDE.md`). Der Test prüft dort nur, dass der Fokus zu sehen ist (Rahmen des Browsers, dicker blauer Strich unter dem Feld statt des dünnen grauen ohne Fokus), nicht die strengere Regel des Tools (Rahmen ab 2 px, Kontrast ab 3 : 1).
+- **Mitbehoben (Entscheidung 3):** Eingabefelder des Tools zeigten den Fokus nur mit einem blassen Schatten, weil Bootstrap ihren Rahmen abschaltet. Sie bekommen jetzt denselben blauen Rahmen wie Knöpfe und Links, wie im Zielbild „Meldungen“. Das Zielbild „Mein Profil“ zeigt dort nur Bootstraps Schatten; NFA-03 und `docs/gestaltung.md` („gut sichtbare Fokuszustände“) gehen vor.
 
 **Begründung:** Am Handy sieht das Tool anders aus als am PC (Menü als Dialog, Profilkreis oben). Probleme mit Reihenfolge oder Sichtbarkeit des Fokus dort fielen sonst keinem Test auf (Befund K5 aus dem Review zu P1, #73). Die Musterseite taugt dafür nicht mehr, weil sie zum Bausteinkatalog wurde (#176).
 
-**Umsetzung:** `rauchtests/test_rauchtest.py`, `rauchtests/conftest.py` (`focus_visible` gibt die Lage zurück), `core/static/core/app.css`, `CONTRIBUTING.md`, Abschnitt 3.
+**Umsetzung:** `rauchtests/test_rauchtest.py`, `rauchtests/conftest.py` (`focus_visible` gibt die Lage zurück), `core/static/core/app.css`, `CONTRIBUTING.md`, Abschnitt 3; dazu prüft `test_fahrtenname_nur_mit_der_tastatur` am PC den Fokus in der offenen Eingabe.
 
 ## 2026-10-27 · Bausteinkatalog statt Musterseite: nur Entschiedenes, eingebunden statt kopiert (#176)
 
