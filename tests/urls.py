@@ -113,6 +113,17 @@ def number_in_redirect(request: HttpRequest) -> HttpResponse:
     return HttpResponseRedirect(f"/einheit/?einheit={_falken().pk}")
 
 
+def number_in_cookie(request: HttpRequest) -> HttpResponse:
+    response = HttpResponse("Sippe Falken")
+    response.set_cookie("einheit", str(_falken().pk))
+    return response
+
+
+def number_of_person(request: HttpRequest, key: str) -> HttpResponse:
+    """Eine Seite mit Kennung, die die Nummer der gezeigten Person verrät."""
+    return HttpResponse(f'<a href="/person/?id={request.rights.person(key).pk}">Person</a>')
+
+
 def without_number(request: HttpRequest) -> HttpResponse:
     """Kennung, Jahreszahl und andere Zahlen, aber keine interne Nummer."""
     falken = _falken()
@@ -144,5 +155,7 @@ urlpatterns = [
     path("test/nummer/verstecktes-feld/", number_in_hidden_field, name="number_in_hidden_field"),
     path("test/nummer/hx-vals/", number_in_hx_vals, name="number_in_hx_vals"),
     path("test/nummer/weiterleitung/", number_in_redirect, name="number_in_redirect"),
+    path("test/nummer/cookie/", number_in_cookie, name="number_in_cookie"),
     path("test/nummer/keine/", without_number, name="without_number"),
+    path("test/nummer/<key:key>/", number_of_person, name="number_of_person"),
 ]

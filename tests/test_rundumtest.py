@@ -180,6 +180,8 @@ TESTS = Path(settings.BASE_DIR) / "tests"
 # Der Baustein aus tests/test_nicht_gefunden.py: vergleicht die ganze Antwort mit der für eine erfundene Kennung.
 LIKE_MISSING = "assert_like_missing"
 LIKE_MISSING_MARK = "pytest.mark.wie_nicht_vorhanden"
+# Übersprungene oder als bekannter Fehler markierte Tests belegen nichts.
+NOT_RUN = {"pytest.mark.skip", "pytest.mark.skipif", "pytest.mark.xfail"}
 
 
 def sources_of_tests() -> list[str]:
@@ -191,7 +193,7 @@ def addresses_tested_like_missing(sources: list[str]) -> set[str]:
     """Muster der Adressen, deren verbotenen Fall ein Test mit dem Vergleich „wie nicht vorhanden“ prüft.
 
     Zählt nur ein Test mit `@pytest.mark.wie_nicht_vorhanden("muster")`, der `assert_like_missing`
-    aufruft. Ob er den richtigen verbotenen Fall wählt, bleibt Sache der unabhängigen Prüfung.
+    aufruft und nicht übersprungen wird. Ob er den richtigen verbotenen Fall wählt, bleibt Sache der unabhängigen Prüfung.
     """
     found = set()
     for source in sources:
@@ -199,7 +201,8 @@ def addresses_tested_like_missing(sources: list[str]) -> set[str]:
             if not isinstance(node, ast.FunctionDef) or not node.name.startswith("test_"):
                 continue
             compares = any(isinstance(call, ast.Call) and ast.unparse(call.func) == LIKE_MISSING for call in ast.walk(node))
-            if not compares:
+            marks = {ast.unparse(decorator.func if isinstance(decorator, ast.Call) else decorator) for decorator in node.decorator_list}
+            if not compares or marks & NOT_RUN:
                 continue
             for decorator in node.decorator_list:
                 if isinstance(decorator, ast.Call) and ast.unparse(decorator.func) == LIKE_MISSING_MARK:
@@ -219,12 +222,12 @@ def test_jede_adresse_mit_kennung_hat_einen_test_wie_nicht_vorhanden():
 
 
 def test_adresse_mit_kennung_ohne_passenden_test_macht_den_rundumtest_rot():
-    """Gegenprobe zu V8: ohne Markierung, mit Markierung ohne den Vergleich, mit Markierung für eine andere Adresse."""
+    """Gegenprobe zu V8: ohne Markierung, mit Markierung ohne den Vergleich, mit Markierung für eine andere Adresse, übersprungen."""
 
     def view(request):
         return None
 
-    routes = ["neu/<key:person>/", "ohne-vergleich/<key:person>/", "andere/<key:person>/", "ohne-kennung/"]
+    routes = ["neu/<key:person>/", "ohne-vergleich/<key:person>/", "andere/<key:person>/", "uebersprungen/<key:person>/", "ohne-kennung/"]
     patterns = [(route, URLPattern(RoutePattern(route), view)) for route in routes]
     sources = [
         """
@@ -238,10 +241,15 @@ def test_andere_adresse(org):
 
 def test_ohne_markierung(org):
     assert_like_missing(org.falke, "/andere/x/")
+
+@pytest.mark.skip(reason="später")
+@pytest.mark.wie_nicht_vorhanden("uebersprungen/<key:person>/")
+def test_uebersprungen(org):
+    assert_like_missing(org.falke, "/uebersprungen/x/")
 """
     ]
 
-    assert keyed_without_like_missing_test(patterns, sources) == routes[:3]
+    assert keyed_without_like_missing_test(patterns, sources) == routes[:4]
 
 
 def test_adresse_mit_kennung_und_passendem_test_bleibt_gruen():

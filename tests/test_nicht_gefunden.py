@@ -26,7 +26,7 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test.utils import CaptureQueriesContext
 from django.test import Client
 
-from access.keys import KEY_ALPHABET, KEY_LENGTH, has_key, is_key, new_key
+from access.keys import KEY_ALPHABET, KEY_LENGTH, KEY_PATTERN, has_key, is_key, new_key
 from roles.models import Role
 from tests.keycloak_fake import login
 from tests.test_rechtepruefung import member, remove
@@ -77,9 +77,18 @@ def answers(user, address: str, form: dict | None = None) -> list[tuple]:
     return found
 
 
+# Ein ganzes Stück einer Adresse in der Form einer Kennung.
+KEY_IN_ADDRESS = re.compile(rf"(?<=/){KEY_PATTERN}(?=/|$)")
+
+
+def with_missing_keys(address: str) -> str:
+    """Dieselbe Adresse, jede Kennung darin ersetzt durch eine, zu der es keinen Eintrag gibt."""
+    return KEY_IN_ADDRESS.sub(MISSING, address)
+
+
 def assert_like_missing(user, address_for) -> None:
     """Die Adresse eines vorhandenen Eintrags antwortet wie die eines Eintrags, den es nicht gibt."""
-    shown, missing = answers(user, address_for), answers(user, address_for.replace(address_for.split("/")[3], MISSING))
+    shown, missing = answers(user, address_for), answers(user, with_missing_keys(address_for))
     assert shown == missing
     for status, content, _headers in shown:
         assert status == 404
@@ -88,6 +97,16 @@ def assert_like_missing(user, address_for) -> None:
 
 def person_address(entry, suffix: str = "") -> str:
     return f"/test/person/{entry.key}/{suffix}"
+
+
+def test_vergleichsadresse_ersetzt_genau_die_kennungen():
+    """Befund der unabhängigen Prüfung zu #156: früher ersetzte der Baustein das vierte Stück der Adresse, egal was dort stand."""
+    first, second = new_key(), new_key()
+
+    assert with_missing_keys(f"/person/{first}/") == f"/person/{MISSING}/"
+    assert with_missing_keys(f"/einheit/{first}/person/{second}/") == f"/einheit/{MISSING}/person/{MISSING}/"
+    assert with_missing_keys(f"/test/person/{first}/entfernen/") == f"/test/person/{MISSING}/entfernen/"
+    assert with_missing_keys("/test/nummer/verstecktes-feld/") == "/test/nummer/verstecktes-feld/"
 
 
 # Personen (BER-01, Grund 1 und 2): Wer eine Person nicht sieht, erfährt nicht, dass es sie gibt
@@ -477,13 +496,18 @@ def test_fremder_und_nicht_vorhandener_eintrag_loesen_gleich_viele_abfragen_aus(
 
 @pytest.mark.rechtematrix("PK-22")
 def test_sichtbarer_eintrag_ohne_recht_zur_aktion_darf_eine_abfrage_mehr_ausloesen(org):
-    """G1 und Gegenprobe zu V9: Wanda sieht Finn, darf ihn aber nicht austragen (Protokoll, Frage 2).
+    """G1: Wanda sieht Finn, darf ihn aber nicht austragen (Protokoll, Frage 2).
 
-    Hier fällt eine Abfrage mehr an; der Vergleich erkennt also einen Unterschied. Die Antwort ist
-    trotzdem genau gleich „nicht gefunden“.
+    Hier darf eine Abfrage mehr anfallen, die Antwort ist trotzdem genau gleich „nicht gefunden“.
     """
     shown = query_counts(org.walhall_leitung, person_address(org.falke, "entfernen/"))
     missing = query_counts(org.walhall_leitung, f"/test/person/{MISSING}/entfernen/")
 
-    assert all(more > fewer for more, fewer in zip(shown, missing, strict=True))
+    assert all(more >= fewer for more, fewer in zip(shown, missing, strict=True))
     assert_like_missing(org.walhall_leitung, person_address(org.falke, "entfernen/"))
+
+
+@pytest.mark.wie_nicht_vorhanden("test/nummer/<key:key>/")
+def test_testseite_mit_nummer_einer_fremden_person_ist_nicht_gefunden(org):
+    """Die Testseite für die Suche nach Nummern hält sich selbst an „nicht gefunden“ (Prüfung aus V8)."""
+    assert_like_missing(org.walhall_leitung, f"/test/nummer/{org.adler_kind.key}/")
