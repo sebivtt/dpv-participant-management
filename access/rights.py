@@ -241,6 +241,15 @@ class Rights:
         order = list(R)
         return sorted(roles, key=lambda role: (order.index(role.kind), _alphabetical(role.unit.name if role.unit else "")))
 
+    def has_roles(self) -> bool:
+        """Hat die Person eine Mitgliedschaft oder irgendeine Rolle? Ohne beides steht der Hinweis „keiner Organisation zugeordnet“ (#9).
+
+        Der Hinweis richtet sich bewusst nicht nach „Zuordnung“ (BER-03): Admins ohne
+        Mitgliedschaft wissen, warum sie keiner Organisation angehören (Klärung von #9 vom
+        27.10.2026, Frage 2). Nutzt die Rollen, die die Anfrage ohnehin einmal lädt.
+        """
+        return bool(self._own_roles)
+
     # Leitungen (BER-01, Grund 3)
 
     def leads(self) -> QuerySet:
