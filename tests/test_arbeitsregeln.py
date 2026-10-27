@@ -121,6 +121,7 @@ def test_ablauf_einer_phase_von_start_bis_abschluss():
     assert "nächsten drei Issues" in section
     assert "spätestens in Klärung, wenn die Umsetzung der laufenden beginnt" in section
     assert "etwa zwei Gruppen vorher" in section
+    assert "Zielbild" in _sentence_after(section, "**Klären läuft voraus:**"), "Vorlauf für Zielbilder fehlt"
     assert "nur sein Häkchen mit Beleg" in section
     assert "Stunden aus dem Puffer, die Stunden nur mit Sebastians Zustimmung" in section
     assert "sofort in den Text des Issues, das Label `geklärt` kommt ab" in section
@@ -286,7 +287,7 @@ def test_grill_me_fragt_nach_dem_zielbild_und_fuehrt_die_schritte():
     assert headings.index(scenarios) < headings.index(target) < headings.index(release)
     steps = _section(GRILL_ME, target)
     assert "`CLAUDE.md`" in steps
-    for part in ["Grober Entwurf", "Prüfsumme", "Nachklärung", "erfundene"]:
+    for part in ["Grober Entwurf", "Prüfsumme", "Nachklärung", "erfundene", "65 536 Zeichen"]:
         assert part in steps, part
     assert "Zielbild" in _section(GRILL_ME, release)
 
@@ -339,7 +340,7 @@ def test_entscheidung_zu_zielbild_vor_gestaltung_und_verweis_in_gestaltung():
 
     assert any("(#162)" in entry for entry in entries)
     assert any("(#161)" in entry for entry in entries), "Eintrag vom 25.10.2026 bleibt"
-    assert "#162" in _text(GESTALTUNG)
+    assert "„Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162)" in _text(GESTALTUNG)
 
 
 def _phase_fields():
