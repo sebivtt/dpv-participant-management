@@ -379,13 +379,14 @@ def test_admin_mit_mitgliedschaft_sieht_die_leitungen_seiner_kette(org):
 def test_leitungen_zeigen_nur_name_und_rolle_nicht_die_mail(org):
     """#136, B2: Mail und weitere Angaben nur, wer die Person nach BER-01 ohnehin sieht.
 
-    Den Fahrtennamen nennt BER-01, Grund 3 schon; das Feld gibt es seit #111.
+    Den Fahrtennamen nennt BER-01, Grund 3 schon; das Feld gibt es seit #111. Interne Nummern
+    (`user_id`, `unit_id`) gibt die Liste seit #156 nicht mehr heraus.
     """
     entries = list(Rights(org.falke).leads())
 
     assert entries
     for entry in entries:
-        assert set(entry) == {"user_id", "first_name", "last_name", "scout_name", "kind", "unit_id", "unit_name"}
+        assert set(entry) == {"first_name", "last_name", "scout_name", "kind", "unit_name"}
 
 
 @pytest.mark.rechtematrix("RO-02")
@@ -701,3 +702,112 @@ def test_leitungsliste_fragt_nicht_pro_leitung(org):
         lead(f"lea.sippe{number}", R.GROUP_LEAD, group)
 
     assert_queries_do_not_grow(add, lambda: list(Rights(org.bundesleitung).leads()))
+
+
+# Lücken aus den nachträglichen Szenarien zu #90 (#156, Szenarien vom 25.10.2026)
+
+
+def block(user) -> None:
+    """Sperrt ein Konto im Tool."""
+    user.is_active = False
+    user.save()
+
+
+@pytest.mark.rechtematrix("PK-03")
+def test_bundesleitung_eines_bundes_mit_ringen_sieht_die_personen_in_allen_ringen(org):
+    """S1: Mona sieht Moritz aus dem Ring Küste und Svea aus dem Ring Nord."""
+    assert {"moritz.moewe", "svea.sturm"} <= seen(org.mosaik_leitung)
+
+
+@pytest.mark.rechtematrix("PK-03")
+def test_bundesleitung_mit_ringen_sieht_keinen_anderen_bund_und_die_ringleitung_nicht_den_nachbarring(org):
+    """V1: Mona sieht niemanden aus Boreas; Kai sieht Svea aus dem Nachbarring weiterhin nicht."""
+    assert not {"bea.boreas", "finn.falke", "bruno.bund"} & seen(org.mosaik_leitung)
+    assert "svea.sturm" not in seen(org.kueste_leitung)
+
+
+@pytest.mark.rechtematrix("EH-19", "PK-01")
+def test_niemand_springt_ein_solange_eine_leitung_der_einheit_nicht_gesperrt_ist(org):
+    """V2 und S5: Nur Fiete ist gesperrt, Frida nicht. Wanda springt nicht ein, Frida behält ihre Rechte."""
+    frida = lead("frida.falke", R.GROUP_LEAD, org.falken)
+    block(org.falken_leitung)
+
+    wanda = Rights(org.walhall_leitung)
+    assert not wanda.covers(org.falken)
+    assert not wanda.leads_unit(org.falken)
+    assert not wanda.leads_unit_of(org.falke)
+    assert Rights(frida).leads_unit(org.falken)
+    assert Rights(frida).leads_unit_of(org.falke)
+    assert "finn.falke" in seen(frida)
+
+
+@pytest.mark.rechtematrix("EH-18")
+def test_sind_alle_leitungen_der_einheit_gesperrt_springt_die_leitung_darueber_ein(org):
+    """S2: Fiete und Frida sind beide gesperrt; Wanda springt für die Falken ein."""
+    frida = lead("frida.falke", R.GROUP_LEAD, org.falken)
+    block(org.falken_leitung)
+    block(frida)
+
+    wanda = Rights(org.walhall_leitung)
+    assert wanda.covers(org.falken)
+    assert wanda.leads_unit_of(org.falke)
+
+
+@pytest.mark.rechtematrix("EH-18")
+def test_bei_gesperrten_leitungen_auf_zwei_ebenen_springt_die_naechsthoehere_ein(org):
+    """S3: Fiete und Wanda sind gesperrt; Bruno springt für die Falken und für Walhall ein."""
+    block(org.falken_leitung)
+    block(org.walhall_leitung)
+
+    bruno = Rights(org.bundesleitung)
+    assert bruno.covers(org.falken)
+    assert bruno.covers(org.walhall)
+    assert bruno.leads_unit_of(org.falke)
+    assert bruno.leads_unit_of(org.walhall_mitglied)
+
+
+@pytest.mark.rechtematrix("EH-18", "EH-27")
+def test_bei_gesperrten_leitungen_auf_zwei_ebenen_springt_niemand_sonst_ein(org):
+    """V3: nicht für die Wölfe mit Wim; Fiete und Wanda ohne Rechte; ist auch Bruno gesperrt, springt Vera nicht ein."""
+    block(org.falken_leitung)
+    block(org.walhall_leitung)
+
+    assert not Rights(org.bundesleitung).covers(org.woelfe)
+    assert not Rights(org.bundesleitung).leads_unit_of(org.wolf)
+    for blocked in (org.falken_leitung, org.walhall_leitung):
+        rights = Rights(blocked)
+        assert not rights.leads_unit(org.falken)
+        assert not rights.leads_unit(org.walhall)
+        assert seen(blocked) == set()
+        assert leads_seen(blocked) == set()
+
+    block(org.bundesleitung)
+
+    vera = Rights(org.verbandsleitung)
+    for target in (org.boreas, org.walhall, org.falken):
+        assert not vera.covers(target)
+        assert not vera.leads_unit(target)
+    assert seen(org.verbandsleitung) == {"vera.verband"}
+
+
+@pytest.mark.rechtematrix("RO-02")
+def test_mitglied_direkt_im_ring_sieht_die_ringleitung_und_die_bundesleitung(org):
+    """S4 und V4: Rieke sieht genau Kai und Mona, nicht Lars, Mia oder Nele."""
+    rieke = member("rieke.ring", org.kueste)
+
+    assert leads_seen(rieke) == {("Kai", R.RING_LEAD), ("Mona", R.ASSOCIATION_LEAD)}
+
+
+@pytest.mark.rechtematrix("RO-02")
+def test_liste_der_leitungen_zeigt_name_rolle_und_einheit_ohne_interne_nummern(org):
+    """S6 (#156, Lücke L2 aus #64): Finn sieht Fiete, Wanda und Bruno mit Name, Rolle und Einheit, ohne Nummern."""
+    entries = list(Rights(org.falke).leads())
+
+    shown = {(entry["first_name"], entry["last_name"], entry["kind"], entry["unit_name"]) for entry in entries}
+    assert shown == {
+        ("Fiete", "Falke", R.GROUP_LEAD, "Sippe Falken"),
+        ("Wanda", "Walhall", R.TROOP_LEAD, "Walhall"),
+        ("Bruno", "Bund", R.ASSOCIATION_LEAD, "Pfadfinderbund Boreas"),
+    }
+    for entry in entries:
+        assert not {"user_id", "unit_id", "id", "pk"} & set(entry)

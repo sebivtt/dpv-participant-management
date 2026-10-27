@@ -43,4 +43,7 @@ addopts = "-rxX"
 markers = [
     # Kennung einer Zeile in docs/rechtematrix.md; tests/test_rechtematrix.py liest sie (#87).
     "rechtematrix(kennung): Test zu einer Zeile der Rechtematrix",
+    # Muster einer Adresse mit Kennung, deren verbotenen Fall der Test mit assert_like_missing
+    # prüft; tests/test_rundumtest.py verlangt das für jede solche Adresse (#156).
+    "wie_nicht_vorhanden(muster): Test „genau gleich wie nicht vorhanden“ für eine Adresse mit Kennung",
 ]

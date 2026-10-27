@@ -6,7 +6,9 @@ und begründen. Seit #90 muss außerdem jede Adresse markiert sein: „prüft Re
 Kennungen ihrer Zeilen in der Rechtematrix oder „enthält keine Personendaten“ mit Begründung
 (`access/addresses.py`). Und kein Code außerhalb der zentralen Rechteprüfung liest Personen-
 oder Anmeldedaten selbst aus der Datenbank. Seit #64 nehmen Adressen mit Login Einträge nur über
-ihre zufällige Kennung (`<key:…>`), nie über eine laufende Nummer.
+ihre zufällige Kennung (`<key:…>`), nie über eine laufende Nummer. Seit #156 hat jede Adresse mit
+Kennung einen Test „genau gleich wie nicht vorhanden“; die Suche nach Nummern in den Antworten
+steht in `tests/test_rechte_ohne_seite.py`, weil sie dessen Aufrufe aller Adressen nutzt.
 """
 
 import ast
@@ -19,7 +21,8 @@ from django.urls import URLPattern, URLResolver, get_resolver
 from django.urls.resolvers import RoutePattern
 
 from access.addresses import checks_rights, without_personal_data
-from access.keys import KEY_CONVERTER, KEY_LENGTH
+from access.keys import KEY_CONVERTER, KEY_LENGTH, has_key
+from tests import urls as test_urls
 from tests.rechtematrix import matrix_text, row_ids
 
 # Die einzigen Adressen, die ohne Login antworten dürfen, mit Begründung.
@@ -169,6 +172,84 @@ def test_laufende_nummer_in_einer_adresse_macht_den_rundumtest_rot():
     assert numbered_addresses(patterns) == [
         "person/<int:pk>/", "person/<str:name>/", "person/<uuid:id>/", "person/<pk>/", r"^alt/(?P<pk>\d+)/$"
     ]
+
+
+# Jede Adresse mit Kennung hat einen Test „genau gleich wie nicht vorhanden“ (#156, Lücke L3 aus #64)
+
+TESTS = Path(settings.BASE_DIR) / "tests"
+# Der Baustein aus tests/test_nicht_gefunden.py: vergleicht die ganze Antwort mit der für eine erfundene Kennung.
+LIKE_MISSING = "assert_like_missing"
+LIKE_MISSING_MARK = "pytest.mark.wie_nicht_vorhanden"
+
+
+def sources_of_tests() -> list[str]:
+    """Der Quelltext jeder Testdatei, auch in Unterordnern; fremder Code unter `vendor` zählt nicht."""
+    return [path.read_text(encoding="utf-8") for path in sorted(TESTS.rglob("*.py")) if "vendor" not in path.parts]
+
+
+def addresses_tested_like_missing(sources: list[str]) -> set[str]:
+    """Muster der Adressen, deren verbotenen Fall ein Test mit dem Vergleich „wie nicht vorhanden“ prüft.
+
+    Zählt nur ein Test mit `@pytest.mark.wie_nicht_vorhanden("muster")`, der `assert_like_missing`
+    aufruft. Ob er den richtigen verbotenen Fall wählt, bleibt Sache der unabhängigen Prüfung.
+    """
+    found = set()
+    for source in sources:
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.FunctionDef) or not node.name.startswith("test_"):
+                continue
+            compares = any(isinstance(call, ast.Call) and ast.unparse(call.func) == LIKE_MISSING for call in ast.walk(node))
+            if not compares:
+                continue
+            for decorator in node.decorator_list:
+                if isinstance(decorator, ast.Call) and ast.unparse(decorator.func) == LIKE_MISSING_MARK:
+                    found |= {arg.value for arg in decorator.args if isinstance(arg, ast.Constant)}
+    return found
+
+
+def keyed_without_like_missing_test(patterns, sources: list[str]) -> list[str]:
+    """Adressen mit Kennung (`<key:…>`) ohne Test „genau gleich wie nicht vorhanden“."""
+    tested = addresses_tested_like_missing(sources)
+    return [pattern for pattern, _entry in patterns if has_key(pattern) and pattern not in tested]
+
+
+def test_jede_adresse_mit_kennung_hat_einen_test_wie_nicht_vorhanden():
+    """V8: auch für Adressen, die später dazukommen (G3). Regel in CONTRIBUTING.md, Abschnitt 4."""
+    assert keyed_without_like_missing_test(ALL, sources_of_tests()) == []
+
+
+def test_adresse_mit_kennung_ohne_passenden_test_macht_den_rundumtest_rot():
+    """Gegenprobe zu V8: ohne Markierung, mit Markierung ohne den Vergleich, mit Markierung für eine andere Adresse."""
+
+    def view(request):
+        return None
+
+    routes = ["neu/<key:person>/", "ohne-vergleich/<key:person>/", "andere/<key:person>/", "ohne-kennung/"]
+    patterns = [(route, URLPattern(RoutePattern(route), view)) for route in routes]
+    sources = [
+        """
+@pytest.mark.wie_nicht_vorhanden("ohne-vergleich/<key:person>/")
+def test_ohne_vergleich(org):
+    assert answers(org.falke, "/ohne-vergleich/x/")[0][0] == 404
+
+@pytest.mark.wie_nicht_vorhanden("woanders/<key:person>/")
+def test_andere_adresse(org):
+    assert_like_missing(org.falke, "/woanders/x/")
+
+def test_ohne_markierung(org):
+    assert_like_missing(org.falke, "/andere/x/")
+"""
+    ]
+
+    assert keyed_without_like_missing_test(patterns, sources) == routes[:3]
+
+
+def test_adresse_mit_kennung_und_passendem_test_bleibt_gruen():
+    """G3: Die Testadressen mit Kennung aus tests/urls.py haben ihre Tests in tests/test_nicht_gefunden.py."""
+    patterns = [(pattern, entry) for pattern, entry in _all_patterns(test_urls.urlpatterns) if pattern.startswith("test/")]
+
+    assert [pattern for pattern, _entry in patterns if has_key(pattern)]
+    assert keyed_without_like_missing_test(patterns, sources_of_tests()) == []
 
 
 def test_beispieladresse_setzt_eine_kennung_in_der_richtigen_form_ein():

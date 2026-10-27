@@ -1,4 +1,4 @@
-"""Adressen nur für die Tests des Fehlerprotokolls (#6) und für „nicht gefunden“ (#64). Im Tool selbst gibt es sie nicht.
+"""Adressen nur für die Tests des Fehlerprotokolls (#6), für „nicht gefunden“ (#64) und für die Suche nach Nummern (#156). Im Tool selbst gibt es sie nicht.
 
 Übernimmt Adressen und Fehlerseite aus config/urls.py. Fehlt dort die Fehlerseite,
 schlägt schon der Import fehl, und die Tests werden rot.
@@ -7,7 +7,7 @@ schlägt schon der Import fehl, und die Tests werden rot.
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
@@ -81,6 +81,47 @@ def forbidden_entry(request: HttpRequest, key: str) -> HttpResponse:
     raise PermissionDenied
 
 
+def lead_unit_from_parameter(request: HttpRequest) -> HttpResponse:
+    """Wählt eine Einheit über einen angehängten Parameter oder ein Formularfeld `einheit`, z. B. aus einer Auswahlliste (#156)."""
+    rights = request.rights
+    key = request.POST.get("einheit") if request.method == "POST" else request.GET.get("einheit")
+    found = rights.entry(Unit.objects.all(), key, allowed=rights.leads_unit)
+    return HttpResponse(f"geleitet: {found.name}")
+
+
+# Seiten, die eine interne Nummer zeigen, und eine, die es nicht tut: Gegenproben für die Suche
+# nach Nummern (#156). Sie zeigen die Nummer der Sippe Falken.
+
+
+def _falken() -> Unit:
+    return Unit.objects.get(name="Sippe Falken")
+
+
+def number_in_link(request: HttpRequest) -> HttpResponse:
+    return HttpResponse(f'<a href="/einheit/?einheit={_falken().pk}">Sippe Falken</a>')
+
+
+def number_in_hidden_field(request: HttpRequest) -> HttpResponse:
+    return HttpResponse(f'<form method="post"><input type="hidden" name="einheit" value="{_falken().pk}"></form>')
+
+
+def number_in_hx_vals(request: HttpRequest) -> HttpResponse:
+    return HttpResponse(f"<button hx-post=\"/einheit/\" hx-vals='{{\"einheit\": {_falken().pk}}}'>Wählen</button>")
+
+
+def number_in_redirect(request: HttpRequest) -> HttpResponse:
+    return HttpResponseRedirect(f"/einheit/?einheit={_falken().pk}")
+
+
+def without_number(request: HttpRequest) -> HttpResponse:
+    """Kennung, Jahreszahl und andere Zahlen, aber keine interne Nummer."""
+    falken = _falken()
+    return HttpResponse(
+        f'<a href="/test/einheit/{falken.key}/">{falken.name}</a> Sommerlager 2026, 12 Plätze, 1. Juli'
+        f'<input type="hidden" name="einheit" value="{falken.key}">'
+    )
+
+
 def lead_section(request: HttpRequest) -> HttpResponse:
     """Ein ganzer Bereich ohne Kennung, nur für Leitungen; im Tool kommt so „Organisation“ (#93)."""
     request.rights.require_section(bool(request.rights.area))
@@ -97,5 +138,11 @@ urlpatterns = [
     path("test/person/<key:key>/entfernen/", remove_member),
     path("test/person/<key:key>/kein-zugriff/", forbidden_entry),
     path("test/einheit/<key:key>/", lead_unit),
+    path("test/einheit/", lead_unit_from_parameter),
     path("test/leitungen/", lead_section),
+    path("test/nummer/link/", number_in_link, name="number_in_link"),
+    path("test/nummer/verstecktes-feld/", number_in_hidden_field, name="number_in_hidden_field"),
+    path("test/nummer/hx-vals/", number_in_hx_vals, name="number_in_hx_vals"),
+    path("test/nummer/weiterleitung/", number_in_redirect, name="number_in_redirect"),
+    path("test/nummer/keine/", without_number, name="without_number"),
 ]
