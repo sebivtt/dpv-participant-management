@@ -30,7 +30,7 @@ def own_test_database(database: str, folder: Path) -> str:
 
     Jede Arbeitskopie bekommt ihre eigene, damit zwei Prüfläufe gleichzeitig laufen können.
     Der Name hängt nur am Ordner: Dieselbe Arbeitskopie nutzt immer dieselbe Test-Datenbank
-    wieder, es bleibt also höchstens eine je Arbeitskopie übrig (Aufräumen: README.md, Schritt 11).
+    wieder, es bleibt also höchstens eine je Arbeitskopie übrig (Aufräumen: README.md, „Übrige Test-Datenbanken entfernen“).
     """
     folder_key = hashlib.sha256(str(folder).encode()).hexdigest()[:12]
     return f"test_{database}_{folder_key}"

@@ -31,7 +31,7 @@ def test_dieselbe_arbeitskopie_bekommt_immer_denselben_namen():
 def test_name_ist_als_test_datenbank_erkennbar_und_nicht_zu_lang():
     name = own_test_database("dpv", Path("/Users/beispiel/" + "sehr-langer-ordner/" * 20))
 
-    # Am Anfang test_dpv_, damit die Anleitung zum Aufräumen sie findet (README.md, Schritt 11).
+    # Am Anfang test_dpv_, damit die Anleitung zum Aufräumen sie findet (README.md, „Übrige Test-Datenbanken entfernen“).
     assert name.startswith("test_dpv_")
     # PostgreSQL kürzt Namen über 63 Zeichen still; dann könnten zwei Arbeitskopien wieder zusammenfallen.
     assert len(name) <= 63

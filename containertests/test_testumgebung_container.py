@@ -9,11 +9,13 @@ meldet sich dafür selbst an und prüft, dass das Konto nach dem Aktualisieren n
 import html
 import json
 import re
+import socket
 
+import pytest
 import requests
 
 from containertests.conftest import TOOL, compose, wait_for
-from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_TOOL_PORT
+from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_LOCK_PORT, CONTAINER_TOOL_PORT
 from tests.localhost_browser import BrowserOnLocalhost
 
 BAND = "Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein."
@@ -82,6 +84,13 @@ def test_pruefung_belegt_nur_ihre_eigenen_ports(testumgebung):
 
 
 # Szenario 1
+def test_pruefung_haelt_die_wartesperre_solange_die_testumgebung_laeuft(testumgebung):
+    # Eine Container-Prüfung aus einer anderen Arbeitskopie wartet so, bis diese fertig ist (#184).
+    with socket.socket() as other_run:
+        with pytest.raises(OSError):
+            other_run.bind(("127.0.0.1", CONTAINER_LOCK_PORT))
+
+
 def test_erika_meldet_sich_in_der_testumgebung_an(testumgebung):
     start_page = _login(ERIKA)
 

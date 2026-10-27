@@ -88,7 +88,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
     uv run playwright install chromium firefox webkit
     ```
     Danach: je Browser eine Zeile `... downloaded to ...`; ist ein Browser schon da, erscheint für ihn nichts.
-11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Das Tool aus Schritt 9 und deine eigene Testumgebung im Container dürfen dabei weiterlaufen: Die Prüfungen nutzen eigene Ports (`tests/check_ports.py`), nie 8000 und 8081. Die Prüfung baut eine eigene Testumgebung und räumt sie danach wieder ab; deine eigene Testumgebung und ihre Daten berührt sie nicht. Zwei Prüfläufe aus verschiedenen Arbeitskopien (etwa deine und die einer Session) dürfen gleichzeitig laufen: Jede Arbeitskopie hat ihre eigene Test-Datenbank. Nur Rauchtest und Container-Prüfung laufen nacheinander; ist dort gerade ein anderer Lauf, steht `Warte auf eine andere Prüfung (...) …`, und es geht von selbst weiter, sobald er fertig ist (höchstens 30 Minuten, dann bricht der Lauf mit einer Meldung ab, was zu tun ist).
+11. Alle automatischen Prüfungen starten, dieselben wie auf GitHub. Das Tool aus Schritt 9 und deine eigene Testumgebung im Container dürfen dabei weiterlaufen: Die Prüfungen nutzen eigene Ports (`tests/check_ports.py`), nie 8000 und 8081. Die Prüfung baut eine eigene Testumgebung und räumt sie danach wieder ab; deine eigene Testumgebung und ihre Daten berührt sie nicht. Zwei Prüfläufe aus verschiedenen Arbeitskopien (etwa deine und die einer Session) dürfen gleichzeitig laufen: Jede Arbeitskopie hat ihre eigene Test-Datenbank. Nur Rauchtest und Container-Prüfung laufen nacheinander; ist dort gerade ein anderer Lauf, steht `Warte auf eine andere Prüfung (...) …`, und es geht von selbst weiter, sobald er fertig ist (höchstens 30 Minuten, dann bricht der Lauf mit einer Meldung ab, was zu tun ist). Zwei Läufe in derselben Arbeitskopie gehen weiter nicht gleichzeitig: Sie teilen sich deren Test-Datenbank.
     ```bash
     ./pruefen.sh
     ```
@@ -96,7 +96,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
 
 **Übrige Test-Datenbanken entfernen** (nur bei Bedarf, etwa nachdem alte Arbeitskopien gelöscht wurden)
 
-Jede Arbeitskopie hat ihre eigene Test-Datenbank, Name `test_dpv_` und zwölf Zeichen. Nach einem normalen Lauf ist sie wieder gelöscht; nach einem abgebrochenen bleibt sie liegen, je Arbeitskopie höchstens eine. Die Datenbank `dpv` deines Tools ist davon nicht betroffen. Voraussetzung: Die Datenbank läuft (Schritt 7), und gerade läuft kein `./pruefen.sh`.
+Jede Arbeitskopie hat ihre eigene Test-Datenbank, Name `test_dpv_` und zwölf Zeichen. Nach einem normalen Lauf ist sie wieder gelöscht; nach einem abgebrochenen bleibt sie liegen, je Arbeitskopie höchstens eine. Eine Datenbank `test_dpv` ohne Zeichen dahinter stammt aus der Zeit vor #184 und kann genauso weg. Die Datenbank `dpv` deines Tools ist davon nicht betroffen. Voraussetzung: Die Datenbank läuft (Schritt 7), und gerade läuft kein `./pruefen.sh`.
 
 1. Übrige Test-Datenbanken anzeigen.
    ```bash

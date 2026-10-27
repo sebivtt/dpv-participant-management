@@ -7,6 +7,8 @@ gleichzeitig laufen kann.
 Zwei Prüfläufe aus verschiedenen Arbeitskopien dürfen gleichzeitig laufen (#184): Jede hat ihre
 eigene Test-Datenbank (config/settings.py). Rauchtest und Container-Prüfung brauchen aber diese
 festen Ports; dort wartet ein zweiter Lauf, bis der erste fertig ist (wait_for_turn).
+Zwei Läufe in derselben Arbeitskopie gehen weiter nicht gleichzeitig: Sie teilen sich deren
+Test-Datenbank.
 
 Ohne Django, damit es auch die Prüfung der Testumgebung im Container (containertests/) nutzen kann.
 """
