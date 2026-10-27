@@ -36,6 +36,11 @@ TEST_ENVIRONMENT = os.environ.get("TEST_ENVIRONMENT") == "1"
 # Testumgebung ist im Internet erreichbar.
 DEBUG = os.environ.get("DJANGO_DEBUG") == "1" and not TEST_ENVIRONMENT
 
+# Bausteinkatalog unter /bausteine/ (#176): nur auf dem eigenen Rechner (DJANGO_DEBUG=1) und in
+# der Testumgebung. Im Betrieb ist keins von beiden gesetzt; dort gibt es die Seite nicht, auch
+# nicht für Admins, weil ihre erfundenen Namen Nutzende verwirren würden.
+BUILDING_BLOCKS_VISIBLE = os.environ.get("DJANGO_DEBUG") == "1" or TEST_ENVIRONMENT
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]
 
 INSTALLED_APPS = [

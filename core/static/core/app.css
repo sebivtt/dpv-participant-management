@@ -44,16 +44,11 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 
 /* ---------- Bootstrap-Bausteine im Stil des Tools ---------- */
 .btn { font-weight: 700; padding: .55rem 1.1rem; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
-.btn-sm { padding: .3rem .8rem; }
 .btn-primary { --bs-btn-bg: var(--dpv); --bs-btn-border-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-tief); --bs-btn-hover-border-color: var(--dpv-tief); --bs-btn-active-bg: var(--dpv-tief); --bs-btn-active-border-color: var(--dpv-tief); --bs-btn-disabled-bg: var(--dpv); --bs-btn-disabled-border-color: var(--dpv); }
 .btn-outline-primary { --bs-btn-color: var(--dpv); --bs-btn-border-color: var(--dpv); --bs-btn-hover-bg: var(--dpv); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-bg: var(--dpv-tief); --bs-btn-active-border-color: var(--dpv-tief); --bs-btn-disabled-color: var(--text-leise); --bs-btn-disabled-border-color: var(--linie); }
 .btn-link { --bs-btn-color: var(--dpv); --bs-btn-hover-color: var(--dpv-tief); font-weight: 700; }
 .form-label { font-weight: 700; }
-.form-control:focus, .form-select:focus, .form-check-input:focus { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
-.form-check-input:checked { background-color: var(--dpv); border-color: var(--dpv); }
-.table { --bs-table-bg: transparent; margin: 0; }
-.table > :not(caption) > * > * { padding: .85rem .6rem; vertical-align: middle; }
-.table thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-leise); }
+.form-control:focus { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
 
 /* ---------- Fokus: immer sichtbar (NFA-03) ----------
    DPV-Blau hat auf Weiß und auf dem Grund mehr als 8 : 1. Sonnengelb dort nur rund 2 : 1,
@@ -97,8 +92,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-marke { display: flex; align-items: center; gap: 12px; padding: 4px 8px; border-radius: var(--radius-klein); color: var(--dpv); text-decoration: none; font-size: 1.05rem; font-weight: 800; }
 .a-marke:hover { color: var(--dpv-tief); }
 .a-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.a-nav-titel { margin: 0 0 8px; padding: 0 10px; }
-.a-beispiel { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; border: 1px dashed var(--text-leise); color: var(--text-leise); }
 .a-navlink { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-klein); color: var(--text); text-decoration: none; font-weight: 600; }
 .a-navlink:hover { background: var(--grund); color: var(--dpv); }
 /* Aktiver Punkt: Fläche, fette Schrift und ein gelber Punkt, nicht nur eine Farbe. */
@@ -124,6 +117,8 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-abschnitt { margin: 0 0 44px; }
 .a-abschnitt > h2 { margin: 0 0 4px; font-size: 1.25rem; }
 .a-unterzeile { margin: 0 0 16px; color: var(--text-leise); font-size: .95rem; }
+/* Bausteinkatalog (#176): je Baustein ein Satz zum Zweck, darunter Herkunft und Seiten */
+.a-baustein-zweck { margin: 0 0 4px; max-width: 70ch; }
 
 /* Mein Profil (#96), gestaltet nach Sebastians Zielbild (#161, docs/zielbilder/mein-profil.html) */
 .a-profilflaeche { margin: 0 0 18px; }
@@ -167,7 +162,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
   .a-profilflaeche { padding: 18px; }
   .a-felder { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
-.a-trenner { margin: 8px 0 24px; padding-top: 24px; border-top: 1px solid var(--linie); color: var(--text-leise); font-weight: 700; }
 
 /* Meldungen (#165, docs/gestaltung.md): vier Arten, je Fläche, Schrift und Symbol in einem hellen Kästchen
    links; ein fetter erster Satz steht als eigene Zeile über dem Rest. Gestaltet nach Sebastians Zielbild
@@ -196,101 +190,6 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
   .a-meldung-ic { flex-basis: 28px; width: 28px; height: 28px; }
 }
 
-/* Statusmeldungen unter der Begrüßung */
-.a-meldungen { margin: 0 0 32px; }
-.a-meldungen ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.a-meldungen li { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-klein); background: var(--dpv-hauch); border: 1px solid transparent; transition: border-color .15s; }
-.a-meldungen li:hover { border-color: #b9cbe0; }
-/* Ein Klick irgendwo auf die Meldung führt zum Ziel, wie bei den Veranstaltungen. */
-.a-meldungen a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-klein); }
-.a-meldungen li > .ic { color: var(--dpv); }
-.a-meldungen li > span { flex: 1 1 220px; min-width: 0; }
-.a-meldungen a { font-weight: 700; }
-
-/* Dashboard-Aufbau: zwei Drittel Veranstaltungen, ein Drittel Schnellaktionen; am Handy untereinander,
-   Schnellaktionen zuerst (auch in der Reihenfolge der Tastatur). */
-.a-dash { display: grid; gap: 0 32px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1200px) {
-  .a-dash { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-areas: "kommend schnell"; align-items: start; }
-  .a-dash-kommend { grid-area: kommend; }
-  .a-dash-schnell { grid-area: schnell; }
-}
-
-/* Statuskennzeichen: immer Wort und Symbol (NFA-03) */
-.a-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 99px; font-size: .82rem; font-weight: 700; line-height: 1.5; white-space: nowrap; }
-.a-status .ic { width: 1em; height: 1em; stroke-width: 2.2; }
-.st-ok { color: var(--ok-text); background: var(--ok-grund); }
-.st-warte { color: var(--warte-text); background: var(--warte-grund); }
-.st-ab { color: var(--ab-text); background: var(--ab-grund); }
-.st-zu { color: var(--zu-text); background: var(--zu-grund); }
-.st-bald { color: var(--dpv); background: var(--dpv-hauch); }
-.st-entwurf { color: var(--entwurf-text); background: var(--entwurf-grund); border: 1px dashed var(--entwurf-rand); }
-
-/* Veranstaltungen als breite, flache Zeilen; links Bild, sonst die Lilie */
-.a-zeilen { display: flex; flex-direction: column; gap: 10px; }
-.a-event {
-  position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr) 200px;
-  grid-template-areas: "bild titel status" "bild meta seite"; gap: 4px 18px; align-items: center;
-  padding: 10px 16px 10px 10px; border-radius: var(--radius); background: var(--flaeche);
-  border: 1px solid transparent; transition: border-color .15s, box-shadow .15s;
-}
-.a-event:hover { border-color: var(--linie); box-shadow: 0 6px 18px rgba(26, 75, 126, .08); }
-.a-event.ist-entwurf { background: transparent; border: 1.5px dashed var(--entwurf-rand); }
-.a-bild { grid-area: bild; width: 76px; height: 76px; border-radius: var(--radius-klein); overflow: hidden; background: var(--dpv-hauch); color: var(--dpv); display: grid; place-items: center; }
-.a-bild svg { width: 100%; height: 100%; display: block; }
-.a-bild.ist-lilie .lilie { width: 44%; height: auto; }
-.a-event.ist-entwurf .a-bild { background: transparent; color: var(--entwurf-rand); }
-.a-event-status { grid-area: status; justify-self: start; }
-.a-event h3 { grid-area: titel; align-self: end; margin: 0; font-size: 1.1rem; line-height: 1.3; }
-/* Ein Klick irgendwo auf die Zeile führt zur Veranstaltung; der Link selbst bleibt der Titel. */
-.a-event h3 a { color: var(--text); text-decoration: none; }
-.a-event h3 a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
-.a-meta { grid-area: meta; align-self: start; display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; color: var(--text-leise); font-size: .9rem; }
-.a-meta div { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.a-meta dt { display: contents; font-weight: inherit; }
-.a-meta dd { margin: 0; }
-.a-event-seite { grid-area: seite; align-self: start; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; }
-.a-zahl { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; color: var(--text-leise); font-variant-numeric: tabular-nums; }
-.a-zahl strong { color: var(--text); }
-.a-zahl .a-status { margin-left: 6px; }
-.a-balken { height: 6px; border-radius: 99px; background: var(--grund); overflow: hidden; }
-.a-balken span { display: block; height: 100%; border-radius: 99px; background: var(--dpv); }
-.a-weiter { display: inline-flex; align-items: center; gap: 4px; color: var(--dpv); font-weight: 700; font-size: .86rem; }
-.a-weiter .ic { width: 1em; height: 1em; }
-
-/* Schnellaktionen: ganze Fläche anklickbar, „Veranstaltung erstellen“ hervorgehoben */
-.a-kacheln { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-@media (min-width: 600px) and (max-width: 1199px) { .a-kacheln { grid-template-columns: repeat(2, minmax(0, 1fr)); } .a-kachel.ist-haupt { grid-column: 1 / -1; } }
-.a-kachel { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: var(--radius); background: var(--flaeche); color: var(--text); text-decoration: none; font-weight: 700; border: 1px solid transparent; transition: border-color .15s, transform .15s; }
-.a-kachel:hover { border-color: var(--linie); transform: translateY(-1px); color: var(--text); }
-.a-kachel small { display: block; margin-top: 2px; font-weight: 500; font-size: .85rem; color: var(--text-leise); }
-.a-kachel-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; background: var(--dpv-hauch); color: var(--dpv); }
-.a-kachel-ic .ic { width: 22px; height: 22px; }
-.a-kachel.ist-haupt { background: var(--dpv); color: #fff; }
-.a-kachel.ist-haupt small { color: #d5e1ee; }
-.a-kachel.ist-haupt .a-kachel-ic { background: var(--akzent); color: var(--akzent-text); }
-.a-kachel.ist-haupt:hover { background: var(--dpv-tief); color: #fff; }
-@media (prefers-reduced-motion: no-preference) { .a-kachel:hover { transform: translateY(-1px); } }
-
-/* Fortschrittsanzeige */
-.a-schritte { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.a-schritte li { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-klein); background: var(--flaeche); border-top: 4px solid var(--linie); color: var(--text-leise); font-weight: 600; font-size: .95rem; }
-.a-schritte .nr { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--grund); font-weight: 800; font-size: .9rem; }
-.a-schritte .fertig { color: var(--text); border-top-color: var(--dpv); }
-.a-schritte .fertig .nr { background: var(--dpv); color: #fff; }
-.a-schritte [aria-current="step"] { color: var(--dpv); border-top-color: var(--akzent); font-weight: 800; }
-.a-schritte [aria-current="step"] .nr { background: var(--akzent); color: var(--akzent-text); }
-.a-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
-.a-aktionen-rechts { margin-left: auto; display: flex; flex-wrap: wrap; gap: 10px; }
-.a-abbrechen { color: var(--text-leise); font-weight: 600; }
-
-/* Teilnehmende: Tabelle am PC */
-.a-werkzeuge { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-.a-werkzeuge > * { flex: 1 1 200px; min-width: 0; }
-.a-tabelle-huelle { background: var(--flaeche); border-radius: var(--radius); padding: 6px 12px; overflow-x: auto; }
-.a-name { font-weight: 700; }
-.a-feld { display: none; }
-.a-blaettern { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; color: var(--text-leise); font-size: .92rem; }
 .a-formular { max-width: 640px; }
 .a-pflicht { color: var(--text-leise); font-weight: 600; font-size: .85em; }
 /* Baustein Textfeld (#111): Beschriftung, Feld, Fehler am Feld; so hoch wie die Felder auf „Mein Profil“,
@@ -360,28 +259,6 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 @media (prefers-reduced-motion: no-preference) {
   dialog.a-drawer[open] { animation: a-hinein .2s ease-out; }
   @keyframes a-hinein { from { transform: translateX(-24px); opacity: .4; } to { transform: none; opacity: 1; } }
-}
-
-@media (max-width: 640px) {
-  .a-event { grid-template-columns: 56px minmax(0, 1fr); grid-template-areas: "bild status" "bild titel" "meta meta" "seite seite"; gap: 6px 12px; padding: 12px; align-items: start; }
-  .a-bild { width: 56px; height: 56px; }
-  .a-meta div { white-space: normal; }
-  .a-schritte { display: flex; }
-  .a-schritte li { flex: none; padding: 10px; }
-  .a-schritte li[aria-current="step"] { flex: 1 1 auto; }
-  .a-schritte li:not([aria-current="step"]) > span:not(.nr) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-}
-
-/* Teilnehmende am Handy als kompakte Karten */
-@media (max-width: 720px) {
-  .a-tabelle thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .a-tabelle, .a-tabelle tbody { display: block; width: 100%; }
-  .a-tabelle-huelle { background: transparent; padding: 0; }
-  .a-tabelle tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; margin-bottom: 10px; padding: 12px 16px; border-radius: var(--radius); background: var(--flaeche); }
-  .a-tabelle td { display: block; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
-  .a-tabelle td.a-statusspalte { grid-row: 1; grid-column: 2; }
-  .a-tabelle td.a-klein { grid-column: 1 / -1; color: var(--text-leise); font-size: .9rem; }
-  .a-feld { display: inline; }
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }

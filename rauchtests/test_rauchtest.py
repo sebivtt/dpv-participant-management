@@ -2,6 +2,11 @@
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
+
+Mit den Vorschauen der Musterseite entfielen in #176 die Tests „Klick irgendwo auf einen Block“,
+„Entwurf ohne Farbe erkennbar“ (Szenario 7) und „Teilnehmende als Karten und Tabelle“ (Szenario 8);
+sie kommen mit den echten Seiten zurück (#28, #30). Der Tastaturtest auf der Musterseite entfiel
+ebenso; die Prüfung mit der Tastatur auf echten Seiten bringt #78.
 """
 
 import sys
@@ -137,16 +142,6 @@ def test_nur_mit_der_tastatur_am_handy_menue_auf_und_zu(handy):
     _on_login_page(handy)
 
 
-# Szenario 4, Musterseite: auch Bausteine wie „Veranstaltung erstellen“ zeigen den Fokus deutlich
-def test_nur_mit_der_tastatur_auf_der_musterseite(pc):
-    login(pc)
-    pc.goto(f"{BASE}/muster/")
-
-    stations = _tab_to(pc, "Zum Inhalt springen", steps=1) + _tab_to(pc, "Veranstaltung erstellen", steps=30)
-
-    _all_visible(stations)
-
-
 # Szenario 3: Menü schließt auch per Knopf und beim Antippen daneben
 def test_handy_menue_schliesst_per_knopf_und_beim_antippen_daneben(handy):
     login(handy)
@@ -163,23 +158,6 @@ def test_handy_menue_schliesst_per_knopf_und_beim_antippen_daneben(handy):
     expect(menu).to_be_hidden()
 
 
-# Blöcke: ein Klick irgendwo auf den Block führt zum Ziel
-def test_klick_irgendwo_auf_einen_block_fuehrt_zum_ziel(pc):
-    login(pc)
-    pc.goto(f"{BASE}/muster/")
-
-    # Wie eine Person auf die Stelle klicken: Über dem Block liegt absichtlich die Klickfläche des Links.
-    def click_on(locator) -> None:
-        box = locator.bounding_box()
-        pc.mouse.click(box["x"] + 5, box["y"] + box["height"] / 2)
-
-    click_on(pc.locator(".a-event").first.locator(".a-meta"))
-    pc.wait_for_url(f"{BASE}/muster/#inhalt")
-    pc.goto(f"{BASE}/muster/")
-    click_on(pc.locator(".a-meldungen li").first.locator("span").first)
-    pc.wait_for_url(f"{BASE}/muster/#h-kommend", timeout=3000)
-
-
 # Szenario 5
 def test_ohne_namen_personensymbol_im_kreis(pc):
     login(pc, OHNE_NAME)
@@ -190,39 +168,10 @@ def test_ohne_namen_personensymbol_im_kreis(pc):
     expect(pc.get_by_text("Ergänze deinen Namen")).to_be_visible()
 
 
-# Szenario 7
-def test_entwurf_auch_ohne_farbe_erkennbar(pc):
-    login(pc)
-    pc.goto(f"{BASE}/muster/")
-
-    styles = pc.eval_on_selector_all(".a-event", "rows => rows.map(r => getComputedStyle(r).borderTopStyle)")
-    draft = pc.eval_on_selector(".a-event.ist-entwurf", "r => getComputedStyle(r).borderTopStyle")
-    assert draft == "dashed"
-    assert styles.count("dashed") == 1, styles
-
-
-# Szenario 8
-def test_teilnehmende_am_handy_als_karten_am_pc_als_tabelle(pc, handy):
-    def look(page: Page) -> dict:
-        login(page)
-        page.goto(f"{BASE}/muster/")
-        return page.evaluate(
-            """() => ({zeile: getComputedStyle(document.querySelector('.a-tabelle tbody tr')).display,
-                      kopf: document.querySelector('.a-tabelle thead').getBoundingClientRect().height})"""
-        )
-
-    on_pc = look(pc)
-    assert on_pc["zeile"] == "table-row"
-    assert on_pc["kopf"] > 10
-    on_phone = look(handy)
-    assert on_phone["zeile"] in ("block", "grid")
-    assert on_phone["kopf"] <= 1
-
-
-# Eingaben wie am Handy (Erfahrung aus dem Vorgänger-Repo, CLAUDE.md)
+# Eingaben wie am Handy (Erfahrung aus dem Vorgänger-Repo, CLAUDE.md), am Baustein Textfeld im Katalog (#176)
 def test_eingaben_wie_am_handy_bleiben_stehen(handy):
     login(handy)
-    handy.goto(f"{BASE}/muster/")
+    handy.goto(f"{BASE}/bausteine/")
     field = handy.get_by_label("Name der Veranstaltung")
 
     field.tap()
@@ -242,7 +191,7 @@ def test_eingaben_wie_am_handy_bleiben_stehen(handy):
         }"""
     )
     field.press_sequentially(" 2027")
-    handy.get_by_label("Organisation").focus()
+    handy.get_by_label("Ort").focus()
 
     expect(field).to_have_value("Pfingstlager Sommer 2027")
 
@@ -595,13 +544,13 @@ def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name
     findings["Startseite"] = run_axe(page)
     page.goto(f"{BASE}/profil/")
     findings["Mein Profil ohne Organisation"] = run_axe(page)
-    page.goto(f"{BASE}/muster/")
-    findings["Musterseite"] = run_axe(page)
+    page.goto(f"{BASE}/bausteine/")
+    findings["Bausteinkatalog"] = run_axe(page)
     if device == "handy":
         page.get_by_role("button", name="Menü").click()
         # Erst messen, wenn das Menü fertig eingeblendet ist; es startet halb durchsichtig.
         page.locator("#menue").evaluate("el => Promise.all(el.getAnimations().map(a => a.finished))")
-        findings["Musterseite mit offenem Menü"] = run_axe(page)
+        findings["Bausteinkatalog mit offenem Menü"] = run_axe(page)
     page.goto(f"{BASE}/test/1/")
     findings["Fehlerseite"] = run_axe(page)
     # Die übrigen Fehlerseiten haben denselben Aufbau (#58); zwei davon stellvertretend.
@@ -647,7 +596,7 @@ def test_meldungen_am_handy_brechen_um_und_bestehen_die_pruefung(handy):
     login(handy, OHNE_NAME)
 
     findings = {}
-    for address in ("/", "/profil/", "/muster/"):
+    for address in ("/", "/profil/", "/bausteine/"):
         handy.goto(f"{BASE}{address}")
         findings[address] = _notices_fit(handy) + run_axe(handy)
     handy.goto(f"{BASE}/profil/")

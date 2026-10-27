@@ -1,0 +1,5 @@
+{% load layout %}{# Kopfzeile mit Name (#161, #180): Kreis mit dem Anfangsbuchstaben (ohne Namen ein Personensymbol), daneben groß der Name und kleiner und grauer der Zusatz in Klammern, z. B. „Falkenflug (Erika Testfrau)“. #}
+<div class="a-identitaet">
+  <span class="a-avatar" aria-hidden="true">{% if initial %}{{ initial }}{% else %}{% icon "person" %}{% endif %}</span>
+  <p class="a-anzeigename">{{ name }}{% if extra %} <span class="a-anzeigename-zusatz">({{ extra }})</span>{% endif %}</p>
+</div>

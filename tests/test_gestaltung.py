@@ -1,4 +1,4 @@
-"""Tests für die Grundgestaltung und die Musterseite (#7, NFA-01, NFA-03, NFA-09).
+"""Tests für die Grundgestaltung (#7, NFA-01, NFA-03, NFA-09); den Bausteinkatalog prüft tests/test_bausteinkatalog.py (#176).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Was nur ein
 echter Browser zeigen kann (Tastatur, Handy, axe), prüft der Rauchtest in rauchtests/.
@@ -170,74 +170,16 @@ def test_ohne_vornamen_zeigt_der_kreis_ein_personensymbol_und_keinen_leeren_name
     assert "Ergänze deinen Namen" in _text(root)
 
 
-# ---------- Szenario 6: Musterseite nur mit Login ----------
-
-
-def test_musterseite_ohne_login_fuehrt_zum_login():
-    response = Client().get("/muster/")
-
-    assert response.status_code == 302
-    assert response["Location"] == "/anmelden/?next=/muster/"
-
-
-def test_musterseite_mit_login_zeigt_alle_fuenf_navigationspunkte_als_beispiel():
-    root = _tree(_logged_in().get("/muster/"))
-
-    nav = _one(_by_tag(_sidebar(root), "nav", aria_label="Hauptnavigation"))
-    names = [_text(a) for a in _by_tag(nav, "a")]
-    assert names == ["Startseite", "Veranstaltungen", "Teilnehmende", "Organisation", "Einstellungen"]
-    assert "Beispiel" in _text(nav)
-
-
-# ---------- Szenario 7: Zustände nie nur über Farbe ----------
-
-
-def test_jedes_statuskennzeichen_hat_ein_wort_und_ein_symbol():
-    root = _tree(_logged_in().get("/muster/"))
-
-    badges = _all(root, lambda e: "a-status" in _classes(e))
-    assert len(badges) >= 8
-    for badge in badges:
-        assert _text(badge), "Statuskennzeichen ohne Wort"
-        assert _by_tag(badge, "svg"), f"„{_text(badge)}“ ohne Symbol"
-    words = {_text(badge) for badge in badges}
-    for word in ("Anmeldung offen", "Anmeldung ab 01.12.", "Anmeldung geschlossen", "Entwurf", "ausgebucht",
-                 "angemeldet", "Warteliste", "abgemeldet"):
-        assert word in words, f"„{word}“ fehlt"
-
-
-def test_veranstaltungen_als_zeilen_mit_bild_und_lilie_als_standard():
-    root = _tree(_logged_in().get("/muster/"))
-
-    rows = _all(root, lambda e: e.name == "article" and "a-event" in _classes(e))
-    assert len(rows) >= 5
-    for row in rows:
-        picture = _one(_all(row, lambda e: "a-bild" in _classes(e)))
-        assert _by_tag(picture, "svg")
-        link = _one(_by_tag(row, "a"))
-        assert _text(link), "Zeile ohne Namen als Link"
-    with_lily = [r for r in rows if _all(r, lambda e: e.name == "svg" and "lilie" in _classes(e))]
-    assert 0 < len(with_lily) < len(rows), "Lilie nur, wo kein eigenes Bild hinterlegt ist"
-    drafts = [r for r in rows if "ist-entwurf" in _classes(r)]
-    assert len(drafts) == 1
-    assert "Entwurf" in _text(drafts[0])
-
-
-def test_angemeldete_mit_und_ohne_obergrenze():
-    root = _tree(_logged_in().get("/muster/"))
-    text = " ".join(_text(root).split())
-
-    assert "23 von 40 angemeldet" in text
-    assert "16 von 16 angemeldet" in text
-    assert "31 angemeldet" in text
-    assert "31 von" not in text
+# Szenario 6 (Musterseite nur mit Login) und die Vorschauen zu Szenario 7 (Statuskennzeichen,
+# Veranstaltungszeilen, Anmeldezahlen) entfallen mit #176: Der Bausteinkatalog zeigt nur
+# Entschiedenes (tests/test_bausteinkatalog.py); die Vorschauen kommen mit #28, #29 und #30 zurück.
 
 
 # ---------- Szenario 9: Pflichtfeld mit Fehlermeldung am Feld ----------
 
 
 def test_pflichtfeld_ist_gekennzeichnet_und_die_fehlermeldung_haengt_am_feld():
-    root = _tree(_logged_in().get("/muster/"))
+    root = _tree(_logged_in().get("/bausteine/"))
 
     field = _one(_all(root, lambda e: e.name == "input" and _attr(e, "aria-invalid") == "true"))
     assert _attr(field, "required") is not None
@@ -254,7 +196,7 @@ def _footer(root) -> Element:
     return _one(_by_tag(root, "footer"))
 
 
-@pytest.mark.parametrize("address", ["/", "/muster/"])
+@pytest.mark.parametrize("address", ["/", "/bausteine/"])
 def test_fussbereich_auf_den_seiten_mit_login(address):
     footer = _footer(_tree(_logged_in().get(address)))
 

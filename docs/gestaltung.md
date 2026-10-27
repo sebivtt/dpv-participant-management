@@ -1,8 +1,19 @@
 # Gestaltung des DPV Anmeldetools
 
-Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen. Gebaut ist bisher nur die Grundgestaltung mit Musterseite (`/muster/`). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
+Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen. Gebaut sind bisher die Grundgestaltung und der Bausteinkatalog (`/bausteine/`, #176). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
 
-Wer eine Seite baut, nimmt die Bausteine der Musterseite (`core/templates/core/muster.html`) und die Farben aus `core/static/core/app.css`. Neue Bausteine kommen zuerst auf die Musterseite. Ob und wann vorher ein Zielbild nötig ist: `CLAUDE.md`, „Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162); die Zielbilder liegen unter `docs/zielbilder/`.
+Wer eine Seite baut, nimmt die Bausteine aus dem Bausteinkatalog (unten) und die Farben aus `core/static/core/app.css`. Ob und wann vorher ein Zielbild nötig ist: `CLAUDE.md`, „Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162); die Zielbilder liegen unter `docs/zielbilder/`.
+
+## Bausteinkatalog (#176, 27.10.2026)
+
+Protokoll und Szenarien in #176, Entscheidung mit Begründung in `docs/entscheidungen.md`, Eintrag vom 27.10.2026 zu #176. Jeder Baustein steht einmal als Vorlagenstück unter `core/templates/core/`, sein Aussehen in `core/static/core/app.css`. Der Katalog unter `/bausteine/` (`core/templates/core/bausteine.html`) zeigt jeden über dasselbe Vorlagenstück wie die echten Seiten, mit erfundenen Daten, je Baustein mit einem Satz zum Zweck, dem Issue, das ihn entschieden hat, und den Seiten, die ihn nutzen. Es gibt ihn nur für Angemeldete auf dem eigenen Rechner und in der Testumgebung; im Betrieb zeigt die Adresse allen „Diese Seite gibt es nicht.“
+
+- **Regel: einbinden, nicht kopieren.** Eine Seite bindet den Baustein ein, statt sein Aussehen nachzubauen. Eingabefelder kommen immer aus einem Baustein (Textfeld, Feld zum Antippen). Zwei Tests in `tests/test_bausteinkatalog.py` werden rot, wenn eine Seite ein eigenes Eingabefeld hat oder ein Vorlagenstück einbindet, das nicht im Katalog steht.
+- **Nur Entschiedenes:** ein Baustein, den Sebastian an einem Zielbild (#162) oder in einer Klärung mit `grill-me` ausdrücklich freigegeben hat und den das Issue dazu nennt. Er kommt in den Katalog, sobald Sebastian ihn entschieden hat, spätestens mit seiner ersten Seite. Bis eine Seite ihn einbindet, trägt er den Vermerk „noch auf keiner Seite“.
+- **Passt ein vorhandener Baustein nicht genau,** wird er erweitert oder es entsteht ein neuer; das entscheidet Sebastian, nie eine stille Kopie (für die KI: `CLAUDE.md`, „Ablauf je Aufgabe“).
+- **Prüfung:** Im Katalog läuft die Prüfung auf Barrierefreiheit am PC und am Handy, am Handy auch mit offenem Menü. Mit der Tastatur geprüft wird ein Baustein auf seiner ersten echten Seite.
+- **Überholt:** Die Vorschauen aus #7 (Dashboard, Veranstaltungszeilen, Statuskennzeichen, Schritte von „Veranstaltung anlegen“, Teilnehmendentabelle, Beispiel-Navigation) sind entfallen. Ihre Regeln stehen in Abschnitt 1 als Text und kommen über die Zielbilder von #28, #29 und #30 wieder.
+- **Alter Name:** Wo ein Issue „Musterseite“ oder `/muster/` sagt, ist seit #176 der Bausteinkatalog gemeint.
 
 ## 1. Festgelegt bei der Klärung von #7
 
@@ -16,7 +27,7 @@ Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Ei
 - **Navigation:** Auf echten Seiten steht nur, was es gibt, und nur für Personen, die es nutzen dürfen (`core/navigation.py`). Keine leeren Platzhalter. Ausblenden ersetzt nie die Rechteprüfung auf dem Server.
 - **Fußbereich:** eine flache Zeile am Ende des Inhalts, links „Impressum“ und „Datenschutz“, rechts „© DPV e.V. · Anmeldetool 2026“; die Jahreszahl zählt weiter.
 - **Login- und Fehlerseite:** ruhig und mittig, ohne Seitenleiste.
-- **Dashboard (Vorschau auf der Musterseite, gebaut in #28):** oben die Begrüßung, darunter einige Statusmeldungen, darunter am PC zwei Drittel „Kommende Veranstaltungen“ und ein Drittel „Schnellaktionen“; am Handy untereinander, Schnellaktionen zuerst.
+- **Dashboard (gebaut in #28):** oben die Begrüßung, darunter einige Statusmeldungen, darunter am PC zwei Drittel „Kommende Veranstaltungen“ und ein Drittel „Schnellaktionen“; am Handy untereinander, Schnellaktionen zuerst.
 - **Veranstaltungen in Übersichten:** breite, flache Zeilen. Links ein Bild (Ausschnitt aus dem Banner oder eigenes Logo, #31), ohne Bild die Lilie; in der Mitte Name, Zeitraum, Ort, Organisation; rechts Zustand und Anmeldezahl. Mit Obergrenze „23 von 40 angemeldet“ mit Balken, voll zusätzlich „ausgebucht“; ohne Obergrenze nur „23 angemeldet“. Entwürfe gestrichelt umrandet und mit dem Wort „Entwurf“.
 - **Zustände (vorläufig, endgültig in #29):** „Entwurf“, „Anmeldung ab 01.12.“, „Anmeldung offen“, „Anmeldung geschlossen“.
 - **Menüs:** öffnen am PC beim Darüberfahren und zusätzlich per Klick, Antippen und Tastatur; sie schließen mit kurzer Verzögerung.
@@ -25,7 +36,7 @@ Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Ei
 
 ### Meldungen (Klärung von #165, 26.10.2026)
 
-Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #165. Jede Meldung im Tool gehört zu genau einer von vier Arten und nutzt deren Baustein (`{% meldung %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Meldungen“):
+Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #165. Jede Meldung im Tool gehört zu genau einer von vier Arten und nutzt deren Baustein (`{% meldung %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Meldungen“):
 
 | Art | Wann | Aussehen |
 |---|---|---|
@@ -34,7 +45,7 @@ Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. E
 | Fehlermeldung | etwas hat nicht geklappt; nur neu versuchen oder warten | gedecktes Rot, Kreuz |
 | Erfolgsmeldung | etwas hat geklappt | gedecktes Grün, Haken |
 
-- **Fehler am Feld** ist keine Meldung dieser Arten: rote Schrift direkt unter dem Feld, mit dem Feld verknüpft (Musterseite, „Formular“).
+- **Fehler am Feld** ist keine Meldung dieser Arten: rote Schrift direkt unter dem Feld, mit dem Feld verknüpft (Bausteinkatalog, „Textfeld“).
 - **Eine Farbfamilie:** Meldungen und Statuskennzeichen teilen sich die Farben: Warnung wie „Warteliste“, Fehler wie „abgemeldet“, Erfolg wie „angemeldet“. Unterschieden wird über die Form, kleine Pille gegen Fläche mit Satz.
 - **Aufbau:** das Symbol in einem hellen Kästchen links, daneben der Text; ein fetter erster Satz steht als eigene Zeile über dem Rest. Mehrere Meldungen stehen getrennt untereinander, am Handy bricht der Text um und das Symbol bleibt links.
 - **Ohne Farbe erkennbar:** Jede Art hat ihr eigenes Symbol, und Vorleseprogramme hören vorweg ihr Wort („Information:“, „Warnung:“, „Fehler:“, „Erfolg:“), das unsichtbar bleibt.
@@ -43,7 +54,7 @@ Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. E
 
 ### Textfelder (#111, 26.10.2026)
 
-Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Formular“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
+Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
 
 - **Beschriftung** über dem Feld, bei Pflichtfeldern mit „(Pflicht)“; freiwillige Felder ohne Zusatz.
 - **Fehler am Feld** rot direkt darunter, mit dem Feld verknüpft; die Eingabe bleibt stehen.
@@ -53,7 +64,7 @@ Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% t
 
 ### Felder zum Antippen (#180, 26.10.2026)
 
-Ein einzelnes Feld, das man auf einer Seite mit Angaben ändern kann, ist ein Feld zum Antippen (`{% antippfeld form.feld saved=… icon=… %}` in `core/templatetags/layout.py`, auf der Musterseite unter „Mein Profil“). Vorbild ist das Zielbild „Mein Profil“; zuerst genutzt für den Fahrtennamen. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #180.
+Ein einzelnes Feld, das man auf einer Seite mit Angaben ändern kann, ist ein Feld zum Antippen (`{% antippfeld form.feld saved=… icon=… %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Feld zum Antippen“). Vorbild ist das Zielbild „Mein Profil“; zuerst genutzt für den Fahrtennamen. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #180.
 
 - **In Ruhe** sieht es aus wie die gesperrten Angaben daneben, aber weiß: Beschriftung, Symbol, Wert oder „Noch nicht angegeben“, rechts ein ×-Knopf zum Leeren (ausgegraut, wenn leer).
 - **Antippen** öffnet die Eingabe im selben Rahmen, darunter „Verwerfen“ und „Speichern“ in einer kleinen Fläche über dem Inhalt darunter.

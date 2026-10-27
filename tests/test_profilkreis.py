@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 User = get_user_model()
 
 PROFILE = "/profil/"
-PAGES_WITH_SIDEBAR = ["/", PROFILE, "/muster/"]
+PAGES_WITH_SIDEBAR = ["/", PROFILE, "/bausteine/"]
 
 
 def _client(username="erika.testfrau", first_name="Erika", last_name="Testfrau") -> tuple[Client, User]:
@@ -67,7 +67,7 @@ def test_auf_mein_profil_ist_der_kreis_die_aktuelle_seite():
         assert _attr(circle, "aria-current") == "page"
 
 
-@pytest.mark.parametrize("address", ["/", "/muster/"])
+@pytest.mark.parametrize("address", ["/", "/bausteine/"])
 def test_auf_anderen_seiten_ist_der_kreis_nicht_hervorgehoben(address):
     client, _ = _client()
 

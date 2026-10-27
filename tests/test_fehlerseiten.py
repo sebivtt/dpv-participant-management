@@ -132,14 +132,14 @@ def test_browser_schickt_die_vorige_seite_nur_innerhalb_des_tools_mit():
     assert response["Referrer-Policy"] == "same-origin"
 
 
-# Neuer Baustein zuerst auf der Musterseite (docs/gestaltung.md)
-def test_musterseite_zeigt_die_knoepfe_der_fehlerseite():
-    response = _logged_in_client().get("/muster/")
+# Entschiedene Bausteine stehen im Bausteinkatalog (#176, docs/gestaltung.md)
+def test_katalog_zeigt_die_knoepfe_der_fehlerseite():
+    response = _logged_in_client().get("/bausteine/")
 
     assert response.status_code == 200
     root = parse_html(response.content.decode())
     section = _all(root, lambda e: e.name == "section" and _attr(e, "aria-labelledby") == "h-fehlerseite")
-    assert len(section) == 1, "kein Abschnitt „Fehlerseite“ auf der Musterseite"
+    assert len(section) == 1, "kein Abschnitt „Knöpfe der Fehlerseite“ im Katalog"
     back = _link(section[0], "Zurück")
-    assert _attr(back, "hidden") is None, "auf der Musterseite steht „Zurück“ immer sichtbar als Beispiel"
+    assert _attr(back, "hidden") is None, "im Katalog steht „Zurück“ immer sichtbar als Beispiel"
     assert _attr(_link(section[0], "Zur Startseite"), "href")

@@ -5,7 +5,7 @@ Dieses Projekt wird überwiegend mit KI entwickelt. Sebastian, der Projektverant
 ## Verbindlich
 
 - `CONTRIBUTING.md`: die Regeln für jede Änderung. Sie gelten für jedes Werkzeug; hier steht nur, was zusätzlich für KI gilt.
-- `docs/gestaltung.md`: Leitlinie für die Gestaltung jeder Seite; neue Bausteine kommen zuerst auf die Musterseite (`/muster/`).
+- `docs/gestaltung.md`: Leitlinie für die Gestaltung jeder Seite; die entschiedenen Bausteine stehen im Bausteinkatalog (`/bausteine/`), und jede Seite bindet sie von dort ein.
 - Code aus dem alten Repo (`sebivtt/scout-participant-management`) nur nach `CONTRIBUTING.md`, Abschnitt 10.
 - Maßgeblich sind die Dateien in `docs/`, nicht die früheren Docs in Claude. Diese sind aus der Arbeitssitzung nicht immer lesbar (am 20.10.2026 zweimal kein Zugriff).
 
@@ -41,7 +41,7 @@ Jede Angabe steht an genau einem Ort; alle anderen Stellen verweisen nur darauf,
 5. **Unabhängige Prüfung** vor jedem Pull Request (siehe unten).
 6. **Pull Request** nach der Vorlage. Erst alles hochladen und warten, bis alle Prüfungen auf GitHub grün sind; dann den Link schicken und das Ergebnis der Prüfungen in der Beschreibung nennen. GitHub sperrt das Übernehmen roter Pull Requests bei diesem privaten Repo nicht; die Regel ersetzt die Sperre, bis das Repo veröffentlicht ist (#16). Ist ein Lauf nur an der Browser-Installation gescheitert, kein Test gelaufen und nennt die Meldung klar die Browser-Installation, darf die KI ihn einmal pro Stand ohne Rückfrage neu starten; scheitert auch das, fragt sie Sebastian, und der Pull Request nennt den Neustart (`docs/entscheidungen.md`, 25.10.2026).
 
-**Zielbild vor Gestaltung:** Baut ein Issue eine neue Seite mit eigener Adresse oder einen neuen sichtbaren gemeinsamen Baustein für die Musterseite, braucht es ein Zielbild von Sebastian, also seinen fertigen Entwurf als HTML-Datei. Bei einem neuen Abschnitt einer bestehenden Seite fragt die klärende Session ihn, ob er eins will. Proben (#100 bis #102, Entscheidung F1 aus #106) und reine Erweiterungen bestehender Seiten brauchen keins. Alles geschieht beim Klären (Skill `grill-me`), in dieser Reihenfolge: Klären und Szenarien → grober Entwurf als HTML-Datei, von der klärenden Session als Kommentar im Issue → Zielbild als Kommentar mit Prüfsumme im Issue → Nachklärung: jede Abweichung einzeln mit Sebastian klären, Issue und Szenarien angepasst → erst dann das Label `geklärt`. Das Zielbild ist Orientierung für das Aussehen, keine Anforderung: Rechtematrix, Anforderungen, Entscheidungen und `docs/gestaltung.md` gehen vor; was es davon abweichend zeigt, wird nachgeklärt oder als Abweichung genannt. Entwurf und Zielbild enthalten nur erfundene Daten. Die Umsetzung legt das Zielbild unverändert unter `docs/zielbilder/` ab, mit Eintrag in `docs/zielbilder/README.md`.
+**Zielbild vor Gestaltung:** Baut ein Issue eine neue Seite mit eigener Adresse oder einen neuen sichtbaren gemeinsamen Baustein für den Bausteinkatalog, braucht es ein Zielbild von Sebastian, also seinen fertigen Entwurf als HTML-Datei. Bei einem neuen Abschnitt einer bestehenden Seite fragt die klärende Session ihn, ob er eins will. Proben (#100 bis #102, Entscheidung F1 aus #106) und reine Erweiterungen bestehender Seiten brauchen keins. Alles geschieht beim Klären (Skill `grill-me`), in dieser Reihenfolge: Klären und Szenarien → grober Entwurf als HTML-Datei, von der klärenden Session als Kommentar im Issue → Zielbild als Kommentar mit Prüfsumme im Issue → Nachklärung: jede Abweichung einzeln mit Sebastian klären, Issue und Szenarien angepasst → erst dann das Label `geklärt`. Das Zielbild ist Orientierung für das Aussehen, keine Anforderung: Rechtematrix, Anforderungen, Entscheidungen und `docs/gestaltung.md` gehen vor; was es davon abweichend zeigt, wird nachgeklärt oder als Abweichung genannt. Entwurf und Zielbild enthalten nur erfundene Daten. Die Umsetzung legt das Zielbild unverändert unter `docs/zielbilder/` ab, mit Eintrag in `docs/zielbilder/README.md`.
 
 Für die Umsetzung gilt außerdem:
 
@@ -49,6 +49,7 @@ Für die Umsetzung gilt außerdem:
 - Direkt vor dem Start prüft die KI außerdem, ob im Issue der Kommentar „Szenarien (Datum)“ mit Sebastians Entscheidungen steht. Fehlt er, hält sie an und legt ihm Szenarien vor, statt mit Tests oder Code zu beginnen. Das gilt auch, wenn der Auftrag den Schritt nicht nennt; ein Auftrag hebt ihn nie auf.
 - Braucht das Issue ein Zielbild (oben, „Zielbild vor Gestaltung“), prüft die KI direkt vor dem Start ebenso, ob es als Kommentar mit Prüfsumme im Issue steht und die Nachklärung festgehalten ist. Fehlt eins davon, hält sie an und fragt Sebastian. Aufträge bleiben nur Link und Verweis; die Prüfung hängt nicht vom Auftrag ab.
 - Der Pull Request verlinkt den Kommentar mit den Szenarien und nennt die Tests, die über die Szenarien hinaus dazugekommen sind. Gibt es ein Zielbild, verlinkt er es und nennt jede Abweichung davon mit Grund.
+- **Bausteine einbinden** (Regeln in `docs/gestaltung.md`, Bausteinkatalog): Eine Seite bindet ein, was der Bausteinkatalog schon hat. Passt ein vorhandener Baustein nicht genau, hält die KI an und fragt Sebastian, ob er erweitert wird oder ein neuer entsteht; nie eine stille Kopie.
 - Ein Issue ergibt einen Pull Request mit eigenem Test. Die Beschreibung nennt „Closes #<nummer>“.
 - Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist.
 - Ein Sammel-Issue wird geschlossen, wenn sein letztes Unter-Issue erledigt ist.
@@ -85,6 +86,7 @@ Eine zweite KI-Instanz ohne Kenntnis des bisherigen Gesprächs prüft nur den Di
 4. Fehlerbehandlung und doppelter Mailversand
 5. unnötige Komplexität
 6. fehlende Tests
+7. selbst gebaut statt Baustein eingebunden: ein eigenes Feld oder nachgebautes Aussehen, wo der Bausteinkatalog einen Baustein hat
 
 Für jeden Befund: Datei und Zeile, konkreter Fehlerfall, kleinste Korrektur und ein Test, der den Fehler zeigt. Belegtes getrennt von Vermutetem. Die Befunde selbst nachprüfen, dann beheben oder im Pull Request begründen.
 

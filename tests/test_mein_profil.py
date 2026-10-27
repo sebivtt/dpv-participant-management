@@ -666,11 +666,11 @@ def test_abfragen_wachsen_nicht_mit_der_zahl_der_rollen(org):
     assert_queries_do_not_grow(create_role, lambda: open_profile(org.erika, client=client))
 
 
-def test_bausteine_angaben_und_rollen_stehen_auf_der_musterseite(org):
-    """docs/gestaltung.md: Neue Bausteine kommen zuerst auf die Musterseite (Szenario 18 zu #161)."""
+def test_bausteine_angaben_und_rollen_stehen_im_katalog(org):
+    """Szenario 18 zu #161: die Bausteine stehen auf der Musterseite, seit #176 im Bausteinkatalog."""
     client = Client()
     client.force_login(org.erika)
-    root = _tree(client.get("/muster/"))
+    root = _tree(client.get("/bausteine/"))
 
     for name in ("a-identitaet", "a-anzeigename", "a-meldung", "a-flaeche-kopf", "a-mitgliedschaft"):
         assert with_class(root, name), name

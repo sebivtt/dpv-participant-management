@@ -94,8 +94,12 @@ def browser(_playwright, browser_name) -> Browser:
 
 @pytest.fixture
 def tool(live_server, transactional_db, settings):
-    """Das Tool auf dem Port des Rauchtests (BASE), mit leerer Datenbank für jeden Test."""
+    """Das Tool auf dem Port des Rauchtests (BASE), mit leerer Datenbank für jeden Test.
+
+    Wie auf dem eigenen Rechner ist der Bausteinkatalog zu sehen (#176), auch auf GitHub.
+    """
     settings.ALLOWED_HOSTS = ["localhost"]
+    settings.BUILDING_BLOCKS_VISIBLE = True
     return BASE
 
 

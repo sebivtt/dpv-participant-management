@@ -6,6 +6,31 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-27 · Bausteinkatalog statt Musterseite: nur Entschiedenes, eingebunden statt kopiert (#176)
+
+**Entscheidung** (Sebastian, Klärung von #176 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/176#issuecomment-6435571666), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/176#issuecomment-6435572131)):
+
+1. **Nur Entschiedenes:** Der Katalog zeigt nur Bausteine, die Sebastian an einem Zielbild oder in einer Klärung ausdrücklich freigegeben hat und die das Issue dazu nennt. Die Vorschauen aus #7 (Dashboard, Veranstaltungszeilen, Statuskennzeichen, Schritte, Teilnehmendentabelle, Beispiel-Navigation) gelten als überholt; ihre Regeln bleiben als Text in `docs/gestaltung.md` und kommen über die Zielbilder von #28, #29 und #30 wieder (Fragen 1 und 8).
+2. **Vorab in den Katalog:** Ein Baustein kommt in den Katalog, sobald Sebastian ihn entschieden hat, spätestens mit seiner ersten Seite; bis dahin mit dem Vermerk „noch auf keiner Seite“. Die Empfehlung war „im selben Pull Request wie seine erste Seite“; Sebastian entschied anders (Frage 7).
+3. **Einbinden, nicht kopieren:** Jede Seite bindet den Baustein ein. Passt er nicht genau, hält die KI an und fragt Sebastian, ob er erweitert wird oder ein neuer entsteht; nie eine stille Kopie. Dazu ein Prüfpunkt in der unabhängigen Prüfung und ein Test, dass jedes Eingabefeld auf echten Seiten aus einem Baustein kommt (Frage 11).
+4. **Wer ihn sieht:** nur Angemeldete auf dem eigenen Rechner und in der Testumgebung; im Betrieb „Diese Seite gibt es nicht.“ für alle, auch Admins (Frage 3).
+5. **Prüfung:** im Katalog nur die Prüfung auf Barrierefreiheit am PC und am Handy; mit der Tastatur geprüft wird ein Baustein auf seiner ersten echten Seite (Fragen 4 und 9). Die Rauchtests, die nur an den alten Vorschauen hingen, entfallen; der Tastaturtest am PC auf der Musterseite entfällt, Ersatz auf echten Seiten bringt #78 (Frage 2).
+6. **Alter Name:** Die offenen Issues, die „Musterseite“ sagen, bleiben unverändert; `docs/gestaltung.md` ordnet den Namen in einem Satz zu (Frage 12).
+7. **Stunden:** rund 4 aus dem Puffer (Frage 10, `docs/fahrplan.md`, Nr. 50).
+
+**Technische Wahl** (KI):
+
+- **Adresse `/bausteine/`** statt `/muster/`; die alte Adresse gibt es nicht mehr.
+- **Sichtbar** über die Einstellung `BUILDING_BLOCKS_VISIBLE`: an, wenn `DJANGO_DEBUG=1` (eigener Rechner) oder die Testumgebung eingeschaltet ist; im Betrieb ist beides aus. Der Katalog antwortet dort wie eine Adresse, die es nicht gibt. Die Prüfungen laufen wie auf dem eigenen Rechner, mit sichtbarem Katalog; die Tests für den Betrieb schalten ihn ab.
+- **Als gemeinsamer Baustein zählt jedes Vorlagenstück, das Seiten einbinden**, direkt mit `include` oder über einen Baustein aus `core/templatetags/layout.py`. Ausnahmen stehen mit Grund im Test: die Symbole, das Logo und der Rahmen jeder Seite (Marke, Navigation, Konto, Fußbereich), in dem der Katalog selbst steht.
+- **Gesperrte Angabe, Kopfzeile mit Name und Überschrift einer Fläche** (#161) standen bisher als kopiertes HTML auf der Musterseite und auf „Mein Profil“. Sie sind jetzt eigene Vorlagenstücke, die beide einbinden; sonst hätte der Katalog sie weiter kopiert.
+- **Die Seiten je Baustein** stehen in `core/views.py` (`BUILDING_BLOCKS`); ein Test prüft an den Vorlagen, dass „noch auf keiner Seite“ genau dort steht, wo keine Seite den Baustein einbindet. So steht das Textfeld heute mit diesem Vermerk da: Das Feld zum Antippen nutzt nur seine Eingabe, nicht sein Vorlagenstück.
+- **Was nichts mehr nutzt, entfällt:** die Vorlagenstücke Statuskennzeichen und Veranstaltungszeile, die beiden Beispielbilder, das Aussehen der Vorschauen und zwölf Symbole. Die Farben bleiben an ihrer einen Stelle in `core/static/core/app.css`. Alles Entfernte steht in der Git-Historie, falls #28, #29 oder #30 es brauchen.
+
+**Begründung:** Die Musterseite war veraltet und zeigte Vorschauen, die nie entschieden waren. Ein Katalog, der dieselben Vorlagenstücke einbindet wie die Seiten, weicht nie vom echten Aussehen ab, und die Tests machen sichtbar, wenn eine Seite etwas selbst baut.
+
+**Umsetzung:** `core/views.py` (`building_blocks`, `BUILDING_BLOCKS`), `config/urls.py`, `config/settings.py`, `core/templates/core/bausteine.html`, `_katalogeintrag.html`, `_angabe.html`, `_kopfzeile.html`, `_flaechenkopf.html`, `profil.html`, `core/static/core/app.css`, `CLAUDE.md`, `CONTRIBUTING.md`, `docs/gestaltung.md`, `docs/fahrplan.md`; Tests in `tests/test_bausteinkatalog.py`, angepasst in den Tests, die die Musterseite nutzten, und in `rauchtests/`.
+
 ## 2026-10-27 · Keine internen Nummern auf Seiten, Test „wie nicht vorhanden“ für jede Adresse mit Kennung, Liste der Leitungen ohne Nummern (#156)
 
 **Entscheidung** (Sebastian, Klärung von #156 am 25.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/156#issuecomment-6398716809), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/156#issuecomment-6398716981)). Ergänzt die Einträge zu #90 und #64 vom 25.10.2026:

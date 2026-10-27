@@ -16,6 +16,7 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 - **Kommentare erklären das Warum, nicht das Was.** „Neue Anmeldungen enden mit der Änderungsfrist, sonst gäbe es Anmeldungen, die niemand mehr ändern kann“ ist hilfreich. „Prüft das Datum“ ist es nicht. (Review)
 - **Jede öffentliche Funktion und Klasse hat einen Docstring:** ein Satz, was sie tut, dazu die Regeln oder Grenzfälle, die nicht offensichtlich sind. (Review)
 - **Funktionen bleiben überschaubar:** zyklomatische Komplexität höchstens 12. Grob heißt das: nicht mehr als etwa zehn Verzweigungen. Wird es mehr, wird aufgeteilt. (automatisch ab P1, `ruff` C901)
+- **Gestaltung aus Bausteinen: einbinden, nicht kopieren.** Seiten binden die entschiedenen Bausteine aus dem Bausteinkatalog (`/bausteine/`) ein, statt ihr Aussehen nachzubauen; Regeln in `docs/gestaltung.md`. (automatisch ab P2 für Eingabefelder und Vorlagenstücke, `tests/test_bausteinkatalog.py`; sonst Review)
 - **Kein auskommentierter Code.** Alte Fassungen stehen in der Git-Historie. (Review)
 - **Kein `print()`** im Anwendungscode, stattdessen `logging`. Ausnahme: Verwaltungsbefehle (`manage.py`). (automatisch ab P1, `ruff` T20)
 - Fehler werden gezielt abgefangen, nie pauschal (`except:` oder `except Exception: pass`). (automatisch für `except:`, sonst Review)

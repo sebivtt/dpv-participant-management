@@ -1,4 +1,4 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Statuskennzeichen, Meldungen (#165), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Meldungen (#165), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
@@ -12,18 +12,6 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy
 
 register = template.Library()
-
-# Symbol je Art eines Statuskennzeichens. Ein Kennzeichen hat immer Wort und Symbol, nie nur
-# eine Farbe (NFA-03).
-STATUS_ICONS = {
-    "ok": "haken",
-    "warte": "uhr",
-    "ab": "nein",
-    "entwurf": "stift",
-    "bald": "kalender",
-    "zu": "schloss",
-}
-
 
 @register.simple_tag
 def icon(name: str) -> SafeString:
@@ -113,12 +101,6 @@ def antippfeld(field, saved: str, icon: str, open: bool = False, focus: bool = F
     context = textfeld(field)
     context.update(saved=saved, icon=icon, open=open or bool(field.errors), focus=focus)
     return context
-
-
-@register.inclusion_tag("core/_status.html")
-def status(kind: str, label: str) -> dict:
-    """Statuskennzeichen mit Wort und Symbol, z. B. „Anmeldung offen“ mit Haken."""
-    return {"kind": kind, "label": label, "icon_name": STATUS_ICONS[kind]}
 
 
 def copyright_years(today=None) -> str:
