@@ -1,4 +1,4 @@
-"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Fahrtenname, Abmelden, Meldungen (#7, #96, #165, #13, #111, #180, NFA-01, NFA-03).
+"""Rauchtest des Hauptablaufs im Browser: Login, Startseite, Mein Profil, Fahrtenname, Abmelden, Meldungen (#7, #96, #165, #13, #111, #180, #78, NFA-01, NFA-03).
 
 Die Nummern verweisen auf Sebastians Szenarien zu #7 (Planung am 21.10.2026). Jeder Test
 läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
@@ -6,7 +6,7 @@ läuft in Chromium, Firefox und WebKit (conftest.py). Alle Konten und Daten sind
 Mit den Vorschauen der Musterseite entfielen in #176 die Tests „Klick irgendwo auf einen Block“,
 „Entwurf ohne Farbe erkennbar“ (Szenario 7) und „Teilnehmende als Karten und Tabelle“ (Szenario 8);
 sie kommen mit den echten Seiten zurück (#28, #30). Der Tastaturtest auf der Musterseite entfiel
-ebenso; die Prüfung mit der Tastatur auf echten Seiten bringt #78.
+ebenso; an ihre Stelle trat in #78 der Durchgang am Handy auf den echten Seiten.
 """
 
 import sys
@@ -78,11 +78,12 @@ def _tab_key(page: Page) -> str:
     return "Tab"
 
 
-def _tab_to(page: Page, text: str, steps: int = 25) -> list[dict]:
-    """Drückt Tab, bis der Fokus auf `text` liegt; gibt jede Station mit Sichtbarkeit zurück."""
+def _tab_to(page: Page, text: str, steps: int = 25, backwards: bool = False) -> list[dict]:
+    """Drückt Tab (rückwärts mit Umschalttaste), bis der Fokus auf `text` liegt; gibt jede Station mit Sichtbarkeit zurück."""
     stations = []
+    key = _tab_key(page).replace("Tab", "Shift+Tab") if backwards else _tab_key(page)
     for _ in range(steps):
-        page.keyboard.press(_tab_key(page))
+        page.keyboard.press(key)
         station = focus_visible(page)
         stations.append(station)
         if station["text"] == text:
@@ -490,11 +491,18 @@ def test_mein_profil_am_handy_und_nur_mit_der_tastatur(request, browser_name, de
 
 def _tab_to_element(page: Page, selector: str, steps: int = 25) -> dict:
     """Drückt Tab, bis der Fokus auf dem Element `selector` liegt; gibt diese Station zurück."""
+    return _stations_to_element(page, selector, steps)[-1]
+
+
+def _stations_to_element(page: Page, selector: str, steps: int = 25) -> list[dict]:
+    """Drückt Tab, bis der Fokus auf dem Element `selector` liegt; gibt jede Station zurück."""
+    stations = []
     for _ in range(steps):
         page.keyboard.press(_tab_key(page))
+        stations.append(focus_visible(page))
         if page.evaluate("s => document.activeElement.matches(s)", selector):
-            return focus_visible(page)
-    raise AssertionError(f"„{selector}“ nach {steps} Mal Tab nicht erreicht")
+            return stations
+    raise AssertionError(f"„{selector}“ nach {steps} Mal Tab nicht erreicht: {[s['text'] for s in stations]}")
 
 
 def _ring(circle) -> str:
@@ -526,6 +534,93 @@ def test_profilkreis_fuehrt_zu_mein_profil_auch_nur_mit_der_tastatur(request, br
 
     page.wait_for_url(f"{BASE}/profil/")
     expect(page.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+
+
+def _in_display_order(stations: list[dict]) -> None:
+    """Jeder Halt steht unter dem vorigen oder in derselben Zeile rechts davon (Anzeige von oben nach unten)."""
+    where = [(s["text"], round(s["oben"]), round(s["links"])) for s in stations]
+    for before, after in zip(stations, stations[1:]):
+        same_row = after["oben"] < before["unten"] and after["unten"] > before["oben"]
+        if same_row:
+            assert after["links"] >= before["links"] - 1, f"„{after['text']}“ steht links von „{before['text']}“: {where}"
+        else:
+            assert after["oben"] >= before["oben"] - 1, f"„{after['text']}“ steht über „{before['text']}“: {where}"
+
+
+def _keycloak_marks_focus(page: Page) -> None:
+    """Keycloak gestaltet seine Seite selbst, das Tool ändert dort nichts (CLAUDE.md). Geprüft wird
+    nur, dass der Fokus zu sehen ist: Keycloak lässt den Fokusrahmen des Browsers stehen und
+    unterstreicht das Feld dicker und blau."""
+    look = page.evaluate(
+        "() => { const el = document.activeElement;"
+        " return [getComputedStyle(el).outlineStyle, getComputedStyle(el.parentElement, '::after').borderBottomWidth] }"
+    )
+    assert look[0] != "none" and look[1] == "2px", f"Fokus bei Keycloak nicht zu sehen: {look}"
+
+
+# Szenarien 1 bis 4 zu #78: in Handy-Größe von der Anmeldung bis zum Abmelden nur mit der Tastatur
+def test_nur_mit_der_tastatur_am_handy_von_der_anmeldung_bis_zum_abmelden(handy):
+    # Szenario 1: Login-Seite und Keycloak.
+    handy.goto(f"{BASE}/")
+    stations = _tab_to(handy, "Mit DPV-Konto anmelden")
+    _in_display_order(stations)
+    handy.keyboard.press("Enter")
+    # Erst tippen, wenn Keycloak seine Seite fertig geladen hat (#33, Szenario 4).
+    username = handy.locator("#username")
+    username.wait_for()
+    handy.wait_for_load_state("load")
+    expect(username).to_be_focused()
+    _keycloak_marks_focus(handy)
+    handy.keyboard.type("erika.testfrau")
+    expect(username, "Benutzername nicht vollständig im Feld").to_have_value("erika.testfrau")
+    handy.keyboard.press(_tab_key(handy))
+    expect(handy.locator("#password")).to_be_focused()
+    _keycloak_marks_focus(handy)
+    handy.keyboard.type("testpasswort-erika")
+    handy.keyboard.press("Enter")
+    handy.wait_for_url(f"{BASE}/")
+    expect(handy.get_by_role("heading", level=1)).to_have_text("Hallo Erika!")
+
+    # Szenario 1: Startseite ab „Zum Inhalt springen“, über den Profilkreis zu „Mein Profil“.
+    start = _tab_to(handy, "Zum Inhalt springen", steps=1) + _stations_to_element(handy, ".a-topbar .a-profil")
+    _in_display_order(start)
+    handy.keyboard.press("Enter")
+    handy.wait_for_url(f"{BASE}/profil/")
+    expect(handy.get_by_role("heading", level=1)).to_have_text("Mein Profil")
+
+    # Szenario 2: Fahrtenname öffnen, „Kiwi“ tippen, mit Esc verwerfen, mit Enter speichern.
+    rest = handy.locator("[data-oeffnen]")
+    field = handy.get_by_label("Fahrtenname", exact=True)
+    profile = _stations_to_element(handy, "[data-oeffnen]")
+    _in_display_order(profile)
+    handy.keyboard.press("Enter")
+    expect(field).to_be_focused()
+    profile.append(focus_visible(handy))
+    handy.keyboard.type("Kiwi")
+    handy.keyboard.press("Escape")
+    expect(rest).to_be_focused()
+    expect(rest).to_contain_text("Noch nicht angegeben")
+    profile.append(focus_visible(handy))
+    handy.keyboard.press("Enter")
+    expect(field).to_be_focused()
+    handy.keyboard.type("Kiwi")
+    handy.keyboard.press("Enter")
+    expect(handy.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
+    expect(rest).to_contain_text("Kiwi")
+    expect(rest).to_be_focused()
+    profile.append(focus_visible(handy))
+    assert get_user_model().objects.get(username="erika.testfrau").scout_name == "Kiwi"
+
+    # Szenario 3: zurück zum Menü, dort abmelden.
+    menu = handy.get_by_role("dialog", name="Menü")
+    back = _tab_to(handy, "Menü", backwards=True)
+    handy.keyboard.press("Enter")
+    expect(menu).to_be_visible()
+    back += _tab_to(handy, "Abmelden")
+    _all_visible(stations + start + profile + back)
+    handy.keyboard.press("Enter")
+
+    _on_login_page(handy)
 
 
 # Szenario 10
