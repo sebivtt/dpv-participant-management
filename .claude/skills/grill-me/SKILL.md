@@ -48,6 +48,7 @@ Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrif
 - **Grenzfälle:** leere Eingaben, null, sehr große Werte, Fristen abgelaufen, nachträgliche Änderungen, Personen entfernt, mehrere Bearbeitende gleichzeitig, bestehende Veranstaltungen und Anmeldungen.
 - **Meldungen:** Was sieht man bei Fehlern oder im Erfolgsfall, mit welchem Wortlaut?
 - **Aussehen und Bedienung,** wenn die Oberfläche betroffen ist, auch auf dem Handy.
+- **Zielbild:** Braucht das Issue eines? Wann es nötig ist, regelt `CLAUDE.md`, „Zielbild vor Gestaltung“; bei einem neuen Abschnitt einer bestehenden Seite entscheidet Sebastian. Die Antwort kommt ins Protokoll und in den Text des Issues, auch wenn keins nötig ist.
 - **Abhängigkeiten:** zu offenen Issues (blockiert durch, blockiert, berührt dieselbe Stelle, Dublette).
 - **Umsetzungsmöglichkeiten** mit spürbaren Folgen, jeweils mit Empfehlung.
 - **Risiken:** Was könnte dabei kaputtgehen? Vor allem der Anmeldeablauf.
@@ -73,9 +74,20 @@ Aus den Szenarien entstehen später die Tests; wann sie nötig sind und wann nic
 
 - Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
 - Sebastian entscheidet je Szenario (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3).
-- Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 7) in das Unter-Issue, zu dem sie gehören.
+- Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 8) in das Unter-Issue, zu dem sie gehören.
 
-## 6. Issue überarbeiten
+## 6. Grober Entwurf und Zielbild
+
+Nur wenn das Issue ein Zielbild braucht (Abschnitt 2). Regel und Reihenfolge: `CLAUDE.md`, „Zielbild vor Gestaltung“. Vorbild ist der Ablauf bei #165.
+
+- **Grober Entwurf:** eine einzelne HTML-Datei, die sich mit Doppelklick im Browser öffnet. Grundlage sind die Szenarien, die Musterseite (`core/templates/core/muster.html`), die anderen Seiten und `docs/gestaltung.md`. Er zeigt nur, was geklärt ist, mit erfundenen Personen wie in den Szenarien, und lädt nichts von fremden Servern (Gestaltung und Symbole stehen in der Datei, Schrift ist die Systemschrift). Als Kommentar „Grober Entwurf (Datum)“ ins Issue, die Datei in einem aufklappbaren Codeblock; Sebastian bekommt sie zusätzlich als Datei zum Öffnen.
+- **Warten:** Sebastian baut daraus, etwa mit ChatGPT, das Zielbild. So lange ruht die Klärung; der Stand kommt als Kommentar ins Issue wie bei einer Pause (Abschnitt 3).
+- **Zielbild eintragen:** Die Datei von Sebastian unverändert als Kommentar „Zielbild (Datum)“ ins Issue, in einem aufklappbaren Codeblock, mit Herkunft (Dateiname, Datum), Größe und Prüfsumme (`shasum -a 256 <datei>`). Vorher prüfen, dass sie nur erfundene Daten enthält und nichts von fremden Servern lädt; sonst Sebastian fragen.
+- **Zu groß für einen Kommentar** (GitHub nimmt höchstens 65 536 Zeichen, „Mein Profil“ hat mit eingebettetem Bootstrap rund 275 000): Entwurf oder Zielbild unverändert auf nummerierte Kommentare verteilen („Teil 1 von 5“ usw.), jeder Teil ein Codeblock. Der erste Teil sagt, wie die Teile ohne Zaunzeilen zusammengesetzt werden; die Prüfsumme gilt für die zusammengesetzte Datei.
+- **Nachklärung:** Das Zielbild mit Issue, Szenarien, `docs/rechtematrix.md`, `docs/entscheidungen.md` und `docs/gestaltung.md` vergleichen. Jede Abweichung als eigene Frage wie in Abschnitt 3: wie im Zielbild oder wie geklärt, mit Empfehlung. Das Ergebnis kommt als Kommentar „Nachklärung nach dem Zielbild (Datum)“ ins Issue. Ändern sich Szenarien, kommt eine neue Fassung „Szenarien (Datum, Fassung nach dem Zielbild)“, die die alte ausdrücklich ersetzt. Abweichungen, die bleiben, stehen danach im Text des Issues, damit die Umsetzung sie nennen kann.
+- **Beim Aufteilen** (Abschnitt 8) kommen Entwurf, Zielbild und Nachklärung in das Unter-Issue, das die Seite oder den Baustein baut.
+
+## 7. Issue überarbeiten
 
 - Den Text des Issues so neu schreiben, dass er ohne das Gespräch vollständig und eindeutig ist. Aufbau und Überschriften der passenden Vorlage (`.github/ISSUE_TEMPLATE/`) beibehalten, keine neuen Überschriften erfinden. Antworten landen dort, wo sie passen:
   - **Anforderung:** als Akzeptanzkriterium, als Beispiel, unter „Wer darf das nicht?“ oder unter „Nicht Teil dieser Anforderung“. Unter „Offene Fragen“ steht danach „Keine, geklärt am <Datum>“.
@@ -91,7 +103,7 @@ gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<nummer> -F body
 gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/comments -F body=@<protokoll.md>
 ```
 
-## 7. Ein Issue oder mehrere?
+## 8. Ein Issue oder mehrere?
 
 Aufteilen, wenn mindestens eines zutrifft:
 - Es betrifft mehrere Seiten oder Dialoge, die sich einzeln ändern und prüfen lassen.
@@ -111,9 +123,9 @@ gh api repos/sebivtt/dpv-participant-management/issues/<teil> --jq '.id'
 gh api repos/sebivtt/dpv-participant-management/issues/<sammel>/sub_issues -F sub_issue_id=<id des Teils>
 ```
 
-## 8. Freigeben
+## 9. Freigeben
 
-Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Aufteilung an jedes Unter-Issue (das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht.
+Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Aufteilung an jedes Unter-Issue (das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht. Braucht es ein Zielbild, müssen auch Zielbild und Nachklärung im Issue stehen (Abschnitt 6).
 
 ```bash
 gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/labels -f 'labels[]=geklärt'
@@ -125,7 +137,7 @@ Für Issues mit höchstens einem neuen Punkt oder ohne fachliches Verhalten. Die
 
 - **Lesen** (Abschnitt 1) nur das Issue samt Kommentaren, seine eingetragenen Abhängigkeiten und die betroffenen Dateien, nicht alle offenen Issues und nicht die ganze Doku.
 - **Themen** (Abschnitt 2) nur, soweit sie zutreffen.
-- **Unverändert bleiben:** Fragen einzeln (Abschnitt 3), Zusammenfassung (Abschnitt 4), Szenarien, wenn nötig (Abschnitt 5), Protokoll (Abschnitt 6) und Sebastians Okay vor dem Label (Abschnitt 8).
+- **Unverändert bleiben:** Fragen einzeln (Abschnitt 3), Zusammenfassung (Abschnitt 4), Szenarien, wenn nötig (Abschnitt 5), Entwurf und Zielbild, wenn nötig (Abschnitt 6), Protokoll (Abschnitt 7) und Sebastians Okay vor dem Label (Abschnitt 9).
 
 ## Danach
 

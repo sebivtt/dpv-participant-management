@@ -40,7 +40,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 
 - **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat und alles, was die Umsetzung wissen muss, in seinem Text steht. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
 - **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
-- **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und grobe Entwürfe für neue Seiten rechtzeitig anstoßen.
+- **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und Issues, die ein Zielbild brauchen, rechtzeitig zum Klären geben.
 
 ## 3. Phasen-Issue pflegen
 
