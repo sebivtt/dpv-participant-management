@@ -63,7 +63,7 @@ def suggestions_address(unit) -> str:
 
 def suggest(user, unit, text: str):
     """Die Vorschläge beim Tippen, wie das Skript des Dialogs sie abfragt."""
-    response = client_for(user).get(suggestions_address(unit), {"suche": text})
+    response = client_for(user).post(suggestions_address(unit), {"suche": text})
     assert response.status_code == 200
     return _tree(response)
 
@@ -206,6 +206,14 @@ def test_b1_vorschlaege_kommen_aus_walhall_und_seinen_gruppen(org):
 def test_b1_vorschlaege_nach_vorname_nachname_und_fahrtenname(org):
     for text in ("Finn", "falke", "Flink", "Finn Fal"):
         assert "Flink" in hits(suggest(org.walhall_leitung, org.falken, text)), text
+
+
+def test_vorschlaege_nur_als_formular_nie_mit_dem_namen_in_der_adresse(org):
+    """Befund der unabhängigen Prüfung: Ein getippter Name stünde sonst im Protokoll eines Webservers."""
+    response = client_for(org.walhall_leitung).get(suggestions_address(org.falken), {"suche": "Fie"})
+
+    assert response.status_code == 404
+    assert "Funke" not in response.content.decode()
 
 
 def test_b1_hoechstens_zehn_vorschlaege(org):
@@ -444,6 +452,17 @@ def test_b12_alte_suchen_werden_geloescht(org):
     assert AccountSearch.objects.filter(user=org.walhall_leitung).count() == 2
 
 
+def test_alte_suchen_anderer_personen_werden_auch_geloescht(org):
+    """Befund der unabhängigen Prüfung: Von jemandem, der nie wieder sucht, bleibt nichts liegen."""
+    searched(org.walhall_leitung, 90)
+    searched(org.willi, 30)
+
+    search(org.bundesleitung, org.walhall, "otto.ohne@example.org")
+
+    assert not AccountSearch.objects.filter(user=org.walhall_leitung).exists()
+    assert AccountSearch.objects.filter(user=org.willi).count() == 1
+
+
 def _in_thread(work, results: list) -> threading.Thread:
     def run():
         try:
@@ -633,6 +652,16 @@ def test_bv2_finn_kann_keine_leitung_der_zugvoegel_werden(org):
         "Flink (Finn Falke) ist Mitglied in Sippe Falken und kann deshalb keine Leitung bei Stamm Zugvögel sein."
     ]
     assert roles_of(org.falke) == {(R.MEMBER, "Sippe Falken")}
+
+
+def test_bv2_mit_einer_gruppe_als_ziel_steht_die_art_davor(org):
+    """Befund der unabhängigen Prüfung: Wortlaut, wenn das Ziel eine Gruppe ist."""
+    response = appoint(org.bundesleitung, org.woelfe, org.adler_kind)
+
+    assert notices(dialog_of(_tree(response))) == [
+        "Anton Adler ist Mitglied in Sippe Adler und kann deshalb keine Leitung bei Gruppe Meute Wölfe sein."
+    ]
+    assert roles_of(org.adler_kind) == {(R.MEMBER, "Sippe Adler")}
 
 
 def test_bv3_fiete_ist_schon_gruppenleitung(org):

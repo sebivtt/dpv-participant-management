@@ -75,7 +75,7 @@ class AccountSearch(models.Model):
 
     Gespeichert sind nur, wer gesucht hat und wann, nie wonach: Der Suchbegriff wäre eine Mail
     oder ein Benutzername, also eine Personenangabe über eine andere Person. Was älter als die
-    Zeitspanne des Limits ist, löscht die nächste Suche derselben Person; das Protokoll der
+    Zeitspanne des Limits ist, löscht die nächste Suche, egal von wem; das Protokoll der
     Kontosuchen kommt getrennt mit #144. Vorschläge beim Tippen stehen hier nicht.
     """
 
@@ -83,4 +83,4 @@ class AccountSearch(models.Model):
     searched_at = models.DateTimeField()
 
     class Meta:
-        indexes = [models.Index(fields=["user", "searched_at"])]
+        indexes = [models.Index(fields=["user", "searched_at"]), models.Index(fields=["searched_at"])]

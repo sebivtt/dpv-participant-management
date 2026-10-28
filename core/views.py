@@ -257,12 +257,14 @@ def organisation_search(request: HttpRequest, unit: str) -> HttpResponse:
 def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
     """Vorschläge beim Tippen, nur das Stück mit der Liste; das Skript des Dialogs fragt sie ab (PK-09, PK-10).
 
-    Erst ab 3 Zeichen, höchstens 10, nur Personen im eigenen Bereich; sie zählen nicht als Suche.
+    Erst ab 3 Zeichen, höchstens 10, nur Personen im eigenen Bereich; sie zählen nicht als Suche. Der
+    getippte Name kommt als Formular, nie in der Adresse, damit er in keinem Protokoll eines
+    Webservers landet (unabhängige Prüfung).
     """
     found = _appointing(request, unit)
-    if request.method not in READING:
+    if request.method != "POST":
         raise Http404
-    text = request.GET.get("suche", "").strip()
+    text = request.POST.get("suche", "").strip()
     entries = request.rights.suggestions(text)
     context = {"hits": hits(entries, found), "hits_title": texts.SUGGESTIONS_TITLE,
                "empty": texts.NO_SUGGESTIONS if len(text) >= SUGGESTION_MIN else "",

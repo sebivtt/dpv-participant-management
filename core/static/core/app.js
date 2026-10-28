@@ -345,7 +345,8 @@
         return;
       }
       timer = window.setTimeout(function () {
-        fetch(address + "?suche=" + encodeURIComponent(text), { credentials: "same-origin" })
+        // Als Formular mit Formularschutz, damit der Name nicht in der Adresse und in keinem Protokoll steht.
+        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin" })
           .then(function (response) {
             // Abgelaufene Anmeldung: Statt der Login-Seite in der Liste lädt die Seite neu und führt zum Login.
             if (response.redirected) {

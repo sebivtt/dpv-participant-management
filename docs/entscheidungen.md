@@ -19,11 +19,11 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Technische Wahl** (KI):
 
-- **Der Dialog hat eine eigene Adresse** (`/organisation/<kennung>/benennen/`, dazu `…/suchen/` und `…/vorschlaege/`). Er kommt offen vom Server, „Suchen“ und „Benennen“ sind gewöhnliche Formulare; so geht alles außer den Vorschlägen beim Tippen auch ohne Skript. Mit Skript wird er modal (`showModal`), Escape und Tippen daneben führen zurück. Kein htmx, kein neues Paket: Die Vorschläge holt ein kurzes Stück in `core/static/core/app.js`.
+- **Der Dialog hat eine eigene Adresse** (`/organisation/<kennung>/benennen/`, dazu `…/suchen/` und `…/vorschlaege/`). Er kommt offen vom Server, „Suchen“ und „Benennen“ sind gewöhnliche Formulare; so geht alles außer den Vorschlägen beim Tippen auch ohne Skript. Mit Skript wird er modal (`showModal`), Escape und Tippen daneben führen zurück. Kein htmx, kein neues Paket: Die Vorschläge holt ein kurzes Stück in `core/static/core/app.js`, als Formular (POST) mit Formularschutz, damit ein getippter Name nie in einer Adresse und damit in keinem Protokoll eines Webservers steht (unabhängige Prüfung).
 - **Alle Rechte und Personendaten aus der zentralen Prüfung:** `Rights.may_appoint()` (der eigene Bereich), `suggestions()`, `find_accounts()`, `count_search()` und `appoint()`. Wer in der Einheit nicht benennen darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per htmx und mit Formular. Die Person kommt im Formular nur mit ihrer Kennung; die Organisation immer aus der Adresse.
 - **Reihenfolge der Ablehnungen:** sich selbst (RO-12), schon Leitung dort, woanders Mitglied außerhalb des eigenen Bereichs (ohne die Organisation zu nennen), dann die Regeln aus #89 beim Speichern der Rolle.
 - **Gleichzeitige Anfragen:** Benennen und Zählen sperren das betroffene Konto bis zum Ende der Transaktion; zwei gleichzeitige Benennungen ergeben eine Rolle und einen Eintrag im Protokoll, die 20. und 21. Suche nur eine gezählte.
-- **Neue Tabelle `accounts.AccountSearch`:** nur wer und wann, nie wonach, weil der Suchbegriff eine Mail oder ein Benutzername einer anderen Person wäre. Ältere Einträge als 60 Minuten löscht die nächste Suche derselben Person.
+- **Neue Tabelle `accounts.AccountSearch`:** nur wer und wann, nie wonach, weil der Suchbegriff eine Mail oder ein Benutzername einer anderen Person wäre. Einträge, die älter als 60 Minuten sind, löscht die nächste Suche, egal von wem.
 - **„1 Minute“ statt „1 Minuten“** in der Meldung zum Suchlimit, damit der Satz stimmt.
 
 **Begründung:** Eine Adresse je Dialog hält ihn ohne Skript benutzbar und lässt die Rundumtests ihn wie jede Seite prüfen; die Rechte an einer Stelle, damit Entfernen (#191) und die Seite der Verbandsleitung (#94) dieselben Bausteine nutzen.

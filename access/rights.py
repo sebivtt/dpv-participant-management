@@ -428,15 +428,17 @@ class Rights:
         abgewiesene Suche zählt nicht. Die Minuten reichen, bis die älteste gezählte Suche aus der
         Zeitspanne fällt, aufgerundet und mindestens 1; dann geht genau eine Suche wieder. Gleichzeitige
         Suchen derselben Person laufen nacheinander, weil das Konto bis zum Ende gesperrt ist (BV13).
-        Ältere Einträge löscht dieselbe Stelle, damit nicht mehr gespeichert ist als nötig.
+        Einträge, die älter als die Zeitspanne sind, löscht jede Suche für alle Personen, damit nicht mehr
+        gespeichert ist als nötig.
         """
         if self.user is None:
             return 0
         with transaction.atomic():
             list(get_user_model().objects.select_for_update().filter(pk=self.user.pk).values_list("pk"))
             now = timezone.now()
+            # Alte Einträge aller Personen, damit auch von jemandem, der nie wieder sucht, nichts liegen bleibt.
+            AccountSearch.objects.filter(searched_at__lte=now - SEARCH_WINDOW).delete()
             searches = AccountSearch.objects.filter(user_id=self.user.pk)
-            searches.filter(searched_at__lte=now - SEARCH_WINDOW).delete()
             times = list(searches.order_by("-searched_at").values_list("searched_at", flat=True)[:SEARCH_LIMIT])
             if len(times) >= SEARCH_LIMIT:
                 wait = times[-1] + SEARCH_WINDOW - now
