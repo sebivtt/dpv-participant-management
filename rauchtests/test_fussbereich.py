@@ -9,6 +9,7 @@ import pytest
 from playwright.sync_api import Page
 
 from rauchtests.conftest import BASE, login
+from rauchtests.test_organisation import _walhall_for_erika
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -106,3 +107,14 @@ def test_auf_login_und_fehlerseite_steht_der_fussbereich_mittig_unter_der_karte(
     # Karte und Fußbereich zusammen senkrecht und waagrecht mittig
     assert lage["oben"] - lage["main_oben"] == pytest.approx(lage["main_unten"] - lage["fuss_unten"], abs=1), lage
     assert lage["links"] == pytest.approx(lage["breite"] - lage["rechts"], abs=1), lage
+
+
+# Szenario 3 auch auf der Seite einer Organisation am Handy (Befund der unabhängigen Prüfung): Dort
+# liegt der letzte Abstand tiefer im Inhalt und kam sonst zum Abstand des Fußbereichs hinzu.
+def test_am_handy_folgt_der_fussbereich_auf_der_seite_einer_organisation_dem_inhalt(handy):
+    login(handy)
+    walhall = _walhall_for_erika()["walhall"]
+    handy.goto(f"{BASE}/organisation/{walhall.key}/")
+    lage = _lage(handy)
+    assert lage["seite"] > lage["fenster"], lage
+    assert lage["oben"] - lage["inhalt"] == pytest.approx(ABSTAND, abs=1), lage
