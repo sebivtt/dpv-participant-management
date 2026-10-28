@@ -179,8 +179,10 @@ def focus_visible(page: Page) -> dict:
                 .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
                 .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
             const strong = e => { const t = getComputedStyle(e); return t.outlineStyle !== 'none' && parseFloat(t.outlineWidth) >= 2; };
-            const fokus = getComputedStyle(document.documentElement).getPropertyValue('--fokus').trim()
-                .match(/[\\da-f]{2}/gi).map(h => parseInt(h, 16));
+            const probe = document.body.appendChild(document.createElement('span'));
+            probe.style.color = 'var(--fokus)';
+            const fokus = rgb(getComputedStyle(probe).color).slice(0, 3);
+            probe.remove();
             let frame = el;
             if (!strong(el)) {
                 let around = el.parentElement;

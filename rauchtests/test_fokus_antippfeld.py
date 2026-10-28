@@ -33,6 +33,7 @@ def _nur_aussen(page: Page) -> dict:
     assert station["sichtbar"] and station["kontrast"] >= 3, station
     rahmen = _rahmen_der_gruppe(page)
     assert rahmen["schein"] == "none", f"blasser Schein um das Feld: {rahmen}"
+    assert page.evaluate("getComputedStyle(document.activeElement).boxShadow") == "none", "blasser Schein innen"
     assert float(rahmen["abstand"].removesuffix("px")) >= 0, f"Rahmen liegt innen: {rahmen}"
     return rahmen
 
