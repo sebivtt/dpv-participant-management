@@ -56,13 +56,23 @@ def _set_scout_name(value: str) -> None:
     get_user_model().objects.filter(username="erika.testfrau").update(scout_name=value)
 
 
+def _submit(page: Page, action) -> None:
+    """Schickt mit `action` das Formular ab und wartet, bis die neue Seite geladen ist.
+
+    `wait_for_load_state` allein reicht nicht: Startet der Browser den Seitenwechsel erst etwas
+    später (WebKit auf GitHub), gilt noch die alte Seite als geladen. `_later` stellt dann deren
+    Uhr vor, und auf der neuen erscheint die Meldung nie (#197).
+    """
+    with page.expect_navigation(wait_until="load"):
+        action()
+
+
 def _save(page: Page, value: str) -> None:
     """Öffnet das Feld „Fahrtenname“, trägt `value` ein und speichert mit Enter."""
     page.locator("[data-oeffnen]").click()
     field = page.get_by_label("Fahrtenname", exact=True)
     field.fill(value)
-    field.press("Enter")
-    page.wait_for_load_state("load")
+    _submit(page, lambda: field.press("Enter"))
 
 
 def _scrolled(page: Page) -> None:
@@ -146,8 +156,7 @@ def test_nach_dem_speichern_kurz_unten_mittig_und_wieder_weg(request, browser_na
 
     # Szenarien 2 und 6: gelöscht ebenso kurz; × schließt sofort.
     page.get_by_role("button", name="Fahrtenname leeren").click()
-    page.get_by_role("button", name="Speichern").click()
-    page.wait_for_load_state("load")
+    _submit(page, page.get_by_role("button", name="Speichern").click)
     _later(page, 300)
     expect(_short(page)).to_contain_text(DELETED)
     if device == "handy":
@@ -241,13 +250,38 @@ def test_speichern_scheitert_fehlermeldung_unter_dem_feld_im_bild(browser, brows
         # Szenario 8a: erneut speichern klappt; die Fehlermeldung ist weg, unten kurz die Erfolgsmeldung.
         monkeypatch.undo()
         field.fill("Kiwi")
-        field.press("Enter")
-        page.wait_for_load_state("load")
+        _submit(page, lambda: field.press("Enter"))
         _later(page, 300)
         expect(page.locator("main .a-meldung.ist-fehler")).to_have_count(0)
         expect(_short(page)).to_contain_text(SAVED)
     finally:
         context.close()
+
+
+# Schickt ein Formular erst nach zwei zusätzlichen Abrufen der Seite ab. So kommt die neue Seite
+# später, wie auf GitHub in WebKit (#197).
+LATE_SUBMIT = """
+window.addEventListener("submit", function (event) {
+  if (event.defaultPrevented) return;
+  event.preventDefault();
+  var form = event.target;
+  fetch(location.href).then(function () { return fetch(location.href); }).then(function () {
+    HTMLFormElement.prototype.submit.call(form);
+  });
+});
+"""
+
+
+def test_speichern_wartet_auf_die_neue_seite_auch_wenn_sie_spaet_kommt(pc):
+    """Wartete `_save` nur auf „Seite geladen“, stellte `_later` hier die Uhr der alten Seite vor, und die Meldung fehlte (#197)."""
+    login(pc)
+    _set_scout_name("Falkenflug")
+    _stop_clock(pc)
+    pc.add_init_script(LATE_SUBMIT)
+    pc.goto(f"{BASE}/profil/")
+    _save(pc, "Kiwi")
+    _later(pc, 300)
+    expect(_short(pc)).to_contain_text(SAVED)
 
 
 # Szenarien 12, 13 und 18: Stapel im Bausteinkatalog, und Szenario 15: langer Text am Handy
