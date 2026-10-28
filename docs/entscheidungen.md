@@ -6,6 +6,32 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-27 · Kurze Meldungen nach einer eigenen Handlung, Fehlermeldungen an der Stelle der Handlung (#186)
+
+**Entscheidung** (Sebastian, Klärung von #186 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441936833), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441930967), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442085509), [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442091320)). Ergänzt den Eintrag zu #165 vom 26.10.2026:
+
+1. **Kurz wird, was eine eigene Handlung bestätigt:** Erfolg und Information (Frage 1; empfohlen war nur Erfolg). Fehler und Warnungen bleiben fest. Was einen dauerhaften Zustand beschreibt, bleibt fest; die Login-Seite bekommt keine kurzen Meldungen (Frage 2).
+2. **Dauer und Bedienung:** rund 6 Sekunden, mit ×; Maus darüber oder Fokus darin hält sie an, danach zählt sie neu (Frage 3).
+3. **Lage:** unten mittig im Inhaltsbereich, am Handy über fast die ganze Breite (Frage 4).
+4. **Erkennbar ohne Farbe** an Lage, deutlichem Schatten und ×, ohne Zeitbalken (Frage 5). Der Schatten ist die einzige Ausnahme von „kaum Schatten“ (`docs/gestaltung.md`).
+5. **Ohne Skript** fest oben wie bisher (Frage 6).
+6. **Mehrere** stapeln sich, höchstens drei, die neueste unten (Fragen 7 und 8; empfohlen war, dass die neue die alte ersetzt).
+7. **Fehlermeldungen nach einer Handlung stehen an der Stelle der Handlung,** unter dem Feld oder der betroffenen Zeile, nicht oben auf der Seite; der Bildschirm springt dorthin (Frage 9, Sebastians Einwand beim Prüfen der Szenarien). Regel für alle Seiten.
+
+**Technische Wahl** (KI):
+
+- **Ein eigener Baustein, der den der Meldungen einbindet:** `{% kurzmeldung %}` nutzt dasselbe Vorlagenstück `core/_meldung.html` und ergänzt nur ein ×, das das Skript sichtbar macht. Für Fehler und Warnungen gibt er eine feste Meldung aus; so kann eine Seite alle Meldungen nach einer Handlung durch ihn schicken, ohne die Regel selbst zu kennen.
+- **Der Server schreibt die Meldung an ihren festen Platz,** und das Skript holt sie von dort in den Bereich unten. So bleibt ohne Skript alles wie bisher. Den Bereich gibt es auf jeder Seite mit Login (`base_app.html`), nicht auf der Login-Seite; er ist ein Live-Bereich, der jede neue Meldung einzeln ansagt (`aria-atomic="false"`). Eingeblendet wird 0,1 Sekunden nach dem Laden, weil Vorleseprogramme nur ansagen, was nach dem Bereich selbst dazukommt. Im Bereich verliert die Meldung ihr eigenes `role="status"`, damit sie nicht doppelt angesagt wird.
+- **Der Bereich steht in der Reihenfolge der Seite nach dem Inhalt** und vor dem Fußbereich, sichtbar aber unten über allem. So erreicht man das × mit der Tastatur nach wenigen Schritten; auf „Mein Profil“ zwei Mal Tab vom Feld „Fahrtenname“ aus.
+- **Fokus zurück** dorthin, wo er war, als die Meldung erschien (Szenario 5: ins Feld „Fahrtenname“), nicht auf das zuletzt besuchte Element davor.
+- **Schließen mit × und Verdrängen durch eine vierte** entfernen sofort; nur das Verschwinden nach der Zeit blendet sanft aus.
+- **Die Fehlermeldung beim Fahrtennamen** steht im Baustein „Feld zum Antippen“ direkt unter der Eingabe, an derselben Stelle wie der Fehler am Feld, und ist mit der Eingabe verknüpft (`aria-describedby`), damit Vorleseprogramme sie beim Fokus vorlesen. Scheiterte das Speichern, rückt das Skript das Feld mit der Meldung in die Mitte des Bildschirms; beim Fehler am Feld (zu lang) bleibt es wie bisher. „Verwerfen“ lässt die Fehlermeldung stehen und mit der Eingabe verknüpft; sie geht erst beim erneuten Versuch oder beim Seitenwechsel (Akzeptanzkriterium).
+- **Tests ohne Warten:** Die Rauchtests stellen die Uhr der Seite (Playwright), statt sechs Sekunden zu warten.
+
+**Begründung:** Kurze Rückmeldungen nach einer Handlung sollen auffallen, ohne die Seite dauerhaft zu füllen; Zustände und Fehler dürfen nicht verschwinden. Eine Fehlermeldung oben auf einer langen Seite holt einen nach oben oder wird übersehen.
+
+**Umsetzung:** `core/templatetags/layout.py` (`kurzmeldung`, `antippfeld` mit `failure`), `core/templates/core/_kurzmeldung.html`, `_meldung.html`, `_antippfeld.html`, `profil.html`, `bausteine.html`, `base_app.html`, `core/static/core/app.js`, `core/static/core/app.css`, `core/views.py` (Bausteinkatalog), `docs/gestaltung.md`, `docs/zielbilder/`; Tests in `tests/test_kurzmeldung.py` und `rauchtests/test_kurzmeldung.py`.
+
 ## 2026-10-27 · Zwei Prüfläufe dürfen gleichzeitig laufen (#184)
 
 **Entscheidung** (Sebastian, Klärung von #184 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/184#issuecomment-6441965054)): Zwei `./pruefen.sh` aus verschiedenen Arbeitskopien dürfen gleichzeitig laufen, und keiner scheitert am anderen (Umfang B). Die normalen Tests laufen gleichzeitig, jede Arbeitskopie mit ihrer eigenen Test-Datenbank. Rauchtest und Container-Prüfung brauchen feste Ports und laufen nacheinander: Ein zweiter Lauf wartet mit einer Meldung, höchstens 30 Minuten, dann bricht er mit einer Meldung ab, was zu tun ist. Das gilt auch für `pytest rauchtests` und `pytest containertests` ohne `./pruefen.sh`. Zwei Läufe in derselben Arbeitskopie gehen weiter nicht gleichzeitig: Sie teilen sich deren Test-Datenbank. Nicht Teil: eigene Ports je Arbeitskopie (Umfang C) und Änderungen am lokalen Keycloak. Der Satz „Zwei Prüfläufe gleichzeitig gehen weiter nicht“ im Eintrag vom 26.10.2026 (#167) gilt damit nicht mehr; der Eintrag selbst bleibt unverändert.

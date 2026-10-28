@@ -6,9 +6,8 @@
   <div class="a-kopf">
     <h1>{% translate "Mein Profil" %}</h1>
   </div>
-  {# Meldungen nach dem Speichern des Fahrtennamens (#111): Vorleseprogramme sagen sie an (#165). #}
-  {% for message in messages %}{% meldung message.level_tag text=message.message live=True %}{% endfor %}
-  {% if save_failed %}{% meldung "error" text=save_failed live=True %}{% endif %}
+  {# Meldungen nach dem Speichern des Fahrtennamens (#111): kurz unten eingeblendet und angesagt (#186); ohne Skript fest hier. Scheitert das Speichern, steht die Fehlermeldung unter dem Feld. #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   {% if name_incomplete %}
     {% translate "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an." as hint %}
     {% meldung "warning" title=hint %}
@@ -26,7 +25,7 @@
     {# Das einzige Feld zum Bearbeiten (W1, ergänzt mit #111), zum Antippen wie im Zielbild (#180). Ohne Skript ein einfaches Formular mit „Speichern“. #}
     <form class="a-fahrtenname" method="post" action="{% url "profile_scout_name" %}" novalidate>
       {% csrf_token %}
-      {% antippfeld scout_name_form.scout_name saved=user.scout_name icon="person" open=save_failed focus=scout_name_just_saved %}
+      {% antippfeld scout_name_form.scout_name saved=user.scout_name icon="person" failure=save_failed focus=scout_name_just_saved %}
     </form>
     <dl class="a-felder">
       {% include "core/_angabe.html" with label=_("Vorname") value=user.first_name symbol="person" %}

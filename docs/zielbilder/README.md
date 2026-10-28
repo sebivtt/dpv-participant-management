@@ -4,7 +4,7 @@ Ein Zielbild ist Sebastians fertiger Entwurf einer Seite als HTML-Datei, mit erf
 
 Ein Zielbild ist **Orientierung, keine Anforderung.** Was es zeigt, gibt niemandem ein Recht und ändert keine Entscheidung. Es gehen vor: `docs/rechtematrix.md`, `docs/anforderungen.md`, `docs/entscheidungen.md`, `docs/gestaltung.md`. Gebaut wird nur, was das Tool speichert; Teile ohne Daten fehlen ganz, ohne leere Platzhalter.
 
-Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie öffnen sich mit Doppelklick im Browser. Das Tool lädt sie nie. Für jede Datei steht hier, von wann sie ist, woher sie kommt, ihre Prüfsumme und wo die Seite bewusst abweicht. Eine neue Fassung ersetzt die Datei; die alte bleibt in der Versionsgeschichte, und Datum und Prüfsumme hier werden fortgeschrieben. Je Datei prüft ein Test (`tests/test_mein_profil.py`, `tests/test_meldungen.py`), dass Datei und Prüfsumme zusammenpassen und die Datei nichts von fremden Servern lädt.
+Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie öffnen sich mit Doppelklick im Browser. Das Tool lädt sie nie. Für jede Datei steht hier, von wann sie ist, woher sie kommt, ihre Prüfsumme und wo die Seite bewusst abweicht. Eine neue Fassung ersetzt die Datei; die alte bleibt in der Versionsgeschichte, und Datum und Prüfsumme hier werden fortgeschrieben. Je Datei prüft ein Test (`tests/test_mein_profil.py`, `tests/test_meldungen.py`, `tests/test_kurzmeldung.py`), dass Datei und Prüfsumme zusammenpassen und die Datei nichts von fremden Servern lädt.
 
 ## Mein Profil
 
@@ -50,3 +50,20 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 5. **Erklärende Teile fehlen:** die Tabelle der Regeln, die Umsetzungshinweise, die Liste der Szenarien und der Rahmen „390 Pixel“. Die Regel steht in `docs/gestaltung.md`; die Musterseite zeigt die Bausteine selbst.
 6. **Beispieltexte der Musterseite:** Information und Erfolg wie im Zielbild; Warnung und Fehler mit eigenen erfundenen Texten, weil die Texte des Zielbilds echte Meldungen des Tools sind und auf ihren Seiten stehen.
 7. **Symbole und Schrift:** Informations-, Erfolgs- und Laborsymbol sind wie im Zielbild ins Symbolset des Tools übernommen (`core/templates/core/_symbole.svg`); Warndreieck, Kreuz und Schloss waren dort schon gleich. Der fette erste Satz nutzt die Schriftstärke des Tools (800 statt 750).
+
+## Kurze Meldungen
+
+- **Datei:** [`kurze-meldungen.html`](kurze-meldungen.html)
+- **Stand:** 27.10.2026, der grobe Entwurf der Klärungs-Session (`entwurf-kurze-meldung-186.html`), von Sebastian unverändert als Zielbild übernommen, eingespielt mit #186 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442085509)).
+- **Prüfsumme (SHA-256):** `4b0ae4ad11e369f4043011234afe30f6fed0dfd9323b8c9cb14aa0429629e7e1`
+- **Inhalt der Datei:** nur erfundene Daten (Erika Testfrau, Kiwi, `erika@beispiel.invalid`, Sippen- und Meutenamen). Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript führt die Fälle vor; ins Tool ist nur das Verhalten der kurzen Meldung übernommen, neu geschrieben in `core/static/core/app.js`.
+- **Orientierung, keine Anforderung.** Geklärt in #186 ([Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441936833), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441930967), [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442091320)).
+
+### Abweichungen der Seite vom Zielbild
+
+1. **Nur vereinfacht im Zielbild, so in der Nachklärung festgehalten:** Das Feld „Fahrtenname“ bleibt das Feld zum Antippen aus #180; Seitenleiste, Handyleiste und Profilkreis bleiben die Bausteine des Tools; die gestrichelte Fläche „Fälle vorführen“ und die Tabelle „Welche Form wann“ gibt es auf „Mein Profil“ nicht. Die Vorführung steht im Bausteinkatalog, die Regel in `docs/gestaltung.md`. „Mein Profil“ bekommt keine neuen Meldungen.
+2. **Fehlermeldung über den Knöpfen:** Im Zielbild steht sie unter „Verwerfen“ und „Speichern“. Im Tool stehen die beiden Knöpfe als kleine Fläche über dem Inhalt darunter (#180); die Fehlermeldung steht deshalb direkt unter der Eingabe, wo auch der Fehler am Feld steht, und die Knöpfe darunter.
+3. **Beispiele im Bausteinkatalog:** Erfolg mit dem erfundenen Text „Deine Anmeldung zum Herbstlager ist eingegangen.“ wie bei den Meldungen, Information und Stapel mit den Texten des Zielbilds. Knöpfe „Erfolg zeigen“, „Information zeigen“ und „Vier nacheinander zeigen“ blenden sie ein.
+4. **Fokus nach dem Schließen:** Das Zielbild gibt ihn immer ans Feld „Fahrtenname“ zurück; im Tool geht er dorthin, wo er war, als die Meldung erschien. Auf „Mein Profil“ ist das das Feld, im Katalog der Knopf, der sie gezeigt hat.
+5. **„Bewegung reduzieren“:** Das Zielbild blendet dann in 0,01 Sekunden über die Deckkraft ein; im Tool erscheint und verschwindet sie ganz ohne Übergang, wie alle Bewegungen des Tools bei dieser Einstellung.
+6. **Abstand zum Rand am Handy** berücksichtigt zusätzlich den Rand des Bildschirms bei iPhones mit Aussparung (`env(safe-area-inset-…)`), wie die Leiste oben.

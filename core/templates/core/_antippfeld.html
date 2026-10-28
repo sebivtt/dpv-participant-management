@@ -8,6 +8,8 @@
     <button type="button" class="a-antippfeld-leeren" data-leeren hidden aria-label="{{ clear_label }}" title="{% translate "Inhalt löschen" %}"{% if not saved %} disabled{% endif %}>{% icon "schliessen" %}</button>
   </div>
   {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
+  {# Fehlermeldung an der Stelle der Handlung (#186): direkt unter der Eingabe, nicht oben auf der Seite. #}
+  {% if failure %}{% meldung "error" text=failure live=True element_id=failure_id %}{% endif %}
   <div class="a-antippfeld-knoepfe">
     <button type="button" class="btn btn-zart" data-verwerfen hidden>{% translate "Verwerfen" %}</button>
     <button type="submit" class="btn btn-primary">{% translate "Speichern" %}</button>

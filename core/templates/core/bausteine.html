@@ -32,6 +32,19 @@
     </form>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-kurzmeldung">
+    {% include "core/_katalogeintrag.html" with block=blocks.kurzmeldung %}
+    {# Die Beispiele stehen als Vorlagen bereit; die Knöpfe blenden sie unten ein wie nach einer Handlung. Ohne Skript zeigen sie nichts. #}
+    <template id="kurz-erfolg">{% translate "Deine Anmeldung zum Herbstlager ist eingegangen." as text %}{% kurzmeldung "success" text=text %}</template>
+    <template id="kurz-info">{% translate "Beispiel einer kurzen Information nach einer Handlung: Die Liste ist jetzt nach Namen sortiert." as text %}{% kurzmeldung "info" text=text %}</template>
+    {% for text in examples.short_stack %}<template id="kurz-stapel-{{ forloop.counter }}">{% kurzmeldung "success" text=text %}</template>{% endfor %}
+    <div class="a-flaeche a-katalog-knoepfe">
+      <button type="button" class="btn btn-zart" data-kurz-zeigen="kurz-erfolg">{% translate "Erfolg zeigen" %}</button>
+      <button type="button" class="btn btn-zart" data-kurz-zeigen="kurz-info">{% translate "Information zeigen" %}</button>
+      <button type="button" class="btn btn-zart" data-kurz-zeigen="{% for text in examples.short_stack %}kurz-stapel-{{ forloop.counter }}{% if not forloop.last %} {% endif %}{% endfor %}">{% translate "Vier nacheinander zeigen" %}</button>
+    </div>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-antippfeld">
     {% include "core/_katalogeintrag.html" with block=blocks.antippfeld %}
     <div class="a-flaeche a-profilflaeche">

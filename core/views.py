@@ -161,6 +161,14 @@ BUILDING_BLOCKS = {
                      "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
         "pages": [],
     },
+    "kurzmeldung": {
+        "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
+        "purpose": _("Bestätigt eine eigene Handlung, etwa „gespeichert“: erscheint als Erfolg oder Information "
+                     "unten über dem Inhalt, mit Schatten und ×, und verschwindet nach rund 6 Sekunden. Was einen "
+                     "Zustand beschreibt, steht fest auf der Seite; eine Fehlermeldung steht fest an der Stelle "
+                     "der Handlung."),
+        "pages": [_("Mein Profil")],
+    },
     "antippfeld": {
         "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180],
         "purpose": _("Ein einzelnes Feld auf einer Seite mit Angaben: in Ruhe wie eine Angabe, angetippt eine "
@@ -234,6 +242,9 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
                 (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
             ]
         ],
+        # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
+        "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
+                        "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
         # Der Profilkreis liest nur den kurzen Namen; hier erfunden, nicht der der angemeldeten Person.
         "named": {"short_name": "Kim"},
         "unnamed": {"short_name": ""},

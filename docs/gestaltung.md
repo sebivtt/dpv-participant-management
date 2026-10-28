@@ -21,7 +21,7 @@ Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Ei
 
 - **Grundlage:** Bootstrap 5.3, ohne Build-Schritt, alle Dateien vom eigenen Server. Schrift: die Systemschrift des Geräts.
 - **Farben:** DPV-Blau `#1a4b7e` trägt die Gestaltung, dazu Weiß und kühle Grautöne. Eine Akzentfarbe, Sonnengelb `#f0ad2c`, sparsam: aktiver Navigationspunkt, Symbol von „Veranstaltung erstellen“, aktueller Schritt; als Fläche nur für das gestreifte Band der Testumgebung, nie für Meldungen (#165). Sonnengelb trägt nie Text auf Weiß. Statusfarben sind gedeckt und stehen immer mit Wort und Symbol. Alle Farben stehen an einer Stelle; nur heller Modus, ein dunkler ist vorbereitet (#15).
-- **Formen:** abgerundete Ecken, Flächen statt Rahmen, kaum Schatten, lieber Luft als Fülle.
+- **Formen:** abgerundete Ecken, Flächen statt Rahmen, kaum Schatten, lieber Luft als Fülle. Einzige Ausnahme mit deutlichem Schatten ist die kurze Meldung (#186), damit man sie ohne Farbe als schwebend erkennt.
 - **Aufbau am PC:** feste Seitenleiste links, keine Kopfzeile über dem Inhalt. Oben Lilie und „DPV Anmeldetool“, darunter die Navigation, unten Profilkreis mit Vornamen und „Abmelden“ mit Symbol und Wort. Der Profilkreis führt am PC und am Handy zu „Mein Profil“ und ist dort hervorgehoben wie der aktive Navigationspunkt, mit zarter Fläche und gelbem Ring; einen eigenen Punkt in der Navigation hat „Mein Profil“ nicht (#13).
 - **Aufbau am Handy:** schmale Leiste oben mit „Menü“, Lilie mit Namen und Profilkreis. „Menü“ öffnet die Navigation von links; „Abmelden“ steht darin mit Symbol und Wort. Die Leiste wechselt unter 992 Pixel Breite.
 - **Navigation:** Auf echten Seiten steht nur, was es gibt, und nur für Personen, die es nutzen dürfen (`core/navigation.py`). Keine leeren Platzhalter. Ausblenden ersetzt nie die Rechteprüfung auf dem Server.
@@ -51,6 +51,26 @@ Protokoll und Zielbild in #165, Zielbild als `docs/zielbilder/meldungen.html`. E
 - **Ohne Farbe erkennbar:** Jede Art hat ihr eigenes Symbol, und Vorleseprogramme hören vorweg ihr Wort („Information:“, „Warnung:“, „Fehler:“, „Erfolg:“), das unsichtbar bleibt.
 - **Ansagen:** Meldungen nach einer Handlung (Login-Seite) sagen Vorleseprogramme sofort an; fest auf einer Seite stehende nicht.
 - **Band der Testumgebung** ist keine Meldung: Sonnengelb mit schrägen Streifen wie ein Absperrband und eigenem Laborsymbol.
+
+### Kurze Meldungen und Fehlermeldungen an der Stelle der Handlung (#186, 27.10.2026)
+
+Protokoll, Szenarien und Zielbild in #186, Zielbild als `docs/zielbilder/kurze-meldungen.html`. Entscheidung mit Begründung in `docs/entscheidungen.md`, Eintrag vom 27.10.2026 zu #186. Die kurze Meldung ist ein eigener Baustein (`{% kurzmeldung %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Kurze Meldung“); Art, Farbe, Symbol und Aufbau bleiben die der Meldungen oben.
+
+| Form | Wann | Wo und wie |
+|---|---|---|
+| Kurze Meldung | Erfolg oder Information, die eine eigene Handlung bestätigt (z. B. „Dein Fahrtenname ist gespeichert.“) | unten mittig über dem Inhalt, mit deutlichem Schatten und ×; verschwindet nach rund 6 Sekunden |
+| Feste Meldung | ein dauerhafter Zustand (z. B. „Du bist noch keiner Organisation zugeordnet.“); jede Warnung | fest auf der Seite |
+| Fehlermeldung nach einer Handlung | etwas hat technisch nicht geklappt | fest, direkt an der Stelle der Handlung: unter dem Feld, auf späteren Seiten unter der betroffenen Zeile |
+| Fehler am Feld | die Eingabe ist falsch | rote Schrift direkt unter dem Feld (unverändert, „Textfelder“ unten) |
+
+- **Kurz nur nach einer eigenen Handlung:** Fehler und Warnungen werden nie kurz; bei ihnen muss man etwas tun, und verschwänden sie, übersähe man sie. Die Login-Seite bekommt keine kurzen Meldungen; ihre Meldungen bleiben fest direkt über dem Knopf.
+- **Dauer und Bedienung:** rund 6 Sekunden, mit × zum Schließen. Solange die Maus darüber oder der Fokus darin ist, bleiben alle stehen und zählen danach neu. Schließt man sie mit der Tastatur, geht der Fokus dorthin zurück, wo er war, als sie erschien. Kein Zeitbalken.
+- **Lage:** am PC unten mittig im Inhaltsbereich, die Seitenleiste bleibt frei, höchstens 560 Pixel breit; am Handy unten über fast die ganze Breite mit etwas Rand. Langer Text bricht um.
+- **Mehrere:** stapeln sich, die neueste unten, höchstens drei; bei einer vierten verschwindet die älteste sofort.
+- **Vorleseprogramme** sagen sie an („Erfolg:“ bzw. „Information:“ vorweg), ohne dass der Cursor sich bewegt.
+- **Bewegung:** sanftes Ein- und Ausblenden; ist im Gerät „Bewegung reduzieren“ eingestellt, ohne Bewegung.
+- **Ohne Skript** steht sie fest oben auf der Seite wie eine feste Meldung, bis zum nächsten Seitenwechsel.
+- **Fehlermeldung an der Stelle der Handlung:** Der Bildschirm zeigt die Stelle, der Cursor steht im Feld, und Vorleseprogramme sagen sie an. Sie verschwindet erst beim erneuten Versuch oder beim Seitenwechsel. So übersieht man sie auch auf einer langen Seite nicht und wird nicht nach oben geholt.
 
 ### Textfelder (#111, 26.10.2026)
 

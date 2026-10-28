@@ -84,7 +84,13 @@
       }
       input.classList.remove("is-invalid");
       input.removeAttribute("aria-invalid");
-      input.removeAttribute("aria-describedby");
+      // Eine Fehlermeldung nach gescheitertem Speichern bleibt stehen (#186) und mit der Eingabe verknüpft.
+      var failure = box.querySelector(".a-meldung.ist-fehler");
+      if (failure) {
+        input.setAttribute("aria-describedby", failure.id);
+      } else {
+        input.removeAttribute("aria-describedby");
+      }
     }
 
     function open() {
@@ -154,9 +160,15 @@
     });
 
     // Nach einem Fehler kommt das Feld offen vom Server, nach dem Speichern mit dem Fokus darauf.
+    // Scheiterte das Speichern, zeigt der Bildschirm das Feld mit der Fehlermeldung darunter (#186).
     if (box.hasAttribute("data-offen")) {
       show(true);
-      input.focus();
+      if (box.querySelector(".a-meldung.ist-fehler")) {
+        input.focus({ preventScroll: true });
+        box.scrollIntoView({ block: "center" });
+      } else {
+        input.focus();
+      }
     } else {
       show(false);
       if (box.hasAttribute("data-fokus")) {
@@ -164,6 +176,117 @@
       }
     }
   });
+
+  // Kurze Meldungen (#186, docs/gestaltung.md): Eine Meldung mit „data-kurz“ (Erfolg oder Information
+  // nach einer eigenen Handlung) wandert in den Bereich unten. Dort sagen Vorleseprogramme sie an, ohne
+  // dass der Cursor sich bewegt, und nach rund 6 Sekunden verschwindet sie. Solange die Maus über einer
+  // Meldung oder der Fokus darin ist, bleiben alle stehen und zählen danach neu. Höchstens drei, die
+  // neueste unten. Ohne Skript oder ohne Bereich (Login-Seite) bleibt sie fest, wo sie steht.
+  var shortArea = document.getElementById("kurzmeldungen");
+  var SHORT_TIME = 6000;
+  var SHORT_MOST = 3;
+  // Erst kurz nach dem Laden einblenden: Vorleseprogramme sagen nur an, was nach dem Bereich selbst
+  // dazukommt.
+  var SHORT_DELAY = 100;
+  var FADE_TIME = 200;
+  // Stehen die Meldungen gerade still (Maus oder Fokus darauf)? Nur dann zählen sie danach neu.
+  var shortPaused = false;
+
+  function shortOpen() {
+    return Array.prototype.slice.call(shortArea.querySelectorAll(".a-kurz:not(.ist-weg)"));
+  }
+
+  function shortHeld() {
+    return shortArea.matches(":hover") || shortArea.contains(document.activeElement);
+  }
+
+  function shortCount(notice) {
+    window.clearTimeout(notice.kurzUhr);
+    notice.kurzUhr = window.setTimeout(function () {
+      shortFade(notice);
+    }, SHORT_TIME);
+  }
+
+  // Lag der Fokus in der Meldung, geht er dorthin zurück, wo er war, als sie erschien.
+  function shortRemove(notice) {
+    var hadFocus = notice.contains(document.activeElement);
+    window.clearTimeout(notice.kurzUhr);
+    notice.remove();
+    if (hadFocus && notice.kurzHer && notice.kurzHer.isConnected) {
+      notice.kurzHer.focus();
+    }
+    // Mit der Meldung verschwinden oft Maus oder Fokus aus dem Bereich, ohne dass der Browser es meldet.
+    shortGoOn();
+  }
+
+  function shortFade(notice) {
+    notice.classList.add("ist-weg");
+    window.setTimeout(function () {
+      shortRemove(notice);
+    }, FADE_TIME);
+  }
+
+  function shortShow(notice) {
+    notice.removeAttribute("role");
+    notice.classList.add("a-kurz");
+    notice.kurzHer = document.activeElement === document.body ? null : document.activeElement;
+    var close = notice.querySelector(".a-kurz-zu");
+    close.hidden = false;
+    close.addEventListener("click", function () {
+      shortRemove(notice);
+    });
+    shortArea.appendChild(notice);
+    var open = shortOpen();
+    if (open.length > SHORT_MOST) {
+      shortRemove(open[0]);
+    }
+    if (shortHeld()) {
+      shortPaused = true;
+    } else {
+      shortCount(notice);
+    }
+  }
+
+  function shortHold() {
+    shortPaused = true;
+    shortOpen().forEach(function (notice) {
+      window.clearTimeout(notice.kurzUhr);
+    });
+  }
+
+  function shortGoOn() {
+    window.setTimeout(function () {
+      if (shortPaused && !shortHeld()) {
+        shortPaused = false;
+        shortOpen().forEach(shortCount);
+      }
+    }, 0);
+  }
+
+  if (shortArea) {
+    document.querySelectorAll("[data-kurz]").forEach(function (notice) {
+      notice.remove();
+      window.setTimeout(function () {
+        shortShow(notice);
+      }, SHORT_DELAY);
+    });
+    shortArea.addEventListener("mouseover", shortHold);
+    shortArea.addEventListener("mouseout", shortGoOn);
+    shortArea.addEventListener("focusin", shortHold);
+    shortArea.addEventListener("focusout", shortGoOn);
+
+    // Bausteinkatalog: Knöpfe blenden Beispiele aus Vorlagen ein, mehrere kurz nacheinander.
+    document.querySelectorAll("[data-kurz-zeigen]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        button.getAttribute("data-kurz-zeigen").split(" ").forEach(function (name, index) {
+          window.setTimeout(function () {
+            var example = document.getElementById(name).content.querySelector("[data-kurz]");
+            shortShow(example.cloneNode(true));
+          }, index * 700);
+        });
+      });
+    });
+  }
 
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
