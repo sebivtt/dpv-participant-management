@@ -44,6 +44,7 @@
   ],
   "users": [
     {
+      "id": "00000000-0000-4000-8000-000000000001",
       "username": "erika.testfrau",
       "enabled": true,
       "emailVerified": true,
@@ -59,6 +60,7 @@
       "lastName": "Testfrau"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000002",
       "username": "max.testmann",
       "enabled": true,
       "emailVerified": true,
@@ -74,6 +76,7 @@
       "lastName": "Testmann"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000003",
       "username": "ohne.name",
       "enabled": true,
       "emailVerified": true,
@@ -87,6 +90,7 @@
       "email": "ohne.name@example.org"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000004",
       "username": "ohne.nachname",
       "enabled": true,
       "emailVerified": true,
@@ -101,6 +105,7 @@
       "firstName": "Erika"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000005",
       "username": "ohne.mail",
       "enabled": true,
       "emailVerified": false,
