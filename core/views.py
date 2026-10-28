@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
-from access.rights import SUGGESTION_MIN, WILDCARDS
+from access.rights import SUGGESTION_MIN, WILDCARDS, Rights
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from core.forms import AccountSearchForm, PatternForm
@@ -272,6 +272,46 @@ def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
     return render(request, "core/_treffer.html", context)
 
 
+# Leitung entfernen und Rolle abgeben (#191, Teil 3 von #93). Wie beim Benennen hat die Bestätigung
+# eine eigene Adresse unter der Seite der Organisation, damit sie auch ohne Skript geht: „Entfernen“
+# und „Rolle abgeben“ führen dorthin, der rote Knopf schickt das Formular dorthin. Die Organisation
+# kommt aus der Adresse, die Rolle über ihre Kennung; eine Rolle einer anderen Organisation, eine
+# Mitgliedschaft, die Verbandsleitung oder Admin sind dort „nicht gefunden“ (CV3).
+REMOVE_ROWS = ("RO-10", "RO-11", "RO-13", "RO-14", "RO-17", "RO-18", "RO-19", "RO-20", "RO-21", "RO-22")
+
+
+@checks_rights(*REMOVE_ROWS)
+def organisation_remove(request: HttpRequest, unit: str, role: str) -> HttpResponse:
+    """Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ zeigen und die Rolle entfernen.
+
+    Lesend zeigt die Adresse die Seite der Organisation mit offenem Dialog; „Abbrechen“ ändert
+    nichts (C9). Das Formular entfernt die Rolle; danach steht die kurze Meldung dort, wohin die
+    Person noch darf: auf der Seite der Organisation, sonst in der Übersicht „Organisation“, ohne
+    Leitungsrolle auf „Mein Profil“ (C13).
+    """
+    found = _appointing(request, unit)
+    rights = request.rights
+    if request.method == "POST":
+        messages.success(request, rights.remove(found, role))
+        return redirect(_after_removal(request, found))
+    if request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    removal = shown.removal(found, rights.removal(found, role), action=request.path)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
+                                                       "start": False, "removal": removal})
+
+
+def _after_removal(request: HttpRequest, found: Unit) -> str:
+    """Wohin es nach dem Entfernen geht; die Rechte frisch, weil die eigene Rolle gerade weg sein kann."""
+    rights = Rights(request.user)
+    if rights.opens_unit(found):
+        return reverse("organisation_unit", args=[found.key])
+    if rights.sees_organisation():
+        return reverse("organisation")
+    return reverse("profile")
+
+
 # Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
 # (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
 ROLE_NOTES = {
@@ -366,9 +406,16 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Leitung in einer Liste"), "template": "core/_leitung.html", "issues": [189],
+        "name": _("Leitung in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191],
         "purpose": _("Eine Leitung mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, darunter "
-                     "links die Rolle und rechts die Mail, wo die Seite sie zeigen darf."),
+                     "links die Rolle und rechts die Mail, wo die Seite sie zeigen darf. Wo man Leitungen entfernen "
+                     "darf, steht ganz rechts der Knopf „Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
+        "pages": [_("Organisation")],
+    },
+    "knopfentfernen": {
+        "name": _("Knopf „Entfernen“"), "template": "core/_knopf_entfernen.html", "issues": [191],
+        "purpose": _("Für Handlungen, die etwas wegnehmen, etwa „Entfernen“ bei einer Leitung: zarte rote Fläche mit "
+                     "roter Schrift, die Farben der Fehlermeldung. Er führt zur Bestätigung, nie gleich zur Handlung."),
         "pages": [_("Organisation")],
     },
     "orgakopf": {
@@ -378,10 +425,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
-                     "auch ohne Skript."),
+                     "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
+                     "„Entfernen“."),
         "pages": [_("Organisation")],
     },
     "trefferliste": {
@@ -432,9 +480,11 @@ def _organisation_examples() -> dict:
                     children=[troop], folded=[zugvoegel])]
     leads = [
         Lead(name="Wirbelwind", extra="Wanda Beispiel", role="Stammesleitung", mail="wanda.beispiel@example.org",
-             locked=False, is_self=True),
-        Lead(name="Funke", extra="Fiete Muster", role="Gruppenleitung", mail="", locked=True, is_self=False),
-        Lead(name="kim.ohne.namen", extra="", role="Stammesleitung", mail="", locked=False, is_self=False),
+             locked=False, is_self=True, remove_href="#h-dialog", remove_label=texts.GIVE_UP_BUTTON),
+        Lead(name="Funke", extra="Fiete Muster", role="Gruppenleitung", mail="", locked=True, is_self=False,
+             remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
+        Lead(name="kim.ohne.namen", extra="", role="Stammesleitung", mail="", locked=False, is_self=False,
+             remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
                 kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="")
@@ -455,8 +505,13 @@ def _organisation_examples() -> dict:
     dialog = {"title": texts.APPOINT_TITLE % {"role": "Gruppenleitung"},
               "subtitle": texts.APPOINT_FOR % {"unit": "Sippe Falken"}, "close_href": "#h-dialog-beispiel",
               "form": AccountSearchForm(auto_id="katalog_%s")}
+    removal = {"title": texts.REMOVE_QUESTION % {"person": "Funke (Fiete Muster)", "role": "Gruppenleitung", "unit": "Sippe Falken"},
+               "lines": [f"{texts.LAST_LEAD_COVERED % {'unit': 'Sippe Falken', 'role': 'Gruppenleitung', 'cover': 'Stamm Walhall'}} "
+                         f"{texts.ANYWAY_REMOVE}"],
+               "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
+               "preview_id": "h-dialog-entfernen"}
     return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 

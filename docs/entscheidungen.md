@@ -6,6 +6,27 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-28 · Leitung entfernen und eigene Rolle abgeben (#191)
+
+**Entscheidung** (Sebastian, Klärung in #93 und [Szenarien Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/191) mit „Alle passen“; bei der Umsetzung am 28.10.2026 [drei Antworten](https://github.com/sebivtt/dpv-participant-management/issues/191#issuecomment-6476276104)):
+
+1. **Bausteine erweitern** (Antwort „Erweitern (Empfehlung)“): „Leitung in einer Liste“ bekommt rechts einen kleinen Knopf, „Entfernen“ und beim eigenen Eintrag „Rolle abgeben“ neutral; der „Dialog“ bekommt unten neben „Abbrechen“ einen roten Knopf zum Bestätigen.
+2. **Wenn niemand einspringt** (Antwort „Kurz (Empfehlung)“): Für eine Gruppe, einen Stamm oder Ring ohne Leitung darüber bis zum Bund heißt es „Danach hat Walhall keine Stammesleitung mehr, und niemand springt ein. Trotzdem abgeben?“. Den Satz „… kann nur die Verbandsleitung benennen“ gibt es nur beim Bund, weil die Verbandsleitung keine Stammesleitungen benennt (RO-17).
+3. **Die Erfolgsmeldung ist eine kurze Meldung** (Antwort „Wie beim Benennen (Empfehlung)“), wie nach dem Benennen; „oben“ in C13 ist damit überholt.
+4. **Aussehen von „Entfernen“** ([neuer Inhalt vom 28.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/191), aus der Klärung von #65, Sebastian: „Ja, auch in #191“): zarte rote Fläche mit roter Schrift in den Farben der Fehlermeldung, abweichend vom Zielbild zu #93 (nur rote Schrift). Der Knopf ist ein eigener Baustein im Katalog; #65 bindet ihn für „Austragen“ ein.
+
+**Technische Wahl** (KI):
+
+- **Jede Rolle hat eine zufällige Kennung** (`roles.Role.key`, Migration in drei Schritten wie bei den Einheiten); die Bestätigung hat die Adresse `/organisation/<kennung der Organisation>/entfernen/<kennung der Rolle>/`. Lesend zeigt sie den Dialog, das Formular entfernt. Eine Rolle einer anderen Organisation, eine Mitgliedschaft, Verbandsleitung, DPV-Veranstaltungsteam und Admin sind dort „nicht gefunden“.
+- **Wer entfernen darf, ist genau, wer dort benennen darf** (`Rights.may_remove()`, der eigene Bereich); die eigene Leitungsrolle liegt immer darin und heißt dort „Rolle abgeben“.
+- **Gleichzeitige Anfragen:** Entfernen sperrt das eigene Konto und das der Person mit der Rolle, nach Nummer geordnet, und prüft das Recht unter der Sperre noch einmal. Benennen sperrt seit #191 ebenso das eigene Konto mit (Hinweis aus der Prüfung von #190): Wer gerade entfernt wird, benennt und entfernt danach niemanden mehr.
+- **Wohin es danach geht:** zur Seite der Organisation, wenn sie sich noch öffnet; sonst zur Übersicht „Organisation“; ohne Leitungsrolle zu „Mein Profil“, wo die kurze Meldung steht. Der nächste Klick auf „Organisation“ zeigt dann „kein Zugriff“ (AV9).
+- **Wer einspringt,** heißt im Satz wie in den Szenarien „Stamm Walhall“ und „Ring Küste“; ein Bund steht nur mit seinem Namen da („Pfadfinderbund Boreas“, C5).
+
+**Begründung:** Dieselbe Prüfung für Benennen und Entfernen hält beide gleich; die Sperre beider Konten verhindert, dass sich zwei Leitungen gleichzeitig gegenseitig entfernen (CV5).
+
+**Umsetzung:** `access/rights.py`, `roles/models.py` mit Migration, `units/organisation.py`, `units/texts.py`, `core/views.py`, `config/urls.py`, `core/templates/core/organisation.html`, `_leitung.html`, `_knopf_entfernen.html`, `_dialog_auf.html`, `_dialog_zu.html`, `bausteine.html`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`; Tests in `tests/test_entfernen.py` und `rauchtests/test_entfernen.py`.
+
 ## 2026-10-28 · Leitung benennen auf der Seite einer Organisation; Kontosuche (F2) (#190)
 
 **Entscheidung** (Sebastian, Klärung in #93: [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6436014693), [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6437451814), [Nachklärung zum Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6440955193), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/190#issuecomment-6441094377); bei der Umsetzung am 28.10.2026 [drei Antworten](https://github.com/sebivtt/dpv-participant-management/issues/190#issuecomment-6468685698)):

@@ -39,6 +39,9 @@ class Lead:
     mail: str
     locked: bool
     is_self: bool
+    # Der Knopf rechts, nur wo die Person Leitungen entfernen darf: „Entfernen“ oder beim eigenen Eintrag „Rolle abgeben“ (#191).
+    remove_href: str | None = None
+    remove_label: str = ""
 
     @property
     def locked_mark(self) -> Mark | None:
@@ -271,18 +274,53 @@ class Organisation:
             keys = [entry["user_key"] for entry in entries]
             mails = dict(self.rights.persons().filter(key__in=keys).values_list("key", "email"))
         role = LEAD_ROLE[unit.kind].label
+        may_remove = self.rights.may_appoint(unit)
         found = []
         for entry in entries:
             full_name = _full_name(entry)
+            is_self = entry["user_key"] == self.user.key
             found.append(Lead(
                 name=entry["scout_name"] or full_name or entry["username"],
                 extra=full_name if entry["scout_name"] else "",
                 role=role,
                 mail=mails.get(entry["user_key"], ""),
                 locked=entry["locked"],
-                is_self=entry["user_key"] == self.user.key,
+                is_self=is_self,
+                remove_href=reverse("organisation_remove", args=[unit.key, entry["role_key"]]) if may_remove else None,
+                remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
             ))
         return found
+
+    def removal(self, unit: Unit, shown: dict, action: str) -> dict:
+        """Der Dialog zum Entfernen oder Abgeben aus dem, was `Rights.removal()` liefert (C1 bis C6, N6).
+
+        Titel ist die Frage; darunter beim Abgeben, was man verliert, und bei der letzten Leitung,
+        wer danach einspringt, mit „Trotzdem entfernen?“ oder „Trotzdem abgeben?“ am Ende.
+        """
+        values = {"person": shown["person"], "role": shown["role"], "unit": unit.name}
+        lines = []
+        if shown["is_self"]:
+            title = texts.GIVE_UP_QUESTION % values
+            lines.append(texts.GIVE_UP_LOSES % values)
+        else:
+            title = texts.REMOVE_QUESTION % values
+        if shown["last"]:
+            cover = self.units.get(shown["cover"])
+            if unit.kind == Kind.ASSOCIATION:
+                sentence = texts.LAST_ASSOCIATION_LEAD % values
+            elif cover is None:
+                sentence = texts.LAST_LEAD_NOBODY % values
+            else:
+                sentence = texts.LAST_LEAD_COVERED % {**values, "cover": texts.COVER_NAME[cover.kind] % {"unit": cover.name}}
+            anyway = texts.ANYWAY_GIVE_UP if shown["is_self"] else texts.ANYWAY_REMOVE
+            lines.append(f"{sentence} {anyway}")
+        return {
+            "title": title,
+            "lines": lines,
+            "close_href": reverse("organisation_unit", args=[unit.key]),
+            "confirm_action": action,
+            "confirm_label": texts.GIVE_UP_BUTTON if shown["is_self"] else texts.REMOVE_BUTTON,
+        }
 
     def _notice(self, unit: Unit) -> str:
         """Der Satz ohne Leitung (A10, A14); gesperrte Leitungen zählen nicht (A16)."""

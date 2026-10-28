@@ -13,6 +13,7 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from django.utils.translation import gettext_lazy
 
+from access.keys import key_field
 from core import actors
 from core.actors import SERVER_COMMAND, check_actor, person_name
 from roles import texts
@@ -88,6 +89,8 @@ class Role(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="roles")
     kind = models.CharField(max_length=20, choices=RoleKind)
     unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.PROTECT, related_name="roles")
+    # Zufällige Kennung für Adressen, z. B. zum Entfernen einer Leitung (#191, #64); nie die laufende Nummer.
+    key = key_field()
 
     class Meta:
         constraints = [

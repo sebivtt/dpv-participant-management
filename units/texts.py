@@ -109,3 +109,30 @@ KIND_AND_NAME = {
     "troop": gettext_lazy("Stamm %(unit)s"),
     "group": gettext_lazy("Gruppe %(unit)s"),
 }
+
+# Leitung entfernen und Rolle abgeben (#191), Wortlaut nach den Szenarien C1 bis C13 und Sebastians
+# Antworten bei der Umsetzung vom 28.10.2026
+REMOVE_BUTTON = gettext_lazy("Entfernen")
+GIVE_UP_BUTTON = gettext_lazy("Rolle abgeben")
+REMOVE_QUESTION = gettext_lazy("%(person)s als %(role)s von %(unit)s entfernen?")
+GIVE_UP_QUESTION = gettext_lazy("Deine Rolle als %(role)s von %(unit)s abgeben?")
+GIVE_UP_LOSES = gettext_lazy("Du verlierst damit sofort den Zugriff auf die Personen von %(unit)s.")
+LAST_LEAD_COVERED = gettext_lazy(
+    "Danach hat %(unit)s keine %(role)s mehr. Bis eine neue benannt ist, springt die Leitung von %(cover)s ein."
+)
+# Für eine Gruppe, einen Stamm oder Ring, wenn bis zum Bund niemand Leitung ist (Antwort 2).
+LAST_LEAD_NOBODY = gettext_lazy("Danach hat %(unit)s keine %(role)s mehr, und niemand springt ein.")
+LAST_ASSOCIATION_LEAD = gettext_lazy(
+    "Danach hat %(unit)s keine %(role)s mehr, und niemand springt ein. Eine neue %(role)s kann nur die "
+    "Verbandsleitung benennen."
+)
+ANYWAY_REMOVE = gettext_lazy("Trotzdem entfernen?")
+ANYWAY_GIVE_UP = gettext_lazy("Trotzdem abgeben?")
+# Wer einspringt, wie in C1, C5 und C6: „Stamm Walhall“, „Ring Küste“, ein Bund nur mit seinem Namen.
+COVER_NAME = {
+    "association": gettext_lazy("%(unit)s"),
+    "ring": KIND_AND_NAME["ring"],
+    "troop": KIND_AND_NAME["troop"],
+}
+REMOVED = gettext_lazy("%(person)s ist nicht mehr %(role)s von %(unit)s.")
+GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")

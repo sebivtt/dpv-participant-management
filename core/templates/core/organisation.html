@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{% if start %}{% translate "Organisation" %}{% else %}{{ page.unit.name }}{% endif %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Den Knopf „… benennen“ und seinen Dialog gibt es seit #190 nur, wo die Person benennen darf; Entfernen und Abgeben kommen mit #191. Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
+  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Den Knopf „… benennen“ und seinen Dialog gibt es seit #190 nur, wo die Person benennen darf, ebenso „Entfernen“ und „Rolle abgeben“ bei den Leitungen (#191). Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
   {% if start %}<h1 class="sr-nur">{% translate "Organisation" %}</h1>{% endif %}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-orga{% if not start %} zeigt-seite{% endif %}">
@@ -39,5 +39,11 @@
     </form>
     <div class="a-treffer-bereich" data-treffer>{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action notice=dialog.notice %}</div>
     {% include "core/_dialog_zu.html" %}
+  {% endif %}
+  {% if removal %}
+    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191): eigene Adresse, kommt offen vom Server. #}
+    {% include "core/_dialog_auf.html" with dialog=removal %}
+    {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" with dialog=removal %}
   {% endif %}
 {% endblock %}
