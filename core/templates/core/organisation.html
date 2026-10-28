@@ -1,0 +1,31 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{% if start %}{% translate "Organisation" %}{% else %}{{ page.unit.name }}{% endif %} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Nur Anzeige; Knöpfe zum Ändern kommen mit #190 und #191. Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
+  {% if start %}<h1 class="sr-nur">{% translate "Organisation" %}</h1>{% endif %}
+  <div class="a-orga{% if not start %} zeigt-seite{% endif %}">
+    {% include "core/_gliederung.html" %}
+    <div class="a-orga-seite{% if start %} a-orga-start{% endif %}">
+      {% if not start %}<a class="btn btn-zart a-orga-zurueck" href="{% url "organisation" %}"><span aria-hidden="true">‹</span> {% translate "Gliederung" %}</a>{% endif %}
+      {% if start %}{% include "core/_orgakopf.html" with heading=2 %}{% else %}{% include "core/_orgakopf.html" %}{% endif %}
+      <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-leitungen">
+        {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" %}{% endif %}
+        {% if page.notice %}{% meldung "info" text=page.notice %}{% endif %}
+        {% if page.leads %}<ul class="a-leitungen">{% for lead in page.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
+      </section>
+      {% if page.tiles is not None %}
+        <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-darunter">
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" level=3 %}{% else %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" %}{% endif %}
+          {% if page.tiles %}
+            <ul class="a-rollenkacheln">
+              {% for tile in page.tiles %}<li class="a-orgakachel{% if not tile.href %} ist-ohne-zugriff{% endif %}">{% include "core/_rollenkachel.html" %}</li>{% endfor %}
+            </ul>
+          {% else %}
+            <p class="a-leer-satz">{{ page.empty }}</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

@@ -67,3 +67,23 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 4. **Fokus nach dem Schließen:** Das Zielbild gibt ihn immer ans Feld „Fahrtenname“ zurück; im Tool geht er dorthin, wo er war, als die Meldung erschien. Auf „Mein Profil“ ist das das Feld, im Katalog der Knopf, der sie gezeigt hat.
 5. **„Bewegung reduzieren“:** Das Zielbild blendet dann in 0,01 Sekunden über die Deckkraft ein; im Tool erscheint und verschwindet sie ganz ohne Übergang, wie alle Bewegungen des Tools bei dieser Einstellung.
 6. **Abstand zum Rand am Handy** berücksichtigt zusätzlich den Rand des Bildschirms bei iPhones mit Aussparung (`env(safe-area-inset-…)`), wie die Leiste oben.
+
+## Organisation
+
+- **Datei:** [`organisation.html`](organisation.html)
+- **Stand:** 27.10.2026. Sebastian hat mit Gemini vier Varianten entworfen; die Klärungs-Session hat daraus zwei nach den Szenarien und der Rechtematrix neu aufgebaut, Sebastian hat Variante 1 (Gliederung links, Seite rechts) gewählt und als Vorlage für #93 bestimmt. Eingespielt mit #189 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441100484)).
+- **Prüfsumme (SHA-256):** `6588b56761e8906246d416edec3c60a15bd4aa2fc9f69e2b90f23c6d13ad5d2d`
+- **Inhalt der Datei:** nur erfundene Personen und Organisationen (Pfadfinderbund Boreas, Wanda, Fiete …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen Personen und Fällen um; ins Tool ist davon nichts übernommen.
+- **Orientierung, keine Anforderung.** Geklärt in #93 ([Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6436014693), [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441101266)), umgesetzt in #189 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441094033)).
+
+### Abweichungen der Seite vom Zielbild
+
+1. **Immer zugeklappt:** Organisationen ohne Zugriff stehen immer unter „… weitere ohne Zugriff“, auch eine einzelne; das Zielbild klappt erst ab drei zu (Nachklärung, N5).
+2. **Nur Anzeige:** Die Knöpfe „… benennen“, „Entfernen“ und „Rolle abgeben“, ihre Dialoge und die Erfolgsmeldungen kommen mit #190 und #191.
+3. **Nicht Teil von #93, nur Ausblick im Zielbild:** der Abschnitt „Personen“ (#117, #65), die Sicht der Verbandsleitung (#94), das dunkle Steuerband und der gelbe Hinweiskasten.
+4. **Rolle als Rollenmarke:** Hinter jeder Leitung steht die Rolle als Rollenmarke wie auf „Mein Profil“, nicht als runde Pille (Sebastian, 28.10.2026, bei der Umsetzung von #189).
+5. **„Organisationen darunter“ als Rollenkachel:** wie die Kacheln auf „Mein Profil“, klein die Art als Rollenmarke, groß der Name, darunter die Leitung; ohne Zugriff grau, ohne blauen Streifen und nicht anklickbar (Sebastian, 28.10.2026, bei der Umsetzung von #189). Im Zielbild steht die Art in Großbuchstaben.
+6. **Übersicht:** Am PC steht neben der Gliederung die oberste Organisation, die man selbst leitet; am Handy nur die Gliederung. Für Vorleseprogramme heißt die Seite „Organisation“.
+7. **Pfad und Organisationen** sind Links mit eigener Adresse statt Knöpfen, damit jede Organisation ihre eigene Adresse hat (#189).
+8. **Navigation und Fußbereich** kommen wie auf jeder Seite aus dem Tool; der Punkt „Organisation“ ist hervorgehoben wie jeder aktive Punkt.
+9. **Höhe der Gliederung:** Im Zielbild richtet sie sich nach der Seite rechts. Im Tool ist sie am PC so hoch wie der Bildschirm abzüglich des Rands und bleibt beim Rollen stehen, damit sie beim Wechsel zwischen Seiten nicht springt (Sebastian, 28.10.2026, beim Testen von #189).

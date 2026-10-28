@@ -14,6 +14,8 @@ from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from core.forms import PatternForm
 from roles.models import Role
+from units.models import Unit
+from units.organisation import Lead, Mark, Node, Organisation, Page
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +121,49 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
     return render(request, "core/profil.html", context)
 
 
+# Seite „Organisation“ (#189, Teil 1 von #93), nur Anzeige. Benennen (#190), Entfernen und Abgeben
+# (#191) kommen mit eigenen Adressen; diese Seiten nehmen deshalb nur lesende Aufrufe an. Jede
+# andere Anfrage, etwa ein manipuliertes Formular an die Leseseite, zeigt „nicht gefunden“ und
+# ändert nichts (AV5).
+READING = ("GET", "HEAD")
+
+
+
+# Die Adresse hat keine Kennung: Sie zeigt immer die Gliederung der angemeldeten Person (EH-01).
+@checks_rights("EH-01", "EH-03", "EH-07", "EH-08", "EH-09", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22")
+def organisation(request: HttpRequest) -> HttpResponse:
+    """„Organisation“: die Gliederung des eigenen Bundes, am PC daneben die Seite der eigenen Organisation.
+
+    Nur für Leitungen von Gruppe bis Bund (EH-08); alle anderen bekommen „kein Zugriff“ (EH-09).
+    Am Handy steht nur die Gliederung; ein Tipp öffnet die Seite der Organisation.
+    """
+    rights = request.rights
+    rights.require_section(rights.sees_organisation())
+    if request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    start = shown.start_unit()
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=start),
+                                                       "page": shown.page(start), "start": True})
+
+
+# Die Organisation kommt nur aus der Adresse, über ihre Kennung (CONTRIBUTING.md, Abschnitt 4).
+@checks_rights("EH-01", "EH-03", "EH-07", "EH-09", "EH-28", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22")
+def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
+    """Seite einer Organisation: im eigenen Bereich zum Verwalten, auf der Kette nach oben nur zum Lesen (Frage C).
+
+    Jede andere Organisation, auch eine erfundene oder fremde Kennung, ist „nicht gefunden“, genau
+    wie eine, die es nicht gibt (RO-04, EH-03, AV1 bis AV6).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.opens_unit)
+    if request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found),
+                                                       "page": shown.page(found), "start": False})
+
+
 # Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
 # (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
 ROLE_NOTES = {
@@ -152,7 +197,7 @@ BUILDING_BLOCKS = {
         "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
                      "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
                      "geklappt hat."),
-        "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil")],
+        "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation")],
     },
     "textfeld": {
         "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
@@ -189,13 +234,38 @@ BUILDING_BLOCKS = {
     "flaechenkopf": {
         "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor."),
-        "pages": [_("Mein Profil")],
+        "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
-        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161],
+        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189],
         "purpose": _("Zeigt eine Rolle mit Organisation und Weg darüber; die Mitgliedschaft als eigene "
-                     "Fläche, die übrigen Rollen als Kacheln."),
-        "pages": [_("Mein Profil")],
+                     "Fläche, die übrigen Rollen als Kacheln. Unter „Organisationen darunter“ ist die Kachel "
+                     "anklickbar, ohne Zugriff grau ohne blauen Streifen."),
+        "pages": [_("Mein Profil"), _("Organisation")],
+    },
+    "gliederungsbaum": {
+        "name": _("Gliederung"), "template": "core/_gliederung.html", "issues": [189],
+        "purpose": _("Zeigt einen Bund als Baum: je Organisation Art, Name, Marke und Leitungen; anklickbar nur mit "
+                     "Zugriff, alle ohne Zugriff zugeklappt unter „… weitere ohne Zugriff“."),
+        "pages": [_("Organisation")],
+    },
+    "kennmarke": {
+        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189],
+        "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Leitung: „Du springst ein“, „nur "
+                     "lesen“ oder „gesperrt“."),
+        "pages": [_("Organisation")],
+    },
+    "leitung": {
+        "name": _("Leitung in einer Liste"), "template": "core/_leitung.html", "issues": [189],
+        "purpose": _("Eine Leitung mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, darunter "
+                     "links die Rolle und rechts die Mail, wo die Seite sie zeigen darf."),
+        "pages": [_("Organisation")],
+    },
+    "orgakopf": {
+        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189],
+        "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
+                     "Art und Organisation darüber, rechts die Marke."),
+        "pages": [_("Organisation")],
     },
     "profilkreis": {
         "name": _("Profilkreis"), "template": "core/_profilkreis.html", "issues": [7, 13],
@@ -216,6 +286,41 @@ BUILDING_BLOCKS = {
         "pages": [_("Fehlerseiten")],
     },
 }
+
+
+def _organisation_examples() -> dict:
+    """Erfundene Beispiele für die Bausteine der Seite „Organisation“ (#189), ohne Datenbank."""
+    kind = Unit.Kind
+    boreas = Unit(kind=kind.ASSOCIATION, name="Pfadfinderbund Boreas")
+    walhall = Unit(kind=kind.TROOP, name="Walhall")
+    covers, read = Mark(_("Du springst ein"), "ein"), Mark(_("nur lesen"), "lesen")
+
+    def node(unit, kind_label, mark=None, leads="", href="#h-gliederung", access="manage", **more):
+        return Node(unit=unit, kind=kind_label, access=access, href=href, mark=mark, leads=leads, current=False, **more)
+
+    falken = node(Unit(name="Sippe Falken"), kind.GROUP.label, covers, "keine Gruppenleitung")
+    woelfe = node(Unit(name="Meute Wölfe"), kind.GROUP.label, leads="Gruppenleitung: Wolke")
+    adler = node(Unit(name="Sippe Adler"), kind.GROUP.label, href=None, access="name")
+    zugvoegel = node(Unit(name="Zugvögel"), kind.TROOP.label, href=None, access="name", children=[adler])
+    troop = node(walhall, kind.TROOP.label, leads="Stammesleitung: Wirbelwind, Wiesel", children=[woelfe, falken])
+    troop.current = True
+    outline = [node(boreas, kind.ASSOCIATION.label, read, "Bundesleitung: Brummbär", access="read",
+                    children=[troop], folded=[zugvoegel])]
+    leads = [
+        Lead(name="Wirbelwind", extra="Wanda Beispiel", role="Stammesleitung", mail="wanda.beispiel@example.org",
+             locked=False, is_self=True),
+        Lead(name="Funke", extra="Fiete Muster", role="Gruppenleitung", mail="", locked=True, is_self=False),
+        Lead(name="kim.ohne.namen", extra="", role="Stammesleitung", mail="", locked=False, is_self=False),
+    ]
+    page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
+                kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="")
+    tiles = [
+        {"label": kind.GROUP.label, "org": "Meute Wölfe", "way": "Gruppenleitung: Wolke", "href": "#h-rollenkachel"},
+        {"label": kind.GROUP.label, "org": "Sippe Falken", "href": "#h-rollenkachel", "mark": covers},
+        {"label": kind.TROOP.label, "org": "Zugvögel", "no_access": True},
+    ]
+    return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")]}
 
 
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")
@@ -245,6 +350,8 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
         # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
         "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
                         "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
+        # Seite „Organisation“ (#189), erfunden wie in den Szenarien; nichts kommt aus der Datenbank.
+        **_organisation_examples(),
         # Der Profilkreis liest nur den kurzen Namen; hier erfunden, nicht der der angemeldeten Person.
         "named": {"short_name": "Kim"},
         "unnamed": {"short_name": ""},

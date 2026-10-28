@@ -31,7 +31,7 @@ from collections.abc import Callable
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.db.models import F, Model, Q, QuerySet
+from django.db.models import BooleanField, ExpressionWrapper, F, Model, Q, QuerySet
 from django.http import Http404
 from django.utils.functional import SimpleLazyObject
 
@@ -45,16 +45,26 @@ R = Role.Kind
 # DPV-Veranstaltungsteam, im ganzen Verband.
 SEEN_BY_FEDERATION_LEAD = (R.ASSOCIATION_LEAD, R.FEDERATION_LEAD, R.EVENT_TEAM)
 # Was über eine Leitung nach BER-01, Grund 3 sichtbar ist: Name, Fahrtenname und Rolle, nie die
-# Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`. Interne
-# Nummern von Konto und Einheit gibt die Liste nicht heraus, damit keine auf eine Seite gerät (#156);
-# braucht eine Seite eine Kennung, kommt die Kennung der Rolle dazu (#93).
+# Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`; ohne Namen
+# zeigen Seiten den Benutzernamen wie „Mein Profil“ (#189, A12). Interne Nummern von Konto und
+# Einheit gibt die Liste nicht heraus, damit keine auf eine Seite gerät (#156); Seiten ordnen die
+# Leitungen über die Kennungen von Konto und Einheit zu (#189). `locked` kennzeichnet ein im Tool
+# gesperrtes Konto; solche Leitungen stehen nur in der Liste, wer sie entfernen darf (#189, Frage B).
 LEAD_FIELDS = ("kind",)
 LEAD_NAMES = {
     "first_name": F("user__first_name"),
     "last_name": F("user__last_name"),
     "scout_name": F("user__scout_name"),
+    "username": F("user__username"),
+    "user_key": F("user__key"),
     "unit_name": F("unit__name"),
+    "unit_key": F("unit__key"),
+    "locked": ExpressionWrapper(Q(user__is_active=False), output_field=BooleanField()),
 }
+# Wie weit eine Leitung eine Einheit auf der Seite „Organisation“ sieht (#189).
+MANAGE = "manage"  # im eigenen Bereich: Seite mit Mails, wo sie die Person sieht
+READ = "read"  # auf der Kette nach oben: Seite nur lesen
+NAME_ONLY = "name"  # sonst im eigenen Bund: nur der Name in der Gliederung
 
 
 class Rights:
@@ -226,6 +236,76 @@ class Rights:
         if self.user is None or not allowed:
             raise PermissionDenied
 
+    # Seite „Organisation“ (#189)
+
+    def sees_organisation(self) -> bool:
+        """Menüpunkt und Bereich „Organisation“: jede Leitung von Gruppe bis Bund (EH-08).
+
+        Mitglieder ohne Leitungsrolle, Konten ohne Zuordnung, das DPV-Veranstaltungsteam, die
+        Verbandsleitung ohne weitere Rolle und Admins sehen ihn nicht (EH-09; Verbandsleitung mit
+        #94, Admins mit #92, Mitglieder mit #134). Endet die letzte Leitungsrolle, fehlt er beim
+        nächsten Klick.
+        """
+        return bool(self._led)
+
+    @cached_property
+    def associations(self) -> frozenset[int]:
+        """Die eigenen Bünde: die Bünde auf der Kette nach oben (EH-01). Andere Bünde erscheinen nie (EH-03)."""
+        return frozenset(unit for unit in self.chain if self._tree[unit][1] == UnitKind.ASSOCIATION)
+
+    def unit_access(self, unit: Unit | None) -> str | None:
+        """Wie weit die Person eine Einheit auf der Seite „Organisation“ sieht, oder None (#189).
+
+        `MANAGE` im eigenen Bereich (RO-03), `READ` auf der Kette nach oben (RO-01, Frage C),
+        `NAME_ONLY` für den Rest des eigenen Bundes (EH-01, RO-04), sonst nichts: andere Bünde
+        und der Verband (EH-03, N7). Ohne Leitungsrolle immer nichts, auch auf der eigenen Kette
+        (EH-09, AV9).
+        """
+        if unit is None or not self.sees_organisation() or unit.pk not in self._tree:
+            return None
+        if unit.pk in self.area:
+            return MANAGE
+        if unit.pk in self.chain:
+            return READ
+        if self._association_of(unit.pk) in self.associations:
+            return NAME_ONLY
+        return None
+
+    def opens_unit(self, unit: Unit | None) -> bool:
+        """Öffnet sich die Seite dieser Einheit, zum Verwalten oder nur zum Lesen (#189)?"""
+        return self.unit_access(unit) in (MANAGE, READ)
+
+    def leads_itself(self, unit: Unit | None) -> bool:
+        """Leitet die Person diese Einheit selbst? Die Übersicht zeigt am PC die oberste solche Einheit (#189)."""
+        return unit is not None and unit.pk in self._led
+
+    def has_lead(self, unit: Unit | None) -> bool:
+        """Hat die Einheit eine Leitung mit Konto? Gesperrte Konten zählen nicht (EH-18, #189, A16)."""
+        return unit is not None and unit.pk in self._units_with_lead
+
+    def covering_unit(self, unit: Unit | None) -> int | None:
+        """Die nächste Einheit darüber mit Leitung, deren Leitung für `unit` einspringt; sonst None (ROL-02).
+
+        Für einen Bund springt niemand ein (EH-27), ebenso nicht, wenn bis zum Bund keine
+        Einheit eine Leitung hat. Gibt die interne Nummer zurück; Seiten zeigen nur den Namen.
+        """
+        if unit is None or self.has_lead(unit) or unit.pk not in self._tree:
+            return None
+        parent = self._tree[unit.pk][0]
+        while parent is not None and self._tree[parent][1] != UnitKind.FEDERATION:
+            if parent in self._units_with_lead:
+                return parent
+            parent = self._tree[parent][0]
+        return None
+
+    def _association_of(self, unit: int) -> int | None:
+        while unit is not None and unit in self._tree:
+            parent, kind = self._tree[unit]
+            if kind == UnitKind.ASSOCIATION:
+                return unit
+            unit = parent
+        return None
+
     def own_roles(self) -> list[Role]:
         """Die eigenen Rollen der Person für „Mein Profil“, mit ihren Einheiten (EP-01, ORG-05).
 
@@ -239,7 +319,7 @@ class Rights:
             return []
         roles = Role.objects.filter(user_id=self.user.pk).select_related("unit__parent__parent__parent__parent")
         order = list(R)
-        return sorted(roles, key=lambda role: (order.index(role.kind), _alphabetical(role.unit.name if role.unit else "")))
+        return sorted(roles, key=lambda role: (order.index(role.kind), alphabetical(role.unit.name if role.unit else "")))
 
     def has_roles(self) -> bool:
         """Hat die Person eine Mitgliedschaft oder irgendeine Rolle? Ohne beides steht der Hinweis „keiner Organisation zugeordnet“ (#9).
@@ -258,13 +338,24 @@ class Rights:
         Das sind die Leitungen der Einheiten auf ihrer Kette nach oben und in ihrem Bereich, für
         die Verbandsleitung außerdem Bundesleitungen, Verbandsleitungen und das
         DPV-Veranstaltungsteam. Jeder Eintrag enthält nur die Felder aus `LEAD_FIELDS` und `LEAD_NAMES`.
+
+        Leitungen mit im Tool gesperrtem Konto stehen nur dabei, wo die Person Leitungen entfernen
+        darf, also in ihrem Bereich (RO-10, RO-11), gekennzeichnet mit `locked`; alle anderen
+        erfahren nichts von der Sperre (#189, Frage B). Die Verbandsleitung sieht außerdem
+        gesperrte Bundesleitungen, Verbandsleitungen und Mitglieder des DPV-Veranstaltungsteams,
+        wie vor #189; gesperrte Leitungen von Ringen, Stämmen und Gruppen außerhalb ihres Bereichs
+        nicht mehr. Was sie davon zeigt, entscheidet #94 mit ihrer Seite.
         """
         if self.user is None:
             return Role.objects.none().values(*LEAD_FIELDS, **LEAD_NAMES)
         seen = Q(kind__in=LEADS_IN_UNITS, unit_id__in=self.chain | self.area)
+        locked_seen = Q(unit_id__in=self.area)
         if any(kind == R.FEDERATION_LEAD for kind, _unit in self._own_roles):
             seen |= Q(kind__in=SEEN_BY_FEDERATION_LEAD)
-        return Role.objects.filter(seen).order_by("unit__name", "kind", "user__last_name").values(*LEAD_FIELDS, **LEAD_NAMES)
+            locked_seen |= Q(kind__in=SEEN_BY_FEDERATION_LEAD)
+        leads = Role.objects.filter(seen).exclude(Q(user__is_active=False) & ~locked_seen)
+        order = ("unit__name", "kind", "user__last_name", "user__first_name", "user__username")
+        return leads.order_by(*order).values(*LEAD_FIELDS, **LEAD_NAMES)
 
     # Leitung einer Einheit
 
@@ -288,7 +379,7 @@ class Rights:
         return membership is not None and self.leads_unit(membership.unit)
 
 
-def _alphabetical(name: str) -> str:
+def alphabetical(name: str) -> str:
     """Schlüssel für die Sortierung nach dem Alphabet: Ä bei A, É bei E, ohne Groß- und Kleinschreibung.
 
     Python vergleicht sonst nach Zeichencode und stellt „Ährenfeld“ hinter „Zugvögel“.

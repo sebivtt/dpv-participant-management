@@ -8,7 +8,7 @@ from django.urls import path, register_converter
 
 from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
-from core.views import building_blocks, profile, profile_scout_name, start
+from core.views import building_blocks, organisation, organisation_unit, profile, profile_scout_name, start
 
 # Eigene Fehlerseite statt der von Django: ohne technische Einzelheiten, mit Fehlernummer (#6).
 handler500 = "core.errors.server_error"
@@ -20,6 +20,8 @@ urlpatterns = [
     path("", start, name="start"),
     path("profil/", profile, name="profile"),
     path("profil/fahrtenname/", profile_scout_name, name="profile_scout_name"),
+    path("organisation/", organisation, name="organisation"),
+    path("organisation/<key:unit>/", organisation_unit, name="organisation_unit"),
     path("bausteine/", building_blocks, name="building_blocks"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),

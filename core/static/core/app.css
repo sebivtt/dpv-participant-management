@@ -165,6 +165,91 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
   .a-felder { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
 
+/* Organisation (#189), nach Sebastians Zielbild (docs/zielbilder/organisation.html): links die Gliederung,
+   rechts die Seite der Organisation. Am PC ist die Gliederung so hoch wie der Bildschirm abzüglich des Rands
+   (mindestens 360 Pixel), bleibt beim Rollen stehen und rollt innen; so springt sie beim Wechsel zwischen
+   Seiten nicht (Sebastian, 28.10.2026, beim Testen von #189). Am Handy nur eins von beiden: die Übersicht zeigt die Gliederung, die Seite
+   einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. */
+.a-orga { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
+.a-orga-seite { min-width: 0; }
+.a-orga-flaeche, .a-orga-kopf { margin: 0 0 16px; }
+.a-orga-zurueck { display: none; }
+/* Gliederung: Baum mit zarten Linien; Organisationen im eigenen Bereich weiß mit feinem Rand, auf der Kette nach
+   oben grau, ohne Zugriff nur der Name. Einspringen zusätzlich mit gelbem Streifen links, nie nur Farbe: die
+   Marke „Du springst ein“ steht immer dabei. */
+.a-gliederung { position: sticky; top: 40px; height: max(360px, calc(100vh - 80px)); margin: 0 0 16px; padding: 16px; display: flex; flex-direction: column; border-radius: var(--radius); background: var(--flaeche); }
+.a-gliederung-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 10px; padding: 0 0 10px; border-bottom: 1px solid var(--linie); color: var(--text-leise); font-size: .9rem; }
+.a-gliederung-kopf h2, .a-gliederung-kopf h3 { margin: 0; font-size: 1.1rem; }
+.a-gliederung-rolle { flex: 1; min-height: 0; overflow: auto; margin: 0 -6px; padding: 0 6px; }
+.a-baum, .a-baum ul { list-style: none; margin: 0; padding: 0; }
+.a-baum ul { margin-left: 12px; padding-left: 10px; border-left: 2px solid var(--linie); }
+.a-knoten { display: flex; flex-direction: column; gap: 2px; margin: 5px 0; padding: 9px 11px; border: 1px solid transparent; border-radius: var(--radius-klein); background: var(--grund); color: var(--text); text-decoration: none; }
+a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
+.a-knoten.ist-verwalten { background: var(--flaeche); border-color: var(--linie); }
+.a-knoten.ist-einspringen { border-left: 4px solid var(--akzent); }
+.a-knoten[aria-current="page"] { background: var(--dpv-hauch); border-color: var(--dpv); }
+.a-knoten-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 6px; }
+.a-knoten-art { color: var(--text-leise); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.a-knoten-name { font-weight: 700; overflow-wrap: anywhere; }
+.a-knoten[aria-current="page"] .a-knoten-name { color: var(--dpv); }
+.a-knoten-leitung { color: var(--text-leise); font-size: .82rem; overflow-wrap: anywhere; }
+.a-knoten.ist-nurname { margin: 2px 0; padding: 4px 11px; background: transparent; }
+.a-knoten.ist-nurname .a-knoten-name { color: var(--text-leise); font-weight: 600; font-size: .92rem; }
+.a-weitere summary { margin: 5px 0; padding: 7px 11px; border-radius: var(--radius-klein); background: var(--grund); color: var(--text-leise); font-size: .86rem; font-weight: 700; cursor: pointer; }
+/* Marke: kleine runde Pille mit Wort, Farben aus der Familie der Statuskennzeichen */
+.a-kennmarke { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 9px; border-radius: 20px; font-size: .78rem; font-weight: 700; line-height: 1.45; }
+.a-kennmarke .ic { width: 14px; height: 14px; }
+.a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
+.a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
+.a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
+/* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
+.a-pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--text-leise); font-size: .88rem; }
+.a-pfad a { font-weight: 700; text-decoration: none; }
+.a-pfad a:hover { text-decoration: underline; }
+.a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
+.a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
+/* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
+.a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.a-leitung { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
+.a-leitung.ist-gesperrt .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
+.a-leitung-wer { flex: 1; min-width: 0; }
+.a-leitung-wer p { margin: 0; }
+.a-leitung-zeile { overflow-wrap: anywhere; }
+.a-leitung-name { font-weight: 800; }
+/* Der Name bleibt hinter dem Fahrtennamen und bricht nur um, wenn er nicht mehr passt (anders als die Kopfzeile am Handy) */
+.a-leitung .a-anzeigename-zusatz, .a-leitung .a-leise { display: inline; margin: 0; font-size: .9rem; }
+/* Zweite Zeile: links die Rolle, rechts die Mail; ist es zu schmal, rutscht die Mail darunter */
+.a-leitung-unten { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 4px; }
+.a-leitung-rolle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.a-leitung-rolle .a-rollenmarke { margin: 0; background: var(--dpv-hauch); }
+.a-leise { color: var(--text-leise); font-size: .88rem; font-weight: 400; }
+.a-leitung-mail { display: inline-flex; align-items: center; gap: 6px; min-width: 0; margin-right: -8px; padding: 2px 8px; border-radius: 6px; font-size: .9rem; text-decoration: none; overflow-wrap: anywhere; }
+.a-leitung-mail:hover { background: var(--dpv-hauch); }
+.a-leer-satz { margin: 0; color: var(--text-leise); }
+/* Rollenkachel als Organisation darunter (#189): die ganze Kachel ist anklickbar, der Link liegt auf dem Namen;
+   ohne Zugriff grau, ohne blauen Streifen und nicht anklickbar. */
+.a-orgakachel { position: relative; }
+.a-kachel-link { color: var(--text); text-decoration: none; }
+.a-kachel-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-klein); }
+.a-orgakachel:has(.a-kachel-link:hover) { border-color: var(--dpv); background: var(--dpv-hauch); }
+.a-orgakachel:has(.a-kachel-link:focus-visible) { outline: 3px solid var(--fokus); outline-offset: 2px; }
+.a-kachel-link:focus-visible { outline: none; }
+.a-rollenkacheln .a-orgakachel.ist-ohne-zugriff { border-top-color: var(--linie); background: var(--grund); }
+.a-orgakachel.ist-ohne-zugriff .a-rollenorg { color: var(--text-leise); }
+.a-orgakachel .a-kennmarke { margin-top: 2px; }
+@media (max-width: 991px) {
+  .a-orga { display: block; }
+  .a-gliederung { position: static; height: auto; }
+  .a-gliederung-rolle { overflow: visible; }
+  .a-orga:not(.zeigt-seite) .a-orga-seite { display: none; }
+  .a-orga.zeigt-seite .a-gliederung { display: none; }
+  .a-orga-zurueck { display: inline-flex; margin: 0 0 12px; }
+}
+@media (max-width: 700px) {
+  .a-orga-flaeche, .a-orga-kopf { padding: 16px; }
+}
+
 /* Meldungen (#165, docs/gestaltung.md): vier Arten, je Fläche, Schrift und Symbol in einem hellen Kästchen
    links; ein fetter erster Satz steht als eigene Zeile über dem Rest. Gestaltet nach Sebastians Zielbild
    (docs/zielbilder/meldungen.html). Die Farben sind die der Statuskennzeichen; unterschieden wird über die
@@ -214,6 +299,9 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 }
 /* Knöpfe im Bausteinkatalog, die Beispiele einblenden */
 .a-katalog-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Die Gliederung im Bausteinkatalog so breit wie auf der Seite „Organisation“ (#189) */
+.a-katalog-gliederung { max-width: 340px; }
+.a-katalog-gliederung .a-gliederung { position: static; height: auto; }
 
 .a-formular { max-width: 640px; }
 .a-pflicht { color: var(--text-leise); font-weight: 600; font-size: .85em; }

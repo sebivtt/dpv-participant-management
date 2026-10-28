@@ -23,10 +23,15 @@ class NavItem:
     label: str | Promise
     icon: str
     visible_for: Callable[[HttpRequest], bool] = lambda request: True
+    # Weitere Adressen, unter denen der Punkt hervorgehoben ist, z. B. die Seite je Organisation.
+    also_active: tuple[str, ...] = ()
 
 
 NAV_ITEMS = [
     NavItem("start", _("Startseite"), "home"),
+    # Leitungen von Gruppe bis Bund (#189, EH-08); die Seite prüft selbst noch einmal.
+    NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_organisation(),
+            also_active=("organisation_unit",)),
 ]
 
 
@@ -44,7 +49,8 @@ def items_for(request: HttpRequest) -> list[dict]:
     """Die Punkte, die diese Person sieht, mit Adresse und Markierung des aktiven Punkts."""
     current = _current(request)
     return [
-        {"url": reverse(item.url_name), "label": item.label, "icon": item.icon, "active": item.url_name == current}
+        {"url": reverse(item.url_name), "label": item.label, "icon": item.icon,
+         "active": current in (item.url_name, *item.also_active)}
         for item in NAV_ITEMS
         if item.visible_for(request)
     ]

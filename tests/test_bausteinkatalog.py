@@ -285,6 +285,8 @@ NOT_IN_CATALOG = {
     "core/_navigation.html": "Rahmen jeder Seite",
     "core/_konto.html": "Rahmen jeder Seite",
     "core/_fuss.html": "Rahmen jeder Seite",
+    # Eine Organisation in der Gliederung (#189); steht mit der Gliederung im Katalog.
+    "core/_knoten.html": "Teil der Gliederung",
 }
 
 

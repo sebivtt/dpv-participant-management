@@ -52,3 +52,27 @@ LIST_ASSOCIATIONS = gettext_lazy("Bünde:")
 LIST_NO_ASSOCIATIONS = gettext_lazy("Bünde: noch keine")
 LIST_WITH_RINGS = gettext_lazy("  %(name)s (hat Ringe)")
 LIST_WITHOUT_RINGS = gettext_lazy("  %(name)s (ohne Ringe)")
+
+# Seite „Organisation“ (#189); Namen von Organisationen ohne Anführungszeichen wie in den Szenarien
+MARK_COVERS = gettext_lazy("Du springst ein")
+MARK_READ = gettext_lazy("nur lesen")
+MARK_LOCKED = gettext_lazy("gesperrt")
+LEADS_LINE = gettext_lazy("%(role)s: %(names)s")
+LOCKED_NAME = gettext_lazy("%(name)s (gesperrt)")
+NO_LEAD_SHORT = gettext_lazy("keine %(role)s")
+NO_LEAD = gettext_lazy("%(unit)s hat keine %(role)s.")
+NO_LEAD_COVERED = gettext_lazy(
+    "%(unit)s hat keine %(role)s. Bis eine benannt ist, springt die %(cover_role)s von %(cover)s ein."
+)
+# Am Satzanfang mit der Art, damit es wie ein ganzer Satz klingt (Sebastian, 28.10.2026, #189).
+WITH_KIND = {
+    "association": gettext_lazy("Der Bund %(unit)s"),
+    "ring": gettext_lazy("Der Ring %(unit)s"),
+    "troop": gettext_lazy("Der Stamm %(unit)s"),
+    "group": gettext_lazy("Die Gruppe %(unit)s"),
+}
+KIND_IN = gettext_lazy("%(kind)s in %(parent)s")
+NOTHING_BELOW = gettext_lazy("%(unit)s hat noch keine %(children)s.")
+GROUPS = gettext_lazy("Gruppen")
+TROOPS = gettext_lazy("Stämme")
+RINGS = gettext_lazy("Ringe")

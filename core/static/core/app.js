@@ -288,6 +288,15 @@
     });
   }
 
+  // Gliederung (#189): Ist sie kürzer als der Baum und rollt innen, steht die geöffnete
+  // Organisation beim Laden im sichtbaren Teil. Nur die Gliederung rollt, nie die Seite selbst.
+  var outline = document.querySelector(".a-gliederung-rolle");
+  var current = outline && outline.querySelector("[aria-current]");
+  if (current && outline.scrollHeight > outline.clientHeight) {
+    var offset = current.getBoundingClientRect().top - outline.getBoundingClientRect().top;
+    outline.scrollTop += offset - outline.clientHeight / 3;
+  }
+
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {

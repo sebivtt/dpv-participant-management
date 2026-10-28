@@ -89,8 +89,37 @@
         {% for tile in examples.tiles %}
           <li>{% include "core/_rollenkachel.html" %}</li>
         {% endfor %}
+        {# Als „Organisationen darunter“ (#189): anklickbar, mit Marke, ohne Zugriff grau. #}
+        {% for tile in examples.org_tiles %}
+          <li class="a-orgakachel{% if tile.no_access %} ist-ohne-zugriff{% endif %}">{% include "core/_rollenkachel.html" %}</li>
+        {% endfor %}
       </ul>
     </div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-gliederungsbaum">
+    {% include "core/_katalogeintrag.html" with block=blocks.gliederungsbaum %}
+    {# Eigene Überschrift des Katalogeintrags; die Gliederung bringt ihre eigene mit (h-gliederung). #}
+    <div class="a-katalog-gliederung">{% include "core/_gliederung.html" with outline=examples.outline heading=3 %}</div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-kennmarke">
+    {% include "core/_katalogeintrag.html" with block=blocks.kennmarke %}
+    <div class="a-flaeche a-katalog-knoepfe">
+      {% for mark in examples.org_marks %}{% include "core/_kennmarke.html" %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-leitung">
+    {% include "core/_katalogeintrag.html" with block=blocks.leitung %}
+    <div class="a-flaeche">
+      <ul class="a-leitungen">{% for lead in examples.org_leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>
+    </div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
+    {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
+    {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-profilkreis">
