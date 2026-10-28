@@ -306,11 +306,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation")],
     },
     "textfeld": {
-        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190],
         "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
                      "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
-                     "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
-        "pages": [],
+                     "Antippen nutzt dieselbe Eingabe und denselben Fehler. Als Suchfeld steht der Knopf zum "
+                     "Abschicken rechts daneben und ein Satz darunter."),
+        "pages": [_("Organisation")],
     },
     "kurzmeldung": {
         "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
@@ -338,8 +339,9 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "flaechenkopf": {
-        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161],
-        "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor."),
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190],
+        "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
+                     "stehen, etwa „Gruppenleitung benennen“."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
@@ -371,6 +373,20 @@ BUILDING_BLOCKS = {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
                      "Art und Organisation darüber, rechts die Marke."),
+        "pages": [_("Organisation")],
+    },
+    "dialog": {
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190],
+        "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
+                     "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
+                     "auch ohne Skript."),
+        "pages": [_("Organisation")],
+    },
+    "trefferliste": {
+        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190],
+        "purpose": _("Vorschläge oder Treffer einer Suche: Kreis, Fahrtenname und Name, darunter die Organisation, "
+                     "rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders "
+                     "Mitglied ist, eine Warnung."),
         "pages": [_("Organisation")],
     },
     "profilkreis": {
@@ -425,8 +441,21 @@ def _organisation_examples() -> dict:
         {"label": kind.GROUP.label, "org": "Sippe Falken", "href": "#h-rollenkachel", "mark": covers},
         {"label": kind.TROOP.label, "org": "Zugvögel", "no_access": True},
     ]
+    hit_list = [
+        Hit(key="", name="Flink", extra="Finn Muster", place="Sippe Falken", note="", warning="", hint=""),
+        Hit(key="", name="Wirbelwind", extra="Wanda Beispiel", place="Walhall", warning="", hint="",
+            note=texts.NOT_YOURSELF % {"unit": "Walhall"}),
+        Hit(key="", name="Ameise", extra="Anton Muster", place=texts.ELSEWHERE, note="", hint="",
+            warning=texts.MEMBER_ELSEWHERE),
+        Hit(key="", name="Otter", extra="Otto Ohne", place=texts.NOWHERE, note="", warning="",
+            hint=texts.BECOMES_MEMBER % {"unit": "Sippe Falken"}),
+    ]
+    dialog = {"title": texts.APPOINT_TITLE % {"role": "Gruppenleitung"},
+              "subtitle": texts.APPOINT_FOR % {"unit": "Sippe Falken"}, "close_href": "#h-dialog-beispiel",
+              "form": AccountSearchForm(auto_id="katalog_%s")}
     return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")]}
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "hits": hit_list,
+            "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")

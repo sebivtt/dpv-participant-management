@@ -79,7 +79,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 ### Abweichungen der Seite vom Zielbild
 
 1. **Immer zugeklappt:** Organisationen ohne Zugriff stehen immer unter „… weitere ohne Zugriff“, auch eine einzelne; das Zielbild klappt erst ab drei zu (Nachklärung, N5).
-2. **Nur Anzeige:** Die Knöpfe „… benennen“, „Entfernen“ und „Rolle abgeben“, ihre Dialoge und die Erfolgsmeldungen kommen mit #190 und #191.
+2. **Nur Anzeige in #189:** Der Knopf „… benennen“ mit seinem Dialog kam mit #190 (Abweichungen unten); „Entfernen“ und „Rolle abgeben“ kommen mit #191.
 3. **Nicht Teil von #93, nur Ausblick im Zielbild:** der Abschnitt „Personen“ (#117, #65), die Sicht der Verbandsleitung (#94), das dunkle Steuerband und der gelbe Hinweiskasten.
 4. **Rolle als Rollenmarke:** Hinter jeder Leitung steht die Rolle als Rollenmarke wie auf „Mein Profil“, nicht als runde Pille (Sebastian, 28.10.2026, bei der Umsetzung von #189).
 5. **„Organisationen darunter“ als Rollenkachel:** wie die Kacheln auf „Mein Profil“, klein die Art als Rollenmarke, groß der Name, darunter die Leitung; ohne Zugriff grau, ohne blauen Streifen und nicht anklickbar (Sebastian, 28.10.2026, bei der Umsetzung von #189). Im Zielbild steht die Art in Großbuchstaben.
@@ -87,3 +87,12 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 7. **Pfad und Organisationen** sind Links mit eigener Adresse statt Knöpfen, damit jede Organisation ihre eigene Adresse hat (#189).
 8. **Navigation und Fußbereich** kommen wie auf jeder Seite aus dem Tool; der Punkt „Organisation“ ist hervorgehoben wie jeder aktive Punkt.
 9. **Höhe der Gliederung:** Im Zielbild richtet sie sich nach der Seite rechts. Im Tool ist sie am PC so hoch wie der Bildschirm abzüglich des Rands und bleibt beim Rollen stehen, damit sie beim Wechsel zwischen Seiten nicht springt (Sebastian, 28.10.2026, beim Testen von #189).
+
+### Abweichungen des Dialogs „… benennen“ vom Zielbild (#190)
+
+1. **Kurze Meldung statt fester Meldung oben:** Nach dem Benennen steht die Erfolgsmeldung unten als kurze Meldung (#186); das Zielbild zeigt sie fest oben mit ×, damals mit „Wortlaut noch offen“ (Sebastian, 28.10.2026, bei der Umsetzung von #190).
+2. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht; „Abbrechen“ und × führen zur Seite der Organisation zurück.
+3. **Ablehnungen nach dem Benennen** stehen als Warnung im Dialog ohne die Trefferliste darüber; die Suche beginnt danach neu.
+4. **Ohne Skript keine Vorschläge beim Tippen;** „Suchen“ geht.
+5. **Kein Kasten „Zum Ausprobieren“** und kein Zähler der Suchen: Sie gehören wie das Steuerband nicht zur Seite.
+6. **„Benennen“ als weißer Knopf mit feinem Rand** (wie „Verwerfen“ auf „Mein Profil“) statt hellblau; ein hellblauer Knopf ist kein entschiedener Baustein.

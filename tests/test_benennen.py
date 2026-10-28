@@ -74,9 +74,9 @@ def search(user, unit, text: str, client=None):
     return dialog_of(_tree(response))
 
 
-def appoint(user, unit, target, client=None, **more):
-    """„Benennen“ im Dialog für `target`, wie der Knopf neben einem Treffer es abschickt."""
-    return (client or client_for(user)).post(appoint_address(unit), {"person": target.key, **more})
+def appoint(user, where, target, client=None, **more):
+    """„Benennen“ im Dialog für `target`, wie der Knopf neben einem Treffer es abschickt; `more` sind weitere Felder."""
+    return (client or client_for(user)).post(appoint_address(where), {"person": target.key, **more})
 
 
 def dialog_of(root):
@@ -174,7 +174,7 @@ def test_der_dialog_hat_feld_suchen_und_abbrechen(org):
 # ---------- B1, BV9: Vorschläge beim Tippen ----------
 
 
-@pytest.mark.rechtematrix("PK-09")
+@pytest.mark.rechtematrix("PK-09", "PK-10")
 def test_b1_wanda_bekommt_fiete_mit_fahrtenname_und_organisation_vorgeschlagen(org):
     found = hits(suggest(org.walhall_leitung, org.falken, "Fie"))
 
@@ -231,7 +231,7 @@ def test_b12_vorschlaege_zaehlen_nicht_als_suche(org):
     assert not AccountSearch.objects.exists()
 
 
-@pytest.mark.rechtematrix("PK-10")
+@pytest.mark.rechtematrix("PK-10", "PK-09")
 def test_bv9_keine_vorschlaege_ausserhalb_des_bereichs(org):
     for user, unit, text in [
         (org.walhall_leitung, org.falken, "Zor"),
@@ -286,7 +286,7 @@ def test_b7_bruno_findet_otto_ueber_die_genaue_mail(org):
     assert "Treffer" in _text(dialog)
 
 
-@pytest.mark.rechtematrix("PK-13")
+@pytest.mark.rechtematrix("PK-13", "PK-15")
 def test_b9_gross_und_kleinschreibung_ist_egal(org):
     for text in ("OTTO.OHNE@EXAMPLE.ORG", "Otto.Ohne", "  otto.ohne  ", "OTTO.ohne"):
         assert list(hits(search(org.bundesleitung, org.walhall, text))) == ["Otto Ohne"], text
@@ -497,7 +497,7 @@ def test_bv13_zwanzigste_und_einundzwanzigste_suche_gleichzeitig():
 # ---------- Benennen ----------
 
 
-@pytest.mark.rechtematrix("RO-10", "RO-14", "RO-12")
+@pytest.mark.rechtematrix("RO-10", "RO-14", "RO-12", "RO-13")
 def test_b2_wanda_benennt_finn_als_zweite_gruppenleitung_der_falken(org):
     before = RoleChange.objects.count()
 
@@ -625,7 +625,7 @@ def test_b14_bruno_benennt_wanda_solange_fiete_gesperrt_ist(org):
 
 
 @pytest.mark.rechtematrix("RO-13")
-def test_bv2_finn_liegt_nicht_auf_dem_leitungspfad_der_zugvoegel(org):
+def test_bv2_finn_kann_keine_leitung_der_zugvoegel_werden(org):
     response = appoint(org.bundesleitung, org.zugvoegel, org.falke)
 
     assert response.status_code == 200
@@ -653,7 +653,7 @@ def test_bv4_bei_sich_selbst_gibt_es_keinen_knopf(org):
         assert "Dir selbst kannst du keine Rolle geben. Das kann eine andere Leitung von Walhall oder darüber." in found["text"]
 
 
-@pytest.mark.rechtematrix("RO-12")
+@pytest.mark.rechtematrix("RO-12", "RO-11")
 def test_bv4_auch_ein_manipuliertes_formular_gibt_wanda_keine_rolle(org):
     response = appoint(org.walhall_leitung, org.falken, org.walhall_leitung)
 

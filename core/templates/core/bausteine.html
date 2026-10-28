@@ -76,6 +76,7 @@
     {% include "core/_katalogeintrag.html" with block=blocks.flaechenkopf %}
     <div class="a-flaeche a-profilflaeche">
       {% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Überschrift einer Fläche mit Symbol") level=3 %}
+      {% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") level=3 action_href="#h-flaechenkopf" action_label=_("Gruppenleitung benennen") %}
     </div>
   </section>
 
@@ -120,6 +121,26 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-dialog">
+    {% include "core/_katalogeintrag.html" with block=blocks.dialog %}
+    {# Wie auf der Seite „Organisation“, hier an seinem Platz statt über der Seite; das Formular schickt nichts ab. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.dialog preview=True %}
+    <form class="a-suche" novalidate data-nur-ansicht>
+      {% translate "Suchen" as search_button %}{% translate "Ab drei Zeichen schlägt das Tool Personen aus deinem Bereich vor. Alle anderen findest du mit „Suchen“ über die genaue Mail oder den Benutzernamen." as search_help %}
+      {% textfeld examples.dialog.form.suche button=search_button help_text=search_help %}
+    </form>
+    <div class="a-treffer-bereich">{% include "core/_treffer.html" with hits=examples.hits|slice:":1" hits_title=_("Vorschläge aus deinem Bereich") appoint_action="#h-dialog" notice=None preview=True %}</div>
+    {% include "core/_dialog_zu.html" with dialog=examples.dialog %}
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-trefferliste">
+    {% include "core/_katalogeintrag.html" with block=blocks.trefferliste %}
+    <div class="a-flaeche">
+      {% include "core/_treffer.html" with hits=examples.hits hits_title=_("Treffer") appoint_action="#h-trefferliste" notice=None preview=True %}
+      {% include "core/_treffer.html" with hits=None empty=_("Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen.") notice=examples.no_account %}
+    </div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-profilkreis">

@@ -1,7 +1,7 @@
-{% load i18n layout %}{# Dialog (#190, Zielbild docs/zielbilder/organisation.html), Anfang: ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts. Der Inhalt steht zwischen diesem Stück und „core/_dialog_zu.html“. Der Dialog hat eine eigene Adresse und kommt offen vom Server; × und „Abbrechen“ führen zu dialog.close_href zurück, mit Skript auch Escape und Tippen daneben. Ohne Skript liegt er ebenso über der Seite. #}
-<dialog class="a-dialog" open aria-labelledby="h-dialog" data-dialog data-schliessen="{{ dialog.close_href }}">
+{% load i18n layout %}{# Dialog (#190, Zielbild docs/zielbilder/organisation.html), Anfang: ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts. Der Inhalt steht zwischen diesem Stück und „core/_dialog_zu.html“. Der Dialog hat eine eigene Adresse und kommt offen vom Server; × und „Abbrechen“ führen zu dialog.close_href zurück, mit Skript auch Escape und Tippen daneben. Ohne Skript liegt er ebenso über der Seite. Mit preview=True steht er im Bausteinkatalog an seinem Platz in der Seite. #}
+<dialog class="a-dialog{% if preview %} ist-vorschau{% endif %}" open aria-labelledby="{% if preview %}h-dialog-beispiel{% else %}h-dialog{% endif %}"{% if not preview %} data-dialog data-schliessen="{{ dialog.close_href }}"{% endif %}>
   <div class="a-dialog-kopf">
-    <div><h2 id="h-dialog">{{ dialog.title }}</h2>{% if dialog.subtitle %}<p class="a-unterzeile">{{ dialog.subtitle }}</p>{% endif %}</div>
+    <div>{% if preview %}<h3 id="h-dialog-beispiel">{{ dialog.title }}</h3>{% else %}<h2 id="h-dialog">{{ dialog.title }}</h2>{% endif %}{% if dialog.subtitle %}<p class="a-unterzeile">{{ dialog.subtitle }}</p>{% endif %}</div>
     <a class="a-schliessen" href="{{ dialog.close_href }}">{% icon "schliessen" %}<span class="sr-nur">{% translate "Schließen" %}</span></a>
   </div>
   <div class="a-dialog-inhalt">

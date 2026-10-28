@@ -375,3 +375,47 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* Leitung benennen (#190), nach Sebastians Zielbild (docs/zielbilder/organisation.html). */
+/* Knopf rechts in der Überschrift einer Fläche, z. B. „Gruppenleitung benennen“; am Handy darunter */
+.a-flaeche-kopf { flex-wrap: wrap; }
+.a-flaeche-aktion { margin-left: auto; padding: .45rem .9rem; font-size: .92rem; }
+.a-flaeche-aktion .ic { width: 18px; height: 18px; }
+/* Suchfeld: das Textfeld mit dem Knopf rechts daneben und einem Satz darunter */
+.a-textfeld-zeile { display: flex; gap: 8px; }
+.a-textfeld-zeile .form-control { flex: 1; min-width: 0; }
+.a-textfeld-hilfe { margin: 6px 0 0; color: var(--text-leise); font-size: .85rem; }
+.a-textfeld.ist-suchfeld { margin: 0; }
+/* Dialog: ein Fenster über der Seite mit Kopf, Inhalt und Fuß. Mit Skript modal (showModal), ohne Skript
+   liegt es ebenso über der Seite, mit abgedunkeltem Rest. */
+dialog.a-dialog { position: fixed; inset: 0; z-index: 60; width: min(580px, calc(100% - 32px)); max-height: calc(100% - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche); color: var(--text); box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
+dialog.a-dialog:not(:modal) { box-shadow: 0 0 0 100vmax rgb(27 37 50 / 55%), 0 20px 45px rgb(18 56 95 / 22%); }
+dialog.a-dialog::backdrop { background: rgb(27 37 50 / 55%); }
+/* Im Bausteinkatalog an seinem Platz in der Seite, ohne Abdunkeln */
+dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max-width: 580px; margin: 0; box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
+.a-dialog-kopf h3 { margin: 0; font-size: 1.15rem; }
+.a-dialog-kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--linie); }
+.a-dialog-kopf h2 { margin: 0; font-size: 1.15rem; }
+.a-dialog-kopf .a-unterzeile { margin: 4px 0 0; }
+.a-dialog-kopf .a-schliessen { flex: none; padding: 6px; text-decoration: none; }
+.a-dialog-inhalt { padding: 18px 20px; }
+.a-dialog-fuss { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
+/* Trefferliste: Kreis, Name, Organisation, rechts „Benennen“ */
+.a-treffer-bereich:not(:empty) { margin-top: 14px; }
+.a-treffer-titel { margin: 0 0 6px; color: var(--text-leise); font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.a-trefferliste { list-style: none; margin: 0 0 12px; padding: 6px; border: 1px solid var(--linie); border-radius: var(--radius-klein); }
+.a-treffer { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px 10px; border-radius: 8px; }
+.a-treffer:hover { background: var(--dpv-hauch); }
+.a-treffer .a-avatar { width: 32px; height: 32px; font-size: .85rem; }
+.a-treffer-wer { flex: 1; min-width: 160px; }
+.a-treffer-wer p { margin: 0; }
+.a-treffer .a-anzeigename-zusatz { display: inline; font-size: .9rem; }
+.a-treffer-satz { margin-top: 2px !important; font-size: .88rem; }
+.a-treffer-knopf { margin: 0 0 0 auto; }
+.a-treffer-knopf .btn { padding: .35rem .8rem; font-size: .88rem; }
+.a-treffer-warnung { flex-basis: 100%; }
+.a-treffer-leer { margin: 0 0 12px; }
+@media (max-width: 700px) {
+  .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
+  .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
+}

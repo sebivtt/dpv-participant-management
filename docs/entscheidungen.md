@@ -6,6 +6,30 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-28 · Leitung benennen auf der Seite einer Organisation; Kontosuche (F2) (#190)
+
+**Entscheidung** (Sebastian, Klärung in #93: [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6436014693), [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6437451814), [Nachklärung zum Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/93#issuecomment-6440955193), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/190#issuecomment-6441094377); bei der Umsetzung am 28.10.2026 [drei Antworten](https://github.com/sebivtt/dpv-participant-management/issues/190#issuecomment-6468685698)):
+
+1. **Kontosuche (F2 aus der Bestandsaufnahme in #106), soweit nicht schon im Eintrag vom 24.10.2026 zu #136, Nr. 6:** Im Dialog „… benennen“ schlägt das Tool beim Tippen ab 3 Zeichen höchstens 10 Personen mit Konto aus dem eigenen Bereich vor, mit Name, Fahrtenname und Organisation; gesperrte Konten erscheinen nicht, und Vorschläge zählen nicht als Suche. Alle anderen findet „Suchen“ über die genaue Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung, nur Konten, die sich schon einmal angemeldet haben. Der Treffer nennt außerhalb des eigenen Bereichs nie die Organisation, nur „schon woanders Mitglied“. Einladungslinks waren erwogen und sind nicht gewählt.
+2. **Suchlimit** (Frage D): höchstens 20 Suchen je Person in den letzten 60 Minuten; Suchen ohne Treffer zählen, abgewiesene nicht. Die Meldung nennt die Minuten bis zur nächsten Suche, aufgerundet und mindestens 1 (PK-24 mit neuem Wortlaut).
+3. **Benennen** gilt sofort, ohne Zustimmung und ohne Nachricht; wer noch nirgends Mitglied ist, wird Mitglied der geleiteten Organisation. Zustimmung ist vorgemerkt (#187), Benachrichtigungen kommen mit #188.
+4. **Neue Bausteine nach dem Zielbild** (Antwort „Wie Zielbild bauen (Empfehlung)“): Dialog und Trefferliste neu; das Textfeld wird als Suchfeld um den Knopf daneben und einen Satz darunter erweitert, die Überschrift einer Fläche um einen Knopf rechts.
+5. **Die Erfolgsmeldung ist eine kurze Meldung** (Antwort „Kurze Meldung (Empfehlung)“), wie nach dem Speichern des Fahrtennamens (#186); „oben“ im Akzeptanzkriterium ist damit überholt.
+6. **Wortlaut, wenn die Rolle nicht auf dem Leitungspfad läge** (Antwort „Wie im Issue-Beispiel (Empfehlung)“): „Flink (Finn Muster) ist Mitglied in Sippe Falken und kann deshalb keine Leitung bei Stamm Zugvögel sein.“
+
+**Technische Wahl** (KI):
+
+- **Der Dialog hat eine eigene Adresse** (`/organisation/<kennung>/benennen/`, dazu `…/suchen/` und `…/vorschlaege/`). Er kommt offen vom Server, „Suchen“ und „Benennen“ sind gewöhnliche Formulare; so geht alles außer den Vorschlägen beim Tippen auch ohne Skript. Mit Skript wird er modal (`showModal`), Escape und Tippen daneben führen zurück. Kein htmx, kein neues Paket: Die Vorschläge holt ein kurzes Stück in `core/static/core/app.js`.
+- **Alle Rechte und Personendaten aus der zentralen Prüfung:** `Rights.may_appoint()` (der eigene Bereich), `suggestions()`, `find_accounts()`, `count_search()` und `appoint()`. Wer in der Einheit nicht benennen darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per htmx und mit Formular. Die Person kommt im Formular nur mit ihrer Kennung; die Organisation immer aus der Adresse.
+- **Reihenfolge der Ablehnungen:** sich selbst (RO-12), schon Leitung dort, woanders Mitglied außerhalb des eigenen Bereichs (ohne die Organisation zu nennen), dann die Regeln aus #89 beim Speichern der Rolle.
+- **Gleichzeitige Anfragen:** Benennen und Zählen sperren das betroffene Konto bis zum Ende der Transaktion; zwei gleichzeitige Benennungen ergeben eine Rolle und einen Eintrag im Protokoll, die 20. und 21. Suche nur eine gezählte.
+- **Neue Tabelle `accounts.AccountSearch`:** nur wer und wann, nie wonach, weil der Suchbegriff eine Mail oder ein Benutzername einer anderen Person wäre. Ältere Einträge als 60 Minuten löscht die nächste Suche derselben Person.
+- **„1 Minute“ statt „1 Minuten“** in der Meldung zum Suchlimit, damit der Satz stimmt.
+
+**Begründung:** Eine Adresse je Dialog hält ihn ohne Skript benutzbar und lässt die Rundumtests ihn wie jede Seite prüfen; die Rechte an einer Stelle, damit Entfernen (#191) und die Seite der Verbandsleitung (#94) dieselben Bausteine nutzen.
+
+**Umsetzung:** `access/rights.py`, `accounts/models.py` mit Migration, `roles/models.py` (`LEAD_ROLE`), `units/organisation.py`, `units/texts.py`, `core/views.py`, `core/forms.py`, `core/templatetags/layout.py`, `config/urls.py`, `core/templates/core/organisation.html`, `_dialog_auf.html`, `_dialog_zu.html`, `_treffer.html`, `_textfeld.html`, `_flaechenkopf.html`, `_symbole.svg`, `bausteine.html`, `core/static/core/app.css`, `app.js`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/README.md`; Tests in `tests/test_benennen.py` und `rauchtests/test_benennen.py`.
+
 ## 2026-10-28 · Seite „Organisation“: Gliederung und Seite je Organisation, nur Anzeige (#189)
 
 **Entscheidung** (Sebastian, Klärung in #93 und #189: [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441094033), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441100484), [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441101266); bei der Umsetzung am 28.10.2026 [Bausteine und Anmerkungen zum Vorschlag](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6464928798)):
