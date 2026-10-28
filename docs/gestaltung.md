@@ -76,7 +76,7 @@ Protokoll, Szenarien und Zielbild in #186, Zielbild als `docs/zielbilder/kurze-m
 
 Zielbild als `docs/zielbilder/organisation.html`, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #189. Neue Bausteine im Bausteinkatalog: Gliederung, Marke, Leitung in einer Liste, Kopf einer Organisationsseite; die Rollenkachel kann seitdem anklickbar und „ohne Zugriff“ sein.
 
-- **Aufbau am PC:** links die Gliederung, rechts die Seite der Organisation; die Seite bestimmt die Höhe, die Gliederung ist mindestens 360 Pixel hoch und rollt innen.
+- **Aufbau am PC:** links die Gliederung, rechts die Seite der Organisation. Die Gliederung ist so hoch wie der Bildschirm abzüglich des Rands (mindestens 360 Pixel), auf jeder Seite gleich, bleibt beim Rollen stehen und rollt innen.
 - **Am Handy** zuerst nur die Gliederung; die Seite einer Organisation steht allein, mit „‹ Gliederung“ zurück.
 - **Marken** sind kleine runde Pillen mit Wort: „Du springst ein“ (gelblich), „nur lesen“ (grau, mit Schloss), „gesperrt“ (rot). Die eigene Rolle bekommt keine Marke.
 - **Leitungen** in zwei Zeilen: oben Fahrtenname, Name und „das bist du“, darunter links die Rolle als Rollenmarke, rechts die Mail.

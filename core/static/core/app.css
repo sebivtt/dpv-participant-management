@@ -166,17 +166,18 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 }
 
 /* Organisation (#189), nach Sebastians Zielbild (docs/zielbilder/organisation.html): links die Gliederung,
-   rechts die Seite der Organisation. Die Seite bestimmt die Höhe; die Gliederung passt sich an, ist mindestens
-   360 Pixel hoch und rollt innen. Am Handy nur eins von beiden: die Übersicht zeigt die Gliederung, die Seite
+   rechts die Seite der Organisation. Am PC ist die Gliederung so hoch wie der Bildschirm abzüglich des Rands
+   (mindestens 360 Pixel), bleibt beim Rollen stehen und rollt innen; so springt sie beim Wechsel zwischen
+   Seiten nicht (Sebastian, 28.10.2026, beim Testen von #189). Am Handy nur eins von beiden: die Übersicht zeigt die Gliederung, die Seite
    einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. */
-.a-orga { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.a-orga { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
 .a-orga-seite { min-width: 0; }
 .a-orga-flaeche, .a-orga-kopf { margin: 0 0 16px; }
 .a-orga-zurueck { display: none; }
 /* Gliederung: Baum mit zarten Linien; Organisationen im eigenen Bereich weiß mit feinem Rand, auf der Kette nach
    oben grau, ohne Zugriff nur der Name. Einspringen zusätzlich mit gelbem Streifen links, nie nur Farbe: die
    Marke „Du springst ein“ steht immer dabei. */
-.a-gliederung { contain: size; min-height: 360px; margin: 0 0 16px; padding: 16px; display: flex; flex-direction: column; border-radius: var(--radius); background: var(--flaeche); }
+.a-gliederung { position: sticky; top: 40px; height: max(360px, calc(100vh - 80px)); margin: 0 0 16px; padding: 16px; display: flex; flex-direction: column; border-radius: var(--radius); background: var(--flaeche); }
 .a-gliederung-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 10px; padding: 0 0 10px; border-bottom: 1px solid var(--linie); color: var(--text-leise); font-size: .9rem; }
 .a-gliederung-kopf h2, .a-gliederung-kopf h3 { margin: 0; font-size: 1.1rem; }
 .a-gliederung-rolle { flex: 1; min-height: 0; overflow: auto; margin: 0 -6px; padding: 0 6px; }
@@ -239,7 +240,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orgakachel .a-kennmarke { margin-top: 2px; }
 @media (max-width: 991px) {
   .a-orga { display: block; }
-  .a-gliederung { contain: none; min-height: 0; }
+  .a-gliederung { position: static; height: auto; }
   .a-gliederung-rolle { overflow: visible; }
   .a-orga:not(.zeigt-seite) .a-orga-seite { display: none; }
   .a-orga.zeigt-seite .a-gliederung { display: none; }
@@ -300,6 +301,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-katalog-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Die Gliederung im Bausteinkatalog so breit wie auf der Seite „Organisation“ (#189) */
 .a-katalog-gliederung { max-width: 340px; }
+.a-katalog-gliederung .a-gliederung { position: static; height: auto; }
 
 .a-formular { max-width: 640px; }
 .a-pflicht { color: var(--text-leise); font-weight: 600; font-size: .85em; }

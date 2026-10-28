@@ -16,6 +16,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 4. **Keine Marke „Deine Rolle: …“** in Gliederung und Seitenkopf; die eigene Rolle steht bei den Leitungen mit „das bist du“ (ändert A23).
 5. **Die Sätze ohne Leitung beginnen mit der Art,** z. B. „Die Gruppe Sippe Falken hat keine Gruppenleitung. …“ (ändert den Wortlaut von A10, A14, A16).
 6. **Leitung in zwei Zeilen:** oben Fahrtenname, Name und „das bist du“, darunter links die Rolle und rechts die Mail.
+7. **Gliederung so hoch wie der Bildschirm** (beim Testen des Pull Requests): Am PC hat sie eine feste Höhe nach dem Bildschirm und bleibt beim Rollen stehen, statt sich nach der Seite rechts zu richten; sonst sprang sie beim Wechsel zwischen Seiten und rollte innen. Das ersetzt die Wahl aus der Nachklärung zum Zielbild („richtet sich nach der Seite rechts“).
 
 **Technische Wahl** (KI):
 
@@ -25,6 +26,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 - **Nur lesende Aufrufe:** Jede andere Anfrage an die Seite einer Organisation zeigt erst nach der Rechteprüfung „nicht gefunden“, so wie eine Kennung, die es nicht gibt (AV5). Benennen und Entfernen kommen mit eigenen Adressen (#190, #191).
 - **Übersicht am PC mit Seite daneben:** Unter `/organisation/` steht neben der Gliederung die oberste Organisation, die man leitet, wie im Zielbild; am Handy nur die Gliederung, für Vorleseprogramme mit unsichtbarer Überschrift „Organisation“.
 - **Gliederung rollt zur geöffneten Organisation,** wenn sie kürzer ist als der Baum (am Vorschlag aufgefallen).
+- **Höhe der Gliederung:** Bildschirmhöhe minus 80 Pixel (40 oben wie der Rand der Seite, 40 unten), mindestens 360 Pixel; sie bleibt beim Rollen 40 Pixel unter dem oberen Rand stehen. Am Handy wie bisher ohne feste Höhe.
 - **Die Rechtematrix** hat neue Zeilen für die Leseseite (EH-28) und gesperrte Leitungen (RO-21, RO-22). Was die Verbandsleitung von gesperrten Leitungen sieht, bleibt wie bisher und entscheidet #94.
 
 **Begründung:** Rechte an einer Stelle, damit Gliederung, Seite und spätere Teile (#190, #191, #95) nicht auseinanderlaufen; bekannte Bausteine statt neuer, wo sie passen.

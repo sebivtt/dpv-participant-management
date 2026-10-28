@@ -86,3 +86,4 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 6. **Übersicht:** Am PC steht neben der Gliederung die oberste Organisation, die man selbst leitet; am Handy nur die Gliederung. Für Vorleseprogramme heißt die Seite „Organisation“.
 7. **Pfad und Organisationen** sind Links mit eigener Adresse statt Knöpfen, damit jede Organisation ihre eigene Adresse hat (#189).
 8. **Navigation und Fußbereich** kommen wie auf jeder Seite aus dem Tool; der Punkt „Organisation“ ist hervorgehoben wie jeder aktive Punkt.
+9. **Höhe der Gliederung:** Im Zielbild richtet sie sich nach der Seite rechts. Im Tool ist sie am PC so hoch wie der Bildschirm abzüglich des Rands und bleibt beim Rollen stehen, damit sie beim Wechsel zwischen Seiten nicht springt (Sebastian, 28.10.2026, beim Testen von #189).

@@ -85,6 +85,24 @@ def test_am_pc_gliederung_und_seite_nebeneinander_nur_mit_der_tastatur(pc):
     assert run_axe(pc) == []
 
 
+def test_am_pc_gliederung_so_hoch_wie_der_bildschirm_und_springt_nicht(pc):
+    """Sebastian beim Testen (28.10.2026): Die Gliederung springt beim Wechsel nicht und bleibt beim Rollen stehen."""
+    login(pc)
+    units = _walhall_for_erika()
+    screen = pc.viewport_size["height"]
+    heights = []
+    for address in ("/organisation/", f"/organisation/{units['falken'].key}/", f"/organisation/{units['walhall'].key}/"):
+        pc.goto(f"{BASE}{address}")
+        heights.append(round(pc.locator(".a-gliederung").bounding_box()["height"]))
+    assert len(set(heights)) == 1, heights
+    assert heights[0] == screen - 80, (heights, screen)
+    # Lange Seite: Beim Rollen bleibt die Gliederung oben stehen.
+    pc.evaluate("document.querySelector('.a-orga-seite').style.paddingBottom = '2000px'")
+    pc.mouse.wheel(0, 1500)
+    expect(pc.locator(".a-gliederung")).to_be_in_viewport()
+    assert round(pc.locator(".a-gliederung").bounding_box()["y"]) == 40
+
+
 def test_am_pc_kachel_darunter_oeffnet_die_organisation(pc):
     login(pc)
     units = _walhall_for_erika()
