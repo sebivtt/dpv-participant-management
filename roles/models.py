@@ -51,6 +51,8 @@ UNIT_KINDS = {
 # Leitungsrollen, die auf dem Pfad der Mitgliedschaft liegen müssen, in der Reihenfolge für Meldungen.
 # Verbandsleitung und DPV-Veranstaltungsteam gehören nicht dazu: Am Verband ist niemand Mitglied.
 LEADS_IN_UNITS = (RoleKind.GROUP_LEAD, RoleKind.TROOP_LEAD, RoleKind.RING_LEAD, RoleKind.ASSOCIATION_LEAD)
+# Die Leitungsrolle jeder Ebene, z. B. Stamm → Stammesleitung; für Seiten und das Benennen (#189, #190).
+LEAD_ROLE = {unit_kind: RoleKind(role) for role in LEADS_IN_UNITS for unit_kind in UNIT_KINDS[role]}
 
 
 class Role(models.Model):

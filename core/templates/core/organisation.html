@@ -2,15 +2,16 @@
 {% load i18n layout %}
 {% block title %}{% if start %}{% translate "Organisation" %}{% else %}{{ page.unit.name }}{% endif %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Nur Anzeige; Knöpfe zum Ändern kommen mit #190 und #191. Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
+  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Den Knopf „… benennen“ und seinen Dialog gibt es seit #190 nur, wo die Person benennen darf; Entfernen und Abgeben kommen mit #191. Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
   {% if start %}<h1 class="sr-nur">{% translate "Organisation" %}</h1>{% endif %}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-orga{% if not start %} zeigt-seite{% endif %}">
     {% include "core/_gliederung.html" %}
     <div class="a-orga-seite{% if start %} a-orga-start{% endif %}">
       {% if not start %}<a class="btn btn-zart a-orga-zurueck" href="{% url "organisation" %}"><span aria-hidden="true">‹</span> {% translate "Gliederung" %}</a>{% endif %}
       {% if start %}{% include "core/_orgakopf.html" with heading=2 %}{% else %}{% include "core/_orgakopf.html" %}{% endif %}
       <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-leitungen">
-        {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" %}{% endif %}
+        {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 action_href=page.appoint_href action_label=page.appoint_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" action_href=page.appoint_href action_label=page.appoint_label %}{% endif %}
         {% if page.notice %}{% meldung "info" text=page.notice %}{% endif %}
         {% if page.leads %}<ul class="a-leitungen">{% for lead in page.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
       </section>
@@ -28,4 +29,15 @@
       {% endif %}
     </div>
   </div>
+  {% if dialog %}
+    {# Dialog „… benennen“ (#190): eigene Adresse, kommt offen vom Server. Das Skript holt beim Tippen die Vorschläge in die Trefferliste; „Suchen“ und Enter schicken das Formular ab. #}
+    {% include "core/_dialog_auf.html" %}
+    <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate data-vorschlaege="{{ dialog.suggestions_href }}">
+      {% csrf_token %}
+      {% translate "Suchen" as search_button %}{% translate "Ab drei Zeichen schlägt das Tool Personen aus deinem Bereich vor. Alle anderen findest du mit „Suchen“ über die genaue Mail oder den Benutzernamen." as search_help %}
+      {% textfeld dialog.form.suche button=search_button help_text=search_help %}
+    </form>
+    <div class="a-treffer-bereich" data-treffer>{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action notice=dialog.notice %}</div>
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
 {% endblock %}

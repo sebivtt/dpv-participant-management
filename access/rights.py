@@ -61,6 +61,11 @@ LEAD_NAMES = {
     "unit_key": F("unit__key"),
     "locked": ExpressionWrapper(Q(user__is_active=False), output_field=BooleanField()),
 }
+# Vorschläge beim Tippen erst ab so vielen Zeichen und höchstens so viele (PK-09, Frage 10 aus #93).
+SUGGESTION_MIN = 3
+SUGGESTION_MOST = 10
+# Zeichen, die in anderen Suchen für „beliebig“ stehen; allein gesucht zeigen sie nichts (PK-15).
+WILDCARDS = frozenset("*%_")
 # Wie weit eine Leitung eine Einheit auf der Seite „Organisation“ sieht (#189).
 MANAGE = "manage"  # im eigenen Bereich: Seite mit Mails, wo sie die Person sieht
 READ = "read"  # auf der Kette nach oben: Seite nur lesen
@@ -329,6 +334,28 @@ class Rights:
         27.10.2026, Frage 2). Nutzt die Rollen, die die Anfrage ohnehin einmal lädt.
         """
         return bool(self._own_roles)
+
+    # Leitungen benennen (#190)
+
+    def may_appoint(self, unit: Unit | None) -> bool:
+        """Darf die Person in dieser Einheit Leitungen benennen (RO-10, RO-11, EH-18)?"""
+        return False
+
+    def suggestions(self, text: str) -> list[dict]:
+        """Vorschläge beim Tippen: Personen mit Konto im eigenen Bereich nach Namen (PK-09, PK-10)."""
+        return []
+
+    def find_accounts(self, text: str) -> list[dict]:
+        """Konten über die genaue Mail oder den genauen Benutzernamen (PK-13)."""
+        return []
+
+    def count_search(self) -> int:
+        """Zählt eine Suche fürs Suchlimit; 0 heißt erlaubt, sonst die Minuten bis zur nächsten (PK-24)."""
+        return 0
+
+    def appoint(self, unit: Unit, person_key) -> tuple[bool, str]:
+        """Benennt eine Person als Leitung der Einheit; gibt zurück, ob es geklappt hat, und die Meldung."""
+        raise Http404
 
     # Leitungen (BER-01, Grund 3)
 

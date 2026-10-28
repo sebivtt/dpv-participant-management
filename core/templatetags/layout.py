@@ -100,7 +100,7 @@ def _textfeld(field, described_by: str = "") -> dict:
 
 
 @register.inclusion_tag("core/_textfeld.html")
-def textfeld(field) -> dict:
+def textfeld(field, button: str = "", help_text: str = "") -> dict:
     """Gemeinsamer Baustein für Textfelder (#111), den jedes Formular statt eines eigenen Felds einbindet.
 
     `field` ist ein Feld eines Django-Formulars. Die Beschriftung steht über dem Feld, bei
@@ -108,8 +108,14 @@ def textfeld(field) -> dict:
     verknüpft und keine Meldung der vier Arten (docs/gestaltung.md). Die passende Tastatur am
     Handy (z. B. `autocapitalize`, `autocorrect`, `inputmode`) legt das Formular am Feld fest,
     weil nur es weiß, ob ein Name, ein Satz oder eine Mail hineingehört.
+
+    Als Suchfeld (#190) steht mit `button` ein Knopf zum Abschicken rechts neben dem Feld, mit
+    `help_text` ein Satz darunter, mit dem Feld verknüpft.
     """
-    return _textfeld(field)
+    help_id = f"{field.auto_id}-hilfe" if help_text else ""
+    context = _textfeld(field, described_by=help_id)
+    context.update(button=button, help_text=help_text, help_id=help_id)
+    return context
 
 
 @register.inclusion_tag("core/_antippfeld.html")
