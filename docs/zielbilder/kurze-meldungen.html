@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grober Entwurf · Kurze Meldungen (#186)</title>
+<!-- Grober Entwurf zu #186, 27.10.2026. Nur erfundene Daten, lädt nichts von fremden Servern.
+     Farben, Abstände und Symbole wie in core/static/core/app.css und _symbole.svg; statt der Lilie ein schlichter Kreis. -->
+<style>
+:root {
+  --dpv: #1a4b7e; --dpv-tief: #12385f; --dpv-hauch: #e9eff6; --akzent: #f0ad2c;
+  --grund: #f4f6f9; --flaeche: #fff; --linie: #dbe2ea; --text: #1b2532; --text-leise: #566375;
+  --ok-text: #245c3d; --ok-grund: #e1f0e6; --warte-text: #74500c; --warte-grund: #fbefd5;
+  --ab-text: #8a2c2c; --ab-grund: #f7e2e2;
+  --radius: 14px; --radius-klein: 9px; --leiste: 264px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--grund); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+h1, h2 { font-weight: 800; }
+.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 3px solid var(--dpv); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+button { font: inherit; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; gap: .45rem; padding: .55rem 1.1rem; border-radius: var(--radius-klein); font-weight: 700; border: 1px solid var(--dpv); }
+.btn-p { background: var(--dpv); color: #fff; }
+.btn-o { background: #fff; color: var(--dpv); }
+
+/* Hinweis auf den Entwurf */
+.entwurf { background: #fff; border-bottom: 1px dashed var(--text-leise); padding: 8px 16px; font-size: .85rem; color: var(--text-leise); margin-left: var(--leiste); }
+
+/* Seitenleiste am PC */
+.leiste { position: fixed; inset: 0 auto 0 0; width: var(--leiste); background: #fff; border-right: 1px solid var(--linie); padding: 24px 16px; display: flex; flex-direction: column; gap: 28px; }
+.marke { display: flex; align-items: center; gap: 12px; padding: 4px 8px; color: var(--dpv); font-weight: 800; }
+.marke i { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--dpv); }
+.nav a { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: var(--radius-klein); color: var(--text); text-decoration: none; font-weight: 600; }
+.konto { margin-top: auto; border-top: 1px solid var(--linie); padding-top: 16px; }
+.profil { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); font-weight: 700; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--dpv); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--akzent); }
+.handyleiste { display: none; }
+
+main { margin-left: var(--leiste); padding: 40px max(24px, 4vw) 140px; max-width: calc(var(--leiste) + 1180px); }
+h1 { margin: 0 0 28px; font-size: 2.1rem; }
+.flaeche { background: #fff; border-radius: var(--radius); padding: 20px 24px; margin: 0 0 18px; }
+.flaeche h2 { font-size: 1.1rem; margin: 0 0 14px; }
+
+/* Meldung (Baustein aus #165, unverändert) */
+.meldung { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border-radius: var(--radius-klein); margin: 0 0 16px; }
+.meldung:last-child { margin-bottom: 0; }
+.meldung-ic { flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: rgb(255 255 255 / 78%); }
+.meldung-ic .ic { width: 22px; height: 22px; }
+.meldung-text { flex: 1; min-width: 0; align-self: center; overflow-wrap: anywhere; }
+.meldung-text p { margin: 0; }
+.ist-info { background: var(--dpv-hauch); } .ist-info .meldung-ic { color: var(--dpv); }
+.ist-warnung { background: var(--warte-grund); color: var(--warte-text); }
+.ist-fehler { background: var(--ab-grund); color: var(--ab-text); }
+.ist-erfolg { background: var(--ok-grund); color: var(--ok-text); }
+
+/* Feld Fahrtenname (vereinfacht) */
+.feld { max-width: 420px; margin: 0 0 14px; }
+.feld label { display: block; color: var(--text-leise); font-size: .9rem; font-weight: 700; margin: 0 0 6px; }
+.feld-gruppe { display: flex; align-items: center; gap: 8px; border: 1px solid var(--dpv); border-radius: var(--radius-klein); padding: 0 0 0 11px; min-height: 46px; background: #fff; }
+.feld-gruppe .ic { color: var(--dpv); width: 18px; height: 18px; }
+.feld input { flex: 1; min-width: 0; border: 0; font: inherit; font-size: .9rem; padding: 10px 5px; background: transparent; }
+.feld input:focus { outline: none; }
+.feld-gruppe:focus-within { box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
+.feld-knoepfe { display: flex; gap: 8px; margin: 10px 0 0; flex-wrap: wrap; }
+/* Fehlermeldung an der Stelle der Handlung: direkt unter dem Feld (#186, Frage 9) */
+.feld .meldung { margin: 10px 0 0; }
+.felder { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 18px 0 0; }
+.felder div { background: var(--grund); border-radius: var(--radius-klein); padding: 8px 12px; }
+.felder dt { font-size: .8rem; color: var(--text-leise); font-weight: 700; }
+.felder dd { margin: 0; }
+
+.vorfuehren { border: 2px dashed var(--linie); background: transparent; }
+.vorfuehren p { margin: 0 0 10px; color: var(--text-leise); font-size: .95rem; }
+.vorfuehren .feld-knoepfe { margin: 0; }
+.regel { font-size: .95rem; }
+.regel td, .regel th { padding: 6px 10px; border-bottom: 1px solid var(--linie); text-align: left; vertical-align: top; }
+
+/* ---------- Kurze Meldung (neu, #186) ----------
+   Unten mittig im Inhaltsbereich; die Seitenleiste bleibt frei. Höchstens drei, neueste unten.
+   Erkennbar an Lage, deutlichem Schatten und ×. */
+.kurz-bereich { position: fixed; z-index: 50; bottom: 20px; left: var(--leiste); right: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 24px; pointer-events: none; }
+.kurz { pointer-events: auto; width: 100%; max-width: 560px; margin: 0; box-shadow: 0 10px 28px rgb(27 37 50 / 22%), 0 2px 6px rgb(27 37 50 / 12%); animation: rein .2s ease-out; }
+.kurz.geht { animation: raus .2s ease-in forwards; }
+.kurz-zu { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin: -6px -6px -6px 0; border: 0; border-radius: 8px; background: transparent; color: inherit; }
+.kurz-zu:hover { background: rgb(255 255 255 / 60%); }
+@keyframes rein { from { opacity: 0; transform: translateY(12px); } }
+@keyframes raus { to { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) {
+  .kurz, .kurz.geht { animation-duration: .01s; }
+  @keyframes rein { from { opacity: 0; } }
+  @keyframes raus { to { opacity: 0; } }
+}
+
+/* Handy: schmale Leiste oben, Meldung unten über fast die ganze Breite */
+@media (max-width: 991.98px) {
+  .leiste { display: none; }
+  .handyleiste { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--linie); padding: 8px 12px; }
+  .handyleiste .marke { padding: 0; font-size: .95rem; }
+  .handyleiste .marke i { width: 26px; height: 26px; }
+  .entwurf, main { margin-left: 0; }
+  main { padding: 24px 16px 160px; }
+  h1 { font-size: 1.7rem; }
+  .flaeche { padding: 16px; }
+  .felder { grid-template-columns: 1fr; }
+  .kurz-bereich { left: 0; bottom: 12px; padding: 0 12px; }
+  .meldung { gap: 10px; padding: 12px; }
+}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-menue" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-schliessen" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-nein" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></symbol>
+  <symbol id="i-schloss" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-hinweis" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19zM12 9.5v5M12 17.5h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-erfolg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9"/></symbol>
+</svg>
+
+<aside class="leiste" aria-label="Navigation">
+  <div class="marke"><i aria-hidden="true"></i>DPV Anmeldetool</div>
+  <nav class="nav"><a href="#"><svg class="ic"><use href="#i-home"/></svg>Startseite</a><a href="#"><svg class="ic"><use href="#i-organisation"/></svg>Organisation</a></nav>
+  <div class="konto"><div class="profil"><span class="avatar">K</span>Kiwi</div></div>
+</aside>
+<div class="handyleiste">
+  <button class="btn btn-o" type="button"><svg class="ic"><use href="#i-menue"/></svg>Menü</button>
+  <div class="marke"><i aria-hidden="true"></i>DPV Anmeldetool</div>
+  <span class="avatar">K</span>
+</div>
+
+<div class="entwurf">Grober Entwurf zu #186 (27.10.2026), nur erfundene Daten. Die gestrichelte Fläche unten gibt es im Tool nicht; sie führt die Fälle vor.</div>
+
+<main>
+  <h1>Mein Profil</h1>
+
+  <!-- Feste Meldung: dauerhafter Zustand, bleibt stehen -->
+  <div class="meldung ist-warnung"><span class="sr">Warnung: </span><span class="meldung-ic" aria-hidden="true"><svg class="ic"><use href="#i-hinweis"/></svg></span><div class="meldung-text"><strong>Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an.</strong></div></div>
+
+  <section class="flaeche" aria-labelledby="h-angaben">
+    <h2 id="h-angaben">Deine Angaben</h2>
+    <div class="feld" id="feld">
+      <label for="fahrtenname">Fahrtenname</label>
+      <div class="feld-gruppe"><svg class="ic" aria-hidden="true"><use href="#i-person"/></svg><input id="fahrtenname" value="Kiwi" maxlength="50" aria-describedby="feld-fehler"></div>
+      <div class="feld-knoepfe"><button class="btn btn-o" type="button">Verwerfen</button><button class="btn btn-p" type="button" id="speichern">Speichern</button></div>
+      <div id="feld-fehler"></div>
+    </div>
+    <dl class="felder">
+      <div><dt>Vorname</dt><dd>Erika</dd></div>
+      <div><dt>Nachname</dt><dd>Testfrau</dd></div>
+      <div><dt>Benutzername</dt><dd>erika.testfrau</dd></div>
+      <div><dt>E-Mail-Adresse</dt><dd>erika@beispiel.invalid</dd></div>
+    </dl>
+    <div class="meldung ist-info" style="margin-top:15px"><span class="sr">Information: </span><span class="meldung-ic" aria-hidden="true"><svg class="ic"><use href="#i-schloss"/></svg></span><div class="meldung-text"><p>Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung.</p></div></div>
+  </section>
+
+  <section class="flaeche vorfuehren" aria-label="Vorführen">
+    <p>Fälle vorführen (Szenarien aus #186):</p>
+    <div class="feld-knoepfe">
+      <button class="btn btn-o" type="button" data-fall="ok">Speichern klappt (1)</button>
+      <button class="btn btn-o" type="button" data-fall="weg">Fahrtenname gelöscht (2)</button>
+      <button class="btn btn-o" type="button" data-fall="fehler">Speichern scheitert (8)</button>
+      <button class="btn btn-o" type="button" data-fall="info">Kurze Information</button>
+      <button class="btn btn-o" type="button" data-fall="vier">Vier nacheinander (12, 13)</button>
+    </div>
+  </section>
+
+  <section class="flaeche" aria-labelledby="h-regel">
+    <h2 id="h-regel">Welche Form wann (für den Bausteinkatalog und docs/gestaltung.md)</h2>
+    <table class="regel">
+      <tr><th>Form</th><th>Wann</th><th>Wo</th></tr>
+      <tr><td>Kurze Meldung</td><td>Erfolg oder Information, die eine eigene Handlung bestätigt</td><td>unten mittig, schwebt mit Schatten und ×, verschwindet nach rund 6 Sekunden</td></tr>
+      <tr><td>Feste Meldung</td><td>dauerhafter Zustand; jede Warnung</td><td>fest auf der Seite</td></tr>
+      <tr><td>Fehlermeldung nach einer Handlung</td><td>etwas hat technisch nicht geklappt</td><td>fest, direkt an der Stelle der Handlung (unter dem Feld oder der Zeile)</td></tr>
+      <tr><td>Fehler am Feld</td><td>Eingabe ist falsch</td><td>rote Schrift direkt unter dem Feld (unverändert)</td></tr>
+    </table>
+  </section>
+</main>
+
+<!-- Bereich für kurze Meldungen: Vorleseprogramme sagen neue Meldungen an, ohne den Cursor zu bewegen. -->
+<div class="kurz-bereich" id="kurz-bereich" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var bereich = document.getElementById('kurz-bereich');
+  var DAUER = 6000, HOECHSTENS = 3;
+  var ARTEN = {
+    erfolg: { klasse: 'ist-erfolg', symbol: 'i-erfolg', wort: 'Erfolg: ' },
+    info: { klasse: 'ist-info', symbol: 'i-info', wort: 'Information: ' }
+  };
+  var angehalten = false;
+
+  function weg(el) {
+    if (!el || el.dataset.geht) return;
+    el.dataset.geht = '1';
+    clearTimeout(el._uhr);
+    var hatteFokus = el.contains(document.activeElement);
+    el.classList.add('geht');
+    setTimeout(function () {
+      el.remove();
+      if (hatteFokus) document.getElementById('fahrtenname').focus();
+    }, 200);
+  }
+  function starte(el) {
+    clearTimeout(el._uhr);
+    el._uhr = setTimeout(function () { weg(el); }, DAUER);
+  }
+  function kurz(art, text) {
+    var a = ARTEN[art];
+    var el = document.createElement('div');
+    el.className = 'meldung kurz ' + a.klasse;
+    el.innerHTML = '<span class="sr">' + a.wort + '</span><span class="meldung-ic" aria-hidden="true"><svg class="ic"><use href="#' + a.symbol + '"/></svg></span>' +
+      '<div class="meldung-text"><p></p></div><button type="button" class="kurz-zu" aria-label="Meldung schließen"><svg class="ic" aria-hidden="true"><use href="#i-schliessen"/></svg></button>';
+    el.querySelector('p').textContent = text;
+    el.querySelector('.kurz-zu').addEventListener('click', function () { weg(el); });
+    bereich.appendChild(el);
+    var offen = bereich.querySelectorAll('.kurz:not([data-geht])');
+    if (offen.length > HOECHSTENS) weg(offen[0]);
+    if (!angehalten) starte(el);
+  }
+  // Maus darüber oder Fokus darin: alle bleiben stehen und zählen danach neu.
+  function anhalten() { angehalten = true; bereich.querySelectorAll('.kurz').forEach(function (el) { clearTimeout(el._uhr); }); }
+  function weiter() { angehalten = false; bereich.querySelectorAll('.kurz:not([data-geht])').forEach(starte); }
+  bereich.addEventListener('mouseenter', anhalten);
+  bereich.addEventListener('mouseleave', function () { if (!bereich.contains(document.activeElement)) weiter(); });
+  bereich.addEventListener('focusin', anhalten);
+  bereich.addEventListener('focusout', function (e) { if (!bereich.contains(e.relatedTarget) && !bereich.matches(':hover')) weiter(); });
+
+  var fehler = document.getElementById('feld-fehler');
+  function fehlerWeg() { fehler.innerHTML = ''; }
+  function fehlerZeigen() {
+    fehler.innerHTML = '<div class="meldung ist-fehler" role="alert"><span class="sr">Fehler: </span><span class="meldung-ic" aria-hidden="true"><svg class="ic"><use href="#i-nein"/></svg></span><div class="meldung-text"><p>Dein Fahrtenname konnte nicht gespeichert werden. Versuche es noch einmal.</p></div></div>';
+    document.getElementById('feld').scrollIntoView({ block: 'center' });
+    document.getElementById('fahrtenname').focus();
+  }
+  function gespeichert() { fehlerWeg(); kurz('erfolg', 'Dein Fahrtenname ist gespeichert.'); document.getElementById('fahrtenname').focus(); }
+
+  document.getElementById('speichern').addEventListener('click', gespeichert);
+  document.querySelectorAll('[data-fall]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.dataset.fall;
+      if (f === 'ok') gespeichert();
+      if (f === 'weg') { fehlerWeg(); document.getElementById('fahrtenname').value = ''; kurz('erfolg', 'Dein Fahrtenname ist gelöscht.'); }
+      if (f === 'fehler') fehlerZeigen();
+      if (f === 'info') kurz('info', 'Beispiel einer kurzen Information nach einer Handlung: Die Liste ist jetzt nach Namen sortiert.');
+      if (f === 'vier') {
+        ['Leitung Sippe Falken ist benannt.', 'Leitung Sippe Eulen ist benannt.', 'Leitung Meute Wölfe ist benannt.', 'Leitung Sippe Biber ist benannt.']
+          .forEach(function (t, i) { setTimeout(function () { kurz('erfolg', t); }, i * 700); });
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

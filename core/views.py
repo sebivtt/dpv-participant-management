@@ -154,6 +154,14 @@ BUILDING_BLOCKS = {
                      "geklappt hat."),
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil")],
     },
+    "kurzmeldung": {
+        "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
+        "purpose": _("Bestätigt eine eigene Handlung, etwa „gespeichert“: erscheint als Erfolg oder Information "
+                     "unten über dem Inhalt, mit Schatten und ×, und verschwindet nach rund 6 Sekunden. Was einen "
+                     "Zustand beschreibt, steht fest auf der Seite; eine Fehlermeldung steht fest an der Stelle "
+                     "der Handlung."),
+        "pages": [_("Mein Profil")],
+    },
     "textfeld": {
         "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
         "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
@@ -234,6 +242,9 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
                 (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
             ]
         ],
+        # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
+        "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
+                        "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
         # Der Profilkreis liest nur den kurzen Namen; hier erfunden, nicht der der angemeldeten Person.
         "named": {"short_name": "Kim"},
         "unnamed": {"short_name": ""},

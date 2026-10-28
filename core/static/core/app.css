@@ -192,6 +192,30 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
   .a-meldung-ic { flex-basis: 28px; width: 28px; height: 28px; }
 }
 
+/* Kurze Meldung (#186, docs/gestaltung.md), nach Sebastians Zielbild (docs/zielbilder/kurze-meldungen.html):
+   eine Meldung der Art Erfolg oder Information, unten mittig im Inhaltsbereich über dem Inhalt; die
+   Seitenleiste bleibt frei. Erkennbar ohne Farbe an Lage, deutlichem Schatten und ×; der Schatten ist die
+   entschiedene Ausnahme von „kaum Schatten“. Kein Zeitbalken. Höchstens drei übereinander, die neueste
+   unten. Ohne Skript gibt es .a-kurz nicht, und die Meldung steht fest oben wie jede andere. */
+.a-kurz-bereich { position: fixed; z-index: 50; bottom: max(20px, env(safe-area-inset-bottom, 0px)); left: var(--leiste); right: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 24px; pointer-events: none; }
+.a-kurz-bereich:empty { display: none; }
+.a-meldung.a-kurz { pointer-events: auto; width: 100%; max-width: 560px; margin: 0; box-shadow: 0 10px 28px rgb(27 37 50 / 22%), 0 2px 6px rgb(27 37 50 / 12%); }
+.a-kurz-zu { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: inherit; }
+.a-kurz-zu:hover { background: rgb(255 255 255 / 60%); }
+.a-kurz-zu .ic { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: no-preference) {
+  .a-meldung.a-kurz { animation: a-kurz-rein .2s ease-out; }
+  .a-meldung.a-kurz.ist-weg { animation: a-kurz-raus .2s ease-in forwards; }
+  @keyframes a-kurz-rein { from { opacity: 0; transform: translateY(12px); } }
+  @keyframes a-kurz-raus { to { opacity: 0; transform: translateY(12px); } }
+}
+/* Handy: unten über fast die ganze Breite, mit etwas Rand */
+@media (max-width: 991px) {
+  .a-kurz-bereich { left: 0; bottom: max(12px, env(safe-area-inset-bottom, 0px)); padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px)); }
+}
+/* Knöpfe im Bausteinkatalog, die Beispiele einblenden */
+.a-katalog-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; }
+
 .a-formular { max-width: 640px; }
 .a-pflicht { color: var(--text-leise); font-weight: 600; font-size: .85em; }
 /* Baustein Textfeld (#111): Beschriftung, Feld, Fehler am Feld; so hoch wie die Felder auf „Mein Profil“,

@@ -1,4 +1,4 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Meldungen (#165), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Meldungen (#165), kurze Meldungen (#186), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
@@ -39,7 +39,7 @@ LIVE_ROLES = {"info": "status", "success": "status", "warning": "alert", "error"
 
 
 @register.inclusion_tag("core/_meldung.html")
-def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bool = False) -> dict:
+def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bool = False, element_id: str = "") -> dict:
     """Meldung einer der vier Arten (#165, docs/gestaltung.md): Info, Warnung, Fehler, Erfolg.
 
     `title` steht fett als eigene Zeile über `text`. Ein passenderes Symbol als das der Art
@@ -47,7 +47,8 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
     und Vorleseprogramme hören vorweg ihr Wort, etwa „Warnung:“. `live` nur für Meldungen
     nach einer Handlung (Login-Seite); fest auf einer Seite stehende werden nicht ungefragt
     angesagt. Eine unbekannte Art, etwa eine eigene Stufe einer Django-Meldung, erscheint als
-    Information, statt die Seite mit einem Serverfehler zu sperren.
+    Information, statt die Seite mit einem Serverfehler zu sperren. `element_id` gibt der Meldung
+    eine Kennung, etwa um sie mit einem Feld zu verknüpfen.
     """
     kind = kind if kind in MESSAGE_KINDS else "info"
     css_class, icon_name, prefix = MESSAGE_KINDS[kind]
@@ -58,6 +59,43 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
         "role": LIVE_ROLES[kind] if live else "note",
         "title": title,
         "text": text,
+        "element_id": element_id,
+    }
+
+
+# Nur diese Arten werden kurz (#186, Frage 1): Sie bestätigen eine eigene Handlung, und es ist
+# nichts zu tun. Bei Fehler und Warnung muss man etwas tun; verschwänden sie, übersähe man sie.
+SHORT_KINDS = ("info", "success")
+
+
+@register.inclusion_tag("core/_kurzmeldung.html")
+def kurzmeldung(kind: str, text: str) -> dict:
+    """Kurze Meldung nach einer eigenen Handlung (#186, docs/gestaltung.md), etwa „Dein Fahrtenname ist gespeichert.“
+
+    Aufbau, Farbe und Symbol wie die Meldung derselben Art (`meldung`), dazu ein ×. Das Skript
+    (core/static/core/app.js) blendet sie unten über dem Inhalt ein, wo Vorleseprogramme sie
+    ansagen, und nach rund 6 Sekunden wieder aus. Ohne Skript steht sie fest an ihrem Platz,
+    angesagt wie jede Meldung nach einer Handlung. Fehler und Warnungen werden nie kurz: Sie
+    erscheinen hier als feste Meldung.
+    """
+    context = meldung(kind, text=text, live=True)
+    context["short"] = kind in SHORT_KINDS
+    return context
+
+
+def _textfeld(field, described_by: str = "") -> dict:
+    error_id = f"{field.auto_id}-fehler"
+    attrs = {"class": "form-control"}
+    if field.errors:
+        attrs = {"class": "form-control is-invalid", "aria-invalid": "true", "aria-describedby": error_id}
+    elif described_by:
+        attrs["aria-describedby"] = described_by
+    return {
+        "field": field,
+        "widget": field.as_widget(attrs=attrs),
+        "errors": field.errors,
+        "error_id": error_id,
+        "required": field.field.required,
     }
 
 
@@ -71,21 +109,11 @@ def textfeld(field) -> dict:
     Handy (z. B. `autocapitalize`, `autocorrect`, `inputmode`) legt das Formular am Feld fest,
     weil nur es weiß, ob ein Name, ein Satz oder eine Mail hineingehört.
     """
-    error_id = f"{field.auto_id}-fehler"
-    attrs = {"class": "form-control"}
-    if field.errors:
-        attrs = {"class": "form-control is-invalid", "aria-invalid": "true", "aria-describedby": error_id}
-    return {
-        "field": field,
-        "widget": field.as_widget(attrs=attrs),
-        "errors": field.errors,
-        "error_id": error_id,
-        "required": field.field.required,
-    }
+    return _textfeld(field)
 
 
 @register.inclusion_tag("core/_antippfeld.html")
-def antippfeld(field, saved: str, icon: str, open: bool = False, focus: bool = False) -> dict:
+def antippfeld(field, saved: str, icon: str, failure: str = "", focus: bool = False) -> dict:
     """Feld zum Antippen (#180, Zielbild „Mein Profil“): in Ruhe wie eine Angabe, angetippt eine Eingabe.
 
     In Ruhe steht der gespeicherte Wert `saved` (leer: „Noch nicht angegeben“) mit dem Symbol
@@ -94,12 +122,15 @@ def antippfeld(field, saved: str, icon: str, open: bool = False, focus: bool = F
     ohne Skript bleiben Eingabe und „Speichern“ wie beim Baustein Textfeld stehen, deshalb
     nutzt es dessen Feld und Fehler. Gespeichert wird immer mit dem Formular drumherum.
 
-    `open`: Das Feld kommt offen vom Server, z. B. wenn das Speichern technisch scheiterte; mit
-    einem Fehler am Feld ist es immer offen, damit die Eingabe stehen bleibt. `focus`: Das Feld
-    bekommt beim Laden den Fokus, z. B. gleich nach dem Speichern.
+    `failure`: Fehlermeldung, wenn das Speichern technisch scheiterte. Sie steht als Meldung direkt
+    unter der Eingabe, an der Stelle der Handlung (#186), ist mit der Eingabe verknüpft, und das
+    Feld kommt offen vom Server. Mit einem Fehler am Feld ist es ebenso offen, damit die Eingabe
+    stehen bleibt. `focus`: Das Feld bekommt beim Laden den Fokus, z. B. gleich nach dem Speichern.
     """
-    context = textfeld(field)
-    context.update(saved=saved, icon=icon, open=open or bool(field.errors), focus=focus)
+    failure_id = f"{field.auto_id}-meldung"
+    context = _textfeld(field, described_by=failure_id if failure else "")
+    context.update(saved=saved, icon=icon, open=bool(failure or field.errors), focus=focus, failure=failure,
+                   failure_id=failure_id)
     return context
 
 
