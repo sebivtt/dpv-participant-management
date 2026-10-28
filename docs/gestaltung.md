@@ -91,6 +91,14 @@ Zielbild wie bei der Seite „Organisation“ (`docs/zielbilder/organisation.htm
 - **Knopf in der Überschrift einer Fläche:** rechts mit Plus, etwa „Gruppenleitung benennen“; am Handy unter der Überschrift.
 - **Nach dem Benennen** eine kurze Meldung (#186), Ablehnungen fest im Dialog an der Stelle der Handlung.
 
+### Leitung entfernen und Rolle abgeben (#191, 28.10.2026)
+
+Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #191. Keine neuen Bausteine; zwei erweitert:
+
+- **Leitung in einer Liste:** rechts ein kleiner Knopf, nur wo man Leitungen entfernen darf: „Entfernen“ leise rot, beim eigenen Eintrag „Rolle abgeben“ neutral. Auf der Leseseite nie.
+- **Dialog zum Bestätigen:** Titel ist die Frage, darunter die Folgen; unten neben „Abbrechen“ ein roter Knopf mit der Handlung („Entfernen“, „Rolle abgeben“). Rot nur für Handlungen, die etwas wegnehmen.
+- **Danach** eine kurze Meldung (#186), wie nach dem Benennen.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

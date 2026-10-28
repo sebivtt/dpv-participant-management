@@ -133,6 +133,10 @@
     </form>
     <div class="a-treffer-bereich">{% include "core/_treffer.html" with hits=examples.hits|slice:":1" hits_title=_("Vorschläge aus deinem Bereich") appoint_action="#h-dialog" notice=None preview=True %}</div>
     {% include "core/_dialog_zu.html" with dialog=examples.dialog %}
+    {# Mit rotem Knopf zur Bestätigung, wie „Entfernen“ auf der Seite „Organisation“ (#191); er schickt nichts ab. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.removal preview=True %}
+    {% for line in examples.removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" with dialog=examples.removal preview=True %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-trefferliste">

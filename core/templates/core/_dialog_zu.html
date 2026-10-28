@@ -1,4 +1,4 @@
-{% load i18n %}{# Dialog (#190), Ende: schließt den Inhalt aus „core/_dialog_auf.html“ und zeigt unten „Abbrechen“. #}
+{% load i18n %}{# Dialog (#190), Ende: schließt den Inhalt aus „core/_dialog_auf.html“ und zeigt unten „Abbrechen“. Mit dialog.confirm_label steht daneben ein roter Knopf, der ein Formular an dialog.confirm_action schickt, etwa „Entfernen“ (#191; Sebastian, 28.10.2026: Baustein erweitern). #}
   </div>
-  <div class="a-dialog-fuss"><a class="btn btn-zart" href="{{ dialog.close_href }}">{% translate "Abbrechen" %}</a></div>
+  <div class="a-dialog-fuss"><a class="btn btn-zart" href="{{ dialog.close_href }}">{% translate "Abbrechen" %}</a>{% if dialog.confirm_label %}<form method="post" action="{{ dialog.confirm_action }}"{% if preview %} data-nur-ansicht{% endif %}>{% csrf_token %}<button type="submit" class="btn btn-gefahr">{{ dialog.confirm_label }}</button></form>{% endif %}</div>
 </dialog>

@@ -382,14 +382,14 @@ def test_leitungen_zeigen_nur_name_und_rolle_nicht_die_mail(org):
     Den Fahrtennamen nennt BER-01, Grund 3 schon; das Feld gibt es seit #111. Interne Nummern
     (`user_id`, `unit_id`) gibt die Liste seit #156 nicht mehr heraus. Seit #189 kommen Benutzername
     (wenn der Name fehlt, A12), die Kennungen von Konto und Einheit und die Kennzeichnung gesperrter
-    Leitungen dazu, die Mail weiterhin nicht.
+    Leitungen dazu, seit #191 die Kennung der Rolle für „Entfernen“, die Mail weiterhin nicht.
     """
     entries = list(Rights(org.falke).leads())
 
     assert entries
     for entry in entries:
         assert set(entry) == {"first_name", "last_name", "scout_name", "username", "user_key", "kind",
-                              "unit_name", "unit_key", "locked"}
+                              "unit_name", "unit_key", "locked", "role_key"}
 
 
 @pytest.mark.rechtematrix("RO-02")

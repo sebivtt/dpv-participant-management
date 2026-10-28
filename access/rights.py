@@ -54,8 +54,9 @@ SEEN_BY_FEDERATION_LEAD = (R.ASSOCIATION_LEAD, R.FEDERATION_LEAD, R.EVENT_TEAM)
 # Mail (#136, B2; #111). Den vollen Namen daraus bildet `accounts.models.display_name()`; ohne Namen
 # zeigen Seiten den Benutzernamen wie „Mein Profil“ (#189, A12). Interne Nummern von Konto und
 # Einheit gibt die Liste nicht heraus, damit keine auf eine Seite gerät (#156); Seiten ordnen die
-# Leitungen über die Kennungen von Konto und Einheit zu (#189). `locked` kennzeichnet ein im Tool
-# gesperrtes Konto; solche Leitungen stehen nur in der Liste, wer sie entfernen darf (#189, Frage B).
+# Leitungen über die Kennungen von Konto und Einheit zu (#189), die Knöpfe zum Entfernen nennen die
+# Kennung der Rolle (#191). `locked` kennzeichnet ein im Tool gesperrtes Konto; solche Leitungen
+# stehen nur in der Liste, wer sie entfernen darf (#189, Frage B).
 LEAD_FIELDS = ("kind",)
 LEAD_NAMES = {
     "first_name": F("user__first_name"),
@@ -65,6 +66,7 @@ LEAD_NAMES = {
     "user_key": F("user__key"),
     "unit_name": F("unit__name"),
     "unit_key": F("unit__key"),
+    "role_key": F("key"),
     "locked": ExpressionWrapper(Q(user__is_active=False), output_field=BooleanField()),
 }
 # Vorschläge beim Tippen erst ab so vielen Zeichen und höchstens so viele (PK-09, Frage 10 aus #93).
@@ -305,7 +307,11 @@ class Rights:
         """
         if unit is None or self.has_lead(unit) or unit.pk not in self._tree:
             return None
-        parent = self._tree[unit.pk][0]
+        return self._lead_above(unit.pk)
+
+    def _lead_above(self, unit: int) -> int | None:
+        """Die nächste Einheit über `unit` mit Leitung mit Konto, ohne den Verband; sonst None."""
+        parent = self._tree[unit][0]
         while parent is not None and self._tree[parent][1] != UnitKind.FEDERATION:
             if parent in self._units_with_lead:
                 return parent
@@ -457,35 +463,113 @@ class Rights:
         #89). Wer noch nirgends Mitglied ist, wird Mitglied der Einheit (B7, B8). Die Rolle gilt
         sofort und steht im Protokoll (#91). Gleichzeitige Benennungen derselben Person laufen
         nacheinander, weil ihr Konto bis zum Ende gesperrt ist; die zweite sieht „schon …“ (BV12).
+        Gesperrt ist auch das eigene Konto, und das Recht wird unter der Sperre noch einmal geprüft:
+        Wer gerade als Leitung entfernt wird, benennt danach niemanden mehr (#191).
         """
         if not self.may_appoint(unit) or not is_key(person_key):
             raise Http404
         users = get_user_model().objects
-        reachable = Q(last_login__isnull=False) | Q(pk__in=self.persons().values("pk"))
         kind = LEAD_ROLE[unit.kind]
         with transaction.atomic():
-            target = users.select_for_update().filter(reachable, key=person_key, is_active=True).first()
+            found = users.filter(key=person_key).values_list("pk", flat=True).first()
+            if found is None:
+                raise Http404
+            me = self._lock_with(found)
+            fresh = Rights(me)
+            if not fresh.may_appoint(unit):
+                raise Http404
+            reachable = Q(last_login__isnull=False) | Q(pk__in=fresh.persons().values("pk"))
+            target = users.filter(reachable, pk=found, is_active=True).first()
             if target is None:
                 raise Http404
             values = {"person": display_name(target.first_name, target.last_name, target.scout_name) or target.username,
                       "role": kind.label, "unit": unit.name}
             roles = Role.objects.filter(user_id=target.pk)
             membership = roles.filter(kind=R.MEMBER).select_related("unit").first()
-            if target.pk == self.user.pk:
+            if target.pk == me.pk:
                 own = membership.unit.name if membership else unit.name
                 return False, str(unit_texts.NOT_YOURSELF % {"unit": own})
             if roles.filter(kind=kind, unit_id=unit.pk).exists():
                 return False, str(unit_texts.ALREADY_LEAD % values)
-            if membership is not None and membership.unit_id not in self.area:
+            if membership is not None and membership.unit_id not in fresh.area:
                 return False, str(unit_texts.MEMBER_ELSEWHERE)
             try:
-                Role(user=target, kind=kind, unit=unit).save(by=self.user)
+                Role(user=target, kind=kind, unit=unit).save(by=me)
             except ValidationError as error:
                 if error.error_list[0].code != "outside_path":
                     raise
                 target_name = unit_texts.KIND_AND_NAME[unit.kind] % {"unit": unit.name}
                 return False, str(unit_texts.NOT_ON_PATH % {**values, "unit": membership.unit.name, "target": target_name})
         return True, str(unit_texts.APPOINTED % values)
+
+    def _lock_with(self, other: int):
+        """Sperrt das eigene Konto und das Konto `other` bis zum Ende der Transaktion, immer nach Nummer geordnet.
+
+        Die feste Reihenfolge verhindert, dass sich zwei Anfragen gegenseitig blockieren, etwa wenn
+        Wanda und Willi sich gleichzeitig entfernen (CV5). Gibt das eigene Konto frisch aus der
+        Datenbank zurück; ist es inzwischen gesperrt, None, und `Rights` gibt dann keine Rechte.
+        """
+        users = get_user_model().objects.select_for_update().filter(pk__in={self.user.pk, other}).order_by("pk")
+        return {user.pk: user for user in users}.get(self.user.pk)
+
+    # Leitungen entfernen und die eigene Rolle abgeben (#191)
+
+    def may_remove(self, role: Role) -> bool:
+        """Darf die Person diese Rolle entfernen oder, wenn es ihre eigene ist, abgeben (RO-10, RO-11, RO-20)?
+
+        Nur Leitungsrollen von Gruppe bis Bund in ihrem Bereich, also genau dort, wo sie benennen
+        darf (`may_appoint()`), auch bei gesperrten Konten (RO-21). Die eigenen Leitungsrollen liegen
+        immer im eigenen Bereich. Mitgliedschaften, Verbandsleitung, DPV-Veranstaltungsteam und Admin
+        entfernt diese Stelle nie (CV3, CV8, RO-18, RO-19); die Verbandsleitung kommt mit #94.
+        """
+        return role.kind in LEADS_IN_UNITS and self.sees_organisation() and role.unit_id in self.area
+
+    def _removable(self, unit: Unit, role_key) -> Role:
+        """Die Rolle mit dieser Kennung in genau dieser Einheit, wenn die Person sie entfernen darf; sonst „nicht gefunden“ (CV3)."""
+        return self.entry(Role.objects.filter(unit_id=unit.pk).select_related("user"), role_key, allowed=self.may_remove)
+
+    def removal(self, unit: Unit, role_key) -> dict:
+        """Was die Bestätigung zum Entfernen oder Abgeben zeigt (C1 bis C6, C11, C12).
+
+        `person` ist der Name wie in der Meldung nach dem Benennen, `is_self` sagt, ob es die eigene
+        Rolle ist. `last` heißt: Danach hat die Einheit keine Leitung mit Konto mehr; gesperrte
+        Leitungen zählen dabei nicht (C12). Dann nennt `cover` die interne Nummer der Einheit,
+        deren Leitung einspringt, oder None (EH-18, EH-27); Seiten zeigen nur ihren Namen.
+        """
+        role = self._removable(unit, role_key)
+        user = role.user
+        others = Role.objects.filter(unit_id=unit.pk, kind=role.kind, user__is_active=True).exclude(pk=role.pk)
+        last = not others.exists()
+        return {
+            "person": display_name(user.first_name, user.last_name, user.scout_name) or user.username,
+            "is_self": user.pk == self.user.pk,
+            "role": role.get_kind_display(),
+            "last": last,
+            "cover": self._lead_above(unit.pk) if last else None,
+        }
+
+    def remove(self, unit: Unit, role_key) -> str:
+        """Entfernt die Leitungsrolle oder gibt die eigene ab; gibt die kurze Meldung zurück (C13).
+
+        Ohne Recht, mit einer fremden Kennung oder wenn die Rolle schon entfernt ist, ist das Ergebnis
+        „nicht gefunden“, und nichts ändert sich. Die Mitgliedschaft bleibt immer (C7, CV8, #89). Die
+        Änderung steht im Protokoll, eine Nachricht gibt es nicht (#91, ROL-04). Gesperrt sind das
+        eigene Konto und das der Person mit der Rolle, dann wird das Recht unter der Sperre noch einmal
+        geprüft: Entfernen sich zwei Leitungen gleichzeitig gegenseitig, gelingt nur die erste
+        Änderung (CV5); entfernen zwei dieselbe Leitung, sieht die zweite „nicht gefunden“ (CV6).
+        """
+        if self.user is None or not is_key(role_key):
+            raise Http404
+        with transaction.atomic():
+            owner = Role.objects.filter(key=role_key).values_list("user_id", flat=True).first()
+            if owner is None:
+                raise Http404
+            me = self._lock_with(owner)
+            fresh = Rights(me)
+            shown = fresh.removal(unit, role_key)
+            fresh._removable(unit, role_key).delete(by=me)
+        values = {**shown, "unit": unit.name}
+        return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
 
     # Leitungen (BER-01, Grund 3)
 
