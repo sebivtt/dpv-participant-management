@@ -1,6 +1,7 @@
-{% load i18n %}{# Gemeinsamer Baustein für Textfelder (#111): Beschriftung, Pflicht-Hinweis, Feld und Fehler direkt darunter, mit dem Feld verknüpft. Eingebunden mit {% textfeld form.feld %} (core/templatetags/layout.py). #}
-<div class="a-textfeld">
+{% load i18n %}{# Gemeinsamer Baustein für Textfelder (#111): Beschriftung, Pflicht-Hinweis, Feld und Fehler direkt darunter, mit dem Feld verknüpft. Als Suchfeld (#190) mit dem Knopf zum Abschicken rechts daneben und einem Satz darunter. Eingebunden mit {% textfeld form.feld %} (core/templatetags/layout.py). #}
+<div class="a-textfeld{% if button %} ist-suchfeld{% endif %}">
   <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if required %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span>{% endif %}</label>
-  {{ widget }}
+  {% if button %}<div class="a-textfeld-zeile">{{ widget }}<button type="submit" class="btn btn-primary">{{ button }}</button></div>{% else %}{{ widget }}{% endif %}
   {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
+  {% if help_text %}<p class="a-textfeld-hilfe" id="{{ help_id }}">{{ help_text }}</p>{% endif %}
 </div>

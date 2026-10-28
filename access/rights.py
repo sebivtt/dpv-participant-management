@@ -24,19 +24,25 @@ Zugriff“ (403). Meldet eine Seite an einer Adresse mit Kennung trotzdem „kei
 `RightsMiddleware` „nicht gefunden“ daraus.
 """
 
+import math
 import unicodedata
+from collections.abc import Callable
+from datetime import timedelta
 from functools import cached_property
 
-from collections.abc import Callable
-
 from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied
-from django.db.models import BooleanField, ExpressionWrapper, F, Model, Q, QuerySet
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+from django.db.models import BooleanField, CharField, ExpressionWrapper, F, Model, Q, QuerySet, Value
+from django.db.models.functions import Concat
 from django.http import Http404
+from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
-from roles.models import LEADS_IN_UNITS, Role, on_path
+from accounts.models import AccountSearch, display_name
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, on_path
+from units import texts as unit_texts
 from units.models import Kind as UnitKind
 from units.models import Unit
 
@@ -61,6 +67,14 @@ LEAD_NAMES = {
     "unit_key": F("unit__key"),
     "locked": ExpressionWrapper(Q(user__is_active=False), output_field=BooleanField()),
 }
+# Vorschläge beim Tippen erst ab so vielen Zeichen und höchstens so viele (PK-09, Frage 10 aus #93).
+SUGGESTION_MIN = 3
+SUGGESTION_MOST = 10
+# Zeichen, die in anderen Suchen für „beliebig“ stehen; allein gesucht zeigen sie nichts (PK-15).
+WILDCARDS = frozenset("*%_")
+# Suchlimit für „Suchen“ über die genaue Mail oder den Benutzernamen (PK-24, Frage D aus #93).
+SEARCH_LIMIT = 20
+SEARCH_WINDOW = timedelta(minutes=60)
 # Wie weit eine Leitung eine Einheit auf der Seite „Organisation“ sieht (#189).
 MANAGE = "manage"  # im eigenen Bereich: Seite mit Mails, wo sie die Person sieht
 READ = "read"  # auf der Kette nach oben: Seite nur lesen
@@ -329,6 +343,149 @@ class Rights:
         27.10.2026, Frage 2). Nutzt die Rollen, die die Anfrage ohnehin einmal lädt.
         """
         return bool(self._own_roles)
+
+    # Leitungen benennen (#190)
+
+    def may_appoint(self, unit: Unit | None) -> bool:
+        """Darf die Person in dieser Einheit Leitungen benennen (RO-10, RO-11, EH-18)?
+
+        Das ist genau ihr Bereich: die Bundesleitung im ganzen Bund, die Ringleitung in ihrem
+        Ring, die Stammesleitung in ihrem Stamm und dessen Gruppen, weitere Leitungen derselben
+        Einheit. Wo sie einspringt, liegt ohnehin in ihrem Bereich. Auf der Kette nach oben sieht sie
+        nur lesend (EH-28); Verbandsleitung, Mitglieder und Admins ohne Leitungsrolle haben keinen
+        Bereich (RO-14, RO-17).
+        """
+        return unit is not None and self.sees_organisation() and unit.pk in self.area
+
+    def suggestions(self, text: str) -> list[dict]:
+        """Vorschläge beim Tippen: Personen mit Konto im eigenen Bereich nach Namen (PK-09, PK-10).
+
+        Erst ab `SUGGESTION_MIN` Zeichen, höchstens `SUGGESTION_MOST`, gesucht in Vorname,
+        Nachname, beidem zusammen und Fahrtenname, ohne Groß- und Kleinschreibung. Konten ohne
+        Zuordnung und Personen außerhalb des Bereichs findet niemand über den Namen (PK-10 bis
+        PK-12), gesperrte Konten erscheinen nicht (BV11). „%“ und „_“ stehen hier für sich selbst.
+        """
+        text = text.strip()
+        if not self.sees_organisation() or len(text) < SUGGESTION_MIN:
+            return []
+        named = self.persons().filter(is_active=True).annotate(
+            full_name=Concat("first_name", Value(" "), "last_name", output_field=CharField())
+        )
+        matches = (Q(first_name__icontains=text) | Q(last_name__icontains=text) | Q(full_name__icontains=text)
+                   | Q(scout_name__icontains=text))
+        found = named.filter(matches).order_by("last_name", "first_name", "username")[:SUGGESTION_MOST]
+        return self._hits(list(found))
+
+    def find_accounts(self, text: str) -> list[dict]:
+        """Konten über die genaue Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung (PK-13).
+
+        Nur Konten, die sich schon einmal angemeldet haben und nicht gesperrt sind; ein gesperrtes
+        Konto zeigt dasselbe wie keines, damit die Suche keine Sperre verrät (BV11). Ein Teil einer
+        Mail findet nichts, und eine Liste aller Konten gibt es nicht (PK-15): Verglichen wird auf
+        Gleichheit, Platzhalter wie „%“ gelten als Zeichen. Den Treffer zeigt die Seite ohne die
+        Organisation, wenn er außerhalb des eigenen Bereichs liegt (PK-16). Das Suchlimit zählt
+        `count_search()`, nicht diese Stelle.
+        """
+        text = text.strip()
+        if not self.sees_organisation() or not text or set(text) <= WILDCARDS:
+            return []
+        accounts = get_user_model().objects.filter(is_active=True, last_login__isnull=False)
+        found = accounts.filter(Q(email__iexact=text) | Q(username__iexact=text)).order_by("username")
+        return self._hits(list(found[:SUGGESTION_MOST]))
+
+    def _hits(self, users: list) -> list[dict]:
+        """Was Vorschläge und Treffer zeigen dürfen: Kennung, Namen und wo die Person Mitglied ist (PK-16).
+
+        `unit_name` steht nur bei Mitgliedern des eigenen Bereichs und bei der Person selbst;
+        sonst sagt `elsewhere` nur, dass sie schon woanders Mitglied ist. Interne Nummern gibt die
+        Liste nicht heraus (#156).
+        """
+        memberships = dict(
+            Role.objects.filter(kind=R.MEMBER, user_id__in=[user.pk for user in users]).values_list("user_id", "unit_id")
+        )
+        names = dict(Unit.objects.filter(pk__in=memberships.values()).values_list("pk", "name"))
+        found = []
+        for user in users:
+            unit = memberships.get(user.pk)
+            is_self = user.pk == self.user.pk
+            shown = unit is not None and (unit in self.area or is_self)
+            found.append({
+                "key": user.key,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "scout_name": user.scout_name,
+                "username": user.username,
+                "unit_name": names[unit] if shown else "",
+                "elsewhere": unit is not None and not shown,
+                "is_self": is_self,
+            })
+        return found
+
+    def count_search(self) -> int:
+        """Zählt eine Suche fürs Suchlimit; 0 heißt erlaubt und gezählt, sonst die Minuten bis zur nächsten (PK-24).
+
+        Höchstens `SEARCH_LIMIT` Suchen in `SEARCH_WINDOW`, Mail und Benutzername zusammen. Eine
+        abgewiesene Suche zählt nicht. Die Minuten reichen, bis die älteste gezählte Suche aus der
+        Zeitspanne fällt, aufgerundet und mindestens 1; dann geht genau eine Suche wieder. Gleichzeitige
+        Suchen derselben Person laufen nacheinander, weil das Konto bis zum Ende gesperrt ist (BV13).
+        Einträge, die älter als die Zeitspanne sind, löscht jede Suche für alle Personen, damit nicht mehr
+        gespeichert ist als nötig.
+        """
+        if self.user is None:
+            return 0
+        with transaction.atomic():
+            list(get_user_model().objects.select_for_update().filter(pk=self.user.pk).values_list("pk"))
+            now = timezone.now()
+            # Alte Einträge aller Personen, damit auch von jemandem, der nie wieder sucht, nichts liegen bleibt.
+            AccountSearch.objects.filter(searched_at__lte=now - SEARCH_WINDOW).delete()
+            searches = AccountSearch.objects.filter(user_id=self.user.pk)
+            times = list(searches.order_by("-searched_at").values_list("searched_at", flat=True)[:SEARCH_LIMIT])
+            if len(times) >= SEARCH_LIMIT:
+                wait = times[-1] + SEARCH_WINDOW - now
+                return max(1, math.ceil(wait.total_seconds() / 60))
+            AccountSearch.objects.create(user_id=self.user.pk, searched_at=now)
+            return 0
+
+    def appoint(self, unit: Unit, person_key) -> tuple[bool, str]:
+        """Benennt eine Person als Leitung der Einheit; gibt zurück, ob es geklappt hat, und die Meldung.
+
+        Ohne Recht in dieser Einheit oder mit einer Kennung, die keine erreichbare Person nennt
+        (gesperrt, nie angemeldet und nicht im eigenen Bereich), ist das Ergebnis „nicht gefunden“.
+        Abgelehnt mit Meldung wird, wer sich selbst benennen will (RO-12), wer dort schon Leitung
+        ist (BV3), wer außerhalb des eigenen Bereichs schon Mitglied ist (BV1, ohne die
+        Organisation zu nennen) und wer die Rolle danach nicht auf seinem Leitungspfad hätte (BV2,
+        #89). Wer noch nirgends Mitglied ist, wird Mitglied der Einheit (B7, B8). Die Rolle gilt
+        sofort und steht im Protokoll (#91). Gleichzeitige Benennungen derselben Person laufen
+        nacheinander, weil ihr Konto bis zum Ende gesperrt ist; die zweite sieht „schon …“ (BV12).
+        """
+        if not self.may_appoint(unit) or not is_key(person_key):
+            raise Http404
+        users = get_user_model().objects
+        reachable = Q(last_login__isnull=False) | Q(pk__in=self.persons().values("pk"))
+        kind = LEAD_ROLE[unit.kind]
+        with transaction.atomic():
+            target = users.select_for_update().filter(reachable, key=person_key, is_active=True).first()
+            if target is None:
+                raise Http404
+            values = {"person": display_name(target.first_name, target.last_name, target.scout_name) or target.username,
+                      "role": kind.label, "unit": unit.name}
+            roles = Role.objects.filter(user_id=target.pk)
+            membership = roles.filter(kind=R.MEMBER).select_related("unit").first()
+            if target.pk == self.user.pk:
+                own = membership.unit.name if membership else unit.name
+                return False, str(unit_texts.NOT_YOURSELF % {"unit": own})
+            if roles.filter(kind=kind, unit_id=unit.pk).exists():
+                return False, str(unit_texts.ALREADY_LEAD % values)
+            if membership is not None and membership.unit_id not in self.area:
+                return False, str(unit_texts.MEMBER_ELSEWHERE)
+            try:
+                Role(user=target, kind=kind, unit=unit).save(by=self.user)
+            except ValidationError as error:
+                if error.error_list[0].code != "outside_path":
+                    raise
+                target_name = unit_texts.KIND_AND_NAME[unit.kind] % {"unit": unit.name}
+                return False, str(unit_texts.NOT_ON_PATH % {**values, "unit": membership.unit.name, "target": target_name})
+        return True, str(unit_texts.APPOINTED % values)
 
     # Leitungen (BER-01, Grund 3)
 

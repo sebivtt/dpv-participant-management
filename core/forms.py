@@ -1,4 +1,4 @@
-"""Beispielformular für den Bausteinkatalog (#176): zeigt den Baustein Textfeld mit erfundenen Werten (#111)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176) und die Suche beim Benennen (#190)."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -24,3 +24,27 @@ class PatternForm(forms.Form):
         form = cls(data={"name": "", "place": "Burg Rabenstein"})
         form.is_valid()
         return form
+
+
+class AccountSearchForm(forms.Form):
+    """Das Suchfeld im Dialog „… benennen“ (#190): Name, Fahrtenname, Mail oder Benutzername.
+
+    Nimmt nur den Suchbegriff an; in welcher Organisation benannt wird, kommt aus der Adresse.
+    Leerzeichen am Rand zählen nicht. Mails und Benutzernamen werden nicht korrigiert und
+    nicht großgeschrieben, damit die genaue Suche am Handy trifft.
+    """
+
+    suche = forms.CharField(
+        label=_("Name, Fahrtenname, Mail oder Benutzername"),
+        required=False,
+        max_length=254,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "none",
+                "autocorrect": "off",
+                "spellcheck": "false",
+                "autofocus": True,
+            }
+        ),
+    )

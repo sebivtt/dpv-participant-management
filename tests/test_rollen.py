@@ -533,8 +533,8 @@ def test_wer_eine_einheit_anlegt_bekommt_keine_rolle(org):
     assert not Role.objects.exists()
 
 
-def test_keine_adresse_im_tool_legt_rollen_an_oder_aendert_sie():
-    """S20: Rollen vergeben die Seiten aus #93, #94 und #65; in diesem Schritt gibt es keine."""
+def test_die_app_rollen_hat_keine_eigenen_adressen():
+    """S20: Die App „roles“ hat keine Adressen. Rollen vergibt seit #190 die Seite „Organisation“ über die zentrale Rechteprüfung (`Rights.appoint()`, Tests in tests/test_benennen.py)."""
     views = {f"{entry.callback.__module__}.{entry.callback.__name__}" for _pattern, entry in ALL}
 
     assert ALL, "Der Rundumtest findet keine Adressen"

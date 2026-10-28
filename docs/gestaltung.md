@@ -81,6 +81,16 @@ Zielbild als `docs/zielbilder/organisation.html`, Entscheidungen in `docs/entsch
 - **Marken** sind kleine runde Pillen mit Wort: „Du springst ein“ (gelblich), „nur lesen“ (grau, mit Schloss), „gesperrt“ (rot). Die eigene Rolle bekommt keine Marke.
 - **Leitungen** in zwei Zeilen: oben Fahrtenname, Name und „das bist du“, darunter links die Rolle als Rollenmarke, rechts die Mail.
 
+### Leitung benennen: Dialog, Suchfeld und Trefferliste (#190, 28.10.2026)
+
+Zielbild wie bei der Seite „Organisation“ (`docs/zielbilder/organisation.html`), Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #190. Neue Bausteine im Bausteinkatalog: Dialog und Trefferliste; das Textfeld kann ein Suchfeld sein, die Überschrift einer Fläche einen Knopf rechts haben.
+
+- **Dialog:** ein Fenster über der Seite mit Titel, Zeile darunter, × oben rechts und „Abbrechen“ unten; Escape und Tippen daneben schließen ihn. Er hat eine eigene Adresse und kommt offen vom Server, deshalb geht er auch ohne Skript.
+- **Suchfeld:** das Textfeld mit dem Knopf „Suchen“ rechts daneben und einem Satz darunter; Enter sucht ebenso.
+- **Trefferliste:** Kreis, Fahrtenname und Name, darunter die Organisation, rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders Mitglied ist, eine Warnung.
+- **Knopf in der Überschrift einer Fläche:** rechts mit Plus, etwa „Gruppenleitung benennen“; am Handy unter der Überschrift.
+- **Nach dem Benennen** eine kurze Meldung (#186), Ablehnungen fest im Dialog an der Stelle der Handlung.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

@@ -278,6 +278,8 @@ PERSONAL_MODELS = {
     "SocialAccount",
     "SocialToken",
     "EmailAddress",
+    # Wer wann über die genaue Mail oder den Benutzernamen gesucht hat (PK-24, #190).
+    "AccountSearch",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {

@@ -297,6 +297,76 @@
     outline.scrollTop += offset - outline.clientHeight / 3;
   }
 
+  // Dialog (#190): Er kommt offen vom Server und hat eine eigene Adresse. Mit Skript wird er modal: Der
+  // Browser hält den Fokus darin, und Escape oder Tippen daneben führen wie × und „Abbrechen“ zurück zur
+  // Seite darunter. Ohne Skript liegt er einfach über der Seite.
+  document.querySelectorAll("dialog[data-dialog]").forEach(function (dialog) {
+    var back = dialog.getAttribute("data-schliessen");
+    if (typeof dialog.showModal !== "function") {
+      return;
+    }
+    dialog.close();
+    dialog.showModal();
+    var first = dialog.querySelector("[autofocus]");
+    if (first) {
+      first.focus();
+    }
+    dialog.addEventListener("cancel", function (event) {
+      event.preventDefault();
+      window.location.href = back;
+    });
+    dialog.addEventListener("click", function (event) {
+      if (event.target === dialog) {
+        window.location.href = back;
+      }
+    });
+  });
+
+  // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
+  // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
+  // ältere Antwort, die erst nach einer neueren ankommt, wird verworfen. „Suchen“ und Enter schicken
+  // weiter das Formular ab. Ohne Skript gibt es keine Vorschläge, nur „Suchen“.
+  document.querySelectorAll("form[data-vorschlaege]").forEach(function (form) {
+    var input = form.querySelector("input[name='suche']");
+    var list = form.parentElement.querySelector("[data-treffer]");
+    var address = form.getAttribute("data-vorschlaege");
+    var asked = 0;
+    var timer = null;
+    if (!input || !list) {
+      return;
+    }
+    list.setAttribute("aria-live", "polite");
+    input.addEventListener("input", function () {
+      window.clearTimeout(timer);
+      var text = input.value.trim();
+      var number = ++asked;
+      if (text.length < 3) {
+        list.innerHTML = "";
+        return;
+      }
+      timer = window.setTimeout(function () {
+        // Als Formular mit Formularschutz, damit der Name nicht in der Adresse und in keinem Protokoll steht.
+        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin" })
+          .then(function (response) {
+            // Abgelaufene Anmeldung: Statt der Login-Seite in der Liste lädt die Seite neu und führt zum Login.
+            if (response.redirected) {
+              window.location.reload();
+              return "";
+            }
+            return response.ok ? response.text() : "";
+          })
+          .then(function (html) {
+            if (number === asked) {
+              list.innerHTML = html;
+            }
+          })
+          .catch(function () {
+            // Ohne Verbindung bleibt die Liste, wie sie ist; „Suchen“ geht weiter.
+          });
+      }, 200);
+    });
+  });
+
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {

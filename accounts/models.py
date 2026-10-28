@@ -68,3 +68,19 @@ def display_name(first_name: str, last_name: str, scout_name: str) -> str:
     if scout_name and full_name:
         return f"{scout_name} ({full_name})"
     return scout_name or full_name
+
+
+class AccountSearch(models.Model):
+    """Eine Suche über die genaue Mail oder den Benutzernamen, nur für das Suchlimit (PK-24, #190).
+
+    Gespeichert sind nur, wer gesucht hat und wann, nie wonach: Der Suchbegriff wäre eine Mail
+    oder ein Benutzername, also eine Personenangabe über eine andere Person. Was älter als die
+    Zeitspanne des Limits ist, löscht die nächste Suche, egal von wem; das Protokoll der
+    Kontosuchen kommt getrennt mit #144. Vorschläge beim Tippen stehen hier nicht.
+    """
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="+")
+    searched_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "searched_at"]), models.Index(fields=["searched_at"])]

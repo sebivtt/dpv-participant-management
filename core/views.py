@@ -7,15 +7,18 @@ from django.contrib import messages
 from django.db import DatabaseError
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
+from access.rights import SUGGESTION_MIN, WILDCARDS
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import PatternForm
+from core.forms import AccountSearchForm, PatternForm
 from roles.models import Role
 from units.models import Unit
-from units.organisation import Lead, Mark, Node, Organisation, Page
+from units import texts
+from units.organisation import Hit, Lead, Mark, Node, Organisation, Page, hits
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +167,111 @@ def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
                                                        "page": shown.page(found), "start": False})
 
 
+# Leitung benennen (#190, Teil 2 von #93). Der Dialog hat eine eigene Adresse unter der Seite der
+# Organisation, damit er auch ohne Skript geht: Der Knopf „… benennen“ führt dorthin, „Suchen“ und
+# „Benennen“ schicken Formulare dorthin, und jede Antwort zeigt die Seite mit offenem Dialog. Die
+# Organisation kommt immer aus der Adresse, nie aus dem Formular (BV7). Wer dort nicht benennen
+# darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per htmx (BV5, BV6, BV8).
+APPOINT_ROWS = ("PK-09", "PK-10", "PK-11", "PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24",
+                "RO-10", "RO-11", "RO-12", "RO-13", "RO-14", "RO-17", "EP-08")
+
+
+def _appointing(request: HttpRequest, unit: str) -> Unit:
+    """Die Organisation aus der Adresse, wenn die Person dort Leitungen benennen darf; sonst „nicht gefunden“."""
+    rights = request.rights
+    return rights.entry(Unit.objects.all(), unit, allowed=rights.may_appoint)
+
+
+def _appoint_page(request: HttpRequest, found: Unit, form: AccountSearchForm | None = None, hits=None,
+                  hits_title="", notice=None) -> HttpResponse:
+    """Die Seite der Organisation mit offenem Dialog „… benennen“; `notice` ist (Art, Text) einer Meldung im Dialog."""
+    shown = Organisation(request.rights, request.user)
+    page = shown.page(found)
+    dialog = {
+        "title": page.appoint_label,
+        "subtitle": texts.APPOINT_FOR % {"unit": found.name},
+        "close_href": reverse("organisation_unit", args=[found.key]),
+        "form": form or AccountSearchForm(),
+        "search_action": reverse("organisation_search", args=[found.key]),
+        "suggestions_href": reverse("organisation_suggestions", args=[found.key]),
+        "appoint_action": reverse("organisation_appoint", args=[found.key]),
+        "hits": hits or [],
+        "hits_title": hits_title,
+        "notice": notice,
+    }
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": page,
+                                                       "start": False, "dialog": dialog})
+
+
+@checks_rights(*APPOINT_ROWS)
+def organisation_appoint(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „… benennen“ öffnen und eine Person benennen (RO-10, RO-11).
+
+    Lesend zeigt die Adresse den leeren Dialog. Ein Formular mit der Kennung einer Person
+    benennt sie; die Rolle gilt sofort, ohne Zustimmung und ohne Nachricht (B2). Danach geht es
+    zurück zur Seite der Organisation mit einer kurzen Meldung (B15). Lehnt die Rechteprüfung
+    ab, bleibt der Dialog offen und nennt den Grund an der Stelle der Handlung.
+    """
+    found = _appointing(request, unit)
+    if request.method == "POST":
+        done, text = request.rights.appoint(found, request.POST.get("person"))
+        if done:
+            messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        return _appoint_page(request, found, notice=("warning", text))
+    if request.method not in READING:
+        raise Http404
+    return _appoint_page(request, found)
+
+
+@checks_rights(*APPOINT_ROWS)
+def organisation_search(request: HttpRequest, unit: str) -> HttpResponse:
+    """„Suchen“ im Dialog: ein Konto über die genaue Mail oder den genauen Benutzernamen (PK-13, PK-24).
+
+    Jede Suche mit Begriff zählt fürs Suchlimit, auch ohne Treffer; eine abgewiesene nicht. Ein
+    leeres Feld oder nur Platzhalterzeichen wie „*“ zeigen nichts und zählen nicht (PK-15).
+    Lesend führt die Adresse zum leeren Dialog, etwa nach einem Login mitten im Suchen.
+    """
+    found = _appointing(request, unit)
+    if request.method != "POST":
+        if request.method not in READING:
+            raise Http404
+        return redirect("organisation_appoint", unit=found.key)
+    form = AccountSearchForm(request.POST)
+    if not form.is_valid():
+        return _appoint_page(request, found, form=form)
+    text = form.cleaned_data["suche"].strip()
+    if not text or set(text) <= WILDCARDS:
+        return _appoint_page(request, found, form=form)
+    rights = request.rights
+    wait = rights.count_search()
+    if wait:
+        return _appoint_page(request, found, form=form, notice=("error", texts.SEARCH_LIMIT % {"minutes": wait}))
+    entries = rights.find_accounts(text)
+    if not entries:
+        return _appoint_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
+    return _appoint_page(request, found, form=form, hits=hits(entries, found), hits_title=texts.HITS_TITLE)
+
+
+@checks_rights(*APPOINT_ROWS)
+def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
+    """Vorschläge beim Tippen, nur das Stück mit der Liste; das Skript des Dialogs fragt sie ab (PK-09, PK-10).
+
+    Erst ab 3 Zeichen, höchstens 10, nur Personen im eigenen Bereich; sie zählen nicht als Suche. Der
+    getippte Name kommt als Formular, nie in der Adresse, damit er in keinem Protokoll eines
+    Webservers landet (unabhängige Prüfung).
+    """
+    found = _appointing(request, unit)
+    if request.method != "POST":
+        raise Http404
+    text = request.POST.get("suche", "").strip()
+    entries = request.rights.suggestions(text)
+    context = {"hits": hits(entries, found), "hits_title": texts.SUGGESTIONS_TITLE,
+               "empty": texts.NO_SUGGESTIONS if len(text) >= SUGGESTION_MIN else "",
+               "appoint_action": reverse("organisation_appoint", args=[found.key])}
+    return render(request, "core/_treffer.html", context)
+
+
 # Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
 # (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
 ROLE_NOTES = {
@@ -200,11 +308,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation")],
     },
     "textfeld": {
-        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190],
         "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
                      "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
-                     "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
-        "pages": [],
+                     "Antippen nutzt dieselbe Eingabe und denselben Fehler. Als Suchfeld steht der Knopf zum "
+                     "Abschicken rechts daneben und ein Satz darunter."),
+        "pages": [_("Organisation")],
     },
     "kurzmeldung": {
         "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
@@ -232,8 +341,9 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "flaechenkopf": {
-        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161],
-        "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor."),
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190],
+        "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
+                     "stehen, etwa „Gruppenleitung benennen“."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
@@ -265,6 +375,20 @@ BUILDING_BLOCKS = {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
                      "Art und Organisation darüber, rechts die Marke."),
+        "pages": [_("Organisation")],
+    },
+    "dialog": {
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190],
+        "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
+                     "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
+                     "auch ohne Skript."),
+        "pages": [_("Organisation")],
+    },
+    "trefferliste": {
+        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190],
+        "purpose": _("Vorschläge oder Treffer einer Suche: Kreis, Fahrtenname und Name, darunter die Organisation, "
+                     "rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders "
+                     "Mitglied ist, eine Warnung."),
         "pages": [_("Organisation")],
     },
     "profilkreis": {
@@ -319,8 +443,21 @@ def _organisation_examples() -> dict:
         {"label": kind.GROUP.label, "org": "Sippe Falken", "href": "#h-rollenkachel", "mark": covers},
         {"label": kind.TROOP.label, "org": "Zugvögel", "no_access": True},
     ]
+    hit_list = [
+        Hit(key="", name="Flink", extra="Finn Muster", place="Sippe Falken", note="", warning="", hint=""),
+        Hit(key="", name="Wirbelwind", extra="Wanda Beispiel", place="Walhall", warning="", hint="",
+            note=texts.NOT_YOURSELF % {"unit": "Walhall"}),
+        Hit(key="", name="Ameise", extra="Anton Muster", place=texts.ELSEWHERE, note="", hint="",
+            warning=texts.MEMBER_ELSEWHERE),
+        Hit(key="", name="Otter", extra="Otto Ohne", place=texts.NOWHERE, note="", warning="",
+            hint=texts.BECOMES_MEMBER % {"unit": "Sippe Falken"}),
+    ]
+    dialog = {"title": texts.APPOINT_TITLE % {"role": "Gruppenleitung"},
+              "subtitle": texts.APPOINT_FOR % {"unit": "Sippe Falken"}, "close_href": "#h-dialog-beispiel",
+              "form": AccountSearchForm(auto_id="katalog_%s")}
     return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")]}
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "hits": hit_list,
+            "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")

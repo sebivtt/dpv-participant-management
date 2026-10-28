@@ -127,9 +127,9 @@ def test_baustein_ohne_echte_seite_traegt_den_vermerk(settings):
         name = _text(_one(_by_tag(entry, "h2")))
         where = _text(_one(_all(entry, lambda e: "a-baustein-seiten" in _classes(e))))
         assert where == "noch auf keiner Seite" or where.startswith("Genutzt auf: "), f"„{name}“: {where}"
-    # Das Textfeld bindet bisher keine Seite selbst ein; das Feld zum Antippen nutzt nur seine Eingabe.
+    # Seit #190 bindet die Seite „Organisation“ das Textfeld als Suchfeld ein.
     textfield = _one([e for e in entries if _text(_one(_by_tag(e, "h2"))) == "Textfeld"])
-    assert _text(_one(_all(textfield, lambda e: "a-baustein-seiten" in _classes(e)))) == "noch auf keiner Seite"
+    assert _text(_one(_all(textfield, lambda e: "a-baustein-seiten" in _classes(e)))) == "Genutzt auf: Organisation"
 
 
 def test_vermerk_noch_auf_keiner_seite_ohne_seiten_sonst_die_seiten():
@@ -287,6 +287,8 @@ NOT_IN_CATALOG = {
     "core/_fuss.html": "Rahmen jeder Seite",
     # Eine Organisation in der Gliederung (#189); steht mit der Gliederung im Katalog.
     "core/_knoten.html": "Teil der Gliederung",
+    # Das Ende des Dialogs (#190); steht mit dem Dialog im Katalog.
+    "core/_dialog_zu.html": "Teil des Dialogs",
 }
 
 

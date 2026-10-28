@@ -4,7 +4,7 @@ Nach außen heißen Einheiten „Organisation“ (Nachklärung P2 vom 22.10.2026
 Meldungen nennen deshalb immer die Ebene (Verband, Bund, Ring, Stamm, Gruppe), nie „Einheit“.
 """
 
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy, ngettext_lazy
 
 # Regeln beim Speichern
 NAME_EMPTY = gettext_lazy("Der Name darf nicht leer sein.")
@@ -76,3 +76,36 @@ NOTHING_BELOW = gettext_lazy("%(unit)s hat noch keine %(children)s.")
 GROUPS = gettext_lazy("Gruppen")
 TROOPS = gettext_lazy("Stämme")
 RINGS = gettext_lazy("Ringe")
+
+# Leitung benennen (#190), Wortlaut nach den Szenarien und den Entscheidungen bei der Umsetzung
+APPOINT_TITLE = gettext_lazy("%(role)s benennen")
+APPOINT_FOR = gettext_lazy("für %(unit)s")
+SUGGESTIONS_TITLE = gettext_lazy("Vorschläge aus deinem Bereich")
+NO_SUGGESTIONS = gettext_lazy(
+    "Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen."
+)
+HITS_TITLE = gettext_lazy("Treffer")
+ELSEWHERE = gettext_lazy("schon woanders Mitglied")
+NOWHERE = gettext_lazy("noch nirgends Mitglied")
+BECOMES_MEMBER = gettext_lazy("Mit dem Benennen wird die Person Mitglied von %(unit)s.")
+NO_ACCOUNT = gettext_lazy("Kein Konto gefunden. Die Person muss sich zuerst einmal im Tool anmelden.")
+SEARCH_LIMIT = ngettext_lazy(
+    "Du hast in kurzer Zeit sehr oft gesucht. Bitte versuche es in %(minutes)s Minute noch einmal.",
+    "Du hast in kurzer Zeit sehr oft gesucht. Bitte versuche es in %(minutes)s Minuten noch einmal.",
+    "minutes",
+)
+NOT_YOURSELF = gettext_lazy("Dir selbst kannst du keine Rolle geben. Das kann eine andere Leitung von %(unit)s oder darüber.")
+MEMBER_ELSEWHERE = gettext_lazy(
+    "Diese Person gehört schon zu einer anderen Organisation und kann hier keine Leitung werden. Sie kann bei ihrer "
+    "bisherigen Leitung den Wechsel veranlassen."
+)
+NOT_ON_PATH = gettext_lazy("%(person)s ist Mitglied in %(unit)s und kann deshalb keine Leitung bei %(target)s sein.")
+ALREADY_LEAD = gettext_lazy("%(person)s ist schon %(role)s von %(unit)s.")
+APPOINTED = gettext_lazy("%(person)s ist jetzt %(role)s von %(unit)s.")
+# Das Ziel mit seiner Art davor, z. B. „Stamm Zugvögel“ (Sebastian, 28.10.2026, bei der Umsetzung von #190).
+KIND_AND_NAME = {
+    "association": gettext_lazy("Bund %(unit)s"),
+    "ring": gettext_lazy("Ring %(unit)s"),
+    "troop": gettext_lazy("Stamm %(unit)s"),
+    "group": gettext_lazy("Gruppe %(unit)s"),
+}

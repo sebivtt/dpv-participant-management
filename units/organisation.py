@@ -13,12 +13,10 @@ from django.db.models import Q
 from django.urls import reverse
 
 from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical
-from roles.models import LEADS_IN_UNITS, UNIT_KINDS, Role
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS
 from units import texts
 from units.models import Kind, Unit
 
-# Die Leitungsrolle jeder Ebene, z. B. Stamm → Stammesleitung.
-LEAD_ROLE = {unit_kind: Role.Kind(role) for role in LEADS_IN_UNITS for unit_kind in UNIT_KINDS[role]}
 # Was unter jeder Ebene hängt, für „… hat noch keine …“ (A11); ein Bund mit Ringen bekommt Ringe.
 CHILDREN_WORD = {Kind.TROOP: texts.GROUPS, Kind.RING: texts.TROOPS, Kind.ASSOCIATION: texts.TROOPS}
 
@@ -95,6 +93,31 @@ class Page:
     notice: str
     tiles: list[Tile] | None
     empty: str
+    # Der Knopf „… benennen“, nur wo die Person Leitungen benennen darf (#190).
+    appoint_href: str | None = None
+    appoint_label: str = ""
+
+
+@dataclass
+class Hit:
+    """Ein Vorschlag oder Treffer im Dialog „… benennen“ (#190): Name, wo die Person Mitglied ist, und was geht.
+
+    `place` nennt die Organisation nur im eigenen Bereich, sonst „schon woanders Mitglied“ oder
+    „noch nirgends Mitglied“ (PK-16). Den Knopf „Benennen“ gibt es nur ohne `note` (bei sich
+    selbst) und ohne `warning` (schon woanders Mitglied); `hint` steht als Satz darunter.
+    """
+
+    key: str
+    name: str
+    extra: str
+    place: str
+    note: str
+    warning: str
+    hint: str
+
+    @property
+    def initial(self) -> str:
+        return self.name[:1].upper()
 
 
 def short_name(entry: dict) -> str:
@@ -236,6 +259,8 @@ class Organisation:
             notice=self._notice(unit),
             tiles=tiles,
             empty=self._empty(unit) if tiles == [] else "",
+            appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
+            appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:
@@ -283,3 +308,36 @@ class Organisation:
             way="" if covers else self.leads_line(unit, without_locked),
             mark=mark if covers else None,
         )
+
+
+def hits(entries: list[dict], unit: Unit) -> list[Hit]:
+    """Vorschläge oder Treffer aus der Rechteprüfung für den Dialog „… benennen“ der Einheit `unit` (#190).
+
+    Bei sich selbst steht statt des Knopfs, wer einen benennen kann (RO-12): eine andere Leitung
+    der eigenen Organisation oder darüber. Wer außerhalb des eigenen Bereichs schon Mitglied ist,
+    bekommt den Satz aus BV1 statt des Knopfs, ohne dass die Organisation genannt wird (PK-16).
+    """
+    found = []
+    for entry in entries:
+        full_name = _full_name(entry)
+        note = warning = hint = ""
+        if entry["is_self"]:
+            note = texts.NOT_YOURSELF % {"unit": entry["unit_name"] or unit.name}
+        elif entry["elsewhere"]:
+            warning = texts.MEMBER_ELSEWHERE
+        elif not entry["unit_name"]:
+            hint = texts.BECOMES_MEMBER % {"unit": unit.name}
+        if entry["elsewhere"]:
+            place = texts.ELSEWHERE
+        else:
+            place = entry["unit_name"] or texts.NOWHERE
+        found.append(Hit(
+            key=entry["key"],
+            name=entry["scout_name"] or full_name or entry["username"],
+            extra=full_name if entry["scout_name"] else "",
+            place=place,
+            note=note,
+            warning=warning,
+            hint=hint,
+        ))
+    return found
