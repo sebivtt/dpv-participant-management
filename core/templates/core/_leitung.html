@@ -1,4 +1,4 @@
-{% load i18n layout %}{# Leitung in einer Liste (#189): Kreis mit dem Anfangsbuchstaben; in der ersten Zeile über die ganze Breite groß der Fahrtenname, kleiner und grauer der Name dahinter (wie die Kopfzeile mit Name) und bei sich selbst „das bist du“; in der zweiten links die Rolle als Rollenmarke, rechts die Mail, nur wo die Seite sie zeigen darf (Sebastian am Vorschlag, 28.10.2026). Ganz rechts, nur wo die Person Leitungen entfernen darf, ein kleiner Knopf: „Entfernen“ leise rot, beim eigenen Eintrag „Rolle abgeben“ neutral (#191, Zielbild; Sebastian, 28.10.2026: Baustein erweitern). Daten aus units/organisation.py, Lead. Steht in einer Liste <ul class="a-leitungen">. #}
+{% load i18n layout %}{# Leitung in einer Liste (#189): Kreis mit dem Anfangsbuchstaben; in der ersten Zeile über die ganze Breite groß der Fahrtenname, kleiner und grauer der Name dahinter (wie die Kopfzeile mit Name) und bei sich selbst „das bist du“; in der zweiten links die Rolle als Rollenmarke, rechts die Mail, nur wo die Seite sie zeigen darf (Sebastian am Vorschlag, 28.10.2026). Ganz rechts, nur wo die Person Leitungen entfernen darf, ein kleiner Knopf: „Entfernen“ aus dem Baustein „core/_knopf_entfernen.html“, beim eigenen Eintrag „Rolle abgeben“ neutral (#191; Sebastian, 28.10.2026). Daten aus units/organisation.py, Lead. Steht in einer Liste <ul class="a-leitungen">. #}
 <li class="a-leitung{% if lead.locked %} ist-gesperrt{% endif %}">
   <span class="a-avatar" aria-hidden="true">{{ lead.initial }}</span>
   <div class="a-leitung-wer">
@@ -8,5 +8,5 @@
       {% if lead.mail %}<a class="a-leitung-mail" href="mailto:{{ lead.mail }}">{% icon "mail" %}<span>{{ lead.mail }}</span></a>{% endif %}
     </div>
   </div>
-  {% if lead.remove_href %}<a class="btn btn-sm {% if lead.is_self %}btn-zart{% else %}btn-leise-gefahr{% endif %} a-leitung-knopf" href="{{ lead.remove_href }}">{{ lead.remove_label }}<span class="sr-nur">: {{ lead.name }}</span></a>{% endif %}
+  {% if lead.remove_href %}{% if lead.is_self %}<a class="btn btn-sm btn-zart a-leitung-knopf" href="{{ lead.remove_href }}">{{ lead.remove_label }}<span class="sr-nur">: {{ lead.name }}</span></a>{% else %}{% include "core/_knopf_entfernen.html" with href=lead.remove_href label=lead.remove_label name=lead.name extra_class="a-leitung-knopf" %}{% endif %}{% endif %}
 </li>

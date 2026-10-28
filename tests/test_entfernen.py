@@ -494,6 +494,15 @@ def test_jede_rolle_hat_eine_eigene_kennung(org):
     assert all(len(key) == 20 for key in keys)
 
 
+def test_entfernen_kommt_aus_dem_baustein_rolle_abgeben_nicht(org):
+    """Neues Kriterium vom 28.10.2026: „Entfernen“ ist der gemeinsame Baustein mit zarter roter Fläche (wie „Austragen“ in #65)."""
+    root = page_tree(org.walhall_leitung, unit_address(org.walhall))
+    found = {_visible_text(link): _classes(link) for link in _all(root, lambda e: "a-leitung-knopf" in _classes(e))}
+
+    assert "btn-entfernen" in found["Entfernen"]
+    assert "btn-entfernen" not in found["Rolle abgeben"]
+
+
 def test_die_seite_zeigt_keine_laufenden_nummern_der_rollen(org):
     """Die Knöpfe nennen die Rolle nur über ihre Kennung (#156)."""
     root = page_tree(org.walhall_leitung, unit_address(org.walhall))
@@ -598,5 +607,7 @@ def test_der_katalog_zeigt_die_knoepfe_bei_den_leitungen_und_im_dialog(settings,
     lead_block = _one(_by_tag(root, "section", aria_labelledby="h-leitung"))
     labels = [_visible_text(link) for link in _all(lead_block, lambda e: "a-leitung-knopf" in _classes(e))]
     assert labels == ["Rolle abgeben", "Entfernen", "Entfernen"]
+    remove_block = _one(_by_tag(root, "section", aria_labelledby="h-knopfentfernen"))
+    assert [_visible_text(link) for link in _all(remove_block, lambda e: "btn-entfernen" in _classes(e))] == ["Entfernen"]
     dialog_block = _one(_by_tag(root, "section", aria_labelledby="h-dialog"))
     assert [_visible_text(button) for button in _all(dialog_block, lambda e: "btn-gefahr" in _classes(e))] == ["Entfernen"]

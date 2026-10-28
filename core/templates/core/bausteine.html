@@ -118,6 +118,11 @@
     </div>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfentfernen">
+    {% include "core/_katalogeintrag.html" with block=blocks.knopfentfernen %}
+    <div class="a-flaeche">{% translate "Entfernen" as remove_label %}{% include "core/_knopf_entfernen.html" with href="#h-knopfentfernen" label=remove_label name="Funke" %}</div>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}

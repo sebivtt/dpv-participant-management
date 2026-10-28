@@ -93,9 +93,10 @@ Zielbild wie bei der Seite „Organisation“ (`docs/zielbilder/organisation.htm
 
 ### Leitung entfernen und Rolle abgeben (#191, 28.10.2026)
 
-Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #191. Keine neuen Bausteine; zwei erweitert:
+Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #191. Ein neuer Baustein, zwei erweitert:
 
-- **Leitung in einer Liste:** rechts ein kleiner Knopf, nur wo man Leitungen entfernen darf: „Entfernen“ leise rot, beim eigenen Eintrag „Rolle abgeben“ neutral. Auf der Leseseite nie.
+- **Knopf „Entfernen“** (neu): zarte rote Fläche mit roter Schrift, die Farben der Fehlermeldung, für Handlungen, die etwas wegnehmen; „Austragen“ in #65 bindet ihn ein. Er führt immer erst zur Bestätigung. Das weicht vom Zielbild zu #93 ab, das nur rote Schrift zeigt (Sebastian, 28.10.2026, aus der Klärung von #65).
+- **Leitung in einer Liste:** rechts ein kleiner Knopf, nur wo man Leitungen entfernen darf: der Knopf „Entfernen“, beim eigenen Eintrag „Rolle abgeben“ neutral. Auf der Leseseite nie.
 - **Dialog zum Bestätigen:** Titel ist die Frage, darunter die Folgen; unten neben „Abbrechen“ ein roter Knopf mit der Handlung („Entfernen“, „Rolle abgeben“). Rot nur für Handlungen, die etwas wegnehmen.
 - **Danach** eine kurze Meldung (#186), wie nach dem Benennen.
 

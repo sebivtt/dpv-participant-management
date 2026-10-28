@@ -507,7 +507,8 @@ class Rights:
 
         Die feste Reihenfolge verhindert, dass sich zwei Anfragen gegenseitig blockieren, etwa wenn
         Wanda und Willi sich gleichzeitig entfernen (CV5). Gibt das eigene Konto frisch aus der
-        Datenbank zurück; ist es inzwischen gesperrt, None, und `Rights` gibt dann keine Rechte.
+        Datenbank zurück, also auch eine inzwischen gesetzte Sperre: Für ein gesperrtes Konto gibt
+        `Rights` keine Rechte. Gibt es das Konto nicht mehr, ist das Ergebnis None, ebenso ohne Rechte.
         """
         users = get_user_model().objects.select_for_update().filter(pk__in={self.user.pk, other}).order_by("pk")
         return {user.pk: user for user in users}.get(self.user.pk)
@@ -536,16 +537,18 @@ class Rights:
         Leitungen zählen dabei nicht (C12). Dann nennt `cover` die interne Nummer der Einheit,
         deren Leitung einspringt, oder None (EH-18, EH-27); Seiten zeigen nur ihren Namen.
         """
-        role = self._removable(unit, role_key)
+        return self._describe(self._removable(unit, role_key))
+
+    def _describe(self, role: Role) -> dict:
         user = role.user
-        others = Role.objects.filter(unit_id=unit.pk, kind=role.kind, user__is_active=True).exclude(pk=role.pk)
+        others = Role.objects.filter(unit_id=role.unit_id, kind=role.kind, user__is_active=True).exclude(pk=role.pk)
         last = not others.exists()
         return {
             "person": display_name(user.first_name, user.last_name, user.scout_name) or user.username,
             "is_self": user.pk == self.user.pk,
             "role": role.get_kind_display(),
             "last": last,
-            "cover": self._lead_above(unit.pk) if last else None,
+            "cover": self._lead_above(role.unit_id) if last else None,
         }
 
     def remove(self, unit: Unit, role_key) -> str:
@@ -566,8 +569,9 @@ class Rights:
                 raise Http404
             me = self._lock_with(owner)
             fresh = Rights(me)
-            shown = fresh.removal(unit, role_key)
-            fresh._removable(unit, role_key).delete(by=me)
+            role = fresh._removable(unit, role_key)
+            shown = fresh._describe(role)
+            role.delete(by=me)
         values = {**shown, "unit": unit.name}
         return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
 

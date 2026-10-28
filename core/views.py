@@ -409,7 +409,13 @@ BUILDING_BLOCKS = {
         "name": _("Leitung in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191],
         "purpose": _("Eine Leitung mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, darunter "
                      "links die Rolle und rechts die Mail, wo die Seite sie zeigen darf. Wo man Leitungen entfernen "
-                     "darf, steht ganz rechts „Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
+                     "darf, steht ganz rechts der Knopf „Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
+        "pages": [_("Organisation")],
+    },
+    "knopfentfernen": {
+        "name": _("Knopf „Entfernen“"), "template": "core/_knopf_entfernen.html", "issues": [191],
+        "purpose": _("Für Handlungen, die etwas wegnehmen, etwa „Entfernen“ bei einer Leitung: zarte rote Fläche mit "
+                     "roter Schrift, die Farben der Fehlermeldung. Er führt zur Bestätigung, nie gleich zur Handlung."),
         "pages": [_("Organisation")],
     },
     "orgakopf": {
