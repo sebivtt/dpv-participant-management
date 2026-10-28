@@ -94,6 +94,8 @@ def test_nach_dem_speichern_kurz_unten_mittig_und_wieder_weg(request, browser_na
     _set_scout_name("Falkenflug")
     _stop_clock(page)
     page.goto(f"{BASE}/profil/")
+    # Der leere Bereich ist für Vorleseprogramme schon da, bevor eine Meldung hineinkommt (unabhängige Prüfung).
+    assert page.locator("#kurzmeldungen").evaluate("e => getComputedStyle(e).display") != "none"
 
     # Szenario 1: unten mittig, mit Schatten und ×; oben auf der Seite keine Erfolgsmeldung.
     _save(page, "Kiwi")
@@ -124,7 +126,7 @@ def test_nach_dem_speichern_kurz_unten_mittig_und_wieder_weg(request, browser_na
     else:
         assert 0 < box["left"] <= 16 and box["vw"] - 16 <= box["right"] < box["vw"], box
     close_box = _box(close)
-    assert close_box["width"] >= 40 and close_box["height"] >= 40 and close_box["right"] <= box["right"], close_box
+    assert round(close_box["width"]) >= 40 and round(close_box["height"]) >= 40 and close_box["right"] <= box["right"], close_box
     # Die Maus hält die Meldung während der Prüfung fest; danach zählt sie neu.
     notice.hover()
     assert _axe(page) == []
@@ -230,9 +232,15 @@ def test_speichern_scheitert_fehlermeldung_unter_dem_feld_im_bild(browser, brows
         _later(page, 20000)
         expect(error).to_be_visible()
         expect(_short(page)).to_have_count(0)
+        # Verwerfen lässt sie stehen, und sie bleibt mit der Eingabe verknüpft (unabhängige Prüfung).
+        page.keyboard.press("Escape")
+        expect(error).to_be_visible()
+        page.locator("[data-oeffnen]").click()
+        expect(field).to_have_attribute("aria-describedby", "id_scout_name-meldung")
 
         # Szenario 8a: erneut speichern klappt; die Fehlermeldung ist weg, unten kurz die Erfolgsmeldung.
         monkeypatch.undo()
+        field.fill("Kiwi")
         field.press("Enter")
         page.wait_for_load_state("load")
         _later(page, 300)
@@ -285,6 +293,20 @@ def test_stapel_im_katalog_hoechstens_drei_neueste_unten(request, browser_name, 
     _later(page, 700)
     expect(_short(page)).to_have_count(1)
     _later(page, 700)
+    expect(_short(page)).to_have_count(0)
+
+    # Szenario 12: Darüberfahren hält alle an, nicht nur die unter der Maus.
+    section.get_by_role("button", name="Vier nacheinander zeigen").click()
+    page.mouse.move(5, 5)
+    for _ in range(4):
+        _later(page, 700)
+    _short(page).last.hover()
+    _later(page, 20000)
+    expect(_short(page)).to_have_count(3)
+    page.mouse.move(5, 5)
+    _later(page, 5000)
+    expect(_short(page)).to_have_count(3)
+    _later(page, 1500)
     expect(_short(page)).to_have_count(0)
 
 

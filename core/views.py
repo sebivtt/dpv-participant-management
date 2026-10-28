@@ -154,6 +154,13 @@ BUILDING_BLOCKS = {
                      "geklappt hat."),
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil")],
     },
+    "textfeld": {
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
+        "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
+                     "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
+                     "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
+        "pages": [],
+    },
     "kurzmeldung": {
         "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
         "purpose": _("Bestätigt eine eigene Handlung, etwa „gespeichert“: erscheint als Erfolg oder Information "
@@ -161,13 +168,6 @@ BUILDING_BLOCKS = {
                      "Zustand beschreibt, steht fest auf der Seite; eine Fehlermeldung steht fest an der Stelle "
                      "der Handlung."),
         "pages": [_("Mein Profil")],
-    },
-    "textfeld": {
-        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111],
-        "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
-                     "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
-                     "Antippen nutzt dieselbe Eingabe und denselben Fehler."),
-        "pages": [],
     },
     "antippfeld": {
         "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180],

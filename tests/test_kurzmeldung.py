@@ -304,13 +304,15 @@ def test_katalog_nennt_mein_profil_als_seite_der_kurzen_meldung():
     assert [str(p) for p in block["pages"]] == ["Mein Profil"]
 
 
-def test_nur_die_kurze_meldung_hat_einen_deutlichen_schatten():
+def test_kurze_meldung_hat_einen_deutlichen_schatten_und_keinen_zeitbalken():
     """Lage, Schatten und × machen die kurze Form ohne Farbe erkennbar; keine Zeitleiste (#186, Frage 5)."""
     css = (ROOT / "core" / "static" / "core" / "app.css").read_text()
 
     rule = re.search(r"\.a-kurz \{([^}]*)\}", css)
     assert rule and "box-shadow" in rule.group(1)
     assert "a-kurz-zeit" not in css and "progress" not in css
+    # Der Bereich bleibt für Vorleseprogramme da, auch leer; sonst sagen sie die erste Meldung oft nicht an.
+    assert not re.search(r"\.a-kurz-bereich:empty", css)
     # Ein- und Ausblenden nur, wenn im Gerät „Bewegung reduzieren“ aus ist.
     motion = css.split("@media (prefers-reduced-motion: no-preference)")
     assert any("a-kurz" in part.split("\n}\n", 1)[0] for part in motion[1:])

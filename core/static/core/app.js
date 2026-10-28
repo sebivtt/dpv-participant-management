@@ -84,7 +84,13 @@
       }
       input.classList.remove("is-invalid");
       input.removeAttribute("aria-invalid");
-      input.removeAttribute("aria-describedby");
+      // Eine Fehlermeldung nach gescheitertem Speichern bleibt stehen (#186) und mit der Eingabe verknüpft.
+      var failure = box.querySelector(".a-meldung.ist-fehler");
+      if (failure) {
+        input.setAttribute("aria-describedby", failure.id);
+      } else {
+        input.removeAttribute("aria-describedby");
+      }
     }
 
     function open() {
@@ -154,11 +160,15 @@
     });
 
     // Nach einem Fehler kommt das Feld offen vom Server, nach dem Speichern mit dem Fokus darauf.
-    // Nach einem Fehler zeigt der Bildschirm das Feld mit der Meldung darunter (#186).
+    // Scheiterte das Speichern, zeigt der Bildschirm das Feld mit der Fehlermeldung darunter (#186).
     if (box.hasAttribute("data-offen")) {
       show(true);
-      input.focus({ preventScroll: true });
-      box.scrollIntoView({ block: "center" });
+      if (box.querySelector(".a-meldung.ist-fehler")) {
+        input.focus({ preventScroll: true });
+        box.scrollIntoView({ block: "center" });
+      } else {
+        input.focus();
+      }
     } else {
       show(false);
       if (box.hasAttribute("data-fokus")) {

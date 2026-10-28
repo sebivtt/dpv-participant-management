@@ -241,6 +241,8 @@ def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_
     expect(page.locator("main .a-meldung.ist-erfolg")).to_contain_text("Dein Fahrtenname ist gespeichert.")
     expect(page.locator(".a-anzeigename")).to_have_text("Kleiner Bär vom See (Erika Testfrau)")
     expect(page.get_by_role("button", name="Fahrtenname bearbeiten: Kleiner Bär vom See")).to_be_visible()
+    # Erst messen, wenn die kurze Meldung fertig eingeblendet ist; sie startet durchsichtig (#186).
+    page.locator("#kurzmeldungen .a-kurz").evaluate("el => Promise.all(el.getAnimations().map(a => a.finished))")
     assert run_axe(page) == []
     page.goto(f"{BASE}/")
     expect(page.get_by_role("heading", level=1)).to_have_text("Hallo Kleiner Bär vom See!")
