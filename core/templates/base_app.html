@@ -23,8 +23,11 @@
     </div>
   </dialog>
   <main class="a-main" id="inhalt">
-    {% testumgebung_band %}
-    {% block content %}{% endblock %}
+    {# Der Inhalt füllt den freien Platz, damit der Fußbereich bei kurzen Seiten am unteren Fensterrand steht (#206). #}
+    <div class="a-main-inhalt">
+      {% testumgebung_band %}
+      {% block content %}{% endblock %}
+    </div>
     {# Kurze Meldungen (#186): Das Skript blendet sie hier unten über dem Inhalt ein; Vorleseprogramme sagen jede neue an, ohne den Cursor zu bewegen. In der Reihenfolge nach dem Inhalt, damit das × mit der Tastatur schnell erreichbar ist. #}
     <div class="a-kurz-bereich" id="kurzmeldungen" role="status" aria-live="polite" aria-atomic="false"></div>
     {% fussbereich %}
