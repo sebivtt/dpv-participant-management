@@ -113,6 +113,13 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 
 /* ---------- Inhalt ---------- */
 .a-main { margin-left: var(--leiste); padding: 40px max(24px, 4vw) 32px; box-sizing: border-box; max-width: calc(var(--leiste) + 1180px); }
+/* Ist der Inhalt kürzer als das Fenster, füllt er den Rest, und der Fußbereich steht am unteren Rand;
+   ist er länger, folgt der Fußbereich wie bisher nach dem Inhalt (#206). Am Handy zählt die Leiste oben mit. */
+body:has(> .a-main) { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.a-main { flex: 1 0 auto; display: flex; flex-direction: column; }
+.a-main-inhalt { flex: 1 0 auto; }
+/* Der Abstand nach unten kommt allein vom Fußbereich, wie vorher, als beide Abstände ineinanderfielen. */
+.a-main-inhalt > :last-child { margin-bottom: 0; }
 .a-kopf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; }
 .a-kopf h1 { margin: 0; font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
 .a-kopf p { margin: 0; color: var(--text-leise); font-size: 1.05rem; max-width: 62ch; }
