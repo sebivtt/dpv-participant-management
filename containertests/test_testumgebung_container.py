@@ -173,6 +173,11 @@ def test_daten_bleiben_nach_dem_aktualisieren_erhalten(testumgebung):
 
     assert _number_of_accounts(testumgebung) == before
 
+    # #199, Szenario S2: Keycloak hat neu gestartet; mit der festen Kennung landet Erika wieder
+    # in ihrem Konto, statt dass das Tool ein neues anlegt.
+    _login(ERIKA)
+    assert _number_of_accounts(testumgebung) == before
+
 
 # Szenario 5
 def test_ohne_pflichtangabe_startet_die_testumgebung_nicht(testumgebung):
