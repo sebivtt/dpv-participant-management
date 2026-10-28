@@ -162,24 +162,41 @@ def focus_visible(page: Page) -> dict:
     (WCAG 1.4.11). Liegt er mit Abstand außen, ist das der Hintergrund des nächsten Elements
     mit eigener Farbe darüber, meist die Seite selbst. Dazu kommt, wo das Element auf der
     ganzen Seite steht (oben, unten, links), für die Reihenfolge der Halte (#78).
+
+    Manche Bausteine zeichnen den Rahmen nicht am Element selbst, sondern außen um das Ganze,
+    etwa das Feld zum Antippen (#207). Hat das Element selbst keinen Rahmen, zählt deshalb der
+    nächste umgebende Rahmen, aber nur in der Farbe des Fokusrahmens (`--fokus`); ein anderer
+    Rahmen drumherum macht den Fokus nicht sichtbar. „rahmen“ nennt, wer ihn zeichnet
+    („selbst“ oder die erste Klasse des umgebenden Elements), „innen“, ob das Element selbst
+    einen Rahmen hat.
     """
     return page.evaluate(
         """() => {
             const el = document.activeElement;
-            const s = getComputedStyle(el);
             const box = el.getBoundingClientRect();
             const rgb = c => (c.match(/[\\d.]+/g) || []).slice(0, 4).map(Number);
             const lum = ([r, g, b]) => [r, g, b].map(v => v / 255)
                 .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
                 .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
-            let behind = s.outlineOffset && parseFloat(s.outlineOffset) < 0 ? el : el.parentElement;
+            const strong = e => { const t = getComputedStyle(e); return t.outlineStyle !== 'none' && parseFloat(t.outlineWidth) >= 2; };
+            const fokus = getComputedStyle(document.documentElement).getPropertyValue('--fokus').trim()
+                .match(/[\\da-f]{2}/gi).map(h => parseInt(h, 16));
+            let frame = el;
+            if (!strong(el)) {
+                let around = el.parentElement;
+                while (around && getComputedStyle(around).outlineStyle === 'none') around = around.parentElement;
+                if (around && strong(around) && rgb(getComputedStyle(around).outlineColor).slice(0, 3).join() === fokus.join()) frame = around;
+            }
+            const s = getComputedStyle(frame);
+            let behind = s.outlineOffset && parseFloat(s.outlineOffset) < 0 ? frame : frame.parentElement;
             while (behind && (rgb(getComputedStyle(behind).backgroundColor)[3] === 0)) behind = behind.parentElement;
             const ground = rgb(getComputedStyle(behind || document.body).backgroundColor);
-            const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
             const [a, b] = [lum(rgb(s.outlineColor)), lum(ground)].sort((x, y) => y - x);
             return {text: (el.innerText || el.value || el.getAttribute('aria-label') || '').trim().split('\\n')[0],
                     tag: el.tagName, kontrast: Math.round((a + 0.05) / (b + 0.05) * 100) / 100,
-                    sichtbar: outline && box.width > 1 && box.height > 1,
+                    sichtbar: strong(frame) && box.width > 1 && box.height > 1,
+                    rahmen: frame === el ? 'selbst' : frame.classList[0],
+                    innen: getComputedStyle(el).outlineStyle !== 'none',
                     oben: box.top + scrollY, unten: box.bottom + scrollY, links: box.left};
         }"""
     )
