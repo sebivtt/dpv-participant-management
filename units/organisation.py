@@ -154,21 +154,26 @@ class Organisation:
             return Mark(texts.MARK_COVERS, "ein")
         return None
 
-    def visible_leads(self, unit: Unit) -> list[dict]:
-        """Die Leitungen, die die Person bei dieser Organisation sieht; gesperrte nur im eigenen Bereich (Frage B)."""
+    def visible_leads(self, unit: Unit, without_locked: bool = False) -> list[dict]:
+        """Die Leitungen, die die Person bei dieser Organisation sieht; gesperrte nur im eigenen Bereich (Frage B).
+
+        `without_locked` lässt auch dort gesperrte Leitungen weg, etwa in den Kacheln einer
+        Leseseite, die nie gesperrte Leitungen zeigt (EH-28, unabhängige Prüfung).
+        """
         access = self.access(unit)
         if access not in (MANAGE, READ):
             return []
-        return [entry for entry in self.leads.get(unit.key, []) if access == MANAGE or not entry["locked"]]
+        show_locked = access == MANAGE and not without_locked
+        return [entry for entry in self.leads.get(unit.key, []) if show_locked or not entry["locked"]]
 
-    def leads_line(self, unit: Unit) -> str:
+    def leads_line(self, unit: Unit, without_locked: bool = False) -> str:
         """Die Zeile in der Gliederung, z. B. „Stammesleitung: Wirbelwind, Wiesel“ (A21); ohne Zugriff leer."""
         if self.access(unit) not in (MANAGE, READ):
             return ""
         role = LEAD_ROLE[unit.kind].label
         names = [
             texts.LOCKED_NAME % {"name": short_name(entry)} if entry["locked"] else short_name(entry)
-            for entry in self.visible_leads(unit)
+            for entry in self.visible_leads(unit, without_locked)
         ]
         if not names:
             return texts.NO_LEAD_SHORT % {"role": role}
@@ -219,7 +224,8 @@ class Organisation:
         kind_line = unit.get_kind_display()
         if parent is not None:
             kind_line = texts.KIND_IN % {"kind": kind_line, "parent": parent.name}
-        tiles = None if unit.kind == Kind.GROUP else [self._tile(child) for child in self.children.get(unit.pk, [])]
+        children = self.children.get(unit.pk, [])
+        tiles = None if unit.kind == Kind.GROUP else [self._tile(child, without_locked=access == READ) for child in children]
         return Page(
             unit=unit,
             access=access,
@@ -267,13 +273,13 @@ class Organisation:
         word = texts.RINGS if unit.kind == Kind.ASSOCIATION and unit.has_rings else CHILDREN_WORD[unit.kind]
         return texts.NOTHING_BELOW % {"unit": unit.name, "children": word}
 
-    def _tile(self, unit: Unit) -> Tile:
+    def _tile(self, unit: Unit, without_locked: bool) -> Tile:
         mark = self.mark(unit)
         covers = mark is not None and mark.kind == "ein"
         return Tile(
             label=unit.get_kind_display(),
             org=unit.name,
             href=self.href(unit),
-            way="" if covers else self.leads_line(unit),
+            way="" if covers else self.leads_line(unit, without_locked),
             mark=mark if covers else None,
         )

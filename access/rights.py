@@ -341,8 +341,10 @@ class Rights:
 
         Leitungen mit im Tool gesperrtem Konto stehen nur dabei, wo die Person Leitungen entfernen
         darf, also in ihrem Bereich (RO-10, RO-11), gekennzeichnet mit `locked`; alle anderen
-        erfahren nichts von der Sperre (#189, Frage B). Was die Verbandsleitung davon sieht,
-        entscheidet #94; bis dahin bleibt es für sie wie bisher.
+        erfahren nichts von der Sperre (#189, Frage B). Die Verbandsleitung sieht außerdem
+        gesperrte Bundesleitungen, Verbandsleitungen und Mitglieder des DPV-Veranstaltungsteams,
+        wie vor #189; gesperrte Leitungen von Ringen, Stämmen und Gruppen außerhalb ihres Bereichs
+        nicht mehr. Was sie davon zeigt, entscheidet #94 mit ihrer Seite.
         """
         if self.user is None:
             return Role.objects.none().values(*LEAD_FIELDS, **LEAD_NAMES)

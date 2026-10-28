@@ -630,6 +630,42 @@ def test_a17_zweite_gruppenleitung_frida_sieht_die_sperre_niemand_springt_ein(or
     assert [entry["name"] for entry in leads_on_page(page_tree(fritz, unit_address(org.falken)))] == ["Frida Falke"]
 
 
+@pytest.mark.rechtematrix("RO-22", "EH-28")
+def test_a17_frida_sieht_auf_der_leseseite_von_walhall_keine_sperre_in_den_kacheln(org):
+    """Unabhängige Prüfung: Die Leseseite zeigt nie gesperrte Leitungen, auch nicht in „Organisationen darunter“."""
+    frida = lead_member("frida.falke", org.falken, R.GROUP_LEAD, org.falken)
+    lock(org.falken_leitung)
+
+    root = page_tree(frida, unit_address(org.walhall))
+
+    assert header(root)["mark"] == "nur lesen"
+    assert "gesperrt" not in below_text(root) and "Funke" not in below_text(root)
+    assert "Frida Falke" in below_text(root)
+    assert "Funke (gesperrt)" in nodes(page_tree(frida, unit_address(org.falken)))["Sippe Falken"]["leads"]
+
+
+@pytest.mark.rechtematrix("RO-22", "EH-03")
+def test_verbandsleitung_mit_gruppenleitung_sieht_nur_ihren_bund_ohne_gesperrte_bundesleitung(org):
+    """Unabhängige Prüfung: Die Liste der Verbandsleitung enthält gesperrte Bundesleitungen aller Bünde; die Seite zeigt sie nicht."""
+    give(org.verbandsleitung, R.MEMBER, org.falken)
+    give(org.verbandsleitung, R.GROUP_LEAD, org.falken)
+    lock(org.bundesleitung)
+    lock(org.mosaik_leitung)
+
+    overview = page_tree(org.verbandsleitung)
+    boreas = page_tree(org.verbandsleitung, unit_address(org.boreas))
+    falken = page_tree(org.verbandsleitung, unit_address(org.falken))
+
+    for root in (overview, boreas, falken):
+        text = _text(root)
+        for hidden in ("Brummbär", "gesperrt", "DPBM Mosaik", "Möwe", "Mona"):
+            assert hidden not in text, hidden
+    assert "Organisation" in nav_labels(overview)
+    assert "@example.org" not in _text(unit_page(boreas))
+    assert "fiete.falke@example.org" in _text(unit_page(falken))
+    assert_like_missing(org.verbandsleitung, unit_address(org.mosaik))
+
+
 def test_a18_alle_darunter_gesperrt_bruno_springt_fuer_falken_und_walhall_ein(org):
     for user in (org.falken_leitung, org.walhall_leitung, org.willi):
         lock(user)
