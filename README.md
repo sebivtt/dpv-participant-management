@@ -109,9 +109,20 @@ Jede Arbeitskopie hat ihre eigene Test-Datenbank, Name `test_dpv_` und zwölf Ze
    ```
    Danach: keine Ausgabe. Schritt 1 zeigt die Datenbank nicht mehr.
 
+**Lokale Datenbank neu anlegen** (nur bei Bedarf, etwa wenn es ein erfundenes Konto mehrfach gibt, mit einer Zahl im Benutzernamen wie `erika3`)
+
+Bis #199 bekamen die erfundenen Konten bei jedem Start von Keycloak eine neue Kennung, und das Tool legte beim nächsten Login jedes Mal ein neues Konto an. Seitdem haben sie feste Kennungen. Ein Keycloak, der schon lief, kennt sie aber erst, nachdem er einmal mit Schritt 12 angehalten und wieder gestartet wurde; die alten Doppelkonten bleiben, bis die Datenbank einmal neu angelegt ist. Beides erledigen die beiden Schritte hier. Das löscht alle Daten der normalen Entwicklung, also Konten, Rollen, Verband und Bünde (danach bei Bedarf wieder anlegen wie unter „Verband und Bünde anlegen“), dazu übrige Test-Datenbanken. Die Testumgebung im Container ist davon nicht betroffen; für sie gibt es Schritt T6. Voraussetzung: Docker läuft (Schritt 6), und gerade läuft kein `./pruefen.sh`.
+
+1. Datenbank und Keycloak anhalten und die Datenbank löschen.
+   ```bash
+   docker compose -f dev/docker-compose.yml down --volumes
+   ```
+   Danach: `Container dpv-dev-postgres-1 Removed`, `Container dpv-dev-keycloak-1 Removed`, `Network dpv-dev_default Removed` und `Volume dpv-dev_pgdata Removed`.
+2. Weiter mit Schritt 7 und 8: Sie legen eine leere Datenbank an und bringen sie auf den neuesten Stand. Beim nächsten Login legt das Tool je erfundenem Konto genau ein Konto an, mit dem Benutzernamen wie beim Login und ohne Zahl.
+
 **Aufhören**
 
-12. Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten. Keycloak beginnt beim nächsten Start wieder mit den Konten aus der Tabelle; selbst registrierte Konten sind dann weg.
+12. Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten. Keycloak beginnt beim nächsten Start wieder mit den Konten aus der Tabelle; sie behalten ihre feste Kennung, man landet also wieder im selben Konto (#199). Selbst registrierte Konten sind dann weg.
     ```bash
     docker compose -f dev/docker-compose.yml down
     ```

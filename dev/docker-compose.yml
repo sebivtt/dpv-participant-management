@@ -9,6 +9,8 @@
 # erfundene Konten bei jedem Start aus dev/keycloak/dpv-realm.json. So entsteht die
 # Testumgebung immer gleich, auch bei einer schon bestehenden Datenbank, und das
 # Einrichtungsskript aus dem alten Repo entfällt.
+# Die erfundenen Konten haben dort feste Kennungen, damit das Tool sie nach einem Neustart
+# wiedererkennt (#199).
 name: dpv-dev
 
 services:

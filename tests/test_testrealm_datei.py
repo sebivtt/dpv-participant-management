@@ -99,6 +99,13 @@ def test_genau_vier_erfundene_konten_mit_bestaetigter_mail():
         assert user["enabled"] is True
 
 
+def test_konten_haben_keine_festen_kennungen():
+    # Feste Kennungen bekommt nur die Datei für den eigenen Rechner (#199, Szenario S6); hier
+    # vergibt der Keycloak des DPV sie selbst (#62).
+    for user in load_realm()["users"]:
+        assert "id" not in user, user["username"]
+
+
 def test_konten_haben_keine_rollen_und_keine_pflichtschritte():
     for user in load_realm()["users"]:
         assert not user.get("realmRoles"), user["username"]

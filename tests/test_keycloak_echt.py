@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from tests.keycloak_fake import RETURN, start_login
+from tests.test_dev_realm_datei import ACCOUNT_IDS
 from tests.localhost_browser import BrowserOnLocalhost
 
 pytestmark = pytest.mark.django_db
@@ -88,6 +89,20 @@ def test_erika_meldet_sich_wirklich_ueber_keycloak_an(client, browser):
     assert "Hallo Erika!" in page
     assert "erika.testfrau@example.org" in client.get("/profil/").content.decode()  # seit #96 auf „Mein Profil“
     assert SocialAccount.objects.get().uid != "erika.testfrau"
+
+
+@pytest.mark.parametrize(
+    ("username", "password"),
+    [("erika.testfrau", "testpasswort-erika"), ("max.testmann", "testpasswort-max")],
+)
+def test_login_verknuepft_das_konto_mit_der_festen_kennung_aus_der_datei(client, browser, username, password):
+    # #199, Szenarien S1 und S3: Keycloak übernimmt die feste Kennung beim Einlesen, also landet
+    # der Login auch nach einem Neustart von Keycloak wieder im selben Konto.
+    _sign_in(client, browser, username, password)
+
+    account = SocialAccount.objects.get()
+    assert account.uid == ACCOUNT_IDS[username]
+    assert account.user.username == username
 
 
 def test_konto_ohne_mail_wird_wirklich_abgelehnt(client, browser):
