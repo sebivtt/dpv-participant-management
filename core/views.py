@@ -364,7 +364,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "antippfeld": {
-        "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180],
+        "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180, 207],
         "purpose": _("Ein einzelnes Feld auf einer Seite mit Angaben: in Ruhe wie eine Angabe, angetippt eine "
                      "Eingabe mit „Verwerfen“ und „Speichern“."),
         "pages": [_("Mein Profil")],

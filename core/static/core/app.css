@@ -334,7 +334,10 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-antippfeld .form-label { margin: 0 0 6px; color: var(--text-leise); font-size: .9rem; font-weight: 700; }
 .a-antippfeld-gruppe { display: flex; align-items: stretch; min-width: 0; min-height: 46px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
 .a-antippfeld-gruppe:hover, .a-antippfeld.ist-offen .a-antippfeld-gruppe { border-color: var(--dpv); }
-.a-antippfeld-gruppe:has(.form-control:focus) { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
+/* Genau eine Fokusmarkierung (#207): der kräftige Fokusrahmen außen um das ganze Feld, in Ruhe wie
+   offen, damit er beim Öffnen nicht springt; innen keine zweite und kein blasser Schein. */
+.a-antippfeld-gruppe:has(.a-antippfeld-ruhe:focus-visible, .form-control:focus) { border-color: var(--dpv); outline: 3px solid var(--fokus); outline-offset: 2px; }
+.a-antippfeld-ruhe:focus-visible, .a-antippfeld .form-control:focus-visible { outline: none; }
 .a-antippfeld-ruhe, .a-antippfeld-eingabe { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 0 0 11px; }
 .a-antippfeld-ruhe { border: 0; border-radius: var(--radius-klein) 0 0 var(--radius-klein); background: transparent; color: var(--text); font-size: .9rem; text-align: left; }
 .a-antippfeld-ruhe:hover { background: var(--dpv-hauch); }
@@ -345,8 +348,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-antippfeld-leeren .ic { width: 17px; height: 17px; }
 .a-antippfeld-leeren:hover:not(:disabled) { background: var(--dpv-hauch); color: var(--dpv); }
 .a-antippfeld-leeren:disabled { color: var(--entwurf-rand); cursor: default; }
-/* Fokus innen, damit der Rahmen der Gruppe ihn nicht verdeckt */
-.a-antippfeld-gruppe :focus-visible { outline-offset: -3px; }
+/* Der ×-Knopf ist ein eigener Knopf und behält seinen Fokusrahmen, innen, damit der Rahmen der
+   Gruppe ihn nicht verdeckt; das Feld daneben ist dann nicht markiert (#207). */
+.a-antippfeld-leeren:focus-visible { outline-offset: -3px; }
 .a-antippfeld .invalid-feedback { display: block; }
 /* Mit Fehler am Feld wird der äußere Rahmen rot, nicht die Eingabe darin */
 .a-antippfeld .form-control.is-invalid, .a-antippfeld .form-control.is-invalid:focus { border: 0; background-image: none; box-shadow: none; }
