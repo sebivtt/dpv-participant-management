@@ -304,11 +304,11 @@ def test_wer_das_recht_fuer_einen_bereich_verliert_sieht_kein_zugriff(org):
 def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
     """Ruft jede Adresse des Tools mit Login als viele Personen auf, einmal mit echten, einmal mit erfundenen Kennungen.
 
-    Steht in einer Adresse eine Kennung (`<key:…>`), kommt dort ebenfalls eine echte bzw. erfundene hinein.
-    Heute hat keine Adresse des Tools eine Kennung; geprüft werden dann nur die Formulare. Der Teil
-    für Adressen ist Absicherung für spätere Seiten und setzt überall die erste Kennung aus `real`
-    ein, bei Personen-Adressen also womöglich die einer Einheit. Das schwächt den Vergleich, macht
-    ihn aber nicht falsch: Auch dann muss die Antwort gleich sein.
+    Steht in einer Adresse eine Kennung (`<key:…>`), kommt dort ebenfalls eine echte bzw. erfundene hinein,
+    überall die erste Kennung aus `real`, bei Personen-Adressen also womöglich die einer Einheit.
+    Verglichen werden dort nur die Formulare: Seit #189 gibt es eine Seite mit Kennung, die eine
+    Leitung mit der echten Kennung lesend sehen darf (Sippe Falken für Wanda); dass sie es ohne
+    Recht nicht tut, prüfen die Tests „wie nicht vorhanden“ je Adresse.
     """
     missing = dict.fromkeys(real, MISSING)
     give(org.max, R.ADMIN)
@@ -318,8 +318,11 @@ def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
             continue
         address = _example_address(pattern)
         with_real = address.replace(MISSING, next(iter(real.values()))) if has_key(pattern) else address
+        # Nur die Formulare (die letzten beiden Wege von answers()), wenn die Adresse eine Kennung hat.
+        forms_only = slice(2, None) if has_key(pattern) else slice(None)
         for user in users:
-            assert answers(user, with_real, real) == answers(user, address, missing), (pattern, user.username)
+            shown, expected = answers(user, with_real, real), answers(user, address, missing)
+            assert shown[forms_only] == expected[forms_only], (pattern, user.username)
 
 
 @pytest.mark.rechtematrix("EP-09")

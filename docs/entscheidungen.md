@@ -6,6 +6,31 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-28 · Seite „Organisation“: Gliederung und Seite je Organisation, nur Anzeige (#189)
+
+**Entscheidung** (Sebastian, Klärung in #93 und #189: [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441094033), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441100484), [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6441101266); bei der Umsetzung am 28.10.2026 [Bausteine und Anmerkungen zum Vorschlag](https://github.com/sebivtt/dpv-participant-management/issues/189#issuecomment-6464928798)):
+
+1. **„Organisationen darunter“** nutzt die Rollenkachel von „Mein Profil“, erweitert um „anklickbar“ und „ohne Zugriff grau“ (Antwort „Rollenkachel erweitern (Empfehlung)“).
+2. **Die Rolle hinter jeder Leitung** ist die Rollenmarke von „Mein Profil“ (Antwort „Rollenmarke übernehmen (Empfehlung)“).
+3. **Neue Bausteine** nach dem Zielbild: Gliederung, Marke, Leitung in einer Liste, Kopf einer Organisationsseite; Sebastian hat sie an einem Vorschlag aus den echten Vorlagen geprüft.
+4. **Keine Marke „Deine Rolle: …“** in Gliederung und Seitenkopf; die eigene Rolle steht bei den Leitungen mit „das bist du“ (ändert A23).
+5. **Die Sätze ohne Leitung beginnen mit der Art,** z. B. „Die Gruppe Sippe Falken hat keine Gruppenleitung. …“ (ändert den Wortlaut von A10, A14, A16).
+6. **Leitung in zwei Zeilen:** oben Fahrtenname, Name und „das bist du“, darunter links die Rolle und rechts die Mail.
+
+**Technische Wahl** (KI):
+
+- **Alle Rechte aus der zentralen Prüfung:** `Rights.unit_access()` sagt je Einheit „verwalten“ (eigener Bereich), „nur lesen“ (Kette nach oben) oder „nur der Name“ (übriger eigener Bund); `opens_unit()`, `has_lead()` und `covering_unit()` kommen dazu. `leads()` gibt zusätzlich Benutzername, die Kennungen von Konto und Einheit und `locked` heraus, weiter keine Mail und keine internen Nummern; gesperrte Leitungen nur im eigenen Bereich. Die Mail holt die Seite nur über `persons()` und zeigt sie nur im eigenen Bereich.
+- **Ein Modul ordnet für die Vorlagen** (`units/organisation.py`): lädt den eigenen Bund, die Leitungen und die Mails mit je einer Abfrage, gleich viele bei jeder Größe des Bundes.
+- **Die Seiten stehen in `core/views.py`** bei den übrigen Seiten; die App „units“ hat weiter keine Adressen (S15 aus #88).
+- **Nur lesende Aufrufe:** Jede andere Anfrage an die Seite einer Organisation zeigt erst nach der Rechteprüfung „nicht gefunden“, so wie eine Kennung, die es nicht gibt (AV5). Benennen und Entfernen kommen mit eigenen Adressen (#190, #191).
+- **Übersicht am PC mit Seite daneben:** Unter `/organisation/` steht neben der Gliederung die oberste Organisation, die man leitet, wie im Zielbild; am Handy nur die Gliederung, für Vorleseprogramme mit unsichtbarer Überschrift „Organisation“.
+- **Gliederung rollt zur geöffneten Organisation,** wenn sie kürzer ist als der Baum (am Vorschlag aufgefallen).
+- **Die Rechtematrix** hat neue Zeilen für die Leseseite (EH-28) und gesperrte Leitungen (RO-21, RO-22). Was die Verbandsleitung von gesperrten Leitungen sieht, bleibt wie bisher und entscheidet #94.
+
+**Begründung:** Rechte an einer Stelle, damit Gliederung, Seite und spätere Teile (#190, #191, #95) nicht auseinanderlaufen; bekannte Bausteine statt neuer, wo sie passen.
+
+**Umsetzung:** `access/rights.py`, `units/organisation.py`, `units/texts.py`, `core/views.py`, `core/navigation.py`, `config/urls.py`, `core/templates/core/organisation.html`, `_gliederung.html`, `_knoten.html`, `_kennmarke.html`, `_leitung.html`, `_orgakopf.html`, `_rollenkachel.html`, `bausteine.html`, `core/static/core/app.css`, `app.js`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/`; Tests in `tests/test_organisation.py` und `rauchtests/test_organisation.py`.
+
 ## 2026-10-27 · Kurze Meldungen nach einer eigenen Handlung, Fehlermeldungen an der Stelle der Handlung (#186)
 
 **Entscheidung** (Sebastian, Klärung von #186 am 27.10.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441936833), [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6441930967), [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442085509), [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/186#issuecomment-6442091320)). Ergänzt den Eintrag zu #165 vom 26.10.2026:

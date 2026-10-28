@@ -1,0 +1,11 @@
+{% load i18n layout %}{# Leitung in einer Liste (#189): Kreis mit dem Anfangsbuchstaben; in der ersten Zeile über die ganze Breite groß der Fahrtenname, kleiner und grauer der Name dahinter (wie die Kopfzeile mit Name) und bei sich selbst „das bist du“; in der zweiten links die Rolle als Rollenmarke, rechts die Mail, nur wo die Seite sie zeigen darf (Sebastian am Vorschlag, 28.10.2026). Daten aus units/organisation.py, Lead. Steht in einer Liste <ul class="a-leitungen">. #}
+<li class="a-leitung{% if lead.locked %} ist-gesperrt{% endif %}">
+  <span class="a-avatar" aria-hidden="true">{{ lead.initial }}</span>
+  <div class="a-leitung-wer">
+    <p class="a-leitung-zeile"><span class="a-leitung-name">{{ lead.name }}</span>{% if lead.extra %} <span class="a-anzeigename-zusatz">({{ lead.extra }})</span>{% endif %}{% if lead.is_self %} <span class="a-leise">· {% translate "das bist du" %}</span>{% endif %}</p>
+    <div class="a-leitung-unten">
+      <p class="a-leitung-rolle"><span class="a-rollenmarke">{{ lead.role }}</span>{% if lead.locked_mark %}{% include "core/_kennmarke.html" with mark=lead.locked_mark %}{% endif %}</p>
+      {% if lead.mail %}<a class="a-leitung-mail" href="mailto:{{ lead.mail }}">{% icon "mail" %}<span>{{ lead.mail }}</span></a>{% endif %}
+    </div>
+  </div>
+</li>

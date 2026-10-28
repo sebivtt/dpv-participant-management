@@ -72,6 +72,15 @@ Protokoll, Szenarien und Zielbild in #186, Zielbild als `docs/zielbilder/kurze-m
 - **Ohne Skript** steht sie fest oben auf der Seite wie eine feste Meldung, bis zum nächsten Seitenwechsel.
 - **Fehlermeldung an der Stelle der Handlung:** Der Bildschirm zeigt die Stelle, der Cursor steht im Feld, und Vorleseprogramme sagen sie an. Sie verschwindet erst beim erneuten Versuch oder beim Seitenwechsel. So übersieht man sie auch auf einer langen Seite nicht und wird nicht nach oben geholt.
 
+### Seite „Organisation“ (#189, 28.10.2026)
+
+Zielbild als `docs/zielbilder/organisation.html`, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10.2026 zu #189. Neue Bausteine im Bausteinkatalog: Gliederung, Marke, Leitung in einer Liste, Kopf einer Organisationsseite; die Rollenkachel kann seitdem anklickbar und „ohne Zugriff“ sein.
+
+- **Aufbau am PC:** links die Gliederung, rechts die Seite der Organisation; die Seite bestimmt die Höhe, die Gliederung ist mindestens 360 Pixel hoch und rollt innen.
+- **Am Handy** zuerst nur die Gliederung; die Seite einer Organisation steht allein, mit „‹ Gliederung“ zurück.
+- **Marken** sind kleine runde Pillen mit Wort: „Du springst ein“ (gelblich), „nur lesen“ (grau, mit Schloss), „gesperrt“ (rot). Die eigene Rolle bekommt keine Marke.
+- **Leitungen** in zwei Zeilen: oben Fahrtenname, Name und „das bist du“, darunter links die Rolle als Rollenmarke, rechts die Mail.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

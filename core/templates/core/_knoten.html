@@ -1,0 +1,12 @@
+{% load i18n %}{# Eine Organisation in der Gliederung (#189) mit den Organisationen darunter; bindet sich für diese selbst ein. Anklickbar nur mit Adresse; ohne Zugriff nur der Name, und alle solchen stehen zugeklappt unter „… weitere ohne Zugriff“ (A22). Daten aus units/organisation.py, Node. #}
+{% if node.href %}<a class="a-knoten{% if node.access == "manage" %} ist-verwalten{% endif %}{% if node.mark.kind == "ein" %} ist-einspringen{% endif %}" href="{{ node.href }}"{% if node.current %} aria-current="page"{% endif %}>{% else %}<div class="a-knoten ist-nurname">{% endif %}
+  <span class="a-knoten-kopf"><span class="a-knoten-art">{{ node.kind }}</span>{% if node.mark %}{% include "core/_kennmarke.html" with mark=node.mark %}{% endif %}</span>
+  <span class="a-knoten-name">{{ node.unit.name }}</span>
+  {% if node.leads %}<span class="a-knoten-leitung">{{ node.leads }}</span>{% endif %}
+{% if node.href %}</a>{% else %}</div>{% endif %}
+{% if node.children or node.folded %}<ul>
+  {% for child in node.children %}<li>{% include "core/_knoten.html" with node=child %}</li>{% endfor %}
+  {% if node.folded %}<li><details class="a-weitere"><summary>{% blocktranslate count count=node.folded|length %}{{ count }} weitere ohne Zugriff{% plural %}{{ count }} weitere ohne Zugriff{% endblocktranslate %}</summary><ul>
+    {% for child in node.folded %}<li>{% include "core/_knoten.html" with node=child %}</li>{% endfor %}
+  </ul></details></li>{% endif %}
+</ul>{% endif %}
