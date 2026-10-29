@@ -110,6 +110,16 @@ def test_im_bausteinkatalog_wie_auf_mein_profil(request, browser_name, device):
     expect(section.locator(".form-control")).to_be_focused()
     _nur_aussen(page)
     if device == "pc":
+        # Szenarien 2 und 4 nur mit der Tastatur: Nach Esc stand der Fokus zwar auf dem Feld, aber
+        # Firefox zeigt dort keinen Rahmen, wenn die Bedienung mit der Maus begann (Prüfung auf GitHub).
+        # Deshalb neu laden und ab der Überschrift des Abschnitts nur Tab drücken.
+        page.reload()
+        section.get_by_role("heading", level=2).click()
+        _tab_to_element(page, "section[aria-labelledby='h-antippfeld'] [data-oeffnen]")
+        geschlossen = _nur_aussen(page)
+        page.keyboard.press("Enter")
+        expect(section.locator(".form-control")).to_be_focused()
+        assert _nur_aussen(page) == geschlossen, "Rahmen springt beim Öffnen"
         page.keyboard.press("Escape")
         expect(section.locator("[data-oeffnen]")).to_be_focused()
         _nur_aussen(page)
