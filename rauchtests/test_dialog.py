@@ -3,9 +3,11 @@
 Ob die Seite hinter einem offenen Dialog mitrollt und wo der Dialog senkrecht steht, entscheidet erst
 der Browser; deshalb lässt es sich nur hier prüfen. Die Nummern verweisen auf die Szenarien zu #210:
 D1 bis G5 vom 28.10.2026 (Mitrollen), M1 bis M8 vom 29.10.2026 (Dialog mittig). Jeder Test läuft in
-Chromium, Firefox und WebKit (conftest.py). Am PC wird mit dem Mausrad gerollt, am Handy in Chromium
-mit einer echten Wischgeste. WebKit kennt im Handy-Modus weder Mausrad noch Wischgeste; dort prüft der
-Test nur die Regel, die das Rollen sperrt (app.css). Alle Konten und Daten sind erfunden.
+Chromium, Firefox und WebKit (conftest.py). Gerollt wird mit dem Mausrad, auch mit Handy-Bildschirm.
+Eine Wischgeste bewegte auf GitHub (Linux ohne Bildschirm) nichts und hätte das Stillstehen nur scheinbar
+bestätigt. WebKit kennt im Handy-Modus kein Mausrad; dort prüft der Test nur die Regel, die das Rollen
+sperrt (app.css). Dass das Mausrad überhaupt rollt, zeigen die Tests, in denen die Seite rollen soll
+(G1, G2, G3, G4). Alle Konten und Daten sind erfunden.
 """
 
 import pytest
@@ -59,17 +61,11 @@ def _gesperrt(page: Page) -> bool:
 
 
 def _rollen(page: Page, x: float, y: float, mal: int = 3) -> None:
-    """Rollt an der Stelle x, y nach unten: am Handy in Chromium mit dem Finger, sonst mit dem Mausrad."""
-    if _am_handy(page) and _browser(page) == "chromium":
-        cdp = page.context.new_cdp_session(page)
-        for _ in range(mal):
-            cdp.send("Input.synthesizeScrollGesture", {"x": x, "y": y, "yDistance": -300, "gestureSourceType": "touch"})
-        cdp.detach()
-    else:
-        page.mouse.move(x, y)
-        for _ in range(mal):
-            page.mouse.wheel(0, 400)
-            page.wait_for_timeout(150)
+    """Rollt an der Stelle x, y mit dem Mausrad nach unten."""
+    page.mouse.move(x, y)
+    for _ in range(mal):
+        page.mouse.wheel(0, 400)
+        page.wait_for_timeout(150)
     page.wait_for_timeout(300)
 
 
@@ -90,8 +86,8 @@ def _seite_steht(page: Page, dialog) -> None:
     """Rollt über dem Dialog und daneben; die Seite dahinter bewegt sich dabei nicht."""
     _lang(page)
     assert page.evaluate("document.scrollingElement.scrollHeight") > page.viewport_size["height"] + 1000
+    assert _gesperrt(page), "Die Seite ist hinter dem Dialog nicht gesperrt"
     if not _kann_rollen(page):
-        assert _gesperrt(page), "Die Seite ist hinter dem Dialog nicht gesperrt"
         return
     box = dialog.bounding_box()
     _rollen(page, box["x"] + box["width"] / 2, box["y"] + 30)
