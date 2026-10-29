@@ -119,8 +119,9 @@ body:has(> .a-main) { display: flex; flex-direction: column; min-height: 100vh; 
 .a-main { flex: 1 0 auto; display: flex; flex-direction: column; }
 .a-main-inhalt { flex: 1 0 auto; }
 /* Der Abstand nach unten kommt allein vom Fußbereich, wie vorher, als beide Abstände ineinanderfielen.
-   Das greift nur beim direkten letzten Teil; liegt der Abstand tiefer, braucht die Seite eine eigene Regel (wie „Organisation“). */
-.a-main-inhalt > :last-child { margin-bottom: 0; }
+   Das greift nur beim direkten letzten Teil; liegt der Abstand tiefer, braucht die Seite eine eigene Regel (wie „Organisation“).
+   Ein Dialog ist ausgenommen: Er liegt über der Seite, und ohne Abstand unten stand er am unteren Fensterrand (#210). */
+.a-main-inhalt > :last-child:not(dialog) { margin-bottom: 0; }
 .a-kopf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; }
 .a-kopf h1 { margin: 0; font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
 .a-kopf p { margin: 0; color: var(--text-leise); font-size: 1.05rem; max-width: 62ch; }
@@ -411,6 +412,13 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 dialog.a-dialog { position: fixed; inset: 0; z-index: 60; width: min(580px, calc(100% - 32px)); max-height: calc(100% - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche); color: var(--text); box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
 dialog.a-dialog:not(:modal) { box-shadow: 0 0 0 100vmax rgb(27 37 50 / 55%), 0 20px 45px rgb(18 56 95 / 22%); }
 dialog.a-dialog::backdrop { background: rgb(27 37 50 / 55%); }
+/* Solange ein Dialog oder das Handy-Menü offen ist, rollt die Seite dahinter nicht mit, auch ohne Skript (#210).
+   Ist der Dialog länger als das Fenster, rollt nur er, und an seinem Ende geht das Rollen nicht an die Seite weiter.
+   Ohne Skript ist die Seite dahinter nicht gesperrt wie bei showModal; sie nimmt deshalb auch keine Maus an,
+   sonst rollten Seitenleiste oder Gliederung mit. Die Vorschauen im Bausteinkatalog sind keine offenen Dialoge. */
+html:has(dialog.a-dialog[open]:not(.ist-vorschau), dialog.a-drawer[open]) { overflow: hidden; }
+html:has(dialog.a-dialog[open]:not(.ist-vorschau):not(:modal)) body { pointer-events: none; }
+dialog.a-dialog, dialog.a-drawer { overscroll-behavior: contain; pointer-events: auto; }
 /* Im Bausteinkatalog an seinem Platz in der Seite, ohne Abdunkeln */
 dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max-width: 580px; margin: 0; box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
 .a-dialog-kopf h3 { margin: 0; font-size: 1.15rem; }
