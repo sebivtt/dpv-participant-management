@@ -211,7 +211,7 @@ def test_im_bausteinkatalog_bleiben_die_vorschauen_in_der_seite_und_sie_rollt(pc
     vorschau = pc.locator("dialog.a-dialog.ist-vorschau").first
     expect(vorschau).to_be_visible()
     oben_in_der_seite = vorschau.evaluate("d => d.getBoundingClientRect().top + scrollY")
-    _rollen(pc, 683, 450)
+    _rollen(pc, pc.viewport_size["width"] / 2, pc.viewport_size["height"] / 2)
     assert pc.evaluate("scrollY") > 0, "Die Seite des Katalogs rollt nicht"
     vorschau.scroll_into_view_if_needed()
     assert vorschau.evaluate("d => getComputedStyle(d).position") == "static"
