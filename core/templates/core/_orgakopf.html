@@ -1,8 +1,8 @@
-{% load i18n %}{# Kopf einer Organisationsseite (#189): der Pfad nach oben, der Name groß, darunter Art und Organisation darüber, rechts die Marke. Mit heading=2 oder 3 steht der Name als Überschrift dieser Ebene, etwa neben einer unsichtbaren Seitenüberschrift oder im Bausteinkatalog. Daten aus units/organisation.py, Page. #}
+{% load i18n %}{# Kopf einer Organisationsseite (#189): der Pfad nach oben, für die Verbandsleitung mit dem Verband als erster Ebene (#218), der Name groß, darunter Art und Organisation darüber, rechts die Marke. Mit heading=2 oder 3 steht der Name als Überschrift dieser Ebene, etwa neben einer unsichtbaren Seitenüberschrift oder im Bausteinkatalog; name_id ersetzt dort die Kennung „h-orga“ des Namens, wenn der Kopf zweimal steht. Daten aus units/organisation.py, Page. #}
 <div class="a-flaeche a-orga-kopf">
   <p class="a-pfad"><span>{% translate "Organisation" %}</span>{% for name, href in page.path %}<span aria-hidden="true">›</span>{% if href %}<a href="{{ href }}">{{ name }}</a>{% else %}<span>{{ name }}</span>{% endif %}{% endfor %}</p>
   <div class="a-orga-kopf-zeile">
-    <div>{% if heading == 2 %}<h2 class="a-orga-name" id="h-orga">{{ page.unit.name }}</h2>{% elif heading == 3 %}<h3 class="a-orga-name" id="h-orga">{{ page.unit.name }}</h3>{% else %}<h1 class="a-orga-name" id="h-orga">{{ page.unit.name }}</h1>{% endif %}<p class="a-unterzeile">{{ page.kind_line }}</p></div>
+    <div>{% if heading == 2 %}<h2 class="a-orga-name" id="{{ name_id|default:"h-orga" }}">{{ page.unit.name }}</h2>{% elif heading == 3 %}<h3 class="a-orga-name" id="{{ name_id|default:"h-orga" }}">{{ page.unit.name }}</h3>{% else %}<h1 class="a-orga-name" id="{{ name_id|default:"h-orga" }}">{{ page.unit.name }}</h1>{% endif %}<p class="a-unterzeile">{{ page.kind_line }}</p></div>
     {% if page.mark %}{% include "core/_kennmarke.html" with mark=page.mark %}{% endif %}
   </div>
 </div>

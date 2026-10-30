@@ -99,6 +99,8 @@ class Page:
     # Der Knopf „… benennen“, nur wo die Person Leitungen benennen darf (#190).
     appoint_href: str | None = None
     appoint_label: str = ""
+    # Der Knopf oben am Handy, immer zu „Organisation“ (#218).
+    back_label: str = texts.BACK_TO_OUTLINE
 
 
 @dataclass
@@ -252,10 +254,19 @@ class Organisation:
             kind_line = texts.KIND_IN % {"kind": kind_line, "parent": parent.name}
         children = self.children.get(unit.pk, [])
         tiles = None if unit.kind == Kind.GROUP else [self._tile(child, without_locked=access == READ) for child in children]
+        path = [(entry.name, self.href(entry)) for entry in self._above(unit)]
+        back_label = texts.BACK_TO_OUTLINE
+        if self.rights.is_federation_lead():
+            # Für die Verbandsleitung führt „Organisation“ zur Seite „Verband“; deshalb steht der
+            # Verband als erste Ebene im Pfad, und der Knopf am Handy heißt danach (#218).
+            federation = Unit.objects.filter(kind=Kind.FEDERATION).first()
+            if federation is not None:
+                path.insert(0, (federation.name, reverse("organisation")))
+            back_label = texts.BACK_TO_FEDERATION
         return Page(
             unit=unit,
             access=access,
-            path=[(entry.name, self.href(entry)) for entry in self._above(unit)],
+            path=path,
             kind_line=kind_line,
             mark=self.mark(unit),
             leads=self._leads_of(unit, access),
@@ -264,6 +275,7 @@ class Organisation:
             empty=self._empty(unit) if tiles == [] else "",
             appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
             appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
+            back_label=back_label,
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:

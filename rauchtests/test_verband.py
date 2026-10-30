@@ -175,3 +175,54 @@ def test_am_pc_die_rolle_im_team_abgeben(pc):
 
     pc.wait_for_url(f"{BASE}/profil/")
     expect(pc.locator(".a-kurz")).to_contain_text("Du bist nicht mehr im DPV-Veranstaltungsteam.")
+
+
+# ---------- #218: zurück zur Seite „Verband“ ----------
+
+
+def _erika_leads_boreas_too() -> dict:
+    """Erika ist Verbandsleitung und Bundesleitung von Boreas wie Vera in Szenario 1; der Verband hat den langen Namen aus Szenario 8."""
+    erika = get_user_model().objects.get(username="erika.testfrau")
+    dpv = unit(U.FEDERATION, "Deutscher Pfadfinderverband")
+    boreas = unit(U.ASSOCIATION, "Pfadfinderbund Boreas", dpv)
+    walhall = unit(U.TROOP, "Walhall", boreas)
+    give(erika, R.FEDERATION_LEAD, dpv)
+    give(erika, R.MEMBER, boreas)
+    give(erika, R.ASSOCIATION_LEAD, boreas)
+    return {"boreas": boreas, "walhall": walhall}
+
+
+def test_am_handy_nur_mit_der_tastatur_von_walhall_zurueck_zur_seite_verband(handy):
+    login(handy)
+    units = _erika_leads_boreas_too()
+    walhall = f"{ADDRESS}{units['walhall'].key}/"
+    # Der lange Name bricht im Pfad um, auch auf einem schmalen Handy (Szenario 8).
+    handy.set_viewport_size({"width": 340, "height": handy.viewport_size["height"]})
+    handy.goto(walhall)
+    expect(handy.locator(".a-pfad a").first).to_have_text("Deutscher Pfadfinderverband")
+    _no_side_scroll(handy)
+    handy.set_viewport_size(HANDY["viewport"])
+    handy.goto(walhall)
+    _no_side_scroll(handy)
+    assert run_axe(handy) == []
+
+    stations = _stations_to_element(handy, ".a-orga-zurueck", steps=20)
+    _all_visible(stations)
+    expect(handy.locator(".a-orga-zurueck")).to_have_text("‹ Verband")
+    handy.keyboard.press("Enter")
+
+    handy.wait_for_url(ADDRESS)
+    expect(handy.locator("h1")).to_have_text("Verband")
+
+
+def test_am_pc_fuehrt_der_verband_im_pfad_zur_seite_verband(pc):
+    login(pc)
+    units = _erika_leads_boreas_too()
+    pc.goto(f"{ADDRESS}{units['boreas'].key}/")
+    expect(pc.locator(".a-orga-zurueck")).to_be_hidden()
+    assert run_axe(pc) == []
+
+    pc.locator(".a-pfad").get_by_role("link", name="Deutscher Pfadfinderverband").click()
+
+    pc.wait_for_url(ADDRESS)
+    expect(pc.locator("h1")).to_have_text("Verband")

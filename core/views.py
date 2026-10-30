@@ -616,9 +616,10 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "orgakopf": {
-        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189],
+        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
-                     "Art und Organisation darüber, rechts die Marke."),
+                     "Art und Organisation darüber, rechts die Marke. Für die Verbandsleitung steht der Verband "
+                     "als erste Ebene im Pfad und führt zur Seite „Verband“ (zweites Beispiel)."),
         "pages": [_("Organisation")],
     },
     "dialog": {
@@ -685,6 +686,11 @@ def _organisation_examples() -> dict:
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
                 kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="")
+    # Wie die Verbandsleitung den Kopf sieht, wenn sie zugleich Leitung in Boreas ist (#218).
+    federation_page = Page(unit=Unit(kind=kind.TROOP, name="Zugvögel"), access="manage",
+                           path=[("DPV", "#h-orgakopf"), ("Pfadfinderbund Boreas", "#h-orgakopf")],
+                           kind_line="Stamm in Pfadfinderbund Boreas", mark=None, leads=leads, notice="", tiles=None,
+                           empty="")
     tiles = [
         {"label": kind.GROUP.label, "org": "Meute Wölfe", "way": "Gruppenleitung: Wolke", "href": "#h-rollenkachel"},
         {"label": kind.GROUP.label, "org": "Sippe Falken", "href": "#h-rollenkachel", "mark": covers},
@@ -707,7 +713,7 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
-    return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
+    return {"outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
             "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"),
                           Mark(texts.MARK_OWN_ASSOCIATION, "rolle")], "dialog": dialog, "removal": removal, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
