@@ -596,7 +596,7 @@ def test_gegenprobe_mit_leitungsrolle_sieht_vera_deren_personen(org):
     assert "finn.falke" in set(Rights(org.verbandsleitung).persons().values_list("username", flat=True))
     assert "finn.falke@example.org" not in client_for(org.verbandsleitung).get(ADDRESS).content.decode()
     shown = bunds(page_tree(org.verbandsleitung))
-    assert shown["Pfadfinderbund Boreas"]["href"] == unit_address(org.boreas)  # Frage F2: lesend, ohne Marke
+    assert shown["Pfadfinderbund Boreas"]["href"] == unit_address(org.boreas)  # F2 vom 30.10.2026: lesend, ohne Marke
     assert shown["Pfadfinderbund Boreas"]["mark"] == ""
     assert client_for(org.verbandsleitung).get(unit_address(org.falken)).status_code == 200
 

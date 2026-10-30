@@ -409,9 +409,10 @@ class Federation:
     Personen erscheinen nur nach BER-01, Grund 3: Name, Fahrtenname und Rolle der Bundesleitungen,
     Verbandsleitungen und Teammitglieder aus `Rights.leads()`, nie eine Mail. Ringe, Stämme und
     Gruppen stehen nicht da (EH-05). Ein Bund ist nur anklickbar, wenn sich seine Seite für die
-    Person öffnet, also wenn sie dort selbst Leitung ist; die Marke „Deine Rolle: Bundesleitung“
-    trägt er nur, wenn sie ihn leitet. Gesperrte Konten stehen mit der Marke „gesperrt“ da, weil die
-    Verbandsleitung sie entfernen darf (wie #189, Frage B).
+    Person öffnet, also wenn sie dort selbst Leitung ist, auch unterhalb des Bundes (F2 vom
+    30.10.2026); die Marke „Deine Rolle: Bundesleitung“ trägt er nur, wenn sie ihn leitet. Gesperrte
+    Konten stehen mit der Marke „gesperrt“ da, weil die Verbandsleitung sie entfernen darf (wie
+    #189, Frage B; F3 vom 30.10.2026).
     """
 
     def __init__(self, rights: Rights, user) -> None:
