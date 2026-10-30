@@ -47,7 +47,7 @@
     {% if tiles %}
       <ul class="a-rollenkacheln">
         {% for tile in tiles %}
-          <li>{% include "core/_rollenkachel.html" %}{% if tile.give_up_href %}<a class="btn btn-sm btn-zart a-kachel-knopf" href="{{ tile.give_up_href }}">{% translate "Rolle abgeben" %}<span class="sr-nur">: {{ tile.label }}</span></a>{% endif %}</li>
+          <li>{% include "core/_rollenkachel.html" %}</li>
         {% endfor %}
       </ul>
     {% endif %}

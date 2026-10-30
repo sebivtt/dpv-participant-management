@@ -39,13 +39,15 @@ urlpatterns = [
     path("profil/fahrtenname/", profile_scout_name, name="profile_scout_name"),
     path("profil/team-abgeben/", profile_leave_team, name="profile_leave_team"),
     path("organisation/", organisation, name="organisation"),
-    # Seite „Verband“ der Verbandsleitung (#94). Die Rolle im Verband steht fest in der Adresse, nie als frei wählbarer Teil.
+    # Seite „Verband“ der Verbandsleitung (#94): der Verband mit seiner Kennung, die Rolle im Verband fest in der
+    # Adresse, nie als frei wählbarer Teil.
     *(
         entry
         for slug in ("verbandsleitung", "team")
         for entry in (
-            path(f"organisation/verband/{slug}/benennen/", federation_appoint, {"role": slug}, name=f"federation_appoint_{slug}"),
-            path(f"organisation/verband/{slug}/benennen/suchen/", federation_search, {"role": slug},
+            path(f"organisation/verband/<key:unit>/{slug}/benennen/", federation_appoint, {"role": slug},
+                 name=f"federation_appoint_{slug}"),
+            path(f"organisation/verband/<key:unit>/{slug}/benennen/suchen/", federation_search, {"role": slug},
                  name=f"federation_search_{slug}"),
         )
     ),

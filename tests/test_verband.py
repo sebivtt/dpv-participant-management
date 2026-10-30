@@ -49,8 +49,13 @@ def org(org_190):
 
 # ---------- Adressen und Helfer ----------
 
-TEAM = "/organisation/verband/team/benennen/"
-FEDERATION_LEAD = "/organisation/verband/verbandsleitung/benennen/"
+def team_address(org) -> str:
+    """Dialog „Teammitglied benennen“; die Adressen im Verband tragen die Kennung des Verbands."""
+    return f"/organisation/verband/{org.dpv.key}/team/benennen/"
+
+
+def federation_lead_address(org) -> str:
+    return f"/organisation/verband/{org.dpv.key}/verbandsleitung/benennen/"
 
 
 def lead_address(bund) -> str:
@@ -179,7 +184,7 @@ def test_v3_keine_mail_keine_ringe_staemme_gruppen_keine_personen(org):
 
 @pytest.mark.rechtematrix("EH-08")
 def test_der_menuepunkt_ist_auf_der_seite_verband_hervorgehoben(org):
-    for address in (TEAM, FEDERATION_LEAD, lead_address(org.boreas)):
+    for address in (team_address(org), federation_lead_address(org), lead_address(org.boreas)):
         links = [e for e in _all(page_tree(org.verbandsleitung, address), lambda e: "a-navlink" in _classes(e))
                  if "Organisation" in _visible_text(e)]
         assert links and all(_attr(link, "aria-current") == "page" for link in links), address
@@ -224,9 +229,9 @@ def test_v5_wilma_schon_woanders_mitglied_ohne_organisation_und_doch_benennbar(o
 
 @pytest.mark.rechtematrix("RO-15", "RO-18")
 def test_v6_weitere_verbandsleitung_und_teammitglied_ohne_mitgliedschaft(org):
-    response = client_for(org.verbandsleitung).post(FEDERATION_LEAD, {"person": org.ohne.key}, follow=True)
+    response = client_for(org.verbandsleitung).post(federation_lead_address(org), {"person": org.ohne.key}, follow=True)
     assert short_notices(response) == ["Otto Ohne ist jetzt Verbandsleitung."]
-    response = client_for(org.verbandsleitung).post(TEAM, {"person": org.adler_kind.key}, follow=True)
+    response = client_for(org.verbandsleitung).post(team_address(org), {"person": org.adler_kind.key}, follow=True)
     assert short_notices(response) == ["Anton Adler ist jetzt im DPV-Veranstaltungsteam."]
 
     assert roles_of(org.ohne) == {(R.FEDERATION_LEAD, "DPV")}
@@ -234,7 +239,7 @@ def test_v6_weitere_verbandsleitung_und_teammitglied_ohne_mitgliedschaft(org):
 
 
 def test_v6_die_dialoge_heissen_wie_ihr_knopf_und_haben_nur_mail_oder_benutzername(org):
-    for address, title in ((FEDERATION_LEAD, "Verbandsleitung benennen"), (TEAM, "Teammitglied benennen"),
+    for address, title in ((federation_lead_address(org), "Verbandsleitung benennen"), (team_address(org), "Teammitglied benennen"),
                            (lead_address(org.boreas), "Bundesleitung benennen")):
         dialog = dialog_of(page_tree(org.verbandsleitung, address))
         assert _visible_text(_one(_by_tag(dialog, "h2"))) == title
@@ -244,7 +249,7 @@ def test_v6_die_dialoge_heissen_wie_ihr_knopf_und_haben_nur_mail_oder_benutzerna
 
 
 def test_schon_in_der_rolle(org):
-    response = appoint(org.verbandsleitung, TEAM, org.team)
+    response = appoint(org.verbandsleitung, team_address(org), org.team)
 
     assert "Tom Team ist schon im DPV-Veranstaltungsteam." in notices(dialog_of(_tree(response)))
 
@@ -369,7 +374,7 @@ def test_vg2_viktor_entfernt_vera_als_bundesleitung_und_das_mosaik_ist_nicht_meh
 def test_v13_zwanzig_suchen_gehen_die_einundzwanzigste_nicht(org):
     client = client_for(org.verbandsleitung)
     for number in range(20):
-        dialog = search(org.verbandsleitung, TEAM, f"niemand{number}@example.org", client=client)
+        dialog = search(org.verbandsleitung, team_address(org), f"niemand{number}@example.org", client=client)
         assert notices(dialog) == ["Kein Konto gefunden. Die Person muss sich zuerst einmal im Tool anmelden."], number
 
     dialog = search(org.verbandsleitung, lead_address(org.boreas), "otto.ohne@example.org", client=client)
@@ -393,7 +398,7 @@ def test_vv1_vera_findet_sich_selbst_ohne_knopf(org):
 @pytest.mark.rechtematrix("RO-12", "RO-16")
 def test_vv1_manipuliertes_formular_macht_vera_nicht_zur_bundesleitung(org):
     before = RoleChange.objects.count()
-    for address in (lead_address(org.mosaik), FEDERATION_LEAD, TEAM):
+    for address in (lead_address(org.mosaik), federation_lead_address(org), team_address(org)):
         response = appoint(org.verbandsleitung, address, org.verbandsleitung)
         assert NOT_YOURSELF_TEXT in notices(dialog_of(_tree(response)))
 
@@ -404,7 +409,7 @@ def test_vv1_manipuliertes_formular_macht_vera_nicht_zur_bundesleitung(org):
 @pytest.mark.rechtematrix("PK-12", "PK-13", "PK-15")
 def test_vv2_namen_und_teile_einer_mail_finden_nichts(org):
     for text in ("Wanda", "Wirbelwind", "wanda.walhall@example", "walhall", "%", "*"):
-        dialog = search(org.verbandsleitung, TEAM, text)
+        dialog = search(org.verbandsleitung, team_address(org), text)
         assert hits(dialog) == {}, text
     assert Rights(org.verbandsleitung).suggestions("Wanda") == []
     assert client_for(org.verbandsleitung).post(f"{unit_address(org.walhall)}benennen/vorschlaege/",
@@ -467,15 +472,22 @@ def test_vv6_gegenprobe_fuer_einen_stamm_ohne_leitung_springt_die_bundesleitung_
 @pytest.mark.rechtematrix("RO-18", "RO-14")
 @pytest.mark.wie_nicht_vorhanden("organisation/verband/bund/<key:unit>/benennen/")
 @pytest.mark.wie_nicht_vorhanden("organisation/verband/bund/<key:unit>/benennen/suchen/")
+@pytest.mark.wie_nicht_vorhanden("organisation/verband/<key:unit>/team/benennen/")
+@pytest.mark.wie_nicht_vorhanden("organisation/verband/<key:unit>/team/benennen/suchen/")
+@pytest.mark.wie_nicht_vorhanden("organisation/verband/<key:unit>/verbandsleitung/benennen/")
+@pytest.mark.wie_nicht_vorhanden("organisation/verband/<key:unit>/verbandsleitung/benennen/suchen/")
 def test_vv7_bruno_tom_und_max_benennen_und_entfernen_niemanden_im_verband(org):
     before = RoleChange.objects.count()
     for user in (org.bundesleitung, org.team, org.max, org.falke, org.ohne):
-        for address in (FEDERATION_LEAD, TEAM, f"{TEAM}suchen/"):
+        for address in (federation_lead_address(org), team_address(org), f"{team_address(org)}suchen/"):
             for method in ("get", "post"):
                 response = getattr(client_for(user), method)(address, {"person": org.ohne.key, "suche": "otto.ohne"})
                 assert response.status_code == 404, (user.username, address, method)
         assert_like_missing(user, lead_address(org.boreas))
         assert_like_missing(user, f"{lead_address(org.boreas)}suchen/")
+        for address in (team_address(org), federation_lead_address(org)):
+            assert_like_missing(user, address)
+            assert_like_missing(user, f"{address}suchen/")
         assert_like_missing(user, remove_address(role_of(org.viktor, R.FEDERATION_LEAD)))
         assert_like_missing(user, remove_address(role_of(org.team, R.EVENT_TEAM)))
 
@@ -484,7 +496,8 @@ def test_vv7_bruno_tom_und_max_benennen_und_entfernen_niemanden_im_verband(org):
 
 
 def test_vv7_unbekannte_rolle_in_der_adresse(org):
-    for address in ("/organisation/verband/admin/benennen/", "/organisation/verband/mitglied/benennen/suchen/"):
+    for address in (f"/organisation/verband/{org.dpv.key}/admin/benennen/",
+                    f"/organisation/verband/{org.dpv.key}/mitglied/benennen/suchen/"):
         assert client_for(org.verbandsleitung).post(address, {"person": org.ohne.key}).status_code == 404
     assert roles_of(org.ohne) == set()
 
@@ -582,7 +595,7 @@ def test_verbandsleitung_sieht_keine_personen_mit_konto_auf_keinem_weg(org):
     for where in (org.boreas, org.walhall, org.falken, org.mosaik):
         assert_like_missing(org.verbandsleitung, unit_address(where))
         assert_like_missing(org.verbandsleitung, f"{unit_address(where)}benennen/")
-    for address in (ADDRESS, TEAM, FEDERATION_LEAD, lead_address(org.boreas)):
+    for address in (ADDRESS, team_address(org), federation_lead_address(org), lead_address(org.boreas)):
         for htmx in (False, True):
             content = client_for(org.verbandsleitung).get(address, headers={"HX-Request": "true"} if htmx else {}).content.decode()
             assert "@example.org" not in content and "Wilma" not in content and "Finn" not in content
@@ -606,3 +619,49 @@ def test_auch_ohne_verband_gibt_es_den_befehl_nicht(db):
     with pytest.raises(CommandError) as error:
         call_command("federation_lead", "grant", give_user.username)
     assert "Verband" in str(error.value)
+
+
+# ---------- Aus der unabhängigen Prüfung (30.10.2026) ----------
+
+
+def test_gesperrte_und_nie_angemeldete_konten_lassen_sich_auch_mit_manipuliertem_formular_nicht_benennen(org):
+    lock(org.ohne)
+    never = person("nie.da", "Nie", "Da")
+    before = RoleChange.objects.count()
+
+    for target in (org.ohne, never):
+        for address in (team_address(org), federation_lead_address(org), lead_address(org.boreas)):
+            assert appoint(org.verbandsleitung, address, target).status_code == 404, (target.username, address)
+
+    assert RoleChange.objects.count() == before
+    assert roles_of(org.ohne) == set() and roles_of(never) == set()
+
+
+def test_auch_die_suche_im_dialog_verbandsleitung_ist_fuer_andere_nicht_gefunden(org):
+    for user in (org.bundesleitung, org.team, org.max):
+        response = client_for(user).post(f"{federation_lead_address(org)}suchen/", {"suche": "otto.ohne"})
+        assert response.status_code == 404, user.username
+
+
+@pytest.mark.django_db(transaction=True)
+def test_vera_und_viktor_benennen_otto_gleichzeitig_ins_team():
+    o = build_org()
+    vera = lead("vera.verband", R.FEDERATION_LEAD, o.dpv)
+    viktor = lead("viktor.verband", R.FEDERATION_LEAD, o.dpv)
+    otto = person("otto.ohne", "Otto", "Ohne")
+    User.objects.filter(pk=otto.pk).update(last_login="2026-10-30T08:00:00Z")
+
+    def appoint_by(user):
+        return lambda: Rights(user).appoint_in_federation(R.EVENT_TEAM, o.dpv, otto.key)[1]
+
+    results = _one_after_the_other(appoint_by(vera), appoint_by(viktor))
+
+    assert sorted(results) == ["Otto Ohne ist jetzt im DPV-Veranstaltungsteam.", "Otto Ohne ist schon im DPV-Veranstaltungsteam."]
+    assert Role.objects.filter(user=otto, kind=R.EVENT_TEAM).count() == 1
+
+
+def test_der_bausteinkatalog_zeigt_die_rollenkachel_mit_rolle_abgeben(org):
+    root = page_tree(org.verbandsleitung, "/bausteine/")
+    block = section_of(root, "h-rollenkachel")
+
+    assert [_visible_text(e) for e in _all(block, lambda e: "a-kachel-knopf" in _classes(e))] == ["Rolle abgeben"]

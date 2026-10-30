@@ -39,7 +39,7 @@ def _verband_for_erika() -> dict:
     otto.email = "otto.ohne@example.org"
     otto.last_login = timezone.now()
     otto.save()
-    return {"boreas": boreas, "bruno": bruno, "otto": otto}
+    return {"dpv": dpv, "boreas": boreas, "bruno": bruno, "otto": otto}
 
 
 def _dialog(page: Page):
@@ -90,8 +90,8 @@ def test_am_pc_nur_mit_der_tastatur_bundesleitung_benennen(pc):
 
 def test_am_pc_escape_im_dialog_aendert_nichts(pc):
     login(pc)
-    _verband_for_erika()
-    pc.goto(f"{ADDRESS}verband/team/benennen/")
+    units = _verband_for_erika()
+    pc.goto(f"{ADDRESS}verband/{units['dpv'].key}/team/benennen/")
     expect(_dialog(pc).locator("h2")).to_have_text("Teammitglied benennen")
 
     pc.keyboard.press("Escape")
@@ -161,7 +161,7 @@ def test_am_pc_die_rolle_im_team_abgeben(pc):
     pc.goto(f"{BASE}/profil/")
     assert run_axe(pc) == []
 
-    pc.get_by_role("link", name="Rolle abgeben: DPV-Veranstaltungsteam").click()
+    pc.locator(".a-kachel-knopf").click()
     _dialog(pc).get_by_role("button", name="Rolle abgeben").click()
 
     pc.wait_for_url(f"{BASE}/profil/")

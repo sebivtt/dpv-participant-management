@@ -366,13 +366,15 @@ FEDERATION_ROWS = ("PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24", "RO-12"
 def _federation_page(request: HttpRequest, dialog=None, removal=None, status=200) -> HttpResponse:
     """Die Seite „Verband“, auf Wunsch mit offenem Dialog zum Benennen oder zur Bestätigung."""
     shown = Federation(request.rights, request.user)
+    federation_key = [shown.federation.key] if shown.federation else None
     context = {
         "federation": shown.federation,
         "federation_leads": shown.federation_leads(),
         "team": shown.team(),
         "associations": shown.associations(),
-        "appoint_federation_lead": reverse(f"federation_appoint_{SLUG_OF[Role.Kind.FEDERATION_LEAD]}"),
-        "appoint_team": reverse(f"federation_appoint_{SLUG_OF[Role.Kind.EVENT_TEAM]}"),
+        "appoint_federation_lead": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.FEDERATION_LEAD]}",
+                                                              args=federation_key),
+        "appoint_team": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.EVENT_TEAM]}", args=federation_key),
         # Dieselben Wortlaute wie die Titel der Dialoge, damit Knopf und Dialog gleich heißen.
         "labels": {"federation_lead": texts.APPOINT_FEDERATION_LEAD, "team": texts.APPOINT_TEAM,
                    "association_lead": texts.APPOINT_TITLE % {"role": Role.Kind.ASSOCIATION_LEAD.label}},
@@ -382,19 +384,18 @@ def _federation_page(request: HttpRequest, dialog=None, removal=None, status=200
     return render(request, "core/verband.html", context, status=status)
 
 
-def _federation_target(request: HttpRequest, slug: str | None = None, unit: str | None = None) -> tuple[str, Unit]:
-    """Rolle und Organisation des Dialogs aus der Adresse; ohne Recht „nicht gefunden“ (VV7)."""
+def _federation_target(request: HttpRequest, unit: str, slug: str | None = None) -> tuple[str, Unit]:
+    """Rolle und Organisation des Dialogs aus der Adresse: ohne `slug` ein Bund, sonst der Verband; ohne Recht „nicht gefunden“ (VV7)."""
     rights = request.rights
     if not rights.is_federation_lead():
         raise Http404
-    if unit is not None:
+    if slug is None:
         found = rights.entry(Unit.objects.filter(kind=Unit.Kind.ASSOCIATION), unit)
         return Role.Kind.ASSOCIATION_LEAD, found
     kind = FEDERATION_SLUGS.get(slug)
-    found = Unit.objects.filter(kind=Unit.Kind.FEDERATION).first()
-    if kind is None or found is None:
+    if kind is None:
         raise Http404
-    return kind, found
+    return kind, rights.entry(Unit.objects.filter(kind=Unit.Kind.FEDERATION), unit)
 
 
 def _federation_dialog(request: HttpRequest, kind: str, found: Unit, form=None, hits_found=None, notice=None):
@@ -406,8 +407,8 @@ def _federation_dialog(request: HttpRequest, kind: str, found: Unit, form=None, 
     else:
         title = texts.APPOINT_FEDERATION_LEAD if kind == Role.Kind.FEDERATION_LEAD else texts.APPOINT_TEAM
         subtitle = texts.APPOINT_FOR_FEDERATION if kind == Role.Kind.FEDERATION_LEAD else texts.APPOINT_FOR_TEAM
-        search_action = reverse(f"federation_search_{SLUG_OF[kind]}")
-        appoint_action = reverse(f"federation_appoint_{SLUG_OF[kind]}")
+        search_action = reverse(f"federation_search_{SLUG_OF[kind]}", args=[found.key])
+        appoint_action = reverse(f"federation_appoint_{SLUG_OF[kind]}", args=[found.key])
     dialog = {
         "title": title,
         "subtitle": subtitle,
@@ -457,17 +458,17 @@ def _federation_search(request: HttpRequest, kind: str, found: Unit, again: str)
 
 
 @checks_rights(*FEDERATION_ROWS)
-def federation_appoint(request: HttpRequest, role: str) -> HttpResponse:
+def federation_appoint(request: HttpRequest, unit: str, role: str) -> HttpResponse:
     """Dialog „Verbandsleitung benennen“ oder „Teammitglied benennen“ öffnen und benennen (RO-15, V6)."""
-    kind, found = _federation_target(request, slug=role)
+    kind, found = _federation_target(request, slug=role, unit=unit)
     return _federation_appoint(request, kind, found)
 
 
 @checks_rights(*FEDERATION_ROWS)
-def federation_search(request: HttpRequest, role: str) -> HttpResponse:
+def federation_search(request: HttpRequest, unit: str, role: str) -> HttpResponse:
     """„Suchen“ im Dialog für Verbandsleitung oder Team (PK-13, PK-24)."""
-    kind, found = _federation_target(request, slug=role)
-    return _federation_search(request, kind, found, reverse(f"federation_appoint_{role}"))
+    kind, found = _federation_target(request, slug=role, unit=unit)
+    return _federation_search(request, kind, found, reverse(f"federation_appoint_{role}", args=[found.key]))
 
 
 @checks_rights(*FEDERATION_ROWS)
@@ -583,10 +584,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
-        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189],
+        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94],
         "purpose": _("Zeigt eine Rolle mit Organisation und Weg darüber; die Mitgliedschaft als eigene "
                      "Fläche, die übrigen Rollen als Kacheln. Unter „Organisationen darunter“ ist die Kachel "
-                     "anklickbar, ohne Zugriff grau ohne blauen Streifen."),
+                     "anklickbar, ohne Zugriff grau ohne blauen Streifen. Unten darf ein kleiner Knopf „Rolle "
+                     "abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "gliederungsbaum": {
@@ -735,7 +737,8 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
                 (role.EVENT_TEAM.label, "DPV", ROLE_NOTES[role.EVENT_TEAM]),
                 (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
             ]
-        ],
+        ] + [{"label": role.EVENT_TEAM.label, "org": "DPV", "way": ROLE_NOTES[role.EVENT_TEAM],
+              "give_up_href": "#h-rollenkachel"}],
         # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
         "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
                         "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
