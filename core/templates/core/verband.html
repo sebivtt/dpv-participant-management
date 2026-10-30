@@ -2,14 +2,13 @@
 {% load i18n layout %}
 {% block title %}{% translate "Verband" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Seite „Verband“ der Verbandsleitung (#94, Fragen 1 und 3 vom 28.10.2026): Verbandsleitung, DPV-Veranstaltungsteam und Bünde mit ihren Bundesleitungen, je Person Name, Fahrtenname und Rolle, nie eine Mail (BER-01, Grund 3). Ringe, Stämme und Gruppen stehen hier nicht (EH-05). Kein Zielbild (Frage 2); gebaut aus den Bausteinen der Seite einer Organisation (#189). Daten aus units/organisation.py, Federation. #}
+  {# Seite „Verband“ der Verbandsleitung (#94, Fragen 1 und 3 vom 28.10.2026): „DPV-Verbandsleitung“ (nur die Überschrift; die Rolle heißt weiter Verbandsleitung), DPV-Veranstaltungsteam und Bünde mit ihren Bundesleitungen, ohne den Namen des Verbands im Kopf (Sebastian, 30.10.2026), je Person Name, Fahrtenname und Rolle, nie eine Mail (BER-01, Grund 3). Ringe, Stämme und Gruppen stehen hier nicht (EH-05). Kein Zielbild (Frage 2); gebaut aus den Bausteinen der Seite einer Organisation (#189). Daten aus units/organisation.py, Federation. #}
   <div class="a-kopf">
     <h1>{% translate "Verband" %}</h1>
-    {% if federation %}<p>{{ federation.name }}</p>{% endif %}
   </div>
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-verbandsleitung">
-    {% include "core/_flaechenkopf.html" with symbol="person" title=_("Verbandsleitung") heading_id="h-verbandsleitung" action_href=appoint_federation_lead action_label=labels.federation_lead %}
+    {% include "core/_flaechenkopf.html" with symbol="person" title=_("DPV-Verbandsleitung") heading_id="h-verbandsleitung" action_href=appoint_federation_lead action_label=labels.federation_lead %}
     {% if federation_leads %}<ul class="a-leitungen">{% for lead in federation_leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
   </section>
   <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-team">

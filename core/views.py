@@ -368,7 +368,6 @@ def _federation_page(request: HttpRequest, dialog=None, removal=None, status=200
     shown = Federation(request.rights, request.user)
     federation_key = [shown.federation.key] if shown.federation else None
     context = {
-        "federation": shown.federation,
         "federation_leads": shown.federation_leads(),
         "team": shown.team(),
         "associations": shown.associations(),

@@ -665,3 +665,16 @@ def test_der_bausteinkatalog_zeigt_die_rollenkachel_mit_rolle_abgeben(org):
     block = section_of(root, "h-rollenkachel")
 
     assert [_visible_text(e) for e in _all(block, lambda e: "a-kachel-knopf" in _classes(e))] == ["Rolle abgeben"]
+
+
+# ---------- Anmerkungen von Sebastian nach dem lokalen Test (30.10.2026) ----------
+
+
+def test_kopf_ohne_namen_des_verbands_und_abschnitt_heisst_dpv_verbandsleitung(org):
+    """https://github.com/sebivtt/dpv-participant-management/issues/94#issuecomment-6520805547, Punkte 1 und 2."""
+    root = page_tree(org.verbandsleitung)
+    head = _one(_all(root, lambda e: "a-kopf" in _classes(e)))
+
+    assert _visible_text(head) == "Verband"
+    assert _visible_text(_one(_by_tag(root, "h2", id="h-verbandsleitung"))) == "DPV-Verbandsleitung"
+    assert _visible_text(_one(_by_tag(root, "h2", id="h-team"))) == "DPV-Veranstaltungsteam"
