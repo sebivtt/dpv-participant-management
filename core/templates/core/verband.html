@@ -1,0 +1,47 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{% translate "Verband" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Seite „Verband“ der Verbandsleitung (#94, Fragen 1 und 3 vom 28.10.2026): „DPV-Verbandsleitung“ (nur die Überschrift; die Rolle heißt weiter Verbandsleitung), DPV-Veranstaltungsteam und Bünde mit ihren Bundesleitungen, ohne den Namen des Verbands im Kopf (Sebastian, 30.10.2026), je Person Name, Fahrtenname und Rolle, nie eine Mail (BER-01, Grund 3). Ringe, Stämme und Gruppen stehen hier nicht (EH-05). Kein Zielbild (Frage 2); gebaut aus den Bausteinen der Seite einer Organisation (#189). Daten aus units/organisation.py, Federation. #}
+  <div class="a-kopf">
+    <h1>{% translate "Verband" %}</h1>
+  </div>
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-verbandsleitung">
+    {% include "core/_flaechenkopf.html" with symbol="person" title=_("DPV-Verbandsleitung") heading_id="h-verbandsleitung" action_href=appoint_federation_lead action_label=labels.federation_lead %}
+    {% if federation_leads %}<ul class="a-leitungen">{% for lead in federation_leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
+  </section>
+  <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-team">
+    {% include "core/_flaechenkopf.html" with symbol="person" title=_("DPV-Veranstaltungsteam") heading_id="h-team" action_href=appoint_team action_label=labels.team %}
+    {% if team %}<ul class="a-leitungen">{% for lead in team %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{% translate "Im DPV-Veranstaltungsteam ist niemand." %}</p>{% endif %}
+  </section>
+  {# Je Bund eine eigene Fläche mit der erweiterten „Überschrift einer Fläche“ (Antwort „A: erweitern“ vom 30.10.2026). #}
+  <section class="a-buende" aria-labelledby="h-buende">
+    <h2 id="h-buende" class="a-buende-titel">{% translate "Bünde" %}</h2>
+    {% for bund in associations %}
+      {% with heading_id="h-bund-"|add:bund.unit.key %}<section class="a-flaeche a-orga-flaeche a-bund" aria-labelledby="{{ heading_id }}">
+        {% include "core/_flaechenkopf.html" with symbol="organisation" title=bund.unit.name title_href=bund.href mark=bund.mark heading_id=heading_id level=3 action_href=bund.appoint_href action_label=labels.association_lead %}
+        {% if bund.notice %}{% meldung "info" text=bund.notice %}{% endif %}
+        {% if bund.leads %}<ul class="a-leitungen">{% for lead in bund.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
+      </section>{% endwith %}
+    {% empty %}
+      <p class="a-leer-satz">{% translate "Es gibt noch keinen Bund." %}</p>
+    {% endfor %}
+  </section>
+  {% if dialog %}
+    {# Dialog „… benennen“ der Verbandsleitung (#94, Frage 4): nur „Suchen“ über die genaue Mail oder den Benutzernamen, ohne Vorschläge beim Tippen (PK-12). #}
+    {% include "core/_dialog_auf.html" %}
+    <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate>
+      {% csrf_token %}
+      {% translate "Suchen" as search_button %}{% translate "Du findest Personen über die genaue Mail oder den genauen Benutzernamen." as search_help %}
+      {% textfeld dialog.form.suche button=search_button help_text=search_help %}
+    </form>
+    <div class="a-treffer-bereich">{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action notice=dialog.notice %}</div>
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+  {% if removal %}
+    {% include "core/_dialog_auf.html" with dialog=removal %}
+    {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" with dialog=removal %}
+  {% endif %}
+{% endblock %}

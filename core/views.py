@@ -14,11 +14,23 @@ from access.addresses import checks_rights, without_personal_data
 from access.rights import SUGGESTION_MIN, WILDCARDS, Rights
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import AccountSearchForm, PatternForm
+from core.forms import AccountSearchForm, FederationSearchForm, PatternForm
 from roles.models import Role
 from units.models import Unit
 from units import texts
-from units.organisation import Hit, Lead, Mark, Node, Organisation, Page, hits
+from units.organisation import (
+    FEDERATION_SLUGS,
+    SLUG_OF,
+    Federation,
+    Hit,
+    Lead,
+    Mark,
+    Node,
+    Organisation,
+    Page,
+    federation_done,
+    hits,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,12 +121,36 @@ def _scout_name_just_saved(request: HttpRequest) -> bool:
     return any(SCOUT_NAME_TAG in (message.extra_tags or "").split() for message in messages.get_messages(request))
 
 
-def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False) -> HttpResponse:
+# Ändert nur die eigene Rolle: Die Adresse hat keine Kennung, und es gibt höchstens eine Rolle im
+# DPV-Veranstaltungsteam je Person (RO-20).
+@checks_rights("RO-18", "RO-20")
+def profile_leave_team(request: HttpRequest) -> HttpResponse:
+    """„Rolle abgeben“ beim DPV-Veranstaltungsteam auf „Mein Profil“: Rückfrage zeigen und abgeben (V10).
+
+    Lesend zeigt die Adresse „Mein Profil“ mit offener Rückfrage; das Formular gibt die Rolle ab.
+    Ohne Rolle im Team ist die Adresse „nicht gefunden“ und ändert nichts.
+    """
+    rights = request.rights
+    if request.method == "POST":
+        if not rights.leave_team():
+            raise Http404
+        messages.success(request, texts.FEDERATION_GAVE_UP[Role.Kind.EVENT_TEAM])
+        return redirect("profile")
+    if request.method not in READING or rights.own_team_role() is None:
+        raise Http404
+    removal = {"title": texts.FEDERATION_GIVE_UP_QUESTION[Role.Kind.EVENT_TEAM], "lines": [],
+               "close_href": reverse("profile"), "confirm_action": request.path, "confirm_label": texts.GIVE_UP_BUTTON}
+    form = ScoutNameForm(initial={"scout_name": request.user.scout_name})
+    return _profile_page(request, form, removal=removal)
+
+
+def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False, removal=None) -> HttpResponse:
     """„Mein Profil“ mit dem Formular für den Fahrtennamen, frisch oder mit der letzten Eingabe."""
     roles = request.rights.own_roles()
     membership = next((role for role in roles if role.kind == Role.Kind.MEMBER), None)
     context = {
         **_notices(request),
+        "removal": removal,
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,
@@ -132,18 +168,24 @@ READING = ("GET", "HEAD")
 
 
 
-# Die Adresse hat keine Kennung: Sie zeigt immer die Gliederung der angemeldeten Person (EH-01).
-@checks_rights("EH-01", "EH-03", "EH-07", "EH-08", "EH-09", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22")
+# Die Adresse hat keine Kennung: Sie zeigt immer die Gliederung der angemeldeten Person (EH-01)
+# oder, für die Verbandsleitung, die Seite „Verband“ (#94).
+@checks_rights("EH-01", "EH-03", "EH-04", "EH-05", "EH-07", "EH-08", "EH-09", "RO-01", "RO-03", "RO-04", "RO-05",
+               "RO-21", "RO-22")
 def organisation(request: HttpRequest) -> HttpResponse:
     """„Organisation“: die Gliederung des eigenen Bundes, am PC daneben die Seite der eigenen Organisation.
 
-    Nur für Leitungen von Gruppe bis Bund (EH-08); alle anderen bekommen „kein Zugriff“ (EH-09).
-    Am Handy steht nur die Gliederung; ein Tipp öffnet die Seite der Organisation.
+    Nur für Leitungen von Gruppe bis Bund und die Verbandsleitung (EH-08); alle anderen bekommen
+    „kein Zugriff“ (EH-09). Am Handy steht nur die Gliederung; ein Tipp öffnet die Seite der
+    Organisation. Die Verbandsleitung sieht die Seite „Verband“, auch wenn sie zusätzlich Leitung
+    ist; ihre Bünde öffnet sie von dort (Frage 3 vom 28.10.2026).
     """
     rights = request.rights
-    rights.require_section(rights.sees_organisation())
+    rights.require_section(rights.sees_menu())
     if request.method not in READING:
         raise Http404
+    if rights.is_federation_lead():
+        return _federation_page(request)
     shown = Organisation(rights, request.user)
     start = shown.start_unit()
     return render(request, "core/organisation.html", {"outline": shown.outline(current=start),
@@ -312,6 +354,156 @@ def _after_removal(request: HttpRequest, found: Unit) -> str:
     return reverse("profile")
 
 
+# Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
+# Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
+# „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
+# Rolle und Organisation kommen immer aus der Adresse, nie aus dem Formular. Ohne Rolle
+# Verbandsleitung sind alle diese Adressen „nicht gefunden“, auch per htmx (RO-18, VV7).
+FEDERATION_ROWS = ("PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24", "RO-12", "RO-14", "RO-15", "RO-16",
+                   "RO-17", "RO-18", "RO-19", "RO-20", "EH-27")
+
+
+def _federation_page(request: HttpRequest, dialog=None, removal=None, status=200) -> HttpResponse:
+    """Die Seite „Verband“, auf Wunsch mit offenem Dialog zum Benennen oder zur Bestätigung."""
+    shown = Federation(request.rights, request.user)
+    federation_key = [shown.federation.key] if shown.federation else None
+    context = {
+        "federation_leads": shown.federation_leads(),
+        "team": shown.team(),
+        "associations": shown.associations(),
+        "appoint_federation_lead": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.FEDERATION_LEAD]}",
+                                                              args=federation_key),
+        "appoint_team": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.EVENT_TEAM]}", args=federation_key),
+        # Dieselben Wortlaute wie die Titel der Dialoge, damit Knopf und Dialog gleich heißen.
+        "labels": {"federation_lead": texts.APPOINT_FEDERATION_LEAD, "team": texts.APPOINT_TEAM,
+                   "association_lead": texts.APPOINT_TITLE % {"role": Role.Kind.ASSOCIATION_LEAD.label}},
+        "dialog": dialog,
+        "removal": removal,
+    }
+    return render(request, "core/verband.html", context, status=status)
+
+
+def _federation_target(request: HttpRequest, unit: str, slug: str | None = None) -> tuple[str, Unit]:
+    """Rolle und Organisation des Dialogs aus der Adresse: ohne `slug` ein Bund, sonst der Verband; ohne Recht „nicht gefunden“ (VV7)."""
+    rights = request.rights
+    if not rights.is_federation_lead():
+        raise Http404
+    if slug is None:
+        found = rights.entry(Unit.objects.filter(kind=Unit.Kind.ASSOCIATION), unit)
+        return Role.Kind.ASSOCIATION_LEAD, found
+    kind = FEDERATION_SLUGS.get(slug)
+    if kind is None:
+        raise Http404
+    return kind, rights.entry(Unit.objects.filter(kind=Unit.Kind.FEDERATION), unit)
+
+
+def _federation_dialog(request: HttpRequest, kind: str, found: Unit, form=None, hits_found=None, notice=None):
+    """Der Dialog „… benennen“ der Verbandsleitung: nur „Suchen“ über Mail oder Benutzernamen, keine Vorschläge (PK-12)."""
+    if kind == Role.Kind.ASSOCIATION_LEAD:
+        title, subtitle = texts.APPOINT_TITLE % {"role": kind.label}, texts.APPOINT_FOR % {"unit": found.name}
+        search_action = reverse("federation_search_lead", args=[found.key])
+        appoint_action = reverse("federation_appoint_lead", args=[found.key])
+    else:
+        title = texts.APPOINT_FEDERATION_LEAD if kind == Role.Kind.FEDERATION_LEAD else texts.APPOINT_TEAM
+        subtitle = texts.APPOINT_FOR_FEDERATION if kind == Role.Kind.FEDERATION_LEAD else texts.APPOINT_FOR_TEAM
+        search_action = reverse(f"federation_search_{SLUG_OF[kind]}", args=[found.key])
+        appoint_action = reverse(f"federation_appoint_{SLUG_OF[kind]}", args=[found.key])
+    dialog = {
+        "title": title,
+        "subtitle": subtitle,
+        "close_href": reverse("organisation"),
+        "form": form or FederationSearchForm(),
+        "search_action": search_action,
+        "appoint_action": appoint_action,
+        "hits": hits_found or [],
+        "hits_title": texts.HITS_TITLE if hits_found else "",
+        "notice": notice,
+    }
+    return _federation_page(request, dialog=dialog)
+
+
+def _federation_appoint(request: HttpRequest, kind: str, found: Unit) -> HttpResponse:
+    if request.method == "POST":
+        done, text, _values = request.rights.appoint_in_federation(kind, found, request.POST.get("person"))
+        if done:
+            messages.success(request, text)
+            return redirect("organisation")
+        return _federation_dialog(request, kind, found, notice=("warning", text))
+    if request.method not in READING:
+        raise Http404
+    return _federation_dialog(request, kind, found)
+
+
+def _federation_search(request: HttpRequest, kind: str, found: Unit, again: str) -> HttpResponse:
+    """„Suchen“ wie bei `organisation_search()`: zählt fürs Suchlimit, leer und nur Platzhalter zählen nicht."""
+    if request.method != "POST":
+        if request.method not in READING:
+            raise Http404
+        return redirect(again)
+    form = FederationSearchForm(request.POST)
+    if not form.is_valid():
+        return _federation_dialog(request, kind, found, form=form)
+    text = form.cleaned_data["suche"].strip()
+    if not text or set(text) <= WILDCARDS:
+        return _federation_dialog(request, kind, found, form=form)
+    rights = request.rights
+    wait = rights.count_search()
+    if wait:
+        return _federation_dialog(request, kind, found, form=form, notice=("error", texts.SEARCH_LIMIT % {"minutes": wait}))
+    entries = rights.find_accounts(text)
+    if not entries:
+        return _federation_dialog(request, kind, found, form=form, notice=("warning", texts.NO_ACCOUNT))
+    return _federation_dialog(request, kind, found, form=form, hits_found=hits(entries, found, kind=kind))
+
+
+@checks_rights(*FEDERATION_ROWS)
+def federation_appoint(request: HttpRequest, unit: str, role: str) -> HttpResponse:
+    """Dialog „Verbandsleitung benennen“ oder „Teammitglied benennen“ öffnen und benennen (RO-15, V6)."""
+    kind, found = _federation_target(request, slug=role, unit=unit)
+    return _federation_appoint(request, kind, found)
+
+
+@checks_rights(*FEDERATION_ROWS)
+def federation_search(request: HttpRequest, unit: str, role: str) -> HttpResponse:
+    """„Suchen“ im Dialog für Verbandsleitung oder Team (PK-13, PK-24)."""
+    kind, found = _federation_target(request, slug=role, unit=unit)
+    return _federation_search(request, kind, found, reverse(f"federation_appoint_{role}", args=[found.key]))
+
+
+@checks_rights(*FEDERATION_ROWS)
+def federation_appoint_lead(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Bundesleitung benennen“ für einen Bund öffnen und benennen (RO-15, V4, V5)."""
+    kind, found = _federation_target(request, unit=unit)
+    return _federation_appoint(request, kind, found)
+
+
+@checks_rights(*FEDERATION_ROWS)
+def federation_search_lead(request: HttpRequest, unit: str) -> HttpResponse:
+    """„Suchen“ im Dialog „Bundesleitung benennen“ (PK-13, PK-24)."""
+    kind, found = _federation_target(request, unit=unit)
+    return _federation_search(request, kind, found, reverse("federation_appoint_lead", args=[found.key]))
+
+
+@checks_rights(*FEDERATION_ROWS)
+def federation_remove(request: HttpRequest, role: str) -> HttpResponse:
+    """Bestätigung zum Entfernen oder Abgeben auf der Seite „Verband“ zeigen und die Rolle entfernen (V7 bis V9).
+
+    Nur Bundesleitungen, Verbandsleitungen und Teammitglieder; jede andere Kennung, etwa die einer
+    Stammesleitung, einer Mitgliedschaft oder von Admin, ist „nicht gefunden“ (VV5, VV9). Nach dem
+    Entfernen steht die kurze Meldung auf der Seite „Verband“, ohne Rolle mehr dort auf „Mein Profil“.
+    """
+    rights = request.rights
+    if request.method == "POST":
+        removed, shown = rights.remove_in_federation(role)
+        messages.success(request, federation_done(removed, shown))
+        return redirect("organisation" if Rights(request.user).sees_menu() else "profile")
+    if request.method not in READING:
+        raise Http404
+    found, shown = rights.removal_in_federation(role)
+    removal = Federation(rights, request.user).removal(found, shown, action=request.path)
+    return _federation_page(request, removal=removal)
+
+
 # Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
 # (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
 ROLE_NOTES = {
@@ -325,12 +517,15 @@ def _tile(role: Role, label=None) -> dict:
     """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation, darunter der Weg (#161).
 
     Admin hängt an keiner Organisation; dort steht groß „DPV Anmeldetool“. Rollen im Verband
-    und Admin zeigen statt des Wegs ihren festen Satz aus `ROLE_NOTES`.
+    und Admin zeigen statt des Wegs ihren festen Satz aus `ROLE_NOTES`. Beim
+    DPV-Veranstaltungsteam steht darunter „Rolle abgeben“ (#94).
     """
     return {
         "label": label or role.get_kind_display(),
         "org": role.unit.name if role.unit else _("DPV Anmeldetool"),
         "way": ROLE_NOTES.get(role.kind) or " › ".join(role.unit.names_above() if role.unit else []),
+        # Nur das DPV-Veranstaltungsteam gibt seine Rolle hier ab (RO-20, Frage 5 vom 28.10.2026, W1).
+        "give_up_href": reverse("profile_leave_team") if role.kind == Role.Kind.EVENT_TEAM else None,
     }
 
 
@@ -381,16 +576,18 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "flaechenkopf": {
-        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190],
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190, 94],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
-                     "stehen, etwa „Gruppenleitung benennen“."),
+                     "stehen, etwa „Gruppenleitung benennen“. Der Titel darf ein Link sein und eine Marke "
+                     "dahinter tragen, etwa der eigene Bund auf der Seite „Verband“."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
-        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189],
+        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94],
         "purpose": _("Zeigt eine Rolle mit Organisation und Weg darüber; die Mitgliedschaft als eigene "
                      "Fläche, die übrigen Rollen als Kacheln. Unter „Organisationen darunter“ ist die Kachel "
-                     "anklickbar, ohne Zugriff grau ohne blauen Streifen."),
+                     "anklickbar, ohne Zugriff grau ohne blauen Streifen. Unten darf ein kleiner Knopf „Rolle "
+                     "abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "gliederungsbaum": {
@@ -400,9 +597,9 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "kennmarke": {
-        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189],
+        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94],
         "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Leitung: „Du springst ein“, „nur "
-                     "lesen“ oder „gesperrt“."),
+                     "lesen“, „gesperrt“ oder auf der Seite „Verband“ „Deine Rolle: Bundesleitung“."),
         "pages": [_("Organisation")],
     },
     "leitung": {
@@ -425,12 +622,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
                      "„Entfernen“."),
-        "pages": [_("Organisation")],
+        "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
         "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190],
@@ -511,7 +708,8 @@ def _organisation_examples() -> dict:
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
     return {"outline": outline, "org_page": page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"),
+                          Mark(texts.MARK_OWN_ASSOCIATION, "rolle")], "dialog": dialog, "removal": removal, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
@@ -538,7 +736,8 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
                 (role.EVENT_TEAM.label, "DPV", ROLE_NOTES[role.EVENT_TEAM]),
                 (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
             ]
-        ],
+        ] + [{"label": role.EVENT_TEAM.label, "org": "DPV", "way": ROLE_NOTES[role.EVENT_TEAM],
+              "give_up_href": "#h-rollenkachel"}],
         # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
         "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
                         "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],

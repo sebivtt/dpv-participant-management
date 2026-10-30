@@ -10,6 +10,11 @@ from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
 from core.views import (
     building_blocks,
+    federation_appoint,
+    federation_appoint_lead,
+    federation_remove,
+    federation_search,
+    federation_search_lead,
     organisation,
     organisation_appoint,
     organisation_remove,
@@ -17,6 +22,7 @@ from core.views import (
     organisation_suggestions,
     organisation_unit,
     profile,
+    profile_leave_team,
     profile_scout_name,
     start,
 )
@@ -31,7 +37,23 @@ urlpatterns = [
     path("", start, name="start"),
     path("profil/", profile, name="profile"),
     path("profil/fahrtenname/", profile_scout_name, name="profile_scout_name"),
+    path("profil/team-abgeben/", profile_leave_team, name="profile_leave_team"),
     path("organisation/", organisation, name="organisation"),
+    # Seite „Verband“ der Verbandsleitung (#94): der Verband mit seiner Kennung, die Rolle im Verband fest in der
+    # Adresse, nie als frei wählbarer Teil.
+    *(
+        entry
+        for slug in ("verbandsleitung", "team")
+        for entry in (
+            path(f"organisation/verband/<key:unit>/{slug}/benennen/", federation_appoint, {"role": slug},
+                 name=f"federation_appoint_{slug}"),
+            path(f"organisation/verband/<key:unit>/{slug}/benennen/suchen/", federation_search, {"role": slug},
+                 name=f"federation_search_{slug}"),
+        )
+    ),
+    path("organisation/verband/bund/<key:unit>/benennen/", federation_appoint_lead, name="federation_appoint_lead"),
+    path("organisation/verband/bund/<key:unit>/benennen/suchen/", federation_search_lead, name="federation_search_lead"),
+    path("organisation/verband/entfernen/<key:role>/", federation_remove, name="federation_remove"),
     path("organisation/<key:unit>/", organisation_unit, name="organisation_unit"),
     path("organisation/<key:unit>/benennen/", organisation_appoint, name="organisation_appoint"),
     path("organisation/<key:unit>/benennen/suchen/", organisation_search, name="organisation_search"),

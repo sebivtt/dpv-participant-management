@@ -57,4 +57,10 @@
       {% meldung "warning" title=title text=hint %}
     {% endif %}
   </section>
+  {% if removal %}
+    {# Rückfrage „Deine Rolle im DPV-Veranstaltungsteam abgeben?“ (#94, RO-20): eigene Adresse, kommt offen vom Server. #}
+    {% include "core/_dialog_auf.html" with dialog=removal %}
+    {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" with dialog=removal %}
+  {% endif %}
 {% endblock %}

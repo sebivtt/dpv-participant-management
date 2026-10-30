@@ -6,9 +6,10 @@ Seite liest Personen- oder Anmeldedaten selbst aus der Datenbank (`CONTRIBUTING.
 Abschnitt 4; der Rundumtest meldet Verstöße).
 
 Gebaut sind die Gründe 1 bis 3 von BER-01 und die Bausteine Bereich, Kette nach oben,
-Leitungspfad, einspringende Leitung und „Leitung der eigenen Einheit einer Person“. Die übrigen
-Gründe und die einzelnen Aktionen kommen mit ihren Seiten an diese Stelle (#93, #100, #101, #92,
-#65, #94, #95, #117, #118; Protokoll der Nachklärung von #90 vom 25.10.2026).
+Leitungspfad, einspringende Leitung und „Leitung der eigenen Einheit einer Person“, dazu die
+Rechte der Verbandsleitung auf der Seite „Verband“ (#94). Die übrigen Gründe und die einzelnen
+Aktionen kommen mit ihren Seiten an diese Stelle (#100, #101, #92, #65, #95, #117, #118; Protokoll
+der Nachklärung von #90 vom 25.10.2026).
 
 Rollen und Einheiten werden beim ersten Bedarf einer Anfrage einmal geladen und mit der Anfrage
 verworfen. Einen Zwischenspeicher über Anfragen hinweg gibt es nicht: Wer eine Rolle verliert
@@ -255,12 +256,12 @@ class Rights:
     # Seite „Organisation“ (#189)
 
     def sees_organisation(self) -> bool:
-        """Menüpunkt und Bereich „Organisation“: jede Leitung von Gruppe bis Bund (EH-08).
+        """Gliederung und Seiten der Einheiten unter „Organisation“: jede Leitung von Gruppe bis Bund (EH-08).
 
         Mitglieder ohne Leitungsrolle, Konten ohne Zuordnung, das DPV-Veranstaltungsteam, die
-        Verbandsleitung ohne weitere Rolle und Admins sehen ihn nicht (EH-09; Verbandsleitung mit
-        #94, Admins mit #92, Mitglieder mit #134). Endet die letzte Leitungsrolle, fehlt er beim
-        nächsten Klick.
+        Verbandsleitung ohne weitere Rolle und Admins öffnen keine Einheit (EH-09; Admins mit #92,
+        Mitglieder mit #134). Den Menüpunkt hat zusätzlich die Verbandsleitung (`sees_menu()`, #94).
+        Endet die letzte Leitungsrolle, fehlt beides beim nächsten Klick.
         """
         return bool(self._led)
 
@@ -341,6 +342,14 @@ class Rights:
         order = list(R)
         return sorted(roles, key=lambda role: (order.index(role.kind), alphabetical(role.unit.name if role.unit else "")))
 
+    def is_federation_lead(self) -> bool:
+        """Ist die Person Verbandsleitung? Dann öffnet „Organisation“ die Seite „Verband“ (EH-08, #94)."""
+        return any(kind == R.FEDERATION_LEAD for kind, _unit in self._own_roles)
+
+    def sees_menu(self) -> bool:
+        """Menüpunkt und Bereich „Organisation“: Leitungen von Gruppe bis Bund und die Verbandsleitung (EH-08, EH-09)."""
+        return self.sees_organisation() or self.is_federation_lead()
+
     def has_roles(self) -> bool:
         """Hat die Person eine Mitgliedschaft oder irgendeine Rolle? Ohne beides steht der Hinweis „keiner Organisation zugeordnet“ (#9).
 
@@ -385,6 +394,9 @@ class Rights:
     def find_accounts(self, text: str) -> list[dict]:
         """Konten über die genaue Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung (PK-13).
 
+        Für Leitungen von Gruppe bis Bund und für die Verbandsleitung (#94); eine Namenssuche hat
+        die Verbandsleitung nicht, `suggestions()` gibt ihr nichts (PK-12).
+
         Nur Konten, die sich schon einmal angemeldet haben und nicht gesperrt sind; ein gesperrtes
         Konto zeigt dasselbe wie keines, damit die Suche keine Sperre verrät (BV11). Ein Teil einer
         Mail findet nichts, und eine Liste aller Konten gibt es nicht (PK-15): Verglichen wird auf
@@ -393,7 +405,7 @@ class Rights:
         `count_search()`, nicht diese Stelle.
         """
         text = text.strip()
-        if not self.sees_organisation() or not text or set(text) <= WILDCARDS:
+        if not self.sees_menu() or not text or set(text) <= WILDCARDS:
             return []
         accounts = get_user_model().objects.filter(is_active=True, last_login__isnull=False)
         found = accounts.filter(Q(email__iexact=text) | Q(username__iexact=text)).order_by("username")
@@ -574,6 +586,111 @@ class Rights:
             role.delete(by=me)
         values = {**shown, "unit": unit.name}
         return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
+
+    # Seite „Verband“ der Verbandsleitung (#94)
+
+    def appoint_in_federation(self, kind: str, unit: Unit, person_key) -> tuple[bool, str, dict]:
+        """Benennt als Verbandsleitung eine Bundesleitung, Verbandsleitung oder ein Teammitglied (RO-15).
+
+        Gibt zurück, ob es geklappt hat, die Meldung und die Werte für sie. `unit` ist der Bund
+        (Bundesleitung) oder der Verband (Verbandsleitung, DPV-Veranstaltungsteam); passt beides
+        nicht zusammen, ist das Ergebnis „nicht gefunden“, ebenso ohne Rolle Verbandsleitung und für
+        Konten, die nie angemeldet oder gesperrt sind. Abgelehnt mit Meldung wird, wer sich selbst
+        benennen will (RO-12, RO-16), wer die Rolle schon hat und wer als Bundesleitung nicht auf
+        seinem Leitungspfad läge (#89), ohne dessen Organisation zu nennen (PK-16). Gesperrt sind
+        das eigene Konto und das der Person; das Recht wird unter der Sperre noch einmal geprüft, wie
+        bei `appoint()`.
+        """
+        if not self._federation_target(kind, unit) or not is_key(person_key):
+            raise Http404
+        users = get_user_model().objects
+        with transaction.atomic():
+            found = users.filter(key=person_key).values_list("pk", flat=True).first()
+            if found is None:
+                raise Http404
+            me = self._lock_with(found)
+            if not Rights(me).is_federation_lead():
+                raise Http404
+            target = users.filter(pk=found, is_active=True, last_login__isnull=False).first()
+            if target is None:
+                raise Http404
+            values = {"person": display_name(target.first_name, target.last_name, target.scout_name) or target.username,
+                      "role": Role.Kind(kind).label, "unit": unit.name}
+            if target.pk == me.pk:
+                return False, str(unit_texts.NOT_YOURSELF_FEDERATION), values
+            if Role.objects.filter(user_id=target.pk, kind=kind, unit_id=unit.pk).exists():
+                return False, str(unit_texts.FEDERATION_ALREADY[kind] % values), values
+            try:
+                Role(user=target, kind=kind, unit=unit).save(by=me)
+            except ValidationError as error:
+                if error.error_list[0].code not in ("outside_path", "second_membership"):
+                    raise
+                return False, str(unit_texts.MEMBER_ELSEWHERE), values
+        return True, str(unit_texts.FEDERATION_APPOINTED[kind] % values), values
+
+    def _federation_target(self, kind: str, unit: Unit | None) -> bool:
+        """Passt die Rolle zur Organisation, und darf die Person dort als Verbandsleitung benennen?"""
+        if unit is None or not self.is_federation_lead():
+            return False
+        if kind == R.ASSOCIATION_LEAD:
+            return unit.kind == UnitKind.ASSOCIATION
+        return kind in (R.FEDERATION_LEAD, R.EVENT_TEAM) and unit.kind == UnitKind.FEDERATION
+
+    def may_remove_in_federation(self, role: Role) -> bool:
+        """Darf die Person diese Rolle auf der Seite „Verband“ entfernen oder, wenn es ihre ist, abgeben (RO-15, RO-20)?
+
+        Nur als Verbandsleitung und nur Bundesleitungen, Verbandsleitungen und Mitglieder des
+        DPV-Veranstaltungsteams, auch mit gesperrtem Konto. Leitungen von Ringen, Stämmen und
+        Gruppen, Mitgliedschaften und Admin nie (RO-17, RO-19).
+        """
+        return role.kind in SEEN_BY_FEDERATION_LEAD and self.is_federation_lead()
+
+    def _removable_in_federation(self, role_key) -> Role:
+        roles = Role.objects.filter(kind__in=SEEN_BY_FEDERATION_LEAD).select_related("user", "unit")
+        return self.entry(roles, role_key, allowed=self.may_remove_in_federation)
+
+    def removal_in_federation(self, role_key) -> tuple[Role, dict]:
+        """Die Rolle und was die Bestätigung zeigt, wie `removal()`; ohne Recht „nicht gefunden“."""
+        role = self._removable_in_federation(role_key)
+        return role, self._describe(role)
+
+    def remove_in_federation(self, role_key) -> tuple[Role, dict]:
+        """Entfernt die Rolle auf der Seite „Verband“ oder gibt die eigene ab; gibt Rolle und Beschreibung zurück.
+
+        Wie `remove()`: ohne Recht oder wenn die Rolle schon weg ist „nicht gefunden“; gleichzeitiges
+        gegenseitiges Entfernen gelingt nur einmal (VG1), weil beide Konten gesperrt und die Rechte
+        danach frisch geprüft werden. Die Mitgliedschaft einer Bundesleitung bleibt (#89).
+        """
+        if self.user is None or not is_key(role_key):
+            raise Http404
+        with transaction.atomic():
+            owner = Role.objects.filter(key=role_key).values_list("user_id", flat=True).first()
+            if owner is None:
+                raise Http404
+            me = self._lock_with(owner)
+            fresh = Rights(me)
+            role = fresh._removable_in_federation(role_key)
+            shown = fresh._describe(role)
+            role.delete(by=me)
+        return role, shown
+
+    def own_team_role(self) -> Role | None:
+        """Die eigene Rolle im DPV-Veranstaltungsteam, frisch gelesen; sonst None (RO-20, „Mein Profil“)."""
+        if self.user is None:
+            return None
+        return Role.objects.filter(user_id=self.user.pk, kind=R.EVENT_TEAM).first()
+
+    def leave_team(self) -> bool:
+        """Gibt die eigene Rolle im DPV-Veranstaltungsteam ab; False, wenn es keine (mehr) gibt (RO-20)."""
+        if self.user is None:
+            return False
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            role = Rights(me).own_team_role()
+            if role is None:
+                return False
+            role.delete(by=me)
+        return True
 
     # Leitungen (BER-01, Grund 3)
 

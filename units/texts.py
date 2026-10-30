@@ -136,3 +136,38 @@ COVER_NAME = {
 }
 REMOVED = gettext_lazy("%(person)s ist nicht mehr %(role)s von %(unit)s.")
 GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")
+
+# Seite „Verband“ der Verbandsleitung (#94), Wortlaute nach dem Issue und den Szenarien V1 bis VG4
+MARK_OWN_ASSOCIATION = gettext_lazy("Deine Rolle: Bundesleitung")
+APPOINT_FEDERATION_LEAD = gettext_lazy("Verbandsleitung benennen")
+APPOINT_TEAM = gettext_lazy("Teammitglied benennen")
+APPOINT_FOR_TEAM = gettext_lazy("für das DPV-Veranstaltungsteam")
+APPOINT_FOR_FEDERATION = gettext_lazy("für den Verband")
+NOT_YOURSELF_FEDERATION = gettext_lazy("Dir selbst kannst du keine Rolle geben. Das kann eine andere Verbandsleitung.")
+FEDERATION_APPOINTED = {
+    "association_lead": APPOINTED,
+    "federation_lead": gettext_lazy("%(person)s ist jetzt Verbandsleitung."),
+    "event_team": gettext_lazy("%(person)s ist jetzt im DPV-Veranstaltungsteam."),
+}
+FEDERATION_ALREADY = {
+    "association_lead": ALREADY_LEAD,
+    "federation_lead": gettext_lazy("%(person)s ist schon Verbandsleitung."),
+    "event_team": gettext_lazy("%(person)s ist schon im DPV-Veranstaltungsteam."),
+}
+FEDERATION_REMOVE_QUESTION = {
+    "federation_lead": gettext_lazy("%(person)s als Verbandsleitung entfernen?"),
+    "event_team": gettext_lazy("%(person)s aus dem DPV-Veranstaltungsteam entfernen?"),
+}
+FEDERATION_GIVE_UP_QUESTION = {
+    "federation_lead": gettext_lazy("Deine Rolle als Verbandsleitung abgeben?"),
+    "event_team": gettext_lazy("Deine Rolle im DPV-Veranstaltungsteam abgeben?"),
+}
+FEDERATION_REMOVED = {
+    "federation_lead": gettext_lazy("%(person)s ist nicht mehr Verbandsleitung."),
+    "event_team": gettext_lazy("%(person)s ist nicht mehr im DPV-Veranstaltungsteam."),
+}
+FEDERATION_GAVE_UP = {
+    "federation_lead": gettext_lazy("Du bist nicht mehr Verbandsleitung."),
+    "event_team": gettext_lazy("Du bist nicht mehr im DPV-Veranstaltungsteam."),
+}
+LAST_FEDERATION_LEAD = gettext_lazy("Danach gibt es keine Verbandsleitung mehr. Eine neue kann nur ein Admin benennen.")

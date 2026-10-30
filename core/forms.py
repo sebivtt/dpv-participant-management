@@ -48,3 +48,11 @@ class AccountSearchForm(forms.Form):
             }
         ),
     )
+
+
+class FederationSearchForm(AccountSearchForm):
+    """Das Suchfeld im Dialog der Verbandsleitung (#94, Frage 4): nur Mail oder Benutzername, keine Namen (PK-12)."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["suche"].label = _("Mail oder Benutzername")

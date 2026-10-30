@@ -123,7 +123,9 @@ body:has(> .a-main) { display: flex; flex-direction: column; min-height: 100vh; 
    Ein Dialog ist ausgenommen: Er liegt über der Seite, und ohne Abstand unten stand er am unteren Fensterrand (#210). */
 .a-main-inhalt > :last-child:not(dialog) { margin-bottom: 0; }
 .a-kopf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; }
-.a-kopf h1 { margin: 0; font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
+.a-kopf h1 { margin: 0; }
+/* „Bünde“ auf der Seite „Verband“ so groß wie die Seitenüberschrift: zwei gleichrangige Teile (Sebastian, 30.10.2026, #94). */
+.a-kopf h1, .a-buende-titel { font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
 .a-kopf p { margin: 0; color: var(--text-leise); font-size: 1.05rem; max-width: 62ch; }
 .a-abschnitt { margin: 0 0 44px; }
 .a-abschnitt > h2 { margin: 0 0 4px; font-size: 1.25rem; }
@@ -211,6 +213,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
 .a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
+.a-kennmarke.ist-rolle { background: var(--dpv-hauch); color: var(--dpv); }
+/* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
+.a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
 .a-pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--text-leise); font-size: .88rem; }
 .a-pfad a { font-weight: 700; text-decoration: none; }
@@ -219,7 +224,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
-.a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
+   „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */
+.a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .a-leitung { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
 .a-leitung.ist-gesperrt .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
 .a-leitung-wer { flex: 1; min-width: 0; }
@@ -231,7 +238,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* Zweite Zeile: links die Rolle, rechts die Mail; ist es zu schmal, rutscht die Mail darunter */
 .a-leitung-unten { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 4px; }
 .a-leitung-rolle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.a-leitung-rolle .a-rollenmarke { margin: 0; background: var(--dpv-hauch); }
+.a-leitung-rolle .a-rollenmarke { min-width: 0; margin: 0; background: var(--dpv-hauch); overflow-wrap: anywhere; }
 .a-leise { color: var(--text-leise); font-size: .88rem; font-weight: 400; }
 .a-leitung-mail { display: inline-flex; align-items: center; gap: 6px; min-width: 0; margin-right: -8px; padding: 2px 8px; border-radius: 6px; font-size: .9rem; text-decoration: none; overflow-wrap: anywhere; }
 .a-leitung-mail:hover { background: var(--dpv-hauch); }
@@ -447,3 +454,4 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
   .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
+.a-kachel-knopf { margin-top: 8px; }

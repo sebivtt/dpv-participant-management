@@ -13,7 +13,7 @@ from django.db.models import Q
 from django.urls import reverse
 
 from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
 from units.models import Kind, Unit
 
@@ -348,22 +348,27 @@ class Organisation:
         )
 
 
-def hits(entries: list[dict], unit: Unit) -> list[Hit]:
+def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:
     """Vorschläge oder Treffer aus der Rechteprüfung für den Dialog „… benennen“ der Einheit `unit` (#190).
 
     Bei sich selbst steht statt des Knopfs, wer einen benennen kann (RO-12): eine andere Leitung
     der eigenen Organisation oder darüber. Wer außerhalb des eigenen Bereichs schon Mitglied ist,
     bekommt den Satz aus BV1 statt des Knopfs, ohne dass die Organisation genannt wird (PK-16).
+
+    Mit `kind` ist es der Dialog der Verbandsleitung auf der Seite „Verband“ (#94): Bei sich selbst
+    steht, dass eine andere Verbandsleitung benennt; wer schon woanders Mitglied ist, behält den
+    Knopf, weil die Rolle trotzdem auf ihrem Pfad liegen kann (V5); ob sie das tut, sagt erst das
+    Benennen, ohne die Organisation zu nennen (VV3). Mitglied wird nur, wer Bundesleitung wird.
     """
     found = []
     for entry in entries:
         full_name = _full_name(entry)
         note = warning = hint = ""
         if entry["is_self"]:
-            note = texts.NOT_YOURSELF % {"unit": entry["unit_name"] or unit.name}
-        elif entry["elsewhere"]:
+            note = texts.NOT_YOURSELF_FEDERATION if kind else texts.NOT_YOURSELF % {"unit": entry["unit_name"] or unit.name}
+        elif entry["elsewhere"] and not kind:
             warning = texts.MEMBER_ELSEWHERE
-        elif not entry["unit_name"]:
+        elif not entry["unit_name"] and not entry["elsewhere"] and kind in (None, RoleKind.ASSOCIATION_LEAD):
             hint = texts.BECOMES_MEMBER % {"unit": unit.name}
         if entry["elsewhere"]:
             place = texts.ELSEWHERE
@@ -379,3 +384,108 @@ def hits(entries: list[dict], unit: Unit) -> list[Hit]:
             hint=hint,
         ))
     return found
+
+
+@dataclass
+class Association:
+    """Ein Bund auf der Seite „Verband“: Name, Bundesleitungen und was die Verbandsleitung dort tun kann (#94)."""
+
+    unit: Unit
+    href: str | None
+    mark: Mark | None
+    leads: list[Lead]
+    notice: str
+    appoint_href: str
+
+
+# Kurze Namen der Rollen im Verband für Adressen, z. B. „/organisation/verband/team/benennen/“.
+FEDERATION_SLUGS = {"verbandsleitung": RoleKind.FEDERATION_LEAD, "team": RoleKind.EVENT_TEAM}
+SLUG_OF = {kind: slug for slug, kind in FEDERATION_SLUGS.items()}
+
+
+class Federation:
+    """Die Seite „Verband“ der Verbandsleitung: Verbandsleitung, DPV-Veranstaltungsteam und Bünde (#94).
+
+    Personen erscheinen nur nach BER-01, Grund 3: Name, Fahrtenname und Rolle der Bundesleitungen,
+    Verbandsleitungen und Teammitglieder aus `Rights.leads()`, nie eine Mail. Ringe, Stämme und
+    Gruppen stehen nicht da (EH-05). Ein Bund ist nur anklickbar, wenn sich seine Seite für die
+    Person öffnet, also wenn sie dort selbst Leitung ist, auch unterhalb des Bundes (F2 vom
+    30.10.2026); die Marke „Deine Rolle: Bundesleitung“ trägt er nur, wenn sie ihn leitet. Gesperrte
+    Konten stehen mit der Marke „gesperrt“ da, weil die Verbandsleitung sie entfernen darf (wie
+    #189, Frage B; F3 vom 30.10.2026).
+    """
+
+    def __init__(self, rights: Rights, user) -> None:
+        self.rights = rights
+        self.user = user
+        self.federation = Unit.objects.filter(kind=Kind.FEDERATION).first()
+        self.leads: dict[tuple[str, str], list[dict]] = {}
+        for entry in sorted(rights.leads(), key=_by_name):
+            self.leads.setdefault((entry["kind"], entry["unit_key"]), []).append(entry)
+
+    def _people(self, kind: str, unit: Unit | None) -> list[Lead]:
+        if unit is None:
+            return []
+        found = []
+        for entry in self.leads.get((kind, unit.key), []):
+            full_name = _full_name(entry)
+            is_self = entry["user_key"] == self.user.key
+            found.append(Lead(
+                name=entry["scout_name"] or full_name or entry["username"],
+                extra=full_name if entry["scout_name"] else "",
+                role=RoleKind(kind).label,
+                mail="",
+                locked=entry["locked"],
+                is_self=is_self,
+                remove_href=reverse("federation_remove", args=[entry["role_key"]]),
+                remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
+            ))
+        return found
+
+    def federation_leads(self) -> list[Lead]:
+        return self._people(RoleKind.FEDERATION_LEAD, self.federation)
+
+    def team(self) -> list[Lead]:
+        return self._people(RoleKind.EVENT_TEAM, self.federation)
+
+    def associations(self) -> list[Association]:
+        """Alle Bünde nach dem Alphabet, je mit ihren Bundesleitungen; ohne Bundesleitung mit Konto ein Satz (VG3)."""
+        bunds = sorted(Unit.objects.filter(kind=Kind.ASSOCIATION), key=lambda entry: alphabetical(entry.name))
+        role = RoleKind.ASSOCIATION_LEAD.label
+        return [Association(
+            unit=bund,
+            href=reverse("organisation_unit", args=[bund.key]) if self.rights.opens_unit(bund) else None,
+            mark=Mark(texts.MARK_OWN_ASSOCIATION, "rolle") if self.rights.leads_itself(bund) else None,
+            leads=self._people(RoleKind.ASSOCIATION_LEAD, bund),
+            notice="" if self.rights.has_lead(bund) else str(texts.NO_LEAD % {"unit": bund.name, "role": role}),
+            appoint_href=reverse("federation_appoint_lead", args=[bund.key]),
+        ) for bund in bunds]
+
+    def removal(self, role, shown: dict, action: str) -> dict:
+        """Der Dialog zum Entfernen oder Abgeben auf der Seite „Verband“, mit den Wortlauten aus #191 (V7, V9)."""
+        close = reverse("organisation")
+        anyway = texts.ANYWAY_GIVE_UP if shown["is_self"] else texts.ANYWAY_REMOVE
+        label = texts.GIVE_UP_BUTTON if shown["is_self"] else texts.REMOVE_BUTTON
+        lines = []
+        if role.kind == RoleKind.ASSOCIATION_LEAD:
+            values = {"person": shown["person"], "role": shown["role"], "unit": role.unit.name}
+            title = (texts.GIVE_UP_QUESTION if shown["is_self"] else texts.REMOVE_QUESTION) % values
+            if shown["is_self"]:
+                lines.append(texts.GIVE_UP_LOSES % values)
+            if shown["last"]:
+                lines.append(f"{texts.LAST_ASSOCIATION_LEAD % values} {anyway}")
+        else:
+            questions = texts.FEDERATION_GIVE_UP_QUESTION if shown["is_self"] else texts.FEDERATION_REMOVE_QUESTION
+            title = questions[role.kind] % {"person": shown["person"]}
+            if shown["last"] and role.kind == RoleKind.FEDERATION_LEAD:
+                lines.append(f"{texts.LAST_FEDERATION_LEAD} {anyway}")
+        return {"title": title, "lines": lines, "close_href": close, "confirm_action": action, "confirm_label": label}
+
+
+def federation_done(role, shown: dict) -> str:
+    """Die kurze Meldung nach dem Entfernen oder Abgeben auf der Seite „Verband“ (wie C13)."""
+    if role.kind == RoleKind.ASSOCIATION_LEAD:
+        values = {**shown, "unit": role.unit.name}
+        return str((texts.GAVE_UP if shown["is_self"] else texts.REMOVED) % values)
+    done = texts.FEDERATION_GAVE_UP if shown["is_self"] else texts.FEDERATION_REMOVED
+    return str(done[role.kind] % shown)

@@ -219,9 +219,10 @@ def test_a1_der_menuepunkt_fuehrt_zur_gliederung_und_ist_dort_hervorgehoben(org)
 
 @pytest.mark.rechtematrix("EH-09", "EH-07", "EH-08")
 def test_av1_mitglieder_konten_ohne_zuordnung_team_verband_und_admin_sehen_keinen_menuepunkt(org):
+    """Die Verbandsleitung hat den Menüpunkt seit #94 (EH-08, Seite „Verband“); geprüft in tests/test_verband.py."""
     others = [
         org.falke, org.walhall_mitglied, org.boreas_mitglied, org.moewe, org.sturmvogel_mitglied,
-        org.ohne, org.team, org.verbandsleitung, org.max,
+        org.ohne, org.team, org.max,
     ]
     for user in others:
         assert "Organisation" not in nav_labels(page_tree(user, "/")), user.username
@@ -656,7 +657,9 @@ def test_verbandsleitung_mit_gruppenleitung_sieht_nur_ihren_bund_ohne_gesperrte_
     boreas = page_tree(org.verbandsleitung, unit_address(org.boreas))
     falken = page_tree(org.verbandsleitung, unit_address(org.falken))
 
-    for root in (overview, boreas, falken):
+    # Seit #94 öffnet „Organisation“ für die Verbandsleitung die Seite „Verband“ mit allen Bünden und
+    # den gesperrten Bundesleitungen (tests/test_verband.py); Gliederung und Seiten des Bundes bleiben ohne sie.
+    for root in (boreas, falken):
         text = _text(root)
         for hidden in ("Brummbär", "gesperrt", "DPBM Mosaik", "Möwe", "Mona"):
             assert hidden not in text, hidden
