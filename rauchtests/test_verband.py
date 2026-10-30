@@ -56,8 +56,8 @@ def test_am_pc_nur_mit_der_tastatur_bundesleitung_benennen(pc):
     units = _verband_for_erika()
     pc.goto(ADDRESS)
     expect(pc.locator("h1")).to_have_text("Verband")
-    # Alle Überschriften der Abschnitte gleich groß (Sebastian, 30.10.2026, Punkt 3).
-    sizes = pc.evaluate("['h-verbandsleitung', 'h-team', 'h-buende'].map(id => getComputedStyle(document.getElementById(id)).fontSize)")
+    # „Bünde“ so groß wie „Verband“ (Sebastian, 30.10.2026, Punkt 3, nachgeschärft: zwei gleichrangige Teile).
+    sizes = pc.evaluate("[document.querySelector('h1'), document.getElementById('h-buende')].map(e => getComputedStyle(e).fontSize)")
     assert len(set(sizes)) == 1, sizes
     assert run_axe(pc) == []
 

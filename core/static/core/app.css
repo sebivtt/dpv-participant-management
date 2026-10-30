@@ -123,7 +123,9 @@ body:has(> .a-main) { display: flex; flex-direction: column; min-height: 100vh; 
    Ein Dialog ist ausgenommen: Er liegt über der Seite, und ohne Abstand unten stand er am unteren Fensterrand (#210). */
 .a-main-inhalt > :last-child:not(dialog) { margin-bottom: 0; }
 .a-kopf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; }
-.a-kopf h1 { margin: 0; font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
+.a-kopf h1 { margin: 0; }
+/* „Bünde“ auf der Seite „Verband“ so groß wie die Seitenüberschrift: zwei gleichrangige Teile (Sebastian, 30.10.2026, #94). */
+.a-kopf h1, .a-buende-titel { font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; text-wrap: balance; }
 .a-kopf p { margin: 0; color: var(--text-leise); font-size: 1.05rem; max-width: 62ch; }
 .a-abschnitt { margin: 0 0 44px; }
 .a-abschnitt > h2 { margin: 0 0 4px; font-size: 1.25rem; }
@@ -213,8 +215,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
 .a-kennmarke.ist-rolle { background: var(--dpv-hauch); color: var(--dpv); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
-/* So groß wie die Überschriften in den Flächen darüber (Sebastian, 30.10.2026). */
-.a-buende-titel { margin: 28px 0 12px; font-size: 1.1rem; line-height: 1.3; }
+.a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
 .a-pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--text-leise); font-size: .88rem; }
 .a-pfad a { font-weight: 700; text-decoration: none; }
