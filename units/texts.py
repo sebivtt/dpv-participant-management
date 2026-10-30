@@ -141,7 +141,6 @@ REMOVED = gettext_lazy("%(person)s ist nicht mehr %(role)s von %(unit)s.")
 GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")
 
 # Seite „Verband“ der Verbandsleitung (#94), Wortlaute nach dem Issue und den Szenarien V1 bis VG4
-MARK_OWN_ASSOCIATION = gettext_lazy("Deine Rolle: Bundesleitung")
 APPOINT_FEDERATION_LEAD = gettext_lazy("Verbandsleitung benennen")
 APPOINT_TEAM = gettext_lazy("Teammitglied benennen")
 APPOINT_FOR_TEAM = gettext_lazy("für das DPV-Veranstaltungsteam")

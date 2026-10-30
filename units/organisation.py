@@ -404,7 +404,6 @@ class Association:
 
     unit: Unit
     href: str | None
-    mark: Mark | None
     leads: list[Lead]
     notice: str
     appoint_href: str
@@ -422,7 +421,7 @@ class Federation:
     Verbandsleitungen und Teammitglieder aus `Rights.leads()`, nie eine Mail. Ringe, Stämme und
     Gruppen stehen nicht da (EH-05). Ein Bund ist nur anklickbar, wenn sich seine Seite für die
     Person öffnet, also wenn sie dort selbst Leitung ist, auch unterhalb des Bundes (F2 vom
-    30.10.2026); die Marke „Deine Rolle: Bundesleitung“ trägt er nur, wenn sie ihn leitet. Gesperrte
+    30.10.2026), ohne Marke „Deine Rolle: Bundesleitung“ (Nachklärung M1 zu #218). Gesperrte
     Konten stehen mit der Marke „gesperrt“ da, weil die Verbandsleitung sie entfernen darf (wie
     #189, Frage B; F3 vom 30.10.2026).
     """
@@ -467,7 +466,6 @@ class Federation:
         return [Association(
             unit=bund,
             href=reverse("organisation_unit", args=[bund.key]) if self.rights.opens_unit(bund) else None,
-            mark=Mark(texts.MARK_OWN_ASSOCIATION, "rolle") if self.rights.leads_itself(bund) else None,
             leads=self._people(RoleKind.ASSOCIATION_LEAD, bund),
             notice="" if self.rights.has_lead(bund) else str(texts.NO_LEAD % {"unit": bund.name, "role": role}),
             appoint_href=reverse("federation_appoint_lead", args=[bund.key]),

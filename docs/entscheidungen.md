@@ -6,6 +6,15 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-30 · Verbandsleitung: zurück zur Seite „Verband“, ohne Marke am eigenen Bund (#218)
+
+**Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6521671528) mit „Alles passt“; [Nachklärung M1, M2](https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6523317158) je mit „Passt“):
+
+1. Für die Verbandsleitung steht im Pfad jeder Organisationsseite der Name des Verbands als erste Ebene und führt zur Seite „Verband“; am Handy heißt der Knopf oben „‹ Verband“.
+2. Auf der Seite „Verband“ trägt der eigene Bund keine Marke „Deine Rolle: Bundesleitung“ mehr, wie sonst überall auf der Seite „Organisation“ (28.10.2026, #189, Punkt 4); er bleibt anklickbar. Das ändert Punkt 1 und Punkt 4 des Eintrags zu #94 unten: Die Überschrift einer Fläche behält den Titel als Link, die Marke dahinter und die Art „Deine Rolle: Bundesleitung“ entfallen.
+
+**Umsetzung:** `units/organisation.py` (`Organisation.page()`, `Federation.associations()`), `units/texts.py`, `core/views.py` (Bausteinkatalog), `core/templates/core/_orgakopf.html`, `_flaechenkopf.html`, `_kennmarke.html`, `organisation.html`, `verband.html`, `bausteine.html`, `core/static/core/app.css`, `tests/test_verband.py`, `rauchtests/test_verband.py`.
+
 ## 2026-10-30 · Verbandsleitung: Seite „Verband“, Rollen vergeben ohne Personendaten (#94)
 
 **Entscheidung** (Sebastian, [Klärung vom 28.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/94#issuecomment-6466398212), Fragen 1 bis 5, bestätigt mit „Die Entscheidungen passen so.“; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/94#issuecomment-6475718734) mit „Alle passen“):

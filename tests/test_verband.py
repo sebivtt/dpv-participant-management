@@ -96,7 +96,7 @@ def bunds(root) -> dict[str, dict]:
     for entry in _all(section_of(root, "h-buende"), lambda e: "a-bund" in _classes(e)):
         heading = _one(_by_tag(entry, "h3"))
         links = _by_tag(heading, "a")
-        marks = _all(entry, lambda e: "a-kennmarke" in _classes(e) and "ist-rolle" in _classes(e))
+        marks = _all(_one(_all(entry, lambda e: "a-flaeche-kopf" in _classes(e))), lambda e: "a-kennmarke" in _classes(e))
         found[_visible_text(heading)] = {
             "href": _attr(links[0], "href") if links else None,
             "mark": _visible_text(marks[0]) if marks else "",
@@ -340,7 +340,7 @@ def test_v11_viktor_benennt_vera_als_bundesleitung_des_mosaik(org):
     assert roles_of(org.verbandsleitung) >= {(R.ASSOCIATION_LEAD, "DPBM Mosaik"), (R.MEMBER, "DPBM Mosaik")}
     shown = bunds(page_tree(org.verbandsleitung))
     assert shown["DPBM Mosaik"]["href"] == unit_address(org.mosaik)
-    assert shown["DPBM Mosaik"]["mark"] == "Deine Rolle: Bundesleitung"
+    assert shown["DPBM Mosaik"]["mark"] == ""  # seit #218 ohne Marke (Nachklärung M1 vom 30.10.2026)
     assert shown["Pfadfinderbund Boreas"]["href"] is None and shown["Pfadfinderbund Boreas"]["mark"] == ""
     page = client_for(org.verbandsleitung).get(unit_address(org.mosaik))
     assert page.status_code == 200 and "a-gliederung" in page.content.decode()
@@ -797,3 +797,27 @@ def test_218_der_bausteinkatalog_zeigt_den_kopf_auch_mit_verband_im_pfad(org):
 
     paths = [[_text(link) for link in _by_tag(_one(_all(head, lambda e: "a-pfad" in _classes(e))), "a")] for head in heads]
     assert paths == [["Pfadfinderbund Boreas"], ["DPV", "Pfadfinderbund Boreas"]]
+
+
+# Nachtrag vom 30.10.2026: keine Marke „Deine Rolle: Bundesleitung“ mehr (Szenarien M1, M2,
+# https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6523317158).
+
+
+def test_218_m1_der_eigene_bund_ist_anklickbar_aber_ohne_marke(org):
+    _vera_leads_boreas(org)
+    root = page_tree(org.verbandsleitung)
+    shown = bunds(root)
+
+    assert shown["Pfadfinderbund Boreas"]["href"] == unit_address(org.boreas)
+    assert shown["DPBM Mosaik"]["href"] is None
+    assert all(entry["mark"] == "" for entry in shown.values())
+    assert "Deine Rolle: Bundesleitung" not in _visible_text(root)
+    assert _all(page_tree(org.verbandsleitung, unit_address(org.boreas)), lambda e: "a-gliederung" in _classes(e))
+
+
+def test_218_m2_der_bausteinkatalog_zeigt_die_marke_nicht_mehr_der_titel_bleibt_ein_link(org):
+    root = page_tree(org.verbandsleitung, "/bausteine/")
+
+    assert "Deine Rolle: Bundesleitung" not in _visible_text(root)
+    heads = _all(section_of(root, "h-flaechenkopf"), lambda e: "a-flaeche-kopf" in _classes(e))
+    assert [_text(link) for head in heads for link in _by_tag(_one(_by_tag(head, "h3")), "a")] == ["Pfadfinderbund Boreas"]

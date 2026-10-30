@@ -213,7 +213,6 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
 .a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
-.a-kennmarke.ist-rolle { background: var(--dpv-hauch); color: var(--dpv); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
 .a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
