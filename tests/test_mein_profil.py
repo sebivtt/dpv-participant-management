@@ -130,10 +130,10 @@ def role_tiles(root) -> list:
 
 
 def entries(root) -> list[tuple[str, str, str]]:
-    """Was unter „Organisation und Rollen“ steht, als (klein, groß, Weg darunter) (#161).
+    """Was unter „Organisation und Rollen“ steht, als (klein, groß, Zeile darunter) (#161).
 
     Zuerst die Fläche der Mitgliedschaft („Mitgliedschaft“, Organisation, Weg), dann jede
-    Kachel (Rolle, Organisation, Weg oder fester Satz).
+    Kachel (Rolle, Organisation, seit #219 ohne Zeile darunter).
     """
     return [_entry(box) for box in membership_boxes(root)] + [_entry(tile) for tile in role_tiles(root)]
 
@@ -262,11 +262,11 @@ def test_vollstaendiger_name_kein_hinweis_zum_ergaenzen(org):
     assert all(NOT_GIVEN not in value for value in details(root).values())
 
 
-# Szenario 3: Erst die Mitgliedschaft, dann die Rollen, mit dem Weg nach oben ohne den Verband
+# Szenario 3: Erst die Mitgliedschaft, dann die Rollen; nur die Mitgliedschaft mit dem Weg nach oben (#219)
 
 
 @pytest.mark.rechtematrix("EP-01", "EP-02")
-def test_mitgliedschaft_zuerst_dann_rollen_mit_weg_nach_oben(org):
+def test_mitgliedschaft_zuerst_mit_weg_dann_rollen_ohne_zeile(org):
     give(org.erika, R.MEMBER, org.falken)
     give(org.erika, R.GROUP_LEAD, org.woelfe)
     give(org.erika, R.TROOP_LEAD, org.walhall)
@@ -274,9 +274,9 @@ def test_mitgliedschaft_zuerst_dann_rollen_mit_weg_nach_oben(org):
 
     assert entries(page(org.erika)) == [
         ("Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Walhall"),
-        ("Gruppenleitung", "Meute Wölfe", "Pfadfinderbund Boreas › Walhall"),
-        ("Stammesleitung", "Walhall", "Pfadfinderbund Boreas"),
-        ("DPV-Veranstaltungsteam", "DPV", "Veranstaltungen des Verbands"),  # Nachklärung Kacheln, Szenario 5
+        ("Gruppenleitung", "Meute Wölfe", ""),
+        ("Stammesleitung", "Walhall", ""),
+        ("DPV-Veranstaltungsteam", "DPV", ""),
     ]
 
 
@@ -330,8 +330,8 @@ def test_ringleitung_steht_zwischen_stammes_und_bundesleitung(org):
 
     assert entries(page(lena)) == [
         ("Mitgliedschaft", "DPBM Mosaik", ""),
-        ("Stammesleitung", "Leuchtturm", "DPBM Mosaik › Küste"),
-        ("Ringleitung", "Küste", "DPBM Mosaik"),
+        ("Stammesleitung", "Leuchtturm", ""),
+        ("Ringleitung", "Küste", ""),
         ("Bundesleitung", "DPBM Mosaik", ""),
     ]
 
@@ -347,7 +347,7 @@ def test_umlaut_am_anfang_steht_im_alphabet_beim_grundbuchstaben(org):
     assert rows[1:] == ["Meute Ährenfeld", "Meute Biber", "Meute Zander"]
 
 
-# Szenario 5: Bund mit Ringen
+# Szenario 5: Bund mit Ringen; den Weg zeigt nur noch die Mitgliedschaft (#219)
 
 
 def test_bund_mit_ringen_zeigt_den_ring_im_weg(org):
@@ -357,7 +357,7 @@ def test_bund_mit_ringen_zeigt_den_ring_im_weg(org):
 
     assert entries(page(lena)) == [
         ("Mitgliedschaft", "Leuchtturm", "DPBM Mosaik › Küste"),
-        ("Gruppenleitung", "Meute Möwen", "DPBM Mosaik › Küste › Leuchtturm"),
+        ("Gruppenleitung", "Meute Möwen", ""),
     ]
 
 
@@ -369,17 +369,58 @@ def test_admin_steht_ohne_organisation_und_ohne_weg(org):
 
     root = page(org.max)
 
-    # Szenario 8 zu #161, Nachklärung Kacheln: wie die anderen Kacheln, mit festen Texten
-    assert entries(root) == [("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools")]
+    # Szenario 11 zu #219: wie die anderen Kacheln, ohne „Verwaltung des ganzen Tools“
+    assert entries(root) == [("Admin", "DPV Anmeldetool", "")]
     assert membership_boxes(root) == []
     assert HINT_NO_ORG_BOLD not in text(root)
 
 
-def test_verbandsleitung_mit_festem_satz(org):
-    """Szenario 8a zu #161, Nachklärung Kacheln."""
+def test_verbandsleitung_ohne_zweite_zeile(org):
+    """Szenario 8a zu #161, geändert mit #219: ohne „Leitung des Verbands“."""
     give(org.max, R.FEDERATION_LEAD, org.dpv)
 
-    assert entries(page(org.max)) == [("Verbandsleitung", "DPV", "Leitung des Verbands")]
+    assert entries(page(org.max)) == [("Verbandsleitung", "DPV", "")]
+
+
+# Szenarien 9 und 10 zu #219: Rollenkacheln ohne zweite Zeile, die Mitgliedschaft behält ihren Weg
+
+
+@pytest.mark.rechtematrix("EP-01")
+def test_rollen_im_verband_und_bundesleitung_ohne_zweite_zeile(org):
+    """Szenario 9: Erika sieht drei Kacheln nur mit Rolle und Organisation; das Team behält „Rolle abgeben“."""
+    nordlicht = unit(U.ASSOCIATION, "Nordlicht", org.dpv)
+    give(org.erika, R.FEDERATION_LEAD, org.dpv)
+    give(org.erika, R.EVENT_TEAM, org.dpv)
+    give(org.erika, R.ASSOCIATION_LEAD, nordlicht)
+
+    root = page(org.erika)
+
+    assert [_entry(tile) for tile in role_tiles(root)] == [
+        ("Bundesleitung", "Nordlicht", ""),
+        ("Verbandsleitung", "DPV", ""),
+        ("DPV-Veranstaltungsteam", "DPV", ""),
+    ]
+    assert all(with_class(tile, "a-weg") == [] for tile in role_tiles(root))
+    buttons = {_entry(tile)[0]: [_visible_text(a) for a in with_class(tile, "a-kachel-knopf")] for tile in role_tiles(root)}
+    assert buttons == {"Bundesleitung": [], "Verbandsleitung": [], "DPV-Veranstaltungsteam": ["Rolle abgeben"]}
+    for sentence in ("Leitung des Verbands", "Veranstaltungen des Verbands", "Verwaltung des ganzen Tools"):
+        assert sentence not in raw_text(main(root)), sentence
+
+
+@pytest.mark.rechtematrix("EP-01")
+def test_mitgliedschaft_mit_weg_stammesleitung_ohne_zeile(org):
+    """Szenario 10: Wandas Mitgliedschaft zeigt den Weg (ORG-05), ihre Stammesleitung keine zweite Zeile."""
+    wanda = person("wanda.walhall", "Wanda", "Walhall")
+    give(wanda, R.MEMBER, org.falken)
+    give(wanda, R.TROOP_LEAD, org.walhall)
+
+    root = page(wanda)
+
+    assert entries(root) == [
+        ("Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Walhall"),
+        ("Stammesleitung", "Walhall", ""),
+    ]
+    assert with_class(_one(role_tiles(root)), "a-weg") == []
 
 
 # Szenario 7: Ohne Zuordnung
@@ -398,9 +439,9 @@ def test_ohne_mitgliedschaft_und_rolle_steht_der_hinweis(org):
 @pytest.mark.parametrize(
     ("kind", "tile"),
     [
-        (R.FEDERATION_LEAD, ("Verbandsleitung", "DPV", "Leitung des Verbands")),
-        (R.EVENT_TEAM, ("DPV-Veranstaltungsteam", "DPV", "Veranstaltungen des Verbands")),
-        (R.ADMIN, ("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools")),
+        (R.FEDERATION_LEAD, ("Verbandsleitung", "DPV", "")),
+        (R.EVENT_TEAM, ("DPV-Veranstaltungsteam", "DPV", "")),
+        (R.ADMIN, ("Admin", "DPV Anmeldetool", "")),
     ],
 )
 def test_nur_rolle_im_verband_oder_admin_ohne_mitgliedschaft_kein_hinweis(org, kind, tile):
@@ -409,7 +450,7 @@ def test_nur_rolle_im_verband_oder_admin_ohne_mitgliedschaft_kein_hinweis(org, k
     root = page(org.max)
 
     assert HINT_NO_ORG_BOLD not in text(root)
-    # Szenario 9 zu #161 (Nachklärung Kacheln): nur die Kachel mit festem Satz, keine Fläche für die Mitgliedschaft
+    # Szenario 9 zu #161 (Nachklärung Kacheln): nur die Kachel, keine Fläche für die Mitgliedschaft
     assert entries(root) == [tile]
     assert membership_boxes(root) == []
 
@@ -677,9 +718,28 @@ def test_bausteine_angaben_und_rollen_stehen_im_katalog(org):
     assert _all(root, lambda e: e.name == "dl" and "a-felder" in _classes(e))
     assert _all(root, lambda e: e.name == "ul" and "a-rollenkacheln" in _classes(e))
     assert _all(root, lambda e: "a-leer" in _classes(e) and _visible_text(e) == NOT_GIVEN)
-    # Auch eine Kachel mit festem Satz statt Weg steht dort als Beispiel (Nachklärung Kacheln).
     tiles = [_entry(tile) for tile in _by_tag(_one(_all(root, lambda e: "a-rollenkacheln" in _classes(e))), "li")]
-    assert ("Admin", "DPV Anmeldetool", "Verwaltung des ganzen Tools") in tiles
+    assert ("Admin", "DPV Anmeldetool", "") in tiles
+
+
+def test_bausteinkatalog_rollenkacheln_ohne_zeile_mitgliedschaft_und_darunter_mit_zeile(org):
+    """Szenario 13 zu #219: keine Rollenkachel mit festem Satz oder Weg mehr im Katalog; die Mitgliedschaft
+    und die Kacheln unter „Organisationen darunter“ zeigen ihre Zeile weiter."""
+    client = Client()
+    client.force_login(org.erika)
+    root = _tree(client.get("/bausteine/"))
+    section = _one(_all(root, lambda e: e.name == "section" and _attr(e, "aria-labelledby") == "h-rollenkachel"))
+    items = _by_tag(_one(_all(section, lambda e: "a-rollenkacheln" in _classes(e))), "li")
+    roles = [_entry(item) for item in items if "a-orgakachel" not in _classes(item)]
+    below = [_entry(item) for item in items if "a-orgakachel" in _classes(item)]
+
+    assert roles and all(way == "" for _label, _name, way in roles), roles
+    assert ("Gruppe", "Meute Wölfe", "Gruppenleitung: Wolke") in below
+    assert _entry(_one(with_class(section, "a-mitgliedschaft"))) == (
+        "Mitgliedschaft", "Sippe Falken", "Pfadfinderbund Boreas › Stamm Walhall")
+    assert "Leitung des Verbands" not in raw_text(section)
+    assert "Veranstaltungen des Verbands" not in raw_text(section)
+    assert "Verwaltung des ganzen Tools" not in raw_text(section)
 
 
 # Szenario 18 zu #161: Sebastians Zielbild liegt unverändert im Repo

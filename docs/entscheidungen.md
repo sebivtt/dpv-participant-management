@@ -6,6 +6,18 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-30 · Rollenkacheln auf „Mein Profil“ ohne zweite Zeile (#219)
+
+**Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/219#issuecomment-6521672121), Frage 4 mit Nachfrage; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/219#issuecomment-6521672415) mit „Alles passt“):
+
+1. Keine Rollenkachel auf „Mein Profil“ zeigt eine zweite Zeile: weder die festen Sätze unter Verbandsleitung, DPV-Veranstaltungsteam und Admin („Leitung des Verbands“, „Veranstaltungen des Verbands“, „Verwaltung des ganzen Tools“) noch den Weg nach oben unter Gruppen-, Stammes- und Ringleitung. Das hebt diese Teile von Punkt 3 im Eintrag zu #161 (25.10.2026, Nachklärung Kacheln) auf.
+2. Die Mitgliedschaft behält ihren Weg nach oben (ORG-05), weil Gruppennamen mehrfach vorkommen.
+3. Unverändert bleiben: „Rolle abgeben“ in der Kachel des DPV-Veranstaltungsteams, groß „DPV Anmeldetool“ bei Admin und die Kacheln unter „Organisationen darunter“ mit ihrer Zeile „Gruppenleitung: …“ und ihren Marken (#189).
+
+**Begründung:** Sebastian sah beim Test von #94 Kacheln in unterschiedlichem Stil (Verbandsleitung mit Zeile, Bundesleitung ohne) und hält die Zeilen nicht für nötig. Einheitlich wird es nur ohne Zeile: Mit dem Verband im Weg hätten Verbandsrollen und Admin weiter keine Zeile, weil über dem Verband nichts liegt.
+
+**Umsetzung:** `core/views.py` (`_tile()`, Bausteinkatalog), `core/templates/core/_rollenkachel.html`, `tests/test_mein_profil.py`.
+
 ## 2026-10-30 · Verbandsleitung: zurück zur Seite „Verband“, ohne Marke am eigenen Bund (#218)
 
 **Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6521671528) mit „Alles passt“; [Nachklärung M1, M2](https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6523317158) je mit „Passt“):
