@@ -77,7 +77,7 @@
     <div class="a-flaeche a-profilflaeche">
       {% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Überschrift einer Fläche mit Symbol") level=3 %}
       {% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") level=3 action_href="#h-flaechenkopf" action_label=_("Gruppenleitung benennen") %}
-      {% include "core/_flaechenkopf.html" with symbol="organisation" title="Pfadfinderbund Boreas" title_href="#h-flaechenkopf" mark=examples.org_marks.3 level=3 action_href="#h-flaechenkopf" action_label=_("Bundesleitung benennen") %}
+      {% include "core/_flaechenkopf.html" with symbol="organisation" title="Pfadfinderbund Boreas" title_href="#h-flaechenkopf" level=3 action_href="#h-flaechenkopf" action_label=_("Bundesleitung benennen") %}
     </div>
   </section>
 
@@ -127,6 +127,7 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}
+    {% include "core/_orgakopf.html" with page=examples.org_federation_page heading=3 name_id="h-orga-verband" %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-dialog">

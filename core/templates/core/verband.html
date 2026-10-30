@@ -20,7 +20,7 @@
     <h2 id="h-buende" class="a-buende-titel">{% translate "Bünde" %}</h2>
     {% for bund in associations %}
       {% with heading_id="h-bund-"|add:bund.unit.key %}<section class="a-flaeche a-orga-flaeche a-bund" aria-labelledby="{{ heading_id }}">
-        {% include "core/_flaechenkopf.html" with symbol="organisation" title=bund.unit.name title_href=bund.href mark=bund.mark heading_id=heading_id level=3 action_href=bund.appoint_href action_label=labels.association_lead %}
+        {% include "core/_flaechenkopf.html" with symbol="organisation" title=bund.unit.name title_href=bund.href heading_id=heading_id level=3 action_href=bund.appoint_href action_label=labels.association_lead %}
         {% if bund.notice %}{% meldung "info" text=bund.notice %}{% endif %}
         {% if bund.leads %}<ul class="a-leitungen">{% for lead in bund.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
       </section>{% endwith %}

@@ -213,12 +213,14 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
 .a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
-.a-kennmarke.ist-rolle { background: var(--dpv-hauch); color: var(--dpv); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
 .a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
 .a-pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--text-leise); font-size: .88rem; }
 .a-pfad a { font-weight: 700; text-decoration: none; }
+/* Lange Namen, etwa „Deutscher Pfadfinderverband“ als erste Ebene für die Verbandsleitung, brechen um statt seitlich
+   überzustehen (#218). */
+.a-pfad > * { min-width: 0; overflow-wrap: anywhere; }
 .a-pfad a:hover { text-decoration: underline; }
 .a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }

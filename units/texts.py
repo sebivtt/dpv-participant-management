@@ -57,6 +57,9 @@ LIST_WITHOUT_RINGS = gettext_lazy("  %(name)s (ohne Ringe)")
 MARK_COVERS = gettext_lazy("Du springst ein")
 MARK_READ = gettext_lazy("nur lesen")
 MARK_LOCKED = gettext_lazy("gesperrt")
+# Der Knopf oben am Handy: zurück zur Gliederung, für die Verbandsleitung zur Seite „Verband“ (#218).
+BACK_TO_OUTLINE = gettext_lazy("Gliederung")
+BACK_TO_FEDERATION = gettext_lazy("Verband")
 LEADS_LINE = gettext_lazy("%(role)s: %(names)s")
 LOCKED_NAME = gettext_lazy("%(name)s (gesperrt)")
 NO_LEAD_SHORT = gettext_lazy("keine %(role)s")
@@ -138,7 +141,6 @@ REMOVED = gettext_lazy("%(person)s ist nicht mehr %(role)s von %(unit)s.")
 GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")
 
 # Seite „Verband“ der Verbandsleitung (#94), Wortlaute nach dem Issue und den Szenarien V1 bis VG4
-MARK_OWN_ASSOCIATION = gettext_lazy("Deine Rolle: Bundesleitung")
 APPOINT_FEDERATION_LEAD = gettext_lazy("Verbandsleitung benennen")
 APPOINT_TEAM = gettext_lazy("Teammitglied benennen")
 APPOINT_FOR_TEAM = gettext_lazy("für das DPV-Veranstaltungsteam")

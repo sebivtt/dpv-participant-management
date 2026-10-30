@@ -2,13 +2,13 @@
 {% load i18n layout %}
 {% block title %}{% if start %}{% translate "Organisation" %}{% else %}{{ page.unit.name }}{% endif %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück. Den Knopf „… benennen“ und seinen Dialog gibt es seit #190 nur, wo die Person benennen darf, ebenso „Entfernen“ und „Rolle abgeben“ bei den Leitungen (#191). Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
+  {# Aufbau nach Sebastians Zielbild (docs/zielbilder/organisation.html, #189): Gliederung links, Seite rechts. Am Handy zeigt die Übersicht nur die Gliederung, die Seite einer Organisation nur sich selbst mit „‹ Gliederung“ zurück, für die Verbandsleitung „‹ Verband“ (#218). Den Knopf „… benennen“ und seinen Dialog gibt es seit #190 nur, wo die Person benennen darf, ebenso „Entfernen“ und „Rolle abgeben“ bei den Leitungen (#191). Einen Hinweiskasten oben gibt es nicht (Frage 4). #}
   {% if start %}<h1 class="sr-nur">{% translate "Organisation" %}</h1>{% endif %}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-orga{% if not start %} zeigt-seite{% endif %}">
     {% include "core/_gliederung.html" %}
     <div class="a-orga-seite{% if start %} a-orga-start{% endif %}">
-      {% if not start %}<a class="btn btn-zart a-orga-zurueck" href="{% url "organisation" %}"><span aria-hidden="true">‹</span> {% translate "Gliederung" %}</a>{% endif %}
+      {% if not start %}<a class="btn btn-zart a-orga-zurueck" href="{% url "organisation" %}"><span aria-hidden="true">‹</span> {{ page.back_label }}</a>{% endif %}
       {% if start %}{% include "core/_orgakopf.html" with heading=2 %}{% else %}{% include "core/_orgakopf.html" %}{% endif %}
       <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-leitungen">
         {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 action_href=page.appoint_href action_label=page.appoint_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" action_href=page.appoint_href action_label=page.appoint_label %}{% endif %}

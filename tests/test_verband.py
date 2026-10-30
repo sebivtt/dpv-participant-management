@@ -18,11 +18,11 @@ from accounts.models import AccountSearch
 from roles.models import Role, RoleChange
 from tests import test_benennen, test_organisation
 from tests.test_benennen import _one_after_the_other, dialog_of, hits, notices, roles_of, short_notices
-from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _tree, _visible_text
+from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
 from tests.test_nicht_gefunden import assert_like_missing
-from tests.test_organisation import ADDRESS, NO_ACCESS_TEXT, client_for, lock, nav_labels, page_tree, unit_address
+from tests.test_organisation import ADDRESS, NO_ACCESS_TEXT, client_for, header, lock, nav_labels, page_tree, unit_address
 from tests.test_rechtepruefung import lead
-from tests.test_rollen import build_org, give, person
+from tests.test_rollen import BY, build_org, give, person
 
 R = Role.Kind
 pytestmark = pytest.mark.django_db
@@ -96,7 +96,7 @@ def bunds(root) -> dict[str, dict]:
     for entry in _all(section_of(root, "h-buende"), lambda e: "a-bund" in _classes(e)):
         heading = _one(_by_tag(entry, "h3"))
         links = _by_tag(heading, "a")
-        marks = _all(entry, lambda e: "a-kennmarke" in _classes(e) and "ist-rolle" in _classes(e))
+        marks = _all(_one(_all(entry, lambda e: "a-flaeche-kopf" in _classes(e))), lambda e: "a-kennmarke" in _classes(e))
         found[_visible_text(heading)] = {
             "href": _attr(links[0], "href") if links else None,
             "mark": _visible_text(marks[0]) if marks else "",
@@ -340,7 +340,7 @@ def test_v11_viktor_benennt_vera_als_bundesleitung_des_mosaik(org):
     assert roles_of(org.verbandsleitung) >= {(R.ASSOCIATION_LEAD, "DPBM Mosaik"), (R.MEMBER, "DPBM Mosaik")}
     shown = bunds(page_tree(org.verbandsleitung))
     assert shown["DPBM Mosaik"]["href"] == unit_address(org.mosaik)
-    assert shown["DPBM Mosaik"]["mark"] == "Deine Rolle: Bundesleitung"
+    assert shown["DPBM Mosaik"]["mark"] == ""  # seit #218 ohne Marke (Nachklärung M1 vom 30.10.2026)
     assert shown["Pfadfinderbund Boreas"]["href"] is None and shown["Pfadfinderbund Boreas"]["mark"] == ""
     page = client_for(org.verbandsleitung).get(unit_address(org.mosaik))
     assert page.status_code == 200 and "a-gliederung" in page.content.decode()
@@ -678,3 +678,146 @@ def test_kopf_ohne_namen_des_verbands_und_abschnitt_heisst_dpv_verbandsleitung(o
     assert _visible_text(head) == "Verband"
     assert _visible_text(_one(_by_tag(root, "h2", id="h-verbandsleitung"))) == "DPV-Verbandsleitung"
     assert _visible_text(_one(_by_tag(root, "h2", id="h-team"))) == "DPV-Veranstaltungsteam"
+
+
+# ---------- #218: zurück zur Seite „Verband“ ----------
+# Die Nummern 1 bis 8 verweisen auf Sebastians Szenarien vom 30.10.2026
+# (https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6521671528). Vera
+# ist dort zugleich Bundesleitung von Boreas, Vroni Verbandsleitung und Stammesleitung von Walhall.
+
+
+def _vera_leads_boreas(org) -> None:
+    """Viktor benennt Vera zur Bundesleitung von Boreas, wie auf der Seite „Verband“ (keine Selbstvergabe, RO-12)."""
+    appoint(org.viktor, lead_address(org.boreas), org.verbandsleitung)
+    assert (R.ASSOCIATION_LEAD, "Pfadfinderbund Boreas") in roles_of(org.verbandsleitung)
+
+
+def _vroni(org):
+    vroni = lead("vroni.verband", R.FEDERATION_LEAD, org.dpv)
+    give(vroni, R.MEMBER, org.walhall)
+    give(vroni, R.TROOP_LEAD, org.walhall)
+    return vroni
+
+
+def _back(root) -> tuple[str, str]:
+    """Der Knopf oben am Handy: sichtbarer Text und Ziel."""
+    back = _one(_all(root, lambda e: "a-orga-zurueck" in _classes(e)))
+    return _visible_text(back), _attr(back, "href")
+
+
+@pytest.mark.rechtematrix("EH-08")
+def test_218_1_auf_boreas_steht_dpv_im_pfad_und_fuehrt_zur_seite_verband(org):
+    _vera_leads_boreas(org)
+    shown = bunds(page_tree(org.verbandsleitung))
+    root = page_tree(org.verbandsleitung, shown["Pfadfinderbund Boreas"]["href"])
+
+    assert header(root)["path"] == [("DPV", ADDRESS)]
+    assert _visible_text(_one(_by_tag(page_tree(org.verbandsleitung, ADDRESS), "h1"))) == "Verband"
+
+
+@pytest.mark.rechtematrix("EH-08", "RO-03")
+def test_218_2_auf_walhall_stehen_dpv_und_boreas_im_pfad(org):
+    _vera_leads_boreas(org)
+    root = page_tree(org.verbandsleitung, unit_address(org.walhall))
+
+    assert header(root)["path"] == [("DPV", ADDRESS), ("Pfadfinderbund Boreas", unit_address(org.boreas))]
+
+
+@pytest.mark.rechtematrix("EH-08", "RO-01")
+def test_218_3_vroni_liest_boreas_und_kommt_von_dort_zur_seite_verband(org):
+    vroni = _vroni(org)
+    on_walhall = page_tree(vroni, unit_address(org.walhall))
+    on_boreas = page_tree(vroni, unit_address(org.boreas))
+
+    assert header(on_walhall)["path"] == [("DPV", ADDRESS), ("Pfadfinderbund Boreas", unit_address(org.boreas))]
+    assert header(on_boreas)["mark"] == "nur lesen"
+    assert header(on_boreas)["path"] == [("DPV", ADDRESS)]
+    assert _visible_text(_one(_by_tag(page_tree(vroni, ADDRESS), "h1"))) == "Verband"
+
+
+def test_218_4_am_handy_heisst_der_knopf_verband_und_fuehrt_zur_seite_verband(org):
+    _vera_leads_boreas(org)
+
+    for address in (unit_address(org.boreas), unit_address(org.walhall)):
+        assert _back(page_tree(org.verbandsleitung, address)) == ("Verband", ADDRESS), address
+
+
+@pytest.mark.rechtematrix("EH-03")
+def test_218_5_bruno_sieht_keinen_verband_im_pfad_und_den_knopf_gliederung(org):
+    root = page_tree(org.bundesleitung, unit_address(org.walhall))
+
+    assert header(root)["path"] == [("Pfadfinderbund Boreas", unit_address(org.boreas))]
+    assert "DPV" not in header(root)["path_text"]
+    assert _back(root) == ("Gliederung", ADDRESS)
+
+
+@pytest.mark.rechtematrix("EH-03", "EH-08")
+def test_218_6_bruno_sieht_unter_organisation_seinen_bund_nicht_die_seite_verband(org):
+    root = page_tree(org.bundesleitung)
+
+    assert header(root)["name"] == "Pfadfinderbund Boreas"
+    assert header(root)["path"] == []
+    assert "DPV" not in header(root)["path_text"]
+    assert _all(root, lambda e: _attr(e, "aria-labelledby") == "h-buende") == []
+
+
+def test_218_7_nach_dem_abgeben_der_verbandsleitung_fehlt_dpv_wieder(org):
+    _vera_leads_boreas(org)
+    client_for(org.verbandsleitung).post(remove_address(role_of(org.verbandsleitung, R.FEDERATION_LEAD)))
+
+    root = page_tree(org.verbandsleitung, unit_address(org.boreas))
+    assert header(root)["path"] == []
+    assert "DPV" not in header(root)["path_text"]
+    assert _back(root) == ("Gliederung", ADDRESS)
+
+
+def test_218_8_nach_dem_umbenennen_steht_der_neue_name_im_pfad(org):
+    _vera_leads_boreas(org)
+    org.dpv.name = "Deutscher Pfadfinderverband"
+    org.dpv.save(by=BY)
+
+    root = page_tree(org.verbandsleitung, unit_address(org.walhall))
+    assert header(root)["path"] == [("Deutscher Pfadfinderverband", ADDRESS), ("Pfadfinderbund Boreas", unit_address(org.boreas))]
+
+
+def test_218_auch_mit_offenem_dialog_steht_dpv_im_pfad(org):
+    """Die Dialoge „… benennen“ und „Entfernen“ zeigen dieselbe Seite darunter."""
+    _vera_leads_boreas(org)
+    bruno = role_of(org.bundesleitung, R.ASSOCIATION_LEAD)
+
+    for address in (f"{unit_address(org.boreas)}benennen/", f"{unit_address(org.boreas)}entfernen/{bruno.key}/"):
+        root = page_tree(org.verbandsleitung, address)
+        assert header(root)["path"] == [("DPV", ADDRESS)], address
+        assert _back(root) == ("Verband", ADDRESS), address
+
+
+def test_218_der_bausteinkatalog_zeigt_den_kopf_auch_mit_verband_im_pfad(org):
+    block = section_of(page_tree(org.verbandsleitung, "/bausteine/"), "h-orgakopf")
+    heads = _all(block, lambda e: "a-orga-kopf" in _classes(e))
+
+    paths = [[_text(link) for link in _by_tag(_one(_all(head, lambda e: "a-pfad" in _classes(e))), "a")] for head in heads]
+    assert paths == [["Pfadfinderbund Boreas"], ["DPV", "Pfadfinderbund Boreas"]]
+
+
+# Nachtrag vom 30.10.2026: keine Marke „Deine Rolle: Bundesleitung“ mehr (Szenarien M1, M2,
+# https://github.com/sebivtt/dpv-participant-management/issues/218#issuecomment-6523317158).
+
+
+def test_218_m1_der_eigene_bund_ist_anklickbar_aber_ohne_marke(org):
+    _vera_leads_boreas(org)
+    root = page_tree(org.verbandsleitung)
+    shown = bunds(root)
+
+    assert shown["Pfadfinderbund Boreas"]["href"] == unit_address(org.boreas)
+    assert shown["DPBM Mosaik"]["href"] is None
+    assert all(entry["mark"] == "" for entry in shown.values())
+    assert "Deine Rolle: Bundesleitung" not in _visible_text(root)
+    assert _all(page_tree(org.verbandsleitung, unit_address(org.boreas)), lambda e: "a-gliederung" in _classes(e))
+
+
+def test_218_m2_der_bausteinkatalog_zeigt_die_marke_nicht_mehr_der_titel_bleibt_ein_link(org):
+    root = page_tree(org.verbandsleitung, "/bausteine/")
+
+    assert "Deine Rolle: Bundesleitung" not in _visible_text(root)
+    heads = _all(section_of(root, "h-flaechenkopf"), lambda e: "a-flaeche-kopf" in _classes(e))
+    assert [_text(link) for head in heads for link in _by_tag(_one(_by_tag(head, "h3")), "a")] == ["Pfadfinderbund Boreas"]
