@@ -47,7 +47,7 @@
     {% if tiles %}
       <ul class="a-rollenkacheln">
         {% for tile in tiles %}
-          <li>{% include "core/_rollenkachel.html" %}</li>
+          <li>{% include "core/_rollenkachel.html" %}{% if tile.give_up_href %}<a class="btn btn-sm btn-zart a-kachel-knopf" href="{{ tile.give_up_href }}">{% translate "Rolle abgeben" %}<span class="sr-nur">: {{ tile.label }}</span></a>{% endif %}</li>
         {% endfor %}
       </ul>
     {% endif %}
@@ -57,4 +57,10 @@
       {% meldung "warning" title=title text=hint %}
     {% endif %}
   </section>
+  {% if removal %}
+    {# Rückfrage „Deine Rolle im DPV-Veranstaltungsteam abgeben?“ (#94, RO-20): eigene Adresse, kommt offen vom Server. #}
+    {% include "core/_dialog_auf.html" with dialog=removal %}
+    {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" with dialog=removal %}
+  {% endif %}
 {% endblock %}

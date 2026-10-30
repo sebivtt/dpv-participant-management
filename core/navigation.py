@@ -29,9 +29,11 @@ class NavItem:
 
 NAV_ITEMS = [
     NavItem("start", _("Startseite"), "home"),
-    # Leitungen von Gruppe bis Bund (#189, EH-08); die Seite prüft selbst noch einmal.
-    NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_organisation(),
-            also_active=("organisation_unit",)),
+    # Leitungen von Gruppe bis Bund (#189) und die Verbandsleitung (#94, EH-08); die Seite prüft selbst noch einmal.
+    NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_menu(),
+            also_active=("organisation_unit", "federation_appoint_verbandsleitung", "federation_search_verbandsleitung",
+                         "federation_appoint_team", "federation_search_team", "federation_appoint_lead",
+                         "federation_search_lead", "federation_remove")),
 ]
 
 

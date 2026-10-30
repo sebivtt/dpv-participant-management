@@ -6,6 +6,24 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-30 · Verbandsleitung: Seite „Verband“, Rollen vergeben ohne Personendaten (#94)
+
+**Entscheidung** (Sebastian, [Klärung vom 28.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/94#issuecomment-6466398212), Fragen 1 bis 5, bestätigt mit „Die Entscheidungen passen so.“; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/94#issuecomment-6475718734) mit „Alle passen“):
+
+1. **Seite „Verband“:** „Organisation“ öffnet für die Verbandsleitung eine Seite mit den Abschnitten Verbandsleitung, DPV-Veranstaltungsteam und Bünde; dort benennt und entfernt sie. Einen Bund öffnet sie nicht, außer sie ist dort Bundesleitung; dann ist genau dieser Bund anklickbar, mit der Marke „Deine Rolle: Bundesleitung“.
+2. **Dialog „Benennen“** nur mit „Mail oder Benutzername“, ohne Vorschläge; beim eigenen Treffer „Dir selbst kannst du keine Rolle geben. Das kann eine andere Verbandsleitung.“
+3. **Ergänzung von W1:** Auf „Mein Profil“ steht bei der Rolle „DPV-Veranstaltungsteam“ der Knopf „Rolle abgeben“ (Frage 5). Das ist nach dem Fahrtennamen (#111) und „Austreten“ (#65) das dritte Bedienelement dort.
+
+**Technische Wahl** (KI):
+
+- **Befehl auf dem Server** `python manage.py federation_lead grant|revoke BENUTZERNAME`, gebaut wie der Befehl für Admins (#89); er braucht den Verband (`federation create`).
+- **Eigene Adressen unter `/organisation/verband/`** für die Dialoge (Benennen je Rolle im Verband, Bundesleitung je Bund, Entfernen über die Kennung der Rolle), weil die Verbandsleitung die Seite eines Bundes nicht öffnet. Rolle und Organisation kommen aus der Adresse, nie aus dem Formular. „Rolle abgeben“ des Teams hat die Adresse `/profil/team-abgeben/` ohne Kennung: Jede Person hat höchstens eine Rolle im Team.
+- **Wer schon woanders Mitglied ist, behält im Treffer den Knopf „Benennen“** (V5): Ob die Rolle Bundesleitung auf ihrem Pfad liegt, sagt erst das Benennen, mit dem Satz aus BV1 ohne Organisation (VV3). Eine Warnung vorab verriete, dass die Person nicht in diesem Bund ist (PK-16).
+- **Gesperrte Konten** stehen auf der Seite „Verband“ mit der Marke „gesperrt“ da, weil die Verbandsleitung sie entfernen darf (wie #189, Frage B; offene Frage F3 an Sebastian).
+- **Beim Abgeben der Verbandsleitung entfällt der Satz „Du verlierst damit sofort den Zugriff auf die Personen von …“**, weil die Verbandsleitung keine Personen sieht.
+
+**Umsetzung:** `access/rights.py` (`is_federation_lead()`, `sees_menu()`, `appoint_in_federation()`, `remove_in_federation()`, `leave_team()`), `units/organisation.py` (`Federation`), `core/views.py`, `core/templates/core/verband.html`, `roles/management/commands/federation_lead.py`, `tests/test_verband.py`.
+
 ## 2026-10-28 · Leitung entfernen und eigene Rolle abgeben (#191)
 
 **Entscheidung** (Sebastian, Klärung in #93 und [Szenarien Teil 3](https://github.com/sebivtt/dpv-participant-management/issues/191) mit „Alle passen“; bei der Umsetzung am 28.10.2026 [drei Antworten](https://github.com/sebivtt/dpv-participant-management/issues/191#issuecomment-6476276104)):

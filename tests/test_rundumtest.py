@@ -292,6 +292,7 @@ ALLOWED_FILES = {
     "accounts/keycloak_abgleich.py",
     # Befehle auf dem Server, außerhalb des Tools (Rechtematrix, „Außerhalb des Tools“).
     "roles/management/commands/admin.py",
+    "roles/management/commands/federation_lead.py",
 }
 # Abfragen über einen Verweis auf Rollen oder Konten, auch über mehrere Stufen, z. B.
 # filter(roles__user=…), order_by("-user__email"), filter(parent__roles__kind=…),

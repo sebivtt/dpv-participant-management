@@ -211,6 +211,10 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
 .a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
+.a-kennmarke.ist-rolle { background: var(--dpv-hauch); color: var(--dpv); }
+/* Seite „Verband“ (#94): je Bund ein Abschnitt in der Fläche „Bünde“, durch eine Linie getrennt. */
+.a-bund + .a-bund { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--linie); }
+.a-bund .a-flaeche-kopf { margin-bottom: 12px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
 .a-pfad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--text-leise); font-size: .88rem; }
 .a-pfad a { font-weight: 700; text-decoration: none; }
@@ -447,3 +451,4 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
   .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
+.a-kachel-knopf { margin-top: 8px; }
