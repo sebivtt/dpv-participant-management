@@ -222,7 +222,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
-.a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
+   „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */
+.a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .a-leitung { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
 .a-leitung.ist-gesperrt .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
 .a-leitung-wer { flex: 1; min-width: 0; }
@@ -234,7 +236,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* Zweite Zeile: links die Rolle, rechts die Mail; ist es zu schmal, rutscht die Mail darunter */
 .a-leitung-unten { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 4px; }
 .a-leitung-rolle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.a-leitung-rolle .a-rollenmarke { margin: 0; background: var(--dpv-hauch); }
+.a-leitung-rolle .a-rollenmarke { min-width: 0; margin: 0; background: var(--dpv-hauch); overflow-wrap: anywhere; }
 .a-leise { color: var(--text-leise); font-size: .88rem; font-weight: 400; }
 .a-leitung-mail { display: inline-flex; align-items: center; gap: 6px; min-width: 0; margin-right: -8px; padding: 2px 8px; border-radius: 6px; font-size: .9rem; text-decoration: none; overflow-wrap: anywhere; }
 .a-leitung-mail:hover { background: var(--dpv-hauch); }

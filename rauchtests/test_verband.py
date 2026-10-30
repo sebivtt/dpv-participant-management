@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, HANDY, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from roles.models import Role
@@ -103,6 +103,12 @@ def test_am_pc_escape_im_dialog_aendert_nichts(pc):
 def test_am_handy_nur_mit_der_tastatur_bundesleitung_entfernen(handy):
     login(handy)
     units = _verband_for_erika()
+    # Auch auf einem schmalen Handy steht nichts über: Die lange Rolle „DPV-Veranstaltungsteam“ mit „Rolle
+    # abgeben“ ragte auf GitHub mit dessen breiterer Schrift 8 Pixel über, lokal erst unter 360 Pixel.
+    handy.set_viewport_size({"width": 340, "height": handy.viewport_size["height"]})
+    handy.goto(ADDRESS)
+    _no_side_scroll(handy)
+    handy.set_viewport_size(HANDY["viewport"])
     handy.goto(ADDRESS)
     _no_side_scroll(handy)
     assert run_axe(handy) == []
