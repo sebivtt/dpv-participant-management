@@ -108,6 +108,7 @@ Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% t
 - **Fehler am Feld** rot direkt darunter, mit dem Feld verknüpft; die Eingabe bleibt stehen.
 - **Passende Handy-Tastatur:** Das Formular legt sie am Feld fest, z. B. bei Namen Großbuchstabe am Wortanfang, ohne Autokorrektur. Jedes neue Feld wird auch wie am Handy geprüft, mit Autokorrektur und Wortvorschlägen (Rauchtest).
 - **Weiß** auf grauem oder weißem Grund, damit es sich von gesperrten Feldern (grau, mit Schloss) abhebt.
+- **Zahl der Zeichen** (#215) nur bei fachlicher Grenze: beim Tippen rechts unter der Eingabe „12/30“, zu lang rot mit der Meldung darunter; nichts wird abgeschnitten. Gilt ebenso im Feld zum Antippen, dort nur bei offener Eingabe. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 31.10.2026 zu #215.
 - Gleiches gilt später für Datumsfelder (#100) und das Adressfeld (#163).
 
 ### Felder zum Antippen (#180, 26.10.2026)

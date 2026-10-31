@@ -337,6 +337,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
    weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild, docs/zielbilder/mein-profil.html) */
 .a-textfeld { margin: 0 0 1rem; }
 .a-textfeld .form-control { min-height: 46px; background-color: var(--flaeche); }
+/* Zahl der Zeichen bei fachlicher Grenze (#215): rechts unter der Eingabe, zu lang rot wie der Fehler am Feld */
+.a-zeichenzahl { margin: 4px 0 0; color: var(--text-leise); font-size: .85rem; text-align: right; }
+.a-zeichenzahl.ist-zu-lang { color: var(--bs-form-invalid-color); }
 /* Feld zum Antippen (#180), nach dem Zielbild „Mein Profil“: in Ruhe so hoch und gebaut wie die
    gesperrten Angaben, aber weiß und rechts der Knopf zum Leeren statt des Schlosses. Angetippt steht die
    Eingabe im selben Rahmen, darunter „Verwerfen“ und „Speichern“ in einer kleinen Fläche, die wie im

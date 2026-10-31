@@ -534,11 +534,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation")],
     },
     "textfeld": {
-        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190],
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190, 215],
         "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
                      "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
                      "Antippen nutzt dieselbe Eingabe und denselben Fehler. Als Suchfeld steht der Knopf zum "
-                     "Abschicken rechts daneben und ein Satz darunter."),
+                     "Abschicken rechts daneben und ein Satz darunter. Hat das Feld eine fachliche Grenze, "
+                     "steht beim Tippen rechts darunter die Zahl der Zeichen, etwa „12/30“, rot mit Meldung, "
+                     "sobald der Text zu lang ist."),
         "pages": [_("Organisation")],
     },
     "kurzmeldung": {
@@ -550,7 +552,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "antippfeld": {
-        "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180, 207],
+        "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180, 207, 215],
         "purpose": _("Ein einzelnes Feld auf einer Seite mit Angaben: in Ruhe wie eine Angabe, angetippt eine "
                      "Eingabe mit „Verwerfen“ und „Speichern“."),
         "pages": [_("Mein Profil")],

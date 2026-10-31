@@ -245,7 +245,7 @@ def test_speichern_scheitert_fehlermeldung_unter_dem_feld_im_bild(browser, brows
         page.keyboard.press("Escape")
         expect(error).to_be_visible()
         page.locator("[data-oeffnen]").click()
-        expect(field).to_have_attribute("aria-describedby", "id_scout_name-meldung")
+        expect(field).to_have_attribute("aria-describedby", "id_scout_name-meldung id_scout_name-zahl")
 
         # Szenario 8a: erneut speichern klappt; die Fehlermeldung ist weg, unten kurz die Erfolgsmeldung.
         monkeypatch.undo()

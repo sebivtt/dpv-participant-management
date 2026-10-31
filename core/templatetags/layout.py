@@ -84,17 +84,36 @@ def kurzmeldung(kind: str, text: str) -> dict:
 
 
 def _textfeld(field, described_by: str = "") -> dict:
+    """Feld und Fehler für beide Bausteine; dazu die Stelle für die Zahl der Zeichen (#215).
+
+    Die Zahl gibt es nur bei einer fachlichen Grenze, die das Formular am Feld festlegt
+    (`data-hoechstens`, dazu die Meldung „zu lang“ als `data-zu-lang`). Der Server liefert die
+    Stelle leer und versteckt; das Skript (core/static/core/app.js) schreibt die Zahl beim
+    Tippen. Sie ist mit der Eingabe verknüpft, damit Vorleseprogramme sie beim Betreten vorlesen.
+    """
     error_id = f"{field.auto_id}-fehler"
+    limit = field.field.widget.attrs.get("data-hoechstens")
+    counter_id = f"{field.auto_id}-zahl" if limit else ""
     attrs = {"class": "form-control"}
     if field.errors:
-        attrs = {"class": "form-control is-invalid", "aria-invalid": "true", "aria-describedby": error_id}
-    elif described_by:
+        attrs = {"class": "form-control is-invalid", "aria-invalid": "true"}
+        described_by = error_id
+    described_by = " ".join(filter(None, [described_by, counter_id]))
+    if described_by:
         attrs["aria-describedby"] = described_by
+    # Sichtbar „12/30“; Vorleseprogramme hören „12 von 30 Zeichen“ statt eines Bruchs oder Datums.
+    counter = format_html(
+        '<p class="a-zeichenzahl" id="{}" data-vorlesen="{}" hidden><span aria-hidden="true"></span>'
+        '<span class="sr-nur"></span></p>',
+        counter_id,
+        gettext_lazy("{anzahl} von %(hoechstens)s Zeichen") % {"hoechstens": limit},
+    ) if limit else ""
     return {
         "field": field,
         "widget": field.as_widget(attrs=attrs),
         "errors": field.errors,
         "error_id": error_id,
+        "counter": counter,
         "required": field.field.required,
     }
 

@@ -6,6 +6,20 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-31 · Zahl der Zeichen unter Feldern mit fachlicher Grenze (#215)
+
+**Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/215#issuecomment-6524812413), Fragen 1 bis 4; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/215#issuecomment-6524812974) mit „Ja, so (Empfehlung)“):
+
+1. Ein Feld mit fachlicher Grenze zeigt beim Tippen rechts unter der Eingabe die Zahl der Zeichen, etwa „12/30“, auch leer („0/30“); in Ruhe keine Zahl.
+2. Ist der Text zu lang, wird die Zahl rot, und sofort steht darunter die Meldung, die auch beim Speichern käme. Nichts wird abgeschnitten; „Speichern“ und Enter bleiben möglich, und der Server prüft wie bisher. Der Eintrag vom 26.10.2026 zu #111 (kein `maxlength`) bleibt.
+3. **Nur bei fachlicher Grenze:** heute nur der Fahrtenname, nicht das Suchfeld beim Benennen (254 Zeichen sind dort nur technischer Schutz). Jedes neue Feld legt beim Klären fest, ob es eine fachliche Grenze hat.
+
+**Begründung:** Wer einen zu langen Fahrtennamen tippte, erfuhr es erst beim Speichern (gemeldet am 29.10.2026). Eine harte Sperre schnitte beim Einfügen und bei Wortvorschlägen am Handy still ab.
+
+**Technische Wahl** (KI): Die Grenze und die Meldung legt das Formular am Feld fest (`data-hoechstens`, `data-zu-lang`), wie die passende Handy-Tastatur; beide Bausteine (Textfeld, Feld zum Antippen) zeigen dann die Zahl. Gezählt wird genau wie auf dem Server: ohne Leerzeichen am Rand, auch unsichtbare (`trimmed()`, #77), je Unicode-Zeichen; ein Emoji zählt eins, ein zerlegt geschriebener Umlaut zwei, wie in Prüfung und Datenbank (Hinweis aus #214). Vorleseprogramme hören die Zahl als „12 von 30 Zeichen“ beim Betreten der Eingabe, nicht bei jedem Tastendruck; die Meldung „zu lang“ einmal, wenn sie erscheint. Ohne Skript keine Zahl.
+
+**Umsetzung:** `accounts/forms.py`, `core/templatetags/layout.py`, `core/templates/core/_textfeld.html`, `core/templates/core/_antippfeld.html`, `core/static/core/app.js`, `core/static/core/app.css`, `core/views.py` (Bausteinkatalog), `tests/test_zeichenzahl.py`, `rauchtests/test_zeichenzahl.py`.
+
 ## 2026-10-31 · Fahrtenname höchstens 30 Zeichen, langer Name bricht im Profilkreis um (#214)
 
 **Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/214#issuecomment-6524812008), Fragen 5, 6b und 7; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/214#issuecomment-6524812677) mit „Ja, so (Empfehlung)“):

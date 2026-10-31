@@ -221,7 +221,7 @@ def test_zu_lang_das_feld_bleibt_offen_mit_fehler_und_eingabe(org):
     input_ = field(root)
     assert _attr(input_, "value") == "K" * 51
     assert _attr(input_, "aria-invalid") == "true"
-    error = _one(_by_tag(box(root), "div", id=_attr(input_, "aria-describedby")))
+    error = _one(_by_tag(box(root), "div", id=_attr(input_, "aria-describedby").split()[0]))
     assert _visible_text(error) == TOO_LONG
     # In Ruhe stünde weiter der gespeicherte Name, nicht die zu lange Eingabe.
     assert shown_value(root) == "Falkenflug"

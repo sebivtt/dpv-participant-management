@@ -102,7 +102,7 @@ def test_einunddreissig_zeichen_fehler_am_feld_und_die_eingabe_bleibt(org, value
     input_ = field(root)
     assert _attr(input_, "value") == value
     assert _attr(input_, "aria-invalid") == "true"
-    error = _one(_by_tag(root, "div", id=_attr(input_, "aria-describedby")))
+    error = _one(_by_tag(root, "div", id=_attr(input_, "aria-describedby").split()[0]))
     assert _visible_text(error) == TOO_LONG
 
 
