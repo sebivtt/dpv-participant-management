@@ -74,13 +74,17 @@ def test_menueknopf_und_x_im_menue_heben_sich_unter_der_maus_hervor(pc):
 # S4: mit der Tab-Taste auf dem × nur der bekannte blaue Fokusrahmen, keine blaue Fläche
 def test_mit_der_tastatur_hat_das_x_nur_den_fokusrahmen(pc):
     _benennen(pc)
-    schliessen = pc.locator("dialog.a-dialog").get_by_role("link", name="Schließen")
+    dialog = pc.locator("dialog.a-dialog")
+    schliessen = dialog.get_by_role("link", name="Schließen")
     expect(schliessen).to_be_visible()
+    # Wo der Fokus beim Öffnen liegt, entscheidet jeder Browser anders; Firefox kam auf GitHub vorwärts
+    # nicht zum ×. Deshalb vom Suchfeld aus rückwärts: Das × steht im Kopf direkt davor.
+    dialog.locator("input:not([type=hidden])").first.click()
     pc.mouse.move(0, 0)
-    for _ in range(15):
+    for _ in range(5):
         if schliessen.evaluate("e => e === document.activeElement"):
             break
-        pc.keyboard.press(_tab_key(pc))
+        pc.keyboard.press("Shift+" + _tab_key(pc))
     assert schliessen.evaluate("e => e === document.activeElement"), "Tab erreicht das × nicht"
     fokus = focus_visible(pc)
     assert fokus["sichtbar"] and fokus["rahmen"] == "selbst", fokus
