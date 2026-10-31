@@ -113,7 +113,6 @@ def test_die_datenbank_nimmt_keine_einunddreissig_zeichen_an(org):
 # Szenario 7: Umstellen der Datenbank
 
 BEFORE = [("accounts", "0004_account_search")]
-AFTER = [("accounts", "0005_scout_name_30")]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -128,7 +127,8 @@ def test_umstellung_leert_zu_lange_fahrtennamen_und_laesst_die_anderen(org):
     old_user.objects.filter(pk=org.max.pk).update(scout_name="Kiwi")
 
     executor = MigrationExecutor(connection)
-    executor.migrate(AFTER)
+    # Alle Apps wieder auf den neuesten Stand, nicht nur `accounts` (unabhängige Prüfung).
+    executor.migrate(executor.loader.graph.leaf_nodes())
 
     assert stored(org.erika) == ""
     assert stored(org.lead) == STURMVOGEL
