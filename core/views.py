@@ -504,26 +504,17 @@ def federation_remove(request: HttpRequest, role: str) -> HttpResponse:
     return _federation_page(request, removal=removal)
 
 
-# Feste Sätze unter Rollen ohne Weg nach oben, statt der Beschreibungen im Zielbild
-# (Sebastian, Nachklärung Kacheln zu #161 am 25.10.2026). Nur Text, keine gespeicherten Daten.
-ROLE_NOTES = {
-    Role.Kind.FEDERATION_LEAD: _("Leitung des Verbands"),
-    Role.Kind.EVENT_TEAM: _("Veranstaltungen des Verbands"),
-    Role.Kind.ADMIN: _("Verwaltung des ganzen Tools"),
-}
-
-
 def _tile(role: Role, label=None) -> dict:
-    """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation, darunter der Weg (#161).
+    """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation (#161).
 
-    Admin hängt an keiner Organisation; dort steht groß „DPV Anmeldetool“. Rollen im Verband
-    und Admin zeigen statt des Wegs ihren festen Satz aus `ROLE_NOTES`. Beim
-    DPV-Veranstaltungsteam steht darunter „Rolle abgeben“ (#94).
+    Nur die Mitgliedschaft zeigt darunter den Weg nach oben (ORG-05); die Rollen zeigen keine
+    zweite Zeile (#219). Admin hängt an keiner Organisation; dort steht groß „DPV Anmeldetool“.
+    Beim DPV-Veranstaltungsteam steht darunter „Rolle abgeben“ (#94).
     """
     return {
         "label": label or role.get_kind_display(),
         "org": role.unit.name if role.unit else _("DPV Anmeldetool"),
-        "way": ROLE_NOTES.get(role.kind) or " › ".join(role.unit.names_above() if role.unit else []),
+        "way": " › ".join(role.unit.names_above()) if role.kind == Role.Kind.MEMBER else "",
         # Nur das DPV-Veranstaltungsteam gibt seine Rolle hier ab (RO-20, Frage 5 vom 28.10.2026, W1).
         "give_up_href": reverse("profile_leave_team") if role.kind == Role.Kind.EVENT_TEAM else None,
     }
@@ -583,11 +574,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
-        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94],
-        "purpose": _("Zeigt eine Rolle mit Organisation und Weg darüber; die Mitgliedschaft als eigene "
-                     "Fläche, die übrigen Rollen als Kacheln. Unter „Organisationen darunter“ ist die Kachel "
-                     "anklickbar, ohne Zugriff grau ohne blauen Streifen. Unten darf ein kleiner Knopf „Rolle "
-                     "abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
+        "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94, 219],
+        "purpose": _("Zeigt eine Rolle mit ihrer Organisation; die Mitgliedschaft als eigene Fläche mit dem Weg "
+                     "darüber, die übrigen Rollen als Kacheln ohne zweite Zeile. Unter „Organisationen darunter“ "
+                     "ist die Kachel anklickbar und zeigt ihre Leitungen, ohne Zugriff grau ohne blauen Streifen. "
+                     "Unten darf ein kleiner Knopf „Rolle abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "gliederungsbaum": {
@@ -734,15 +725,14 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
         # anderen Feldern der Seite zusammenfällt. Das Formular hier schickt nichts ab.
         "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="katalog_%s"),
         "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
+        # Rollen ohne zweite Zeile (#219); die lange Organisation zeigt den Umbruch.
         "tiles": [
-            {"label": label, "org": org, "way": way} for label, org, way in [
-                (role.GROUP_LEAD.label, "Meute Wölfe", "Pfadfinderbund Boreas › Stamm Walhall"),
-                (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand", "Pfadfinderbund Boreas"),
-                (role.EVENT_TEAM.label, "DPV", ROLE_NOTES[role.EVENT_TEAM]),
-                (role.ADMIN.label, _("DPV Anmeldetool"), ROLE_NOTES[role.ADMIN]),
+            {"label": label, "org": org} for label, org in [
+                (role.GROUP_LEAD.label, "Meute Wölfe"),
+                (role.TROOP_LEAD.label, "Stamm Walhall vom Nordseestrand"),
+                (role.ADMIN.label, _("DPV Anmeldetool")),
             ]
-        ] + [{"label": role.EVENT_TEAM.label, "org": "DPV", "way": ROLE_NOTES[role.EVENT_TEAM],
-              "give_up_href": "#h-rollenkachel"}],
+        ] + [{"label": role.EVENT_TEAM.label, "org": "DPV", "give_up_href": "#h-rollenkachel"}],
         # Vier kurze Meldungen nacheinander zeigen den Stapel (#186, Szenarien 12 und 13).
         "short_stack": ["Leitung Sippe Falken ist benannt.", "Leitung Sippe Eulen ist benannt.",
                         "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
