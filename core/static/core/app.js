@@ -42,6 +42,74 @@
     back.hidden = false;
   }
 
+  // Zahl der Zeichen (#215) unter Feldern mit fachlicher Grenze („data-hoechstens“): beim Tippen
+  // „12/30“, zu lang rot mit der Meldung „zu lang“ darunter. Nichts wird abgeschnitten, Speichern
+  // bleibt möglich; der Server prüft wie bisher. Gezählt wird wie dort (`trimmed()` und `len()` in
+  // Python): ohne Leerzeichen am Rand, auch unsichtbare, und je Unicode-Zeichen, sodass ein Emoji
+  // eins zählt und ein zerlegter Umlaut zwei. Python kennt \x1c-\x1f und \x85 als Leerraum,
+  // JavaScripts \s nicht; deshalb stehen sie hier eigens. Die Zahl ist mit der Eingabe verknüpft,
+  // wird aber nicht bei jedem Tastendruck angesagt; die Meldung nur, wenn sie erscheint.
+  // Programmgesteuerte Änderungen (Verwerfen, ×) lösen deshalb selbst ein „input“ aus.
+  var EDGE_SPACES = /^[\s\x1c-\x1f\x85­᠎​-‍⁠﻿]+|[\s\x1c-\x1f\x85­᠎​-‍⁠﻿]+$/g;
+
+  function describedBy(input, id, linked) {
+    var ids = (input.getAttribute("aria-describedby") || "").split(" ").filter(function (each) {
+      return each && each !== id;
+    });
+    if (linked) {
+      ids.unshift(id);
+    }
+    if (ids.length) {
+      input.setAttribute("aria-describedby", ids.join(" "));
+    } else {
+      input.removeAttribute("aria-describedby");
+    }
+  }
+
+  document.querySelectorAll("input[data-hoechstens]").forEach(function (input) {
+    var counter = document.getElementById(input.id + "-zahl");
+    if (!counter) {
+      return;
+    }
+    var limit = parseInt(input.getAttribute("data-hoechstens"), 10);
+    var tooLong = input.getAttribute("data-zu-lang");
+    var errorId = input.id + "-fehler";
+    var shown = counter.querySelector("[aria-hidden]");
+    var spoken = counter.querySelector(".sr-nur");
+
+    function update() {
+      var count = Array.from(input.value.replace(EDGE_SPACES, "")).length;
+      var over = count > limit;
+      shown.textContent = count + "/" + limit;
+      spoken.textContent = counter.getAttribute("data-vorlesen").replace("{anzahl}", count);
+      counter.classList.toggle("ist-zu-lang", over);
+      // Die Meldung „zu lang“ ist dieselbe wie vom Server; andere Fehler am Feld bleiben stehen.
+      var error = document.getElementById(errorId);
+      if (over && !error) {
+        error = document.createElement("div");
+        error.className = "invalid-feedback";
+        error.id = errorId;
+        error.setAttribute("role", "alert");
+        error.textContent = tooLong;
+        counter.after(error);
+      } else if (!over && error && error.textContent.trim() === tooLong) {
+        error.remove();
+        error = null;
+      }
+      input.classList.toggle("is-invalid", !!error);
+      if (error) {
+        input.setAttribute("aria-invalid", "true");
+      } else {
+        input.removeAttribute("aria-invalid");
+      }
+      describedBy(input, errorId, !!error);
+    }
+
+    input.addEventListener("input", update);
+    update();
+    counter.hidden = false;
+  });
+
   // Feld zum Antippen (#180, Zielbild „Mein Profil“): In Ruhe zeigt es den gespeicherten Wert
   // wie eine Angabe; Antippen öffnet die Eingabe mit „Verwerfen“ und „Speichern“. Gespeichert
   // wird wie ohne Skript mit dem Formular, also nur mit „Speichern“ oder Enter. Verwerfen geht
@@ -56,6 +124,7 @@
     var buttons = box.querySelector(".a-antippfeld-knoepfe");
     var label = box.querySelector("label");
     var announcer = box.querySelector("[data-ansage]");
+    var counter = box.querySelector(".a-zeichenzahl");
     var saved = box.getAttribute("data-gespeichert") || "";
     var isOpen = false;
 
@@ -73,6 +142,10 @@
       editor.hidden = !open;
       buttons.hidden = !open;
       box.classList.toggle("ist-offen", open);
+      // Die Zahl der Zeichen (#215) steht nur bei offener Eingabe.
+      if (counter) {
+        counter.hidden = !open;
+      }
       clear.disabled = open ? input.value === "" : saved === "";
     }
 
@@ -80,17 +153,23 @@
     function forgetError() {
       var error = box.querySelector(".invalid-feedback");
       if (error) {
+        describedBy(input, error.id, false);
         error.remove();
       }
       input.classList.remove("is-invalid");
       input.removeAttribute("aria-invalid");
-      // Eine Fehlermeldung nach gescheitertem Speichern bleibt stehen (#186) und mit der Eingabe verknüpft.
+      // Eine Fehlermeldung nach gescheitertem Speichern bleibt stehen (#186) und mit der Eingabe verknüpft,
+      // ebenso die Zahl der Zeichen.
       var failure = box.querySelector(".a-meldung.ist-fehler");
       if (failure) {
-        input.setAttribute("aria-describedby", failure.id);
-      } else {
-        input.removeAttribute("aria-describedby");
+        describedBy(input, failure.id, true);
       }
+    }
+
+    // Wie Tippen: Die Zahl der Zeichen und der Knopf × passen sich an.
+    function setValue(value) {
+      input.value = value;
+      input.dispatchEvent(new Event("input"));
     }
 
     function open() {
@@ -102,7 +181,7 @@
     // Der Fokus geht zurück aufs Feld, außer jemand hat außerhalb etwas anderes angetippt,
     // das den Fokus selbst nimmt, etwa einen Link.
     function close(keepFocusElsewhere) {
-      input.value = saved;
+      setValue(saved);
       forgetError();
       show(false);
       if (!keepFocusElsewhere) {
@@ -126,8 +205,7 @@
     // Leeren löscht nichts selbst: Es öffnet das Feld leer, gelöscht wird erst mit „Speichern“.
     clear.addEventListener("click", function () {
       show(true);
-      input.value = "";
-      clear.disabled = true;
+      setValue("");
       input.focus();
       say(box.getAttribute("data-ansage-geleert"));
     });

@@ -150,8 +150,9 @@ def test_speichern_scheitert_fehlermeldung_direkt_unter_dem_feld(org, monkeypatc
     errors = _all(main(root), lambda e: "ist-fehler" in _classes(e))
     notice = _one(errors)
     assert _clean(_visible_text(notice)) == FAILED
-    # In der Kachel des Felds, direkt unter der Eingabe, nicht oben auf der Seite.
-    children = [c for c in box.children if not isinstance(c, str)]
+    # In der Kachel des Felds, direkt unter der Eingabe, nicht oben auf der Seite. Dazwischen steht nur die
+    # Zahl der Zeichen, die zur Eingabe gehört (#215).
+    children = [c for c in box.children if not isinstance(c, str) and "a-zeichenzahl" not in _classes(c)]
     group = next(i for i, c in enumerate(children) if "a-antippfeld-gruppe" in _classes(c))
     assert children[group + 1] is notice
     # Sofort angesagt, nie kurz; mit dem Feld verknüpft, damit es beim Fokus vorgelesen wird.
@@ -176,10 +177,11 @@ def test_danach_klappt_das_speichern_fehlermeldung_weg_und_kurze_meldung(org, mo
     assert _attr(_box(root), "data-offen") is None
 
 
-def test_gegenprobe_ohne_fehler_ist_das_feld_mit_nichts_verknuepft(org):
+def test_gegenprobe_ohne_fehler_ist_das_feld_mit_keiner_meldung_verknuepft(org):
     root = profile(org.erika)
 
-    assert _attr(field(root), "aria-describedby") is None
+    # Verknüpft ist nur die Zahl der Zeichen (#215).
+    assert _attr(field(root), "aria-describedby") == "id_scout_name-zahl"
     assert _all(_box(root), lambda e: "a-meldung" in _classes(e)) == []
 
 

@@ -7,6 +7,7 @@
     {% blocktranslate with label=field.label asvar clear_label %}{{ label }} leeren{% endblocktranslate %}
     <button type="button" class="a-antippfeld-leeren" data-leeren hidden aria-label="{{ clear_label }}" title="{% translate "Inhalt löschen" %}"{% if not saved %} disabled{% endif %}>{% icon "schliessen" %}</button>
   </div>
+  {{ counter }}
   {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
   {# Fehlermeldung an der Stelle der Handlung (#186): direkt unter der Eingabe, nicht oben auf der Seite. #}
   {% if failure %}{% meldung "error" text=failure live=True element_id=failure_id %}{% endif %}

@@ -366,7 +366,7 @@ def test_einunddreissig_zeichen_fehler_am_feld_und_die_eingabe_bleibt(org, value
     input_ = field(root)
     assert _attr(input_, "value") == value
     assert _attr(input_, "aria-invalid") == "true"
-    error = _one(_by_tag(root, "div", id=_attr(input_, "aria-describedby")))
+    error = _one(_by_tag(root, "div", id=_attr(input_, "aria-describedby").split()[0]))
     assert _visible_text(error) == TOO_LONG
     assert "invalid-feedback" in _classes(error)
     # Der Fehler steht am Feld, nicht als Meldung oben auf der Seite.
@@ -551,7 +551,8 @@ def test_feld_mit_beschriftung_ohne_pflicht_und_passender_tastatur(org):
     assert _attr(input_, "spellcheck") == "false"
     assert _attr(input_, "autocomplete") == "nickname"
     assert _attr(input_, "aria-invalid") is None
-    assert _attr(input_, "aria-describedby") is None
+    # Verknüpft ist nur die Zahl der Zeichen (#215), kein Fehler.
+    assert _attr(input_, "aria-describedby") == "id_scout_name-zahl"
 
 
 def test_katalog_zeigt_den_baustein_textfeld(org):

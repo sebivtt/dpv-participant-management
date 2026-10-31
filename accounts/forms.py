@@ -15,7 +15,8 @@ class ScoutNameForm(forms.Form):
     Anmeldung, nie ein Feld der Anfrage (EP-04). Leerzeichen am Rand zählen wie beim Namen
     aus Keycloak auch in unsichtbarer Form (`trimmed()`, #77); was danach leer ist, gilt als
     kein Fahrtenname. Die Länge prüft erst der Server: Ein `maxlength` im Feld schnitte beim
-    Einfügen still ab, statt den Fehler am Feld zu zeigen.
+    Einfügen still ab, statt den Fehler am Feld zu zeigen. Beim Tippen zeigt der Baustein die
+    Zahl der Zeichen und „zu lang“, gezählt wie hier (#215).
     """
 
     scout_name = forms.CharField(
@@ -31,6 +32,9 @@ class ScoutNameForm(forms.Form):
                 "autocapitalize": "words",
                 "autocorrect": "off",
                 "spellcheck": "false",
+                # Fachliche Grenze für die mitlaufende Zahl unter der Eingabe (#215); geprüft wird unten.
+                "data-hoechstens": SCOUT_NAME_MAX_LENGTH,
+                "data-zu-lang": texts.SCOUT_NAME_TOO_LONG,
             }
         ),
     )
