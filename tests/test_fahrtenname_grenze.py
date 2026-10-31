@@ -11,6 +11,7 @@ from django.db import DataError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 
 from accounts.models import SCOUT_NAME_MAX_LENGTH
+from tests import test_fahrtenname
 from tests.test_fahrtenname import (
     NOT_GIVEN,
     SAVED,
@@ -19,7 +20,6 @@ from tests.test_fahrtenname import (
     field,
     greeting,
     notices,
-    org,  # noqa: F401 (Fixture)
     profile,
     save,
     set_stored,
@@ -34,6 +34,12 @@ User = get_user_model()
 
 WANDERFALKE = "Wanderfalke vom Hohen Meißner"
 STURMVOGEL = "Sturmvogelwanderfalkenflugkind"
+
+
+@pytest.fixture
+def org():
+    """Dieselben Personen wie in tests/test_fahrtenname.py."""
+    return test_fahrtenname.org.__wrapped__()
 
 
 def test_die_grenze_ist_dreissig_und_steht_an_einer_stelle():
