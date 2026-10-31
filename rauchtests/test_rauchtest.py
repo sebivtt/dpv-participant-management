@@ -250,15 +250,15 @@ def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_
     # Zu lang: Fehler am Feld, die Eingabe bleibt stehen, und die Seite besteht die Prüfung.
     page.goto(f"{BASE}/profil/")
     page.get_by_role("button", name="Fahrtenname bearbeiten: Kleiner Bär vom See").click()
-    page.get_by_label("Fahrtenname", exact=True).fill("K" * 51)
+    page.get_by_label("Fahrtenname", exact=True).fill("K" * 31)
     page.get_by_role("button", name="Speichern").click()
     field = page.get_by_label("Fahrtenname", exact=True)
     # Szenario 7 zu #180: Das Feld bleibt offen, mit dem Fokus in der Eingabe.
     expect(field).to_be_focused()
-    expect(field).to_have_value("K" * 51)
+    expect(field).to_have_value("K" * 31)
     expect(field).to_have_attribute("aria-invalid", "true")
     expect(page.locator("#id_scout_name-fehler")).to_be_visible()
-    expect(page.locator("#id_scout_name-fehler")).to_have_text("Dein Fahrtenname darf höchstens 50 Zeichen lang sein.")
+    expect(page.locator("#id_scout_name-fehler")).to_have_text("Dein Fahrtenname darf höchstens 30 Zeichen lang sein.")
     width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
     assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
     assert run_axe(page) == []

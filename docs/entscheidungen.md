@@ -6,6 +6,20 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-10-31 · Fahrtenname höchstens 30 Zeichen, langer Name bricht im Profilkreis um (#214)
+
+**Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/214#issuecomment-6524812008), Fragen 5, 6b und 7; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/214#issuecomment-6524812677) mit „Ja, so (Empfehlung)“):
+
+1. Ein Fahrtenname hat höchstens **30 Zeichen**, überall, auch bei verwalteten Personen (#117). Das löst „höchstens 50 Zeichen“ in Punkt 5 des Eintrags vom 26.10.2026 zu #111 ab; Leerzeichen am Rand, Meldungen und Fehler am Feld bleiben, wie dort entschieden.
+2. Gespeicherte Fahrtennamen über 30 Zeichen werden beim Umstellen geleert; danach steht „Noch nicht angegeben“. Bei der Umstellung gab es sie nur in Testkonten.
+3. Im Profilkreis in der Seitenleiste und im Menü am Handy bricht ein langer Name um, notfalls mitten im Wort, statt über den Rand zu ragen.
+
+**Begründung:** Ein langer Name ohne Leerzeichen ragte in der Seitenleiste über den Rand (gemeldet am 29.10.2026). Sebastian: „Ich würde sowohl Umbrechen als auch eine engere Grenze verwenden. Die neue Grenze soll 30 Zeichen sein.“ Zum Leeren: Gespeicherte längere Namen gab es nur in Testkonten.
+
+**Technische Wahl** (KI): Die Grenze steht an einer Stelle im Code (`SCOUT_NAME_MAX_LENGTH`) und gilt zusätzlich in der Datenbank, damit auch ein späterer Weg am Formular vorbei keinen längeren Namen speichern kann (Klärung, Frage 6). Weiter kein `maxlength` im Feld (Eintrag vom 26.10.2026 zu #111).
+
+**Umsetzung:** `accounts/models.py`, `accounts/migrations/0005_scout_name_30.py`, `accounts/texts.py`, `core/templates/core/_profilkreis.html`, `core/static/core/app.css`, `tests/test_fahrtenname_grenze.py`, `rauchtests/test_fahrtenname_umbruch.py`.
+
 ## 2026-10-30 · Rollenkacheln auf „Mein Profil“ ohne zweite Zeile (#219)
 
 **Entscheidung** (Sebastian, [Klärung vom 30.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/219#issuecomment-6521672121), Frage 4 mit Nachfrage; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/219#issuecomment-6521672415) mit „Alles passt“):

@@ -9,7 +9,7 @@ from accounts.models import SCOUT_NAME_MAX_LENGTH
 
 
 class ScoutNameForm(forms.Form):
-    """Der eigene Fahrtenname: freiwillig, höchstens 50 Zeichen, Leerzeichen am Rand entfernt.
+    """Der eigene Fahrtenname: freiwillig, höchstens 30 Zeichen (#214), Leerzeichen am Rand entfernt.
 
     Das Formular nimmt nur den Fahrtennamen an. Wessen Konto es ändert, bestimmt allein die
     Anmeldung, nie ein Feld der Anfrage (EP-04). Leerzeichen am Rand zählen wie beim Namen

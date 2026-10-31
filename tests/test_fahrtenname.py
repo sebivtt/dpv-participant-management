@@ -31,7 +31,7 @@ PROFILE = "/profil/"
 SAVE = "/profil/fahrtenname/"
 SAVED = "Dein Fahrtenname ist gespeichert."
 DELETED = "Dein Fahrtenname ist gelöscht."
-TOO_LONG = "Dein Fahrtenname darf höchstens 50 Zeichen lang sein."
+TOO_LONG = "Dein Fahrtenname darf höchstens 30 Zeichen lang sein."
 FAILED = "Dein Fahrtenname konnte nicht gespeichert werden. Versuche es noch einmal."
 NOT_GIVEN = "Noch nicht angegeben"
 HINT_NAME = "Ergänze deinen Namen in deinem DPV-Konto und melde dich danach neu an."
@@ -343,19 +343,19 @@ def test_nur_leerzeichen_gilt_als_kein_fahrtenname(org, value):
     assert greeting(org.erika) == "Hallo Erika!"
 
 
-# Szenario 10: höchstens 50 Zeichen
+# Szenario 10: höchstens 30 Zeichen (bis #214: 50; die Szenarien dazu in tests/test_fahrtenname_grenze.py)
 
 
-def test_fuenfzig_zeichen_werden_gespeichert(org):
-    value = "K" * 50
+def test_dreissig_zeichen_werden_gespeichert(org):
+    value = "K" * 30
 
     save(org.erika, f" {value} ")
 
     assert stored(org.erika) == value
 
 
-@pytest.mark.parametrize("value", ["K" * 51, "Ä" * 51])
-def test_einundfuenfzig_zeichen_fehler_am_feld_und_die_eingabe_bleibt(org, value):
+@pytest.mark.parametrize("value", ["K" * 31, "Ä" * 31])
+def test_einunddreissig_zeichen_fehler_am_feld_und_die_eingabe_bleibt(org, value):
     set_stored(org.erika, "Kiwi")
 
     response = save(org.erika, value)
