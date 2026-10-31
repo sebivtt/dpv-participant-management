@@ -36,13 +36,15 @@ def _hebt_sich_hervor(knopf: Locator) -> None:
     assert _aussehen(knopf) == HERVORGEHOBEN, "unter der Maus"
     page.mouse.move(0, 0)
     assert _aussehen(knopf) == RUHE, "nach dem Wegfahren"
-    # Drücken, ohne loszulassen; losgelassen wird erst neben dem Knopf, damit nichts schließt.
+    # Drücken, ohne loszulassen; losgelassen wird erst in der Ecke des umgebenden Kopfs. Dorthin geht der
+    # Klick, den der Browser danach auslöst; neben dem Dialog schlösse er ihn.
     knopf.hover()
     page.mouse.down()
     try:
         assert _aussehen(knopf) == HERVORGEHOBEN, "beim Drücken"
     finally:
-        page.mouse.move(0, 0)
+        kopf = knopf.locator("xpath=..").bounding_box()
+        page.mouse.move(kopf["x"] + 2, kopf["y"] + 2)
         page.mouse.up()
 
 
@@ -52,6 +54,7 @@ def test_das_x_im_dialog_hebt_sich_unter_der_maus_hervor(pc):
     dialog = pc.locator("dialog.a-dialog")
     expect(dialog).to_be_visible()
     _hebt_sich_hervor(dialog.get_by_role("link", name="Schließen"))
+    expect(dialog).to_be_visible()
 
 
 # S2, S3: schmales Fenster wie am Handy, aber mit der Maus: der Menüknopf und das × im Menü
@@ -65,6 +68,7 @@ def test_menueknopf_und_x_im_menue_heben_sich_unter_der_maus_hervor(pc):
     expect(menue).to_be_visible()
     # Das × trägt beim Öffnen den Fokus (autofocus); der blaue Rahmen ändert an den Farben nichts.
     _hebt_sich_hervor(menue.get_by_role("button", name="Menü schließen"))
+    expect(menue).to_be_visible()
 
 
 # S4: mit der Tab-Taste auf dem × nur der bekannte blaue Fokusrahmen, keine blaue Fläche
