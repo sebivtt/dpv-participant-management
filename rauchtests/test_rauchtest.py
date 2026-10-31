@@ -258,7 +258,7 @@ def test_fahrtenname_eintragen_wie_am_handy_und_ueberall_sehen(request, browser_
     expect(field).to_have_value("K" * 51)
     expect(field).to_have_attribute("aria-invalid", "true")
     expect(page.locator("#id_scout_name-fehler")).to_be_visible()
-    expect(page.locator("#id_scout_name-fehler")).to_have_text("Dein Fahrtenname darf höchstens 50 Zeichen lang sein.")
+    expect(page.locator("#id_scout_name-fehler")).to_have_text("Dein Fahrtenname darf höchstens 30 Zeichen lang sein.")
     width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
     assert width[0] <= width[1], f"Seite breiter als der Bildschirm: {width}"
     assert run_axe(page) == []

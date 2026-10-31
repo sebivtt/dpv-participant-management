@@ -102,6 +102,8 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .a-konto { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--linie); }
 .a-profil { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: var(--radius-klein); color: var(--text); text-decoration: none; font-weight: 700; }
 .a-profil:hover { background: var(--grund); color: var(--text); }
+/* Ein langer Name bricht um, notfalls mitten im Wort, statt über den Rand zu ragen (#214). */
+.a-profil-name { min-width: 0; overflow-wrap: anywhere; }
 /* Solange „Mein Profil“ offen ist (#13): Fläche und gelber Ring wie beim aktiven Navigationspunkt, nicht nur eine Farbe.
    Der Ring liegt ohne Spalt direkt am Kreis (Sebastian, 26.10.2026). */
 .a-profil[aria-current="page"] { background: var(--dpv-hauch); color: var(--dpv); }

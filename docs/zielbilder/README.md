@@ -31,7 +31,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
     - **Fokus nach Tippen außerhalb:** Er geht zurück aufs Feld, außer man hat einen Link, Knopf oder ein Eingabefeld angetippt. Esc verwirft auch, wenn der Fokus schon außerhalb des Felds liegt.
     - **Ohne Skript** bleibt das einfache Formular aus #111: Eingabe mit „Speichern“ darunter, ohne Knopf zum Leeren und ohne „Verwerfen“.
     - **Lange Namen** brechen in Ruhe um wie in Punkt 8, statt mit „…“ abgeschnitten zu werden.
-    - **Fehler am Feld** (mehr als 50 Zeichen) steht rot unter dem Feld, das offen bleibt; das Zielbild zeigt keinen Fehler.
+    - **Fehler am Feld** (mehr als 50 Zeichen; seit #214 mehr als 30) steht rot unter dem Feld, das offen bleibt; das Zielbild zeigt keinen Fehler.
 
 ## Meldungen
 

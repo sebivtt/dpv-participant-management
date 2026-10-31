@@ -5,8 +5,9 @@ from django.db import DatabaseError, models, transaction
 
 from access.keys import key_field
 
-# Höchstens 50 Zeichen, nach dem Entfernen der Leerzeichen am Rand (#111).
-SCOUT_NAME_MAX_LENGTH = 50
+# Höchstens 30 Zeichen, nach dem Entfernen der Leerzeichen am Rand (#111, #214); gilt überall, wo es einen
+# Fahrtennamen gibt, auch bei verwalteten Personen (#117), und ebenso in der Datenbank.
+SCOUT_NAME_MAX_LENGTH = 30
 
 
 class User(AbstractUser):
