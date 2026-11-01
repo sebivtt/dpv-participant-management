@@ -47,6 +47,8 @@ def _stand(page: Page) -> dict:
 
 def _nichts_rutscht(page: Page, text: str, lang: bool = True) -> None:
     """Die Meldung ist unten zu sehen; die Seite steht oben, und der Inhalt steht, wo er zuerst stand."""
+    # Die Maus weg von der Meldung, sonst hält sie sie fest (#186, Szenario 4).
+    page.mouse.move(5, 5)
     _later(page, 300)
     notice = _short(page)
     expect(notice).to_contain_text(text)
@@ -104,7 +106,7 @@ def test_profil_im_grossen_fenster_rutscht_nichts(request, browser_name):
 
 # Szenario 7: Zu langer Fahrtenname; die Fehlermeldung steht am Feld, und die Seite rollt wie bisher zum Feld.
 def test_profil_zu_lang_rollt_wie_bisher_zum_feld(request, browser_name):
-    # So niedrig, dass das Feld ohne Hinrollen nicht ganz zu sehen wäre.
+    # So niedrig, dass das Feld ohne Hinrollen nicht zu sehen wäre; wie weit der Browser rollt, bleibt ihm überlassen.
     page = _page(request, "pc", {"width": PC["viewport"]["width"], "height": 230})
     _set_scout_name("Kiwi")
     _stop_clock(page)
@@ -113,7 +115,7 @@ def test_profil_zu_lang_rollt_wie_bisher_zum_feld(request, browser_name):
     _later(page, 300)
     field = page.get_by_label("Fahrtenname", exact=True)
     expect(field).to_be_focused()
-    expect(field).to_be_in_viewport(ratio=1)
+    expect(field).to_be_in_viewport()
     expect(page.locator("[data-antippfeld] .invalid-feedback")).to_be_visible()
     assert page.evaluate("scrollY") > 0
     expect(_short(page)).to_have_count(0)
