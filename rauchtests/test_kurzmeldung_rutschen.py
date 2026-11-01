@@ -6,7 +6,7 @@ Browser die Seite gelesen hat und bevor das Skript läuft (`STAND`): So sieht ih
 und so muss er stehen bleiben, wenn die Meldung unten erscheint und wieder verschwindet. Vor der
 Behebung stand die Meldung zuerst oben im Inhalt, und mit dem Wegnehmen rückte alles darunter um
 ihre Höhe nach oben. Die Uhr steht still wie in test_kurzmeldung.py. Jeder Test läuft in Chromium,
-Firefox und WebKit. Szenario 7 (Fehler am Feld) und 8 (ohne Skript) prüft test_kurzmeldung.py.
+Firefox und WebKit. Szenario 8 (ohne Skript) prüft test_kurzmeldung.py.
 Alle Konten und Daten sind erfunden.
 """
 
@@ -30,9 +30,9 @@ document.addEventListener("readystatechange", function () {
 NIEDRIG = {"pc": {"width": PC["viewport"]["width"], "height": 420}, "handy": {"width": HANDY["viewport"]["width"], "height": 600}}
 
 
-def _page(request, device: str) -> Page:
+def _page(request, device: str, size: dict | None = None) -> Page:
     page: Page = request.getfixturevalue(device)
-    page.set_viewport_size(NIEDRIG[device])
+    page.set_viewport_size(size or NIEDRIG[device])
     login(page)
     page.add_init_script(STAND)
     return page
@@ -45,7 +45,7 @@ def _stand(page: Page) -> dict:
     )
 
 
-def _nichts_rutscht(page: Page, text: str) -> None:
+def _nichts_rutscht(page: Page, text: str, lang: bool = True) -> None:
     """Die Meldung ist unten zu sehen; die Seite steht oben, und der Inhalt steht, wo er zuerst stand."""
     _later(page, 300)
     notice = _short(page)
@@ -53,7 +53,7 @@ def _nichts_rutscht(page: Page, text: str) -> None:
     expect(notice).to_be_in_viewport()
     first = page.evaluate("window.vorDemSkript")
     now = _stand(page)
-    assert now["lang"], "Die Seite muss länger als der Bildschirm sein"
+    assert now["lang"] == lang, "Die Seite muss länger als der Bildschirm sein" if lang else "Die Seite muss ganz zu sehen sein"
     assert first["scroll"] == 0 and now["scroll"] == 0, (first, now)
     assert now["top"] == first["top"], (first, now)
 
@@ -63,7 +63,7 @@ def _nichts_rutscht(page: Page, text: str) -> None:
     assert _stand(page) == now
 
 
-# Szenarien 1, 2, 5 und 6: „Mein Profil“ am PC und am Handy
+# Szenarien 1, 2 und 5: „Mein Profil“ am PC und am Handy
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_profil_nach_dem_speichern_rutscht_nichts(request, browser_name, device):
     page = _page(request, device)
@@ -78,20 +78,55 @@ def test_profil_nach_dem_speichern_rutscht_nichts(request, browser_name, device)
 
 
 # Szenario 5: Schließen mit dem ×
-def test_profil_schliessen_mit_dem_x_rutscht_nichts(pc):
-    pc.set_viewport_size(NIEDRIG["pc"])
-    login(pc)
-    pc.add_init_script(STAND)
+def test_profil_schliessen_mit_dem_x_rutscht_nichts(request, browser_name):
+    page = _page(request, "pc")
     _set_scout_name("Kiwi")
-    _stop_clock(pc)
-    pc.goto(f"{BASE}/profil/")
-    _save(pc, "Falkenflug")
-    _later(pc, 300)
-    first = pc.evaluate("window.vorDemSkript")
-    _short(pc).get_by_role("button", name="Meldung schließen").click()
-    expect(_short(pc)).to_have_count(0)
-    now = _stand(pc)
+    _stop_clock(page)
+    page.goto(f"{BASE}/profil/")
+    _save(page, "Falkenflug")
+    _later(page, 300)
+    first = page.evaluate("window.vorDemSkript")
+    _short(page).get_by_role("button", name="Meldung schließen").click()
+    expect(_short(page)).to_have_count(0)
+    now = _stand(page)
     assert now["lang"] and now["scroll"] == 0 and now["top"] == first["top"], (first, now)
+
+
+# Szenario 6: Fenster groß genug für die ganze Seite
+def test_profil_im_grossen_fenster_rutscht_nichts(request, browser_name):
+    page = _page(request, "pc", {"width": PC["viewport"]["width"], "height": 1400})
+    _set_scout_name("Kiwi")
+    _stop_clock(page)
+    page.goto(f"{BASE}/profil/")
+    _save(page, "Falkenflug")
+    _nichts_rutscht(page, SAVED, lang=False)
+
+
+# Szenario 7: Zu langer Fahrtenname; die Fehlermeldung steht am Feld, und die Seite rollt wie bisher zum Feld.
+def test_profil_zu_lang_rollt_wie_bisher_zum_feld(request, browser_name):
+    # So niedrig, dass das Feld ohne Hinrollen nicht ganz zu sehen wäre.
+    page = _page(request, "pc", {"width": PC["viewport"]["width"], "height": 230})
+    _set_scout_name("Kiwi")
+    _stop_clock(page)
+    page.goto(f"{BASE}/profil/")
+    _save(page, "K" * 31)
+    _later(page, 300)
+    field = page.get_by_label("Fahrtenname", exact=True)
+    expect(field).to_be_focused()
+    expect(field).to_be_in_viewport(ratio=1)
+    expect(page.locator("[data-antippfeld] .invalid-feedback")).to_be_visible()
+    assert page.evaluate("scrollY") > 0
+    expect(_short(page)).to_have_count(0)
+
+
+# Unabhängige Prüfung: Lädt das Skript nicht, bleibt „Speichern“ zu sehen und speichert.
+def test_ohne_geladenes_skript_bleibt_speichern(request, browser_name):
+    page = _page(request, "pc")
+    page.route("**/core/app.js", lambda route: route.abort())
+    page.goto(f"{BASE}/profil/")
+    page.get_by_label("Fahrtenname", exact=True).fill("Kiwi")
+    _submit(page, page.get_by_role("button", name="Speichern").click)
+    expect(page.locator("[data-antippfeld]")).to_contain_text("Kiwi")
 
 
 # Szenario 3: Seite „Verband“ nach dem Entfernen einer Rolle

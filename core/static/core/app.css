@@ -376,9 +376,10 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-antippfeld .form-control.is-invalid, .a-antippfeld .form-control.is-invalid:focus { border: 0; background-image: none; box-shadow: none; }
 .a-antippfeld-gruppe:has(.form-control.is-invalid) { border-color: var(--bs-form-invalid-border-color); }
 .a-antippfeld-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
-/* Mit Skript nehmen die Knöpfe auch vor dem Zuklappen keinen Platz ein; sonst rückte beim Laden alles darunter hoch (#226). */
+/* Mit Skript nehmen die Knöpfe auch vor dem Zuklappen keinen Platz ein; sonst rückte beim Laden alles darunter
+   hoch (#226). Sie schweben schon da, statt zu verschwinden, damit „Speichern“ bleibt, falls das Skript nicht lädt. */
 @media (scripting: enabled) {
-  .a-antippfeld:not(.ist-bereit) .a-antippfeld-knoepfe { display: none; }
+  .a-antippfeld:not(.ist-bereit) .a-antippfeld-knoepfe { position: absolute; top: calc(100% + 7px); left: 0; z-index: 20; margin: 0; }
 }
 .a-antippfeld.ist-bereit .a-antippfeld-knoepfe { position: absolute; top: calc(100% + 7px); left: 0; z-index: 20; margin: 0; padding: 10px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); box-shadow: 0 10px 24px rgba(27, 37, 50, .12); }
 .a-antippfeld-knoepfe .btn { min-height: 40px; padding: 8px 13px; font-size: .9rem; }
