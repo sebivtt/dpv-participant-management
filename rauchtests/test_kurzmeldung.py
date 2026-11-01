@@ -386,6 +386,8 @@ def test_ohne_skript_steht_die_meldung_fest_oben(pc, browser):
         page.get_by_role("button", name="Speichern").click()
         notice = page.locator("main .a-meldung.ist-erfolg")
         expect(notice).to_contain_text(SAVED)
+        # Mit Skript nimmt sie oben keinen Platz ein (#226), ohne Skript ist sie dort zu sehen.
+        expect(notice).to_be_visible()
         expect(notice.get_by_role("button", name="Meldung schließen")).to_be_hidden()
         heading = _box(page.get_by_role("heading", level=1))
         where = _box(notice)
