@@ -71,7 +71,7 @@ Die Handgriffe dazu stehen im Skill `phase-steuern`.
 ## Steuerungssession und Umsetzungs-Sessions
 
 - **Steuerungssession:** Sie darf lesen, Aufträge verteilen und das Phasen-Issue pflegen, dazu, was ihr „Ablauf einer Phase“ beim Start und bei neuen Issues zuweist (Issues mit `issue-anlegen` anlegen, Labels und Abhängigkeiten eintragen). Sie entscheidet nichts Fachliches.
-- **Keine Zustimmung weitergeben:** Sebastians Freigaben stehen in seinen eigenen Worten im Issue oder Pull Request. Die Steuerungssession schreibt nie „Sebastian stimmt zu“, ohne dass sie dort stehen.
+- **Freigaben:** Nur Sebastian setzt `geklärt` und übernimmt Pull Requests, jeweils selbst auf GitHub; die KI schickt ihm den Link. Seine übrigen Freigaben stehen in seinen eigenen Worten im Issue oder Pull Request; ohne diesen Beleg behauptet die Steuerungssession keine Zustimmung.
 - **Auftrag:** Ein Auftrag besteht nur aus dem Link zum Issue und dem Verweis auf diese Datei, etwa „Setze #123 um, nach `CLAUDE.md`.“ Was sonst wichtig ist, steht vorher im Issue.
 - **Wechsel der Steuerungssession:** Sie wechselt, sobald sie bei 40 bis 50 % der Kontextanzeige in Claude Code steht und das laufende Issue abgeschlossen und eingetragen ist, also zwischen zwei Issues, nie mitten in einer Umsetzung. Vorher schreibt sie den Stand ins Phasen-Issue; die nächste macht allein damit weiter. 60 % ist die harte Grenze: darüber nimmt sie keine neue Aufgabe an. Fasst Claude Code das Gespräch vorher automatisch zusammen, schreibt sie sofort den Stand ins Phasen-Issue und endet.
 - **Umsetzungs-Sessions:** Jede Umsetzung läuft in einer eigenen, frischen Session für genau ein Issue; danach nimmt sie sich kein weiteres vor. Erreicht sie trotzdem rund 60 % (Notfall), schreibt sie den Stand als Kommentar ins Issue, und eine neue Session macht mit genau diesem Issue weiter.
@@ -92,6 +92,7 @@ Für jeden Befund: Datei und Zeile, konkreter Fehlerfall, kleinste Korrektur und
 
 ## Was die KI nie allein entscheidet oder tut
 
+- Pull Requests übernehmen, auf `main` oder mit Force pushen, `.env` lesen, `geklärt` setzen. In Claude Code sperren `.claude/settings.json` und `.claude/hooks/sperren.py` die gängigen Befehlsformen, als Schutz vor Versehen; andere KI-Werkzeuge haben diese Sperre nicht und arbeiten im Projekt nur lesend. Eine Sperre nie umgehen, auch nicht nach einem Okay im Chat; Sebastian führt die Handlung selbst aus.
 - Rechtsfragen (Datenschutz, Lizenzen), die Freigabe echter Daten (Tor E3) und die Inbetriebnahme. Ausnahme: die Einordnung neuer Pakete nach `CONTRIBUTING.md`, Abschnitt 6; Zweifelsfälle gehen an Sebastian.
 - Änderungen an Produktionsdaten oder am Produktivserver.
 - Änderungen an `docs/anforderungen.md` oder `docs/fahrplan.md` ohne Sebastians Zustimmung. In `docs/entscheidungen.md` werden bestehende Einträge nie geändert; neue kommen im Pull Request dazu und werden in der Beschreibung genannt.
