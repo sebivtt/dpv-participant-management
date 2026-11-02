@@ -123,6 +123,7 @@ BLOCKED_ENV = [
     "grep KEY .env",
     "less < .env",
     "cat .en*",
+    "cat .*",
 ]
 
 
@@ -213,6 +214,10 @@ ALLOWED = [
     "uv run --locked --env-file .env pytest tests/test_sperren.py -q",
     "uv run --locked --env-file=.env python manage.py check",
     "ls -a",
+    # Ein Muster ohne Punkt am Anfang trifft in der Shell keine versteckte Datei wie .env.
+    "ls tests/*",
+    "cat * | wc -l",
+    "[ -f README.md ] && echo da",
     "echo \"ein offenes Anführungszeichen",
     "git status && git log --oneline -3",
     "git commit -m 'Kein git push origin main, kein gh pr merge'",
