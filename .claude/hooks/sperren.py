@@ -313,7 +313,9 @@ def _check_env(words):
         if word.startswith("--env-file") or (index and words[index - 1] == "--env-file"):
             continue
         name = word.rsplit("=", 1)[-1].rsplit("/", 1)[-1]
-        if name == ".env" or (any(char in name for char in "*?[") and fnmatch.fnmatchcase(".env", name)):
+        # Ein Muster trifft in der Shell eine versteckte Datei nur, wenn es selbst mit „.“ beginnt.
+        pattern = name.startswith(".") and any(char in name for char in "*?[")
+        if name == ".env" or (pattern and fnmatch.fnmatchcase(".env", name)):
             raise Blocked(".env lesen")
 
 
