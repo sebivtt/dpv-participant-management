@@ -10,6 +10,7 @@ Requests; grill-me verweist darauf (`docs/entscheidungen.md`, 26.10.2026). Für 
 Gestaltung“ (#162) hat grill-me die Handgriffe, die Regel selbst steht in CLAUDE.md.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -427,3 +428,43 @@ def test_vorlage_phase_kennt_kein_geklaert_als_text():
     for name, attributes in _phase_fields().items():
         for key in ["label", "description", "placeholder"]:
             assert "geklärt" not in attributes.get(key, ""), (name, key)
+
+
+# Sperren für die KI (#233): Regel in CLAUDE.md, Sperrliste und Prüfschritt, grill-me ohne Label-Befehl
+
+SETTINGS = BASE_DIR / ".claude" / "settings.json"
+
+
+def test_claude_md_nennt_gesperrte_handlungen_dateien_und_werkzeuggrenze():
+    rule = _section(CLAUDE_MD, "Was die KI nie allein entscheidet oder tut")
+    release = _sentence_after(_section(CLAUDE_MD, "Steuerungssession und Umsetzungs-Sessions"), "**Freigaben:**")
+
+    for action in ["Pull Requests übernehmen", "auf `main` oder mit Force pushen", "`.env` lesen", "`geklärt` setzen"]:
+        assert action in rule, action
+    assert "In Claude Code sperren `.claude/settings.json` und `.claude/hooks/sperren.py`" in rule
+    assert "als Schutz vor Versehen" in rule
+    assert "andere KI-Werkzeuge haben diese Sperre nicht und arbeiten im Projekt nur lesend" in rule
+    assert "Eine Sperre nie umgehen, auch nicht nach einem Okay im Chat" in rule
+    assert "Nur Sebastian setzt `geklärt` und übernimmt Pull Requests, jeweils selbst auf GitHub" in release
+
+
+def test_settings_sperrt_env_und_uebernehmen_und_bindet_den_pruefschritt_ein():
+    settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
+    hooks = [hook for entry in settings["hooks"]["PreToolUse"] if entry["matcher"] == "Bash" for hook in entry["hooks"]]
+
+    assert {"Read(./.env)", "Read(./**/.env)", "Bash(gh pr merge:*)"} <= set(settings["permissions"]["deny"])
+    # Der Pfad über $CLAUDE_PROJECT_DIR gilt auch, wenn die Sitzung in einem Unterordner arbeitet.
+    assert any(hook["command"] == 'python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/sperren.py"' for hook in hooks)
+    assert (BASE_DIR / ".claude" / "hooks" / "sperren.py").is_file()
+
+
+def test_grill_me_bittet_sebastian_um_geklaert_statt_es_selbst_zu_setzen():
+    text = GRILL_ME.read_text(encoding="utf-8")
+    head = text.split("---", 2)[1]
+    release = _section(GRILL_ME, "Freigeben")
+
+    assert not re.search(r"labels\[\]=geklärt|(--add-label|--label|-l)[ =]\S*geklärt", text), "Befehl setzt `geklärt`"
+    assert "für Sebastians Freigabe mit dem Label „geklärt“ vorbereiten" in head
+    assert "bittet die KI Sebastian, das Label `geklärt` selbst zu setzen" in release
+    assert "prüft die KI auf GitHub, ob das Label da ist" in release
+    assert "die Freigabe durch Sebastian (Abschnitt 9)" in _section(GRILL_ME, "Kurzform")
