@@ -19,7 +19,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 **Begründung:** Bei #233 (P-01) kosteten zwei volle Läufe rund 38 Minuten, etwa drei Viertel der Umsetzungszeit, für eine Änderung ohne Code des Tools; der volle Lauf lief gleichzeitig mit der unabhängigen Prüfung und war nach deren Befunden wertlos, und die Tests wuchsen auf 138 Einzelfälle für eine Datei. Auf dem Mac wurde außerdem rund ein Drittel der Rauchtests übersprungen (Firefox), und die Schlusszeile meldete trotzdem „Alle Prüfungen grün.“ (Befunde BF-147, BF-046, BF-037, BF-047 der Projektprüfung).
 
-**Grenzen:** Weniger lokal Geprüftes kann mehr rote Läufe auf GitHub bedeuten, wenn die Auswahl zu eng war. Das ist gewollt abgewogen und leicht umkehrbar: Der Rücknahmeweg ist, den Pull Request rückgängig zu machen. `./pruefen.sh` ohne Zusatz verhält sich bis auf Schlusszeile, Dauerangabe und die Gründe für Übersprungenes wie vorher; `.github/workflows/ci.yml` ist unverändert. Der Eintrag vom 21.10.2026 zu „Rauchtests mehrmals laufen lassen“ gilt weiter.
+**Grenzen:** Weniger lokal Geprüftes kann mehr rote Läufe auf GitHub bedeuten, wenn die Auswahl zu eng war. Das ist gewollt abgewogen und leicht umkehrbar: Der Rücknahmeweg ist, den Pull Request rückgängig zu machen. `./pruefen.sh` ohne Zusatz verhält sich bis auf Schlusszeile, Dauerangabe und die Gründe für Übersprungenes wie vorher; `.github/workflows/ci.yml` ist unverändert. Die Erfahrung „Rauchtests im Browser mehrmals laufen lassen“ (21.10.2026) in `CLAUDE.md` gilt weiter.
 
 **Umsetzung:** `pruefen.sh`, `CLAUDE.md`, `.github/pull_request_template.md`, `docs/review-leitfaden.md`, `README.md`, `tests/test_pruefen_sh.py`, `tests/test_arbeitsregeln.py`.
 
