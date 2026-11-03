@@ -793,7 +793,7 @@ def test_phase_steuern_haelt_den_stand_kurz_und_gibt_den_startsatz_vor():
     section = _stand_abschnitt()
 
     assert "höchstens 15 Zeilen" in section
-    assert "nichts Abgeschlossenes als „Davor: …“" in section
+    assert "Nichts Abgeschlossenes als „Davor: …“" in section
     assert "Bearbeitungshistorie des Issues" in section
     assert "keine Zeile länger als ein Satz" in section
     assert "Steuere Phase <Pn> weiter, Phasen-Issue #<nr>, nach `CLAUDE.md` und Skill `phase-steuern`." in section
@@ -801,12 +801,13 @@ def test_phase_steuern_haelt_den_stand_kurz_und_gibt_den_startsatz_vor():
 
 def test_phase_steuern_gibt_nachtraege_an_grill_me_und_kennt_den_lauf_auf_main():
     auftraege = _section(PHASE_STEUERN, "Aufträge")
-    pflegen = _section(PHASE_STEUERN, "Phasen-Issue pflegen")
+    # Der Abschnitt „Phasen-Issue pflegen“ enthält einen Codeblock mit „#“-Zeilen; deshalb der ganze Skill.
+    pflegen = _text(PHASE_STEUERN).split("Nach jeder übernommenen Umsetzung:", 1)[1].split("Neues Issue in der Phase:", 1)[0]
 
     assert "**Nachträge** zu einem geklärten Issue" in auftraege
     assert "an eine Klärung mit `grill-me` geben (Kurzform möglich)" in auftraege
     assert "`gh run list --branch main --limit 1`" in pflegen
-    assert "Nach jeder übernommenen Umsetzung" in pflegen
+    assert "auf sein Ende muss die Steuerungssession vor dem nächsten Auftrag nicht warten" in pflegen
 
 
 def test_phase_steuern_kennt_die_grenzen_von_desktop_app_und_cloud():
