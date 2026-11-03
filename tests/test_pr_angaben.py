@@ -975,5 +975,49 @@ def test_mehrere_mangel_im_kopf_und_in_den_angaben_werden_zusammen_gemeldet():
 
 def test_meldung_zum_kopf_ist_eine_zeile_in_alltagssprache():
     for kopf in ("", _kopf("x" * 601), _kopf(FUENF_ZEILEN + "\nZeile 6.")):
-        for meldung in _pruefe(beschreibung=_beschreibung(kopf=kopf)):
+        mangel = _pruefe(beschreibung=_beschreibung(kopf=kopf))
+        assert any("Für Sebastian" in m for m in mangel), (kopf, mangel)
+        for meldung in mangel:
             assert "\n" not in meldung and "\r" not in meldung
+
+
+# --- Befunde der unabhängigen Prüfung zu #239 -------------------------------------------------
+
+PR_238 = BASE_DIR / "tests" / "daten" / "pr-238-beschreibung.md"
+
+
+def _kopf_meldungen(beschreibung):
+    return [m for m in _pruefe(beschreibung=beschreibung) if m.startswith("Kopf:")]
+
+
+def test_text_vor_dem_kopf_ist_rot():
+    _rot("Für Sebastian", "erste", beschreibung=_beschreibung(kopf="Vorweg ein Satz.\n\n" + KOPF_STANDARD))
+
+
+def test_titel_mit_einer_raute_vor_dem_kopf_ist_rot():
+    _rot("Für Sebastian", "erste", beschreibung=_beschreibung(kopf="# Titel\n\n" + KOPF_STANDARD))
+
+
+def test_beschreibung_von_pr_238_ohne_kopf_ist_rot_und_mit_kopf_ohne_kopf_mangel():
+    beschreibung = PR_238.read_text(encoding="utf-8")
+
+    assert _kopf_meldungen(beschreibung)
+    assert _kopf_meldungen(KOPF_STANDARD + "\n\n" + beschreibung) == []
+
+
+def test_ueberschrift_im_codeblock_beendet_den_kopf_nicht():
+    code = "```\n## Beispiel\n```\n" + "\n".join(f"Zeile {n}" for n in range(6))
+    _rot("Für Sebastian", "Zeilen", beschreibung=_beschreibung(kopf=_kopf(code)))
+
+
+def test_kopf_nur_im_codeblock_zaehlt_nicht_als_kopf():
+    _rot("Für Sebastian", beschreibung=_beschreibung(kopf="```\n" + KOPF_STANDARD + "\n```"))
+
+
+def test_kopf_im_codeblock_weiter_unten_ist_kein_zweiter_kopf():
+    _gruen(beschreibung=_beschreibung(davor="```\n## Für Sebastian\n```"))
+
+
+def test_nicht_geschlossener_kommentar_im_kopf_ist_leer_und_rot():
+    _rot("Für Sebastian", "leer", beschreibung=_beschreibung(kopf=_kopf("<!-- Kurz.")))
+
