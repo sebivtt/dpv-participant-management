@@ -11,6 +11,7 @@ Standardeingabe. Sie führen keinen der Befehle aus.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -97,6 +98,26 @@ BLOCKED_PUSH = [
     "git push origin main 2>&1 | tail -n 5",
     "bash -c 'git push origin main'",
     "git push origin \"verbesserung/x",
+    # Umleitungen sind kein Ziel (unabhängige Prüfung H1)
+    "git push 2>&1 | tail -3",
+    "git push -u origin 2>&1",
+    "git push origin 2>/dev/null",
+    "git push > log.txt 2>&1",
+    # Ziel aus Variable oder $(…) ist nicht prüfbar (M1)
+    'git push -u origin "$(git branch --show-current)"',
+    "git push origin `git branch --show-current`",
+    'git push origin "$BRANCH"',
+    # git an beliebiger Stelle eines Teils, nicht nur nach bekannten Vorsätzen (G1)
+    "timeout 60 git push origin main",
+    "env -u X git push origin main",
+    "nice -n 5 git push origin main",
+    "caffeinate git push origin main",
+    "xargs git push origin < ziele.txt",
+    "git submodule foreach git push origin main",
+    "timeout 30 gh pr merge 12",
+    # Inhalt eines Heredocs ohne Anführungszeichen an der Endmarke führt die Shell aus (G5)
+    "cat <<EOF\n$(gh pr merge 12)\nEOF",
+    "cat <<EOF\n`git push origin main`\nEOF",
 ]
 
 BLOCKED_LABEL = [
@@ -108,6 +129,7 @@ BLOCKED_LABEL = [
     "gh issue create -t T -l enhancement,geklärt -b B",
     "gh pr edit 3 --add-label geklärt",
     "gh -R sebivtt/x issue edit 5 --add-label geklärt",
+    "gh pr create --draft -l geklärt -t T -b B",
     "gh api repos/sebivtt/x/issues/5/labels -f 'labels[]=geklärt'",
     "gh api repos/sebivtt/x/issues -f title=T -f 'labels[]=geklärt'",
     "gh api -X PATCH repos/sebivtt/x/issues/5 -f 'labels[]=geklärt'",
@@ -135,7 +157,7 @@ def test_gesperrte_handlung_wird_abgewiesen(command):
     assert "Gesperrt nach CLAUDE.md" in result.stderr or "Abgewiesen" in result.stderr
 
 
-@pytest.mark.parametrize("command", ["gh pr merge 12 --merge", "git push origin main", "cat .env"])
+@pytest.mark.parametrize("command", ["gh pr merge 12 --merge", "git push origin main", "cat .env", "git push", "gh issue edit 5 --add-label 'P1"])
 def test_meldung_nennt_die_regel_und_dass_sebastian_selbst_ausfuehrt(command):
     assert MESSAGE in _check(command).stderr
 
@@ -144,6 +166,13 @@ def test_push_ohne_ziel_nennt_die_einfache_schreibweise():
     stderr = _check("git push").stderr
 
     assert "git push origin <zweig>" in stderr
+    assert "Hinweis:" in stderr
+
+
+def test_ziel_aus_variable_nennt_den_ausdruecklichen_zweignamen():
+    stderr = _check('git push origin "$(git branch --show-current)"').stderr
+
+    assert "Zweignamen" in stderr
 
 
 def test_push_von_head_auf_zweig_main_wird_abgewiesen(tmp_path):
@@ -163,12 +192,44 @@ def test_offenes_anfuehrungszeichen_bei_gh_wird_abgewiesen():
     assert "einfache" in result.stderr
 
 
-def test_label_aus_json_datei_wird_geprueft(tmp_path):
-    (tmp_path / "geklaert.json").write_text(json.dumps({"labels": ["geklärt"]}), encoding="utf-8")
-    (tmp_path / "anders.json").write_text(json.dumps({"labels": ["P2"], "body": "geklärt"}), encoding="utf-8")
+def test_inhalt_aus_datei_mit_label_oder_graphql_bezug_wird_nicht_gelesen_sondern_abgewiesen(tmp_path):
+    # Der Prüfschritt liest keine Dateien: Steht der Inhalt nicht im Befehl, ist er nicht prüfbar.
+    (tmp_path / "anders.json").write_text(json.dumps({"labels": ["P2"]}), encoding="utf-8")
+    (tmp_path / "abfrage.graphql").write_text("query { viewer { login } }", encoding="utf-8")
 
-    assert _check("gh api repos/sebivtt/x/issues/5 -X PATCH --input geklaert.json", cwd=tmp_path).returncode == BLOCKED
-    assert _check("gh api repos/sebivtt/x/issues/5 -X PATCH --input anders.json", cwd=tmp_path).returncode == 0
+    for command in [
+        "gh api repos/sebivtt/x/issues/5 -X PATCH --input anders.json",
+        "gh api graphql --input abfrage.graphql",
+        "gh api graphql -F query=@abfrage.graphql",
+        "gh api repos/sebivtt/x/issues/5/labels -F 'labels[]=@anders.json'",
+    ]:
+        result = _check(command, cwd=tmp_path)
+
+        assert result.returncode == BLOCKED, command
+        assert "Hinweis:" in result.stderr, command
+
+
+def test_kaputter_pruefschritt_weist_ueber_den_befehl_aus_settings_ab(tmp_path):
+    # Ein Syntaxfehler endet in Python mit Exit 1, das Claude Code nicht als Abweisung wertet;
+    # der Befehl in settings.json macht daraus Exit 2 (unabhängige Prüfung M2).
+    settings = json.loads((BASE_DIR / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    command = settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    hooks = tmp_path / ".claude" / "hooks"
+    hooks.mkdir(parents=True)
+    (hooks / "sperren.py").write_text("def kaputt(:\n", encoding="utf-8")
+    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "gh pr view 12"}, "cwd": str(tmp_path)})
+
+    result = subprocess.run(  # noqa: S603 -- Befehl aus der eigenen settings.json, erfundene Eingabe
+        ["sh", "-c", command],  # noqa: S607 -- sh wie bei Claude Code
+        input=payload,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "CLAUDE_PROJECT_DIR": str(tmp_path)},
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == BLOCKED
 
 
 def test_fehlerhafte_eingabe_wird_abgewiesen():
@@ -214,6 +275,21 @@ ALLOWED = [
     "uv run --locked --env-file .env pytest tests/test_sperren.py -q",
     "uv run --locked --env-file=.env python manage.py check",
     "ls -a",
+    # Umleitungen bei ausdrücklichem Ziel (H1)
+    "git push -u origin verbesserung/x 2>&1 | tail -3",
+    "./pruefen.sh 2>&1 | tail -20",
+    # Lesende GraphQL-Abfrage und Texte, die nur wie Optionen aussehen (G3)
+    "gh api graphql -f query='query { viewer { login } }' -f note='keine mutation'",
+    "gh api graphql -f query='query($q: String!) { search(query: $q, type: ISSUE) { issueCount } }' -f q='label:mutation'",
+    "gh issue edit 5 --body \"-l geklärt\"",
+    # .env aus der Vorlage anlegen wie im README (G4)
+    "cp .env.example .env",
+    "cp testumgebung/.env.example testumgebung/.env",
+    # Heredoc mit Anführungszeichen an der Endmarke bleibt Text (G5)
+    "cat <<'EOF'\n$(gh pr merge 12)\nEOF",
+    # Befehlsform aus dem Skill issue-anlegen, mehrzeilig mit Kommentar
+    "gh api repos/sebivtt/dpv-participant-management/issues \\\n"
+    "  -f title='T' -F body=@neu.md -f 'labels[]=bug' -f 'labels[]=P2'   # bzw. enhancement",
     # Ein Muster ohne Punkt am Anfang trifft in der Shell keine versteckte Datei wie .env.
     "ls tests/*",
     "cat * | wc -l",

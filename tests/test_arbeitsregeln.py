@@ -454,7 +454,8 @@ def test_settings_sperrt_env_und_uebernehmen_und_bindet_den_pruefschritt_ein():
 
     assert {"Read(./.env)", "Read(./**/.env)", "Bash(gh pr merge:*)"} <= set(settings["permissions"]["deny"])
     # Der Pfad über $CLAUDE_PROJECT_DIR gilt auch, wenn die Sitzung in einem Unterordner arbeitet.
-    assert any(hook["command"] == 'python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/sperren.py"' for hook in hooks)
+    # „|| exit 2“: Auch wenn der Prüfschritt selbst scheitert, weist Claude Code den Befehl ab.
+    assert any(hook["command"] == 'python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/sperren.py" || exit 2' for hook in hooks)
     assert (BASE_DIR / ".claude" / "hooks" / "sperren.py").is_file()
 
 
