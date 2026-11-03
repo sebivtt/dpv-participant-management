@@ -1,0 +1,35 @@
+# Prüfung „PR-Angaben“ (#237): sind die Pflichtangaben im Pull Request da und passen sie zusammen?
+# Closes #N, Label `geklärt`, Szenarien-Link oder Verzicht, Test-Commit vor dem Code.
+# Läuft in Sekunden und bei jeder Bearbeitung der Beschreibung neu; der lange Lauf in ci.yml nicht.
+# Das Skript liest Beschreibung, Issue, Kommentare und Commits bei jedem Lauf frisch von GitHub und
+# bekommt aus der Ereignisdatei nur die Nummer des Pull Requests. Kein Text aus Beschreibung, Titel,
+# Zweignamen oder Kommentaren wird in einen Befehl eingesetzt; der Auslöser ist nur „pull_request“.
+name: PR-Angaben
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+# Ein neuer Lauf für denselben Pull Request bricht den alten ab.
+concurrency:
+  group: pr-angaben-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  angaben:
+    name: PR-Angaben
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pflichtangaben prüfen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/pr_angaben.py

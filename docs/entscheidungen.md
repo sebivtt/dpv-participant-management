@@ -6,6 +6,29 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-11-03 · Pflichtangaben im Pull Request werden geprüft, Test-Commit vor dem Code (#237)
+
+**Entscheidung** (Paket P-02 der Projektprüfung, Issue #237; Einzelentscheidungen E-031, E-057 und E-058, Freigabe E-059, alle von Sebastian am 03.11.2026; Regel-Review G-08):
+
+1. Eine eigene Prüfung „PR-Angaben“ (`.github/workflows/pr-angaben.yml`, Skript `.github/pr_angaben.py`) läuft in Sekunden beim Öffnen, bei jedem neuen Stand und bei jeder Bearbeitung der Beschreibung. Der lange Lauf in `ci.yml` bleibt unverändert und startet dabei nicht neu.
+2. Sie ist rot, wenn fehlt oder nicht passt: genau ein „Closes #N“ (jede andere Form, mit der GitHub ein Issue schließt, etwa „Fixes #N“, „Closes: #N“ oder die Adresse des Issues, ist rot); das Label `geklärt` an Issue N; ein Link auf einen Kommentar „Szenarien (…)“ aus genau diesem Issue oder der Verzicht „Szenarien: keine, weil …“, den auch der Text des Issues als Zeile „Szenarien: keine.“ mit Grund festhält; bei Codeänderung die Zeile „Test-Commit“.
+3. Test-Commit vor dem Code (E-057): Ändert ein Pull Request Code, kommen die Tests als eigener Commit vor den Code, die Beschreibung nennt ihn (optional davor einen „Gerüst-Commit“ mit leerem Gerüst). Der Test-Commit ändert nur Dateien in den Testordnern und fügt mindestens eine Zeile hinzu; vor ihm ändert kein Commit Code, nach ihm mindestens einer; er entstand nach der letzten Bearbeitung der verlinkten Szenarien-Kommentare. Ohne Codeänderung genügt „entfällt, weil …“.
+4. Begriff *Code*: jede geänderte Datei außer unter `docs/`, `tests/`, `rauchtests/`, `containertests/`, `.github/ISSUE_TEMPLATE/` und außer `*.md`. Bewusste Näherung: `pruefen.sh`, Prüfabläufe und `.claude/`-Einstellungen sind Code. Der Verzicht auf Szenarien und der auf den Test-Commit sind getrennte Ausnahmen.
+5. Ausfall oder unvollständige Antwort von GitHub ist „nicht prüfbar“ und damit rot, nie grün.
+6. Ein Merge-Commit (etwa nach „Update branch“) zählt nicht als eigener Code des Pull Requests.
+
+**Begründung:** In 27 von 48 Pull Requests mit Code lagen Test und Code im selben Commit (BF-094); Szenarien und Label wurden nur von Sebastian selbst bemerkt (BF-098, BF-109, BF-086). Die Regeln standen nur als Text.
+
+**Grenzen:**
+
+- Die Prüfung zeigt Angaben und die sichtbare Reihenfolge der Commits, nicht den tatsächlichen Ablauf. Commit-Zeiten lassen sich fälschen; sie ist eine Spur, kein Beweis.
+- Nicht geprüft: ob die Szenarien Sebastians Entscheidungen enthalten und ob der Verzicht von ihm bestätigt ist (Mensch und KI schreiben unter demselben Konto, BF-076); ob jedes Szenario einen Test hat; ob der Test-Commit aus dem richtigen Grund rot ist und ob ein Gerüst-Commit nur Gerüst enthält (unabhängige Prüfung).
+- Änderungen am Issue nach dem letzten Lauf lösen keinen neuen aus; die Regel in `CLAUDE.md` verlangt dann einen neuen Lauf vor dem Link.
+- Eine Änderung am Prüfskript oder Prüfablauf im selben Pull Request kann die eigene Prüfung ändern (Grenze von `pull_request`); sie ist in der Dateiliste sichtbar und Sache der unabhängigen Prüfung.
+- Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16); die Wirkung hängt an Sebastians Blick auf den Status.
+
+**Umsetzung:** `.github/pr_angaben.py`, `.github/workflows/pr-angaben.yml`, `.github/pull_request_template.md`, `CLAUDE.md`, `CONTRIBUTING.md` (Abschnitt 3), `.claude/skills/grill-me/SKILL.md`, `tests/test_pr_angaben.py`, `tests/test_arbeitsregeln.py`.
+
 ## 2026-11-03 · Prüfumfang nach Art der Änderung, eine unabhängige Prüfung, Schweregrad nach der Folge (#235)
 
 **Entscheidung** (Paket P-14 der Projektprüfung, Issue #235; Einzelentscheidungen E-051 bis E-054 und Freigabe E-055 der Projektprüfung, alle von Sebastian am 03.11.2026):
