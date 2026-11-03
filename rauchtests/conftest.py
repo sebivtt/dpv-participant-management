@@ -13,6 +13,9 @@ Die Datenbankzugriffe hier sind trotzdem sicher: Das Tool selbst läuft in einem
 Das Tool läuft hier auf einem eigenen Port (tests/check_ports.py), nicht auf Port 8000 des
 eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167). Ein Rauchtest aus
 einer anderen Arbeitskopie läuft erst, wenn dieser fertig ist (#184).
+
+Rauchtests haben keine Zeitgrenze: Ein Test, der hängt, läuft unbegrenzt weiter, bis jemand den
+Lauf abbricht.
 """
 
 import os

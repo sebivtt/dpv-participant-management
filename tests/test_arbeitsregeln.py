@@ -141,10 +141,15 @@ def test_steuerungssession_entscheidet_nichts_fachliches_und_wechselt_rechtzeiti
     assert "in seinen eigenen Worten im Issue oder Pull Request" in section
     assert "„Setze #123 um, nach `CLAUDE.md`.“" in section
     assert "Was sonst wichtig ist, steht vorher im Issue" in section
-    assert "40 bis 50 %" in section
+    rule = _sentence_after(section, "**Wechsel der Steuerungssession:**")
+    assert "Sie wechselt nach jedem Issue, dessen Pull Request übernommen und im Phasen-Issue eingetragen ist" in rule
     assert "nie mitten in einer Umsetzung" in section
-    assert "60 % ist die harte Grenze" in section
+    assert "Issues ohne Pull Request (Klärungen, Sammel-Issues) lösen keinen Wechsel aus" in section
+    assert "mit allem, was noch läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge)" in section
+    assert "beginnt sie nichts Neues mehr, schreibt sofort den Stand ins Phasen-Issue und endet" in section
+    assert "ein Hook erinnert sie daran" in section
     assert "automatisch zusammen" in section
+    assert "%" not in section, "Prozentangaben der Kontextanzeige sind ersetzt (#240)"
 
 
 def test_umsetzung_in_einer_frischen_session_je_issue():
@@ -153,8 +158,13 @@ def test_umsetzung_in_einer_frischen_session_je_issue():
 
     assert "frischen Session für genau ein Issue" in rule
     assert "kein weiteres" in rule
-    assert "rund 60 %" in rule
+    assert "Fasst Claude Code das Gespräch trotzdem automatisch zusammen (Notfall), beginnt sie nichts Neues mehr" in rule
+    assert "mit einem laufenden Prüflauf oder Hintergrundauftrag, der Arbeitskopie und dem letzten Commit" in rule
     assert "als Kommentar ins Issue" in rule
+    assert "endet, sobald der Lauf beendet oder sein Ergebnis vermerkt ist" in rule
+    assert "Eine neue Session prüft zuerst, ob in derselben Arbeitskopie noch ein Lauf läuft" in rule
+    assert "macht dann mit genau diesem Issue weiter" in rule
+    assert "%" not in rule
 
 
 def test_ohne_szenarien_haelt_die_ki_an_auch_wenn_der_auftrag_den_schritt_nicht_nennt():
@@ -713,5 +723,129 @@ def test_entscheidung_zum_kopf_und_zum_warten_nennt_regel_und_grenzen():
         "600 Zeichen",
         "nicht, ob der Kopf verständlich ist",
         "ob das Wecken in jeder Umgebung klappt",
+    ]:
+        assert teil in flat, teil
+
+
+# Verweise statt Fassungen, Memory, Sitzungswechsel (#240)
+
+HOOK = BASE_DIR / ".claude" / "hooks" / "zusammenfassung.py"
+
+
+def _stand_abschnitt():
+    """Abschnitt 4 des Skills phase-steuern (Übergabe)."""
+    return _section(PHASE_STEUERN, "Übergabe an die nächste Steuerungssession")
+
+
+def test_ein_ort_je_angabe_gilt_auch_fuer_texte_der_ki_und_schaltet_die_memory_ab():
+    section = _section(CLAUDE_MD, "Ein Ort je Angabe")
+
+    assert "Das gilt auch für Texte, die die KI selbst schreibt" in section
+    assert "Aufträge, Prompts für die nächste Sitzung und der Stand im Phasen-Issue enthalten nur Verweise und den Stand" in section
+    assert "nie eine eigene Fassung einer Regel" in section
+    assert "Kürzel aus einer Klärung stehen immer mit der Issue-Nummer (etwa „#106 F1“)" in section
+    assert "Die automatische Memory von Claude Code ist für dieses Projekt abgeschaltet (`.claude/settings.json`)" in section
+    assert "was eine spätere Sitzung wissen muss, steht im Issue oder in diesen Dateien" in section
+    # nach dem ersten Absatz, vor der Liste der Orte
+    assert section.index("Das gilt auch für Texte") < section.index("**Was gilt:**")
+    assert section.index("Das gilt auch für Texte") > section.index("statt sie zu wiederholen")
+
+
+def test_ablauf_nr4_nennt_den_bericht_wenn_ein_lokaler_lauf_technisch_nicht_geht():
+    step = _schritt(4)
+
+    assert "Lässt sich ein lokaler Lauf in einer Umgebung technisch nicht ausführen" in step
+    assert "ein roter Lauf zählt nicht" in step
+    assert "nennt der Bericht, was ausgelassen wurde und warum" in step
+    assert "die unabhängige Prüfung beginnt dann ohne ihn" in step
+    assert "Beleg ist der grüne Lauf auf GitHub für den letzten Stand" in step
+
+
+def test_ablauf_nr6_weckt_bei_gruen_wie_bei_rot_und_erlaubt_die_abfragen_ausdruecklich():
+    step = _schritt(6)
+
+    assert "der sie am Ende des Laufs weckt, bei Grün wie bei Rot (`gh pr checks <nummer> --watch` für den eigenen Pull Request" in step
+    assert "`gh pr view <nummer> --json state,mergedAt`" in step
+    assert "gibt Sebastian hiermit ausdrücklich seine Erlaubnis" in step
+    assert "auch wo ein Werkzeug solche Abfragen sonst nicht von sich aus vorsieht" in step
+    assert "technische Sperren gelten weiter" in step
+    assert "eine Beobachtung, die nur bei Rot weckt, genügt nicht" in step
+    assert "die PR-Beobachtung des Werkzeugs, wo es eine hat" not in step
+
+
+def test_neuer_inhalt_zu_einem_geklaerten_issue_klaert_die_steuerung_nicht_selbst():
+    section = _section(CLAUDE_MD, "Ablauf einer Phase")
+    rule = section.split("**Neuer Inhalt zu einem geklärten Issue**", 1)[1].split(" - **", 1)[0]
+
+    assert "Danach läuft `grill-me` nur für den neuen Teil." in rule
+    assert "Die Steuerungssession klärt ihn nicht selbst; sie gibt ihn an eine Klärung." in rule
+
+
+def test_nach_einer_uebernahme_wird_der_lauf_auf_main_abgefragt_ohne_darauf_zu_warten():
+    section = _section(CLAUDE_MD, "Ablauf einer Phase")
+    rule = section.split("**Umsetzen:**", 1)[1].split(" - **", 1)[0]
+
+    assert "Nach einer Übernahme fragt die Steuerungssession den Lauf auf `main` ab" in rule
+    assert "auf sein Ende warten muss sie vor dem nächsten Auftrag nicht" in rule
+
+
+def test_phase_steuern_haelt_den_stand_kurz_und_gibt_den_startsatz_vor():
+    section = _stand_abschnitt()
+
+    assert "höchstens 15 Zeilen" in section
+    assert "nichts Abgeschlossenes als „Davor: …“" in section
+    assert "Bearbeitungshistorie des Issues" in section
+    assert "keine Zeile länger als ein Satz" in section
+    assert "Steuere Phase <Pn> weiter, Phasen-Issue #<nr>, nach `CLAUDE.md` und Skill `phase-steuern`." in section
+
+
+def test_phase_steuern_gibt_nachtraege_an_grill_me_und_kennt_den_lauf_auf_main():
+    auftraege = _section(PHASE_STEUERN, "Aufträge")
+    pflegen = _section(PHASE_STEUERN, "Phasen-Issue pflegen")
+
+    assert "**Nachträge** zu einem geklärten Issue" in auftraege
+    assert "an eine Klärung mit `grill-me` geben (Kurzform möglich)" in auftraege
+    assert "`gh run list --branch main --limit 1`" in pflegen
+    assert "Nach jeder übernommenen Umsetzung" in pflegen
+
+
+def test_phase_steuern_kennt_die_grenzen_von_desktop_app_und_cloud():
+    text = _text(PHASE_STEUERN)
+
+    assert "In der Claude-Code-Desktop-App" in text
+    assert "kann sie selbst keine neue Session starten" in text
+    assert "eine Karte in der App" in text
+    assert "den Sebastian mit einem Klick startet" in text
+    assert "In der Cloud-Umgebung von Claude Code ist die GitHub-Suche (`search/issues`) gesperrt" in text
+    assert "nur Adressen unter `repos/...`" in text
+
+
+def test_settings_schaltet_die_memory_ab_und_bindet_den_hook_zum_zusammenfassen_ein():
+    settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
+
+    assert settings["autoMemoryEnabled"] is False
+    entries = [entry for entry in settings["hooks"]["SessionStart"] if entry["matcher"] == "compact"]
+    commands = [hook["command"] for entry in entries for hook in entry["hooks"]]
+    assert any("$CLAUDE_PROJECT_DIR/.claude/hooks/zusammenfassung.py" in command for command in commands)
+    # Die bisherigen Einträge bleiben.
+    assert {"Read(./.env)", "Read(./**/.env)", "Bash(gh pr merge:*)"} <= set(settings["permissions"]["deny"])
+    assert any(entry["matcher"] == "Bash" for entry in settings["hooks"]["PreToolUse"])
+    assert HOOK.is_file()
+
+
+def test_entscheidung_zu_verweisen_memory_und_sitzungswechsel_nennt_regel_und_grenzen():
+    entries = re.split(r"^## ", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#240)")), None)
+
+    assert entry, "Eintrag zu #240 fehlt in docs/entscheidungen.md"
+    assert entry.startswith("2026-11-03 · ")
+    flat = _flat(entry)
+    for teil in [
+        "nur Verweise und den Stand",
+        "`autoMemoryEnabled`",
+        "erinnert nur",
+        "beendet keine Sitzung",
+        "Codex und Gemini kennen ihn nicht",
+        "nur lesend",
     ]:
         assert teil in flat, teil
