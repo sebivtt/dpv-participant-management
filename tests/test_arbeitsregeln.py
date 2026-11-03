@@ -645,3 +645,73 @@ def test_entscheidung_zu_den_pflichtangaben_im_pull_request_nennt_regel_und_gren
         "sperrt das Übernehmen weiterhin nicht (#16)",
     ]:
         assert teil in flat, teil
+
+
+# Warten auf GitHub und kurzer Kopf der Pull-Request-Beschreibung (#239)
+
+
+def test_claude_md_verlangt_selbst_warten_und_den_link_erst_bei_gruen():
+    step = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+
+    assert "Gewartet wird selbst: Die Sitzung startet einen Hintergrundauftrag, der sie am Ende des Laufs weckt" in step
+    assert "(die PR-Beobachtung des Werkzeugs, wo es eine hat, sonst `gh pr checks <nummer> --watch`)" in step
+    assert "und bittet Sebastian nie, Bescheid zu geben" in step
+    assert "meldet sie nur „PR angelegt, Prüfung läuft“, ohne Link" in step
+    assert "den Link gibt es auch dann erst bei Grün" in step
+    assert "Lässt sich keine Beobachtung starten, sagt sie das offen und fragt den Stand selbst ab" in step
+    assert "stehen Nummer des Pull Requests und letzter geprüfter Stand im Issue" in step
+    assert "die nächste Sitzung stellt den Stand selbst neu fest" in step
+
+
+def test_das_warten_steht_im_schritt_zum_pull_request_nach_der_regel_zum_link():
+    step = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    pull_request = step.split("6. **Pull Request**", 1)[1]
+
+    assert pull_request.index("in der Beschreibung nennen.") < pull_request.index("Gewartet wird selbst")
+    assert "Neustart" in pull_request.split("Gewartet wird selbst", 1)[1]
+
+
+def test_phase_steuern_stellt_lauf_und_uebernahme_selbst_fest():
+    section = _section(PHASE_STEUERN, "Aufträge")
+
+    assert "**Stand selbst feststellen:**" in section
+    assert "nicht über Sebastians Meldung" in section
+    assert "für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6" in section
+    assert "`gh pr view <nummer> --json state,mergedAt`" in section
+    assert "bei jedem Wiedereinstieg" in section
+    assert "Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt" in section
+
+
+def test_contributing_verlangt_den_kopf_fuer_sebastian_und_nennt_die_pruefung():
+    section = _section(BASE_DIR / "CONTRIBUTING.md", "Pull Requests")
+
+    assert "Die Beschreibung beginnt mit dem Abschnitt „Für Sebastian“: höchstens fünf Zeilen und 600 Zeichen" in section
+    assert "Regeländerungen als „vorher / nachher“" in section
+    assert "Prüfung „PR-Angaben“ prüft Platz und Länge; ob der Kopf verständlich ist: Review" in section
+    assert section.index("Für Sebastian") < section.index("erklärt in Alltagssprache")
+
+
+def test_vorlage_hat_den_abschnitt_fuer_sebastian_als_ersten_nach_dem_anfangskommentar():
+    text = PR_TEMPLATE.read_text(encoding="utf-8")
+    anfang, rest = text.split("\n## ", 1)
+
+    assert rest.startswith("Für Sebastian\n")
+    assert anfang.count("<!--") == 1
+    assert "<!-- Kurz, nach CONTRIBUTING.md, Abschnitt 8. -->" in rest.split("\n## ", 1)[0]
+
+
+def test_entscheidung_zum_kopf_und_zum_warten_nennt_regel_und_grenzen():
+    entries = re.split(r"^## ", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#239)")), None)
+
+    assert entry, "Eintrag zu #239 fehlt in docs/entscheidungen.md"
+    assert entry.startswith("2026-11-03 · ")
+    flat = _flat(entry)
+    for teil in [
+        "Hintergrundauftrag",
+        "„Für Sebastian“",
+        "600 Zeichen",
+        "nicht, ob der Kopf verständlich ist",
+        "ob das Wecken in jeder Umgebung klappt",
+    ]:
+        assert teil in flat, teil
