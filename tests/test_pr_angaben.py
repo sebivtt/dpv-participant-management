@@ -65,6 +65,7 @@ def _link(issue=12, kommentar=500, text="Szenarien (03.11.2026)"):
 
 
 TEST_COMMIT_STANDARD = "- Test-Commit: " + _kurz(1)
+KOPF_STANDARD = "## Für Sebastian\n\nDie KI wartet jetzt selbst auf GitHub.\nBitte ansehen: CLAUDE.md, Schritt 6."
 
 
 def _beschreibung(
@@ -73,8 +74,10 @@ def _beschreibung(
     test_commit=TEST_COMMIT_STANDARD,
     geruest=None,
     davor="",
+    kopf=KOPF_STANDARD,
 ):
-    zeilen = ["## Was sich für Nutzende ändert", "", "Nichts.", "", "## Anforderungen und Entscheidungen", "", closes]
+    zeilen = [kopf, ""] if kopf else []
+    zeilen += ["## Was sich für Nutzende ändert", "", "Nichts.", "", "## Anforderungen und Entscheidungen", "", closes]
     zeilen += ["", davor, "", "## Wie geprüft wurde", ""]
     zeilen.append(szenarien if szenarien is not None else "- Szenarien: " + _link())
     if test_commit:
@@ -133,6 +136,7 @@ def test_vollstaendiger_pull_request_ist_gruen():
 
 def test_die_ausgefuellte_neue_vorlage_ist_gruen():
     text = VORLAGE.read_text(encoding="utf-8")
+    text = text.replace("## Für Sebastian\n", "## Für Sebastian\n\nKurz und verständlich.\n")
     text = text.replace("## Anforderungen und Entscheidungen\n", "## Anforderungen und Entscheidungen\n\n- Closes #12\n")
     text = re.sub(r"^- Szenarien.*$", "- Szenarien: " + _link(), text, flags=re.M)
     text = text.replace("- Test-Commit:", "- Test-Commit: " + _kurz(1))
@@ -697,6 +701,7 @@ def test_vorlage_erklaert_die_form_des_verzichts_auf_szenarien():
 
 def test_die_ausgefuellte_neue_vorlage_mit_verzicht_ist_gruen():
     text = VORLAGE.read_text(encoding="utf-8")
+    text = text.replace("## Für Sebastian\n", "## Für Sebastian\n\nKurz und verständlich.\n")
     text = text.replace("## Anforderungen und Entscheidungen\n", "## Anforderungen und Entscheidungen\n\n- Closes #12\n")
     text = re.sub(r"^- Szenarien.*$", "- Szenarien: keine, weil nur Regeltexte.", text, flags=re.M)
     text = text.replace("- Test-Commit:", "- Test-Commit: entfällt, weil nur Regeltexte geändert sind.")
@@ -848,3 +853,171 @@ def test_commit_mit_dreihundert_dateien_ist_nicht_pruefbar():
 def test_code_der_in_die_testordner_verschoben_wird_macht_den_test_commit_rot():
     verschoben = _commit(1, 10, _datei("tests/test_neu.py", added=12, vorher="core/alt.py"))
     _rot("nicht nur Tests", commits=[verschoben, _code(2, 20)])
+
+
+# --- Kopf „Für Sebastian“ (#239) ---------------------------------------------------------------
+
+
+def _kopf(inhalt):
+    return "## Für Sebastian\n\n" + inhalt
+
+
+FUENF_ZEILEN = "\n".join(f"Zeile {n} mit etwas Text." for n in range(1, 6))
+
+
+def test_vorlage_beginnt_nach_dem_anfangskommentar_mit_dem_abschnitt_fuer_sebastian():
+    text = VORLAGE.read_text(encoding="utf-8")
+    ohne = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+
+    assert re.findall(r"^## (.+)$", ohne, flags=re.MULTILINE)[0] == "Für Sebastian"
+    assert text.index("<!--") < text.index("## Für Sebastian")
+    assert "Abschnitt 8" in text.split("## Für Sebastian", 1)[1].split("\n## ", 1)[0]
+
+
+def test_unausgefuellte_vorlage_ist_wegen_leerem_kopf_rot():
+    text = VORLAGE.read_text(encoding="utf-8")
+    text = text.replace("## Anforderungen und Entscheidungen\n", "## Anforderungen und Entscheidungen\n\n- Closes #12\n")
+
+    _rot("Für Sebastian", beschreibung=text)
+
+
+def test_beschreibung_ohne_kopf_ist_rot():
+    _rot("Für Sebastian", beschreibung=_beschreibung(kopf=""))
+
+
+def test_kopf_der_nicht_der_erste_abschnitt_ist_rot():
+    text = _beschreibung(kopf="## Was sich für Nutzende ändert\n\nNichts.\n\n" + KOPF_STANDARD)
+    _rot("Für Sebastian", "erste", beschreibung=text)
+
+
+def test_html_kommentar_vor_dem_kopf_zaehlt_nicht_und_der_kopf_bleibt_der_erste_abschnitt():
+    _gruen(beschreibung=_beschreibung(kopf="<!-- Hinweis -->\n\n" + KOPF_STANDARD))
+    _gruen(beschreibung=_beschreibung(kopf="<!-- ## Anderes -->\n" + KOPF_STANDARD))
+
+
+def test_kopf_doppelt_ist_rot():
+    _rot("Für Sebastian", "einmal", beschreibung=_beschreibung(davor=KOPF_STANDARD))
+
+
+def test_kopf_nur_mit_kommentar_ist_leer_und_rot():
+    _rot("Für Sebastian", "leer", beschreibung=_beschreibung(kopf=_kopf("<!-- Kurz. -->\n")))
+
+
+def test_kopf_nur_mit_leerzeilen_ist_leer_und_rot():
+    _rot("Für Sebastian", "leer", beschreibung=_beschreibung(kopf=_kopf("  \n\n \t\n")))
+
+
+def test_kopf_mit_sechs_zeilen_ist_rot():
+    _rot("Für Sebastian", "fünf", beschreibung=_beschreibung(kopf=_kopf(FUENF_ZEILEN + "\nZeile 6.")))
+
+
+def test_kopf_mit_601_zeichen_ist_rot():
+    _rot("Für Sebastian", "600", beschreibung=_beschreibung(kopf=_kopf("x" * 601)))
+
+
+def test_kopf_mit_fuenf_zeilen_ist_gruen():
+    _gruen(beschreibung=_beschreibung(kopf=_kopf(FUENF_ZEILEN)))
+
+
+def test_kopf_mit_genau_600_zeichen_ist_gruen():
+    _gruen(beschreibung=_beschreibung(kopf=_kopf("x" * 600)))
+
+
+def test_zeichen_werden_je_zeile_ohne_rand_und_umbruch_gezaehlt():
+    # Fünf Zeilen zu je 120 Zeichen mit Leerraum am Rand: 600 Zeichen ohne Rand und Umbrüche.
+    zeilen = "\n".join("   " + "y" * 120 + " \t" for _ in range(5))
+    _gruen(beschreibung=_beschreibung(kopf=_kopf(zeilen)))
+    zu_lang = zeilen.replace("y" * 120, "y" * 121, 1)
+    _rot("Für Sebastian", "600", beschreibung=_beschreibung(kopf=_kopf(zu_lang)))
+
+
+def test_markdown_zeichen_und_linkadressen_zaehlen_mit():
+    link = "[Link](https://example.org/" + "a" * 590 + ")"
+    assert len(link) > 600
+    _rot("Für Sebastian", "600", beschreibung=_beschreibung(kopf=_kopf(link)))
+
+
+def test_leerzeilen_im_kopf_zaehlen_nicht_als_zeilen():
+    _gruen(beschreibung=_beschreibung(kopf=_kopf("\n\n".join(f"Zeile {n}." for n in range(1, 6)))))
+
+
+def test_kopf_mit_zeilenenden_aus_dem_browser_und_fuenf_zeilen_ist_gruen():
+    _gruen(beschreibung=_beschreibung(kopf=_kopf(FUENF_ZEILEN)).replace("\n", "\r\n"))
+
+
+def test_kopf_mit_zeilenenden_aus_dem_browser_und_sechs_zeilen_ist_rot():
+    _rot("Für Sebastian", "fünf", beschreibung=_beschreibung(kopf=_kopf(FUENF_ZEILEN + "\nZeile 6.")).replace("\n", "\r\n"))
+
+
+def test_unterueberschrift_im_kopf_gehoert_zum_kopf():
+    # „###“ ist keine neue Hauptüberschrift; sie zählt als Zeile des Kopfs.
+    _gruen(beschreibung=_beschreibung(kopf=_kopf("### Kurz\nEine Zeile.")))
+
+
+def test_anderer_name_der_ersten_ueberschrift_ist_rot():
+    _rot("Für Sebastian", beschreibung=_beschreibung(kopf="## Für Sebastian und andere\n\nText."))
+
+
+def test_wie_geprueft_wird_unabhaengig_vom_kopf_gelesen():
+    # Ein langer Kopf macht die Prüfung rot, ändert aber nichts an den Angaben unter „Wie geprüft wurde“.
+    mangel = _pruefe(beschreibung=_beschreibung(kopf=_kopf("x" * 601)))
+
+    assert len(mangel) == 1
+    assert "Für Sebastian" in mangel[0]
+
+
+def test_mehrere_mangel_im_kopf_und_in_den_angaben_werden_zusammen_gemeldet():
+    mangel = _pruefe(beschreibung=_beschreibung(kopf="", closes=""))
+
+    assert any("Für Sebastian" in m for m in mangel)
+    assert any("Closes" in m for m in mangel)
+
+
+def test_meldung_zum_kopf_ist_eine_zeile_in_alltagssprache():
+    for kopf in ("", _kopf("x" * 601), _kopf(FUENF_ZEILEN + "\nZeile 6.")):
+        mangel = _pruefe(beschreibung=_beschreibung(kopf=kopf))
+        assert any("Für Sebastian" in m for m in mangel), (kopf, mangel)
+        for meldung in mangel:
+            assert "\n" not in meldung and "\r" not in meldung
+
+
+# --- Befunde der unabhängigen Prüfung zu #239 -------------------------------------------------
+
+PR_238 = BASE_DIR / "tests" / "daten" / "pr-238-beschreibung.md"
+
+
+def _kopf_meldungen(beschreibung):
+    return [m for m in _pruefe(beschreibung=beschreibung) if m.startswith("Kopf:")]
+
+
+def test_text_vor_dem_kopf_ist_rot():
+    _rot("Für Sebastian", "erste", beschreibung=_beschreibung(kopf="Vorweg ein Satz.\n\n" + KOPF_STANDARD))
+
+
+def test_titel_mit_einer_raute_vor_dem_kopf_ist_rot():
+    _rot("Für Sebastian", "erste", beschreibung=_beschreibung(kopf="# Titel\n\n" + KOPF_STANDARD))
+
+
+def test_beschreibung_von_pr_238_ohne_kopf_ist_rot_und_mit_kopf_ohne_kopf_mangel():
+    beschreibung = PR_238.read_text(encoding="utf-8")
+
+    assert _kopf_meldungen(beschreibung)
+    assert _kopf_meldungen(KOPF_STANDARD + "\n\n" + beschreibung) == []
+
+
+def test_ueberschrift_im_codeblock_beendet_den_kopf_nicht():
+    code = "```\n## Beispiel\n```\n" + "\n".join(f"Zeile {n}" for n in range(6))
+    _rot("Für Sebastian", "Zeilen", beschreibung=_beschreibung(kopf=_kopf(code)))
+
+
+def test_kopf_nur_im_codeblock_zaehlt_nicht_als_kopf():
+    _rot("Für Sebastian", beschreibung=_beschreibung(kopf="```\n" + KOPF_STANDARD + "\n```"))
+
+
+def test_kopf_im_codeblock_weiter_unten_ist_kein_zweiter_kopf():
+    _gruen(beschreibung=_beschreibung(davor="```\n## Für Sebastian\n```"))
+
+
+def test_nicht_geschlossener_kommentar_im_kopf_ist_leer_und_rot():
+    _rot("Für Sebastian", "leer", beschreibung=_beschreibung(kopf=_kopf("<!-- Kurz.")))
+

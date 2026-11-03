@@ -4,6 +4,8 @@ Läuft auf GitHub bei jedem Öffnen, Bearbeiten und neuen Stand eines Pull Reque
 (`.github/workflows/pr-angaben.yml`). Sie zeigt, dass die Angaben da sind und zusammenpassen:
 
 - genau ein „Closes #N“, und Issue N trägt das Label `geklärt`;
+- die Beschreibung beginnt mit dem Abschnitt „Für Sebastian“: einmal, als erster Abschnitt, 1 bis 5 nicht
+  leere Zeilen und höchstens 600 Zeichen (Länge und Platz, nicht ob er verständlich ist);
 - ein Link auf einen Kommentar „Szenarien (…)“ aus genau diesem Issue, oder der Verzicht
   „Szenarien: keine, weil …“, den auch der Text des Issues festhält;
 - bei Codeänderung ein Test-Commit (nur Tests, mindestens eine Zeile hinzugefügt), vor dem kein
@@ -50,6 +52,13 @@ SCHLIESST = re.compile(
 SZENARIEN_KOPF = re.compile(r"\s*(?:#+\s*)?(?:\*\*|__)?\s*Szenarien \(")
 VERZICHT = re.compile(r"Szenarien:\s*keine\b(.*)", re.IGNORECASE)
 VERZICHT_IM_ISSUE = re.compile(r"^[\s>*_-]*(?:\*\*|__)?Szenarien: keine\.(?:\*\*|__)?[ \t]*(.+)$", re.MULTILINE)
+KOPF_NAME = "Für Sebastian"
+KOPF_MAX_ZEILEN = 5
+KOPF_MAX_ZEICHEN = 600
+UEBERSCHRIFT = re.compile(r"^## (.*?)[ \t]*$")
+CODEZAUN = re.compile(r"^ {0,3}(```|~~~)")
+# GitHub blendet ab einem nicht geschlossenen Kommentar den ganzen Rest aus.
+OFFENER_KOMMENTAR = re.compile(r"<!--.*\Z", flags=re.DOTALL)
 KENNUNG = re.compile(r"[0-9a-f]{7,40}")
 ENTFAELLT = re.compile(r"entfällt\b[\s,:;.]*(?:weil\b)?[\s,:;.]*(.*)", re.IGNORECASE)
 
@@ -159,6 +168,60 @@ def _fuegt_zeilen_hinzu(commit):
 
 
 # --- Prüfregeln -------------------------------------------------------------------------------
+
+
+def _ueberschriften(zeilen):
+    """(Zeilennummer, Name) jeder Überschrift „## “, außer in Codeblöcken."""
+    funde = []
+    zaun = None
+    for nummer, zeile in enumerate(zeilen):
+        treffer = CODEZAUN.match(zeile)
+        if treffer:
+            if zaun is None:
+                zaun = treffer.group(1)
+            elif treffer.group(1) == zaun:
+                zaun = None
+            continue
+        ueberschrift = UEBERSCHRIFT.match(zeile) if zaun is None else None
+        if ueberschrift:
+            funde.append((nummer, ueberschrift.group(1)))
+    return funde
+
+
+def _pruefe_kopf(text):
+    """Der Kopf „Für Sebastian“: einmal, an erster Stelle, 1 bis 5 nicht leere Zeilen, höchstens 600 Zeichen."""
+    zeilen = OFFENER_KOMMENTAR.sub("", text).splitlines()
+    funde = _ueberschriften(zeilen)
+    namen = [name for _, name in funde]
+    anzahl = namen.count(KOPF_NAME)
+    if anzahl == 0:
+        return [
+            f"Kopf: Die Beschreibung beginnt nicht mit dem Abschnitt „## {KOPF_NAME}“ "
+            "(höchstens fünf Zeilen: was sich ändert, was du ansehen solltest, was offen ist)."
+        ]
+    erste = funde[0][0]
+    if namen[0] != KOPF_NAME or any(zeile.strip() for zeile in zeilen[:erste]):
+        return [
+            f"Kopf: Der Abschnitt „{KOPF_NAME}“ muss der erste Abschnitt der Beschreibung sein; "
+            "davor darf nichts stehen außer HTML-Kommentaren."
+        ]
+    if anzahl > 1:
+        return [f"Kopf: Den Abschnitt „{KOPF_NAME}“ darf es nur einmal geben, gefunden: {anzahl}."]
+    ende = funde[1][0] if len(funde) > 1 else len(zeilen)
+    inhalt = [zeile.strip() for zeile in zeilen[erste + 1 : ende] if zeile.strip()]
+    if not inhalt:
+        return [f"Kopf: Der Abschnitt „{KOPF_NAME}“ ist leer; er braucht ein bis fünf Zeilen."]
+    mangel = []
+    if len(inhalt) > KOPF_MAX_ZEILEN:
+        mangel.append(
+            f"Kopf: Der Abschnitt „{KOPF_NAME}“ hat {len(inhalt)} Zeilen; erlaubt sind höchstens fünf Zeilen."
+        )
+    laenge = len("".join(inhalt))
+    if laenge > KOPF_MAX_ZEICHEN:
+        mangel.append(
+            f"Kopf: Der Abschnitt „{KOPF_NAME}“ hat {laenge} Zeichen; erlaubt sind höchstens {KOPF_MAX_ZEICHEN} Zeichen."
+        )
+    return mangel
 
 
 def _pruefe_closes(text):
@@ -345,7 +408,8 @@ def pruefe(beschreibung, issue, kommentare, commits):
     if issue is not None:
         issue = {**issue, "body": einheitliche_zeilen(issue["body"])}
     abschnitt = wie_geprueft(text)
-    mangel = _pruefe_closes(text)
+    mangel = _pruefe_kopf(text)
+    mangel += _pruefe_closes(text)
     nummer = closes_nummer(beschreibung)
     if nummer is not None:
         mangel += _pruefe_issue(nummer, issue)
