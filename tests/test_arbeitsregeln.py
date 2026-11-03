@@ -806,7 +806,9 @@ def test_phase_steuern_gibt_nachtraege_an_grill_me_und_kennt_den_lauf_auf_main()
     assert "**Nachträge** zu einem geklärten Issue" in auftraege
     assert "an eine Klärung mit `grill-me` geben (Kurzform möglich)" in auftraege
     assert "`gh run list --branch main --limit 1`" in pflegen
-    assert "auf sein Ende muss die Steuerungssession vor dem nächsten Auftrag nicht warten" in pflegen
+    # Die Regel steht in CLAUDE.md; der Skill verweist nur darauf (Ein Ort je Angabe).
+    assert "Regel in `CLAUDE.md`, „Ablauf einer Phase“, „Umsetzen“" in pflegen
+    assert "nicht warten" not in pflegen
 
 
 def test_phase_steuern_kennt_die_grenzen_von_desktop_app_und_cloud():
