@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Ein GitHub-Issue vor der Umsetzung vollständig klären, indem Sebastian Frage für Frage ausgefragt wird, dann das Issue überarbeiten, bei Bedarf in Unter-Issues aufteilen und mit dem Label „geklärt“ freigeben. Verwenden, bevor ein Issue ohne Label „geklärt“ umgesetzt wird, und wenn Sebastian „grill me“, „frag mich aus“ oder „Issue klären“ sagt.
+description: Ein GitHub-Issue vor der Umsetzung vollständig klären, indem Sebastian Frage für Frage ausgefragt wird, dann das Issue überarbeiten, bei Bedarf in Unter-Issues aufteilen und für Sebastians Freigabe mit dem Label „geklärt“ vorbereiten. Verwenden, bevor ein Issue ohne Label „geklärt“ umgesetzt wird, und wenn Sebastian „grill me“, „frag mich aus“ oder „Issue klären“ sagt.
 ---
 
 # Grill-Me: ein Issue vor der Umsetzung klären
@@ -125,11 +125,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<sammel>/sub_issues -F su
 
 ## 9. Freigeben
 
-Nach Sebastians ausdrücklichem Okay das Label `geklärt` setzen, bei einer Aufteilung an jedes Unter-Issue (das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht. Braucht es ein Zielbild, müssen auch Zielbild und Nachklärung im Issue stehen (Abschnitt 6).
-
-```bash
-gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/labels -f 'labels[]=geklärt'
-```
+Ist alles geklärt, bittet die KI Sebastian, das Label `geklärt` selbst zu setzen, und schickt den Link zum Issue (bei einer Aufteilung zu jedem Unter-Issue; das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht. Braucht es ein Zielbild, müssen auch Zielbild und Nachklärung im Issue stehen (Abschnitt 6). Danach prüft die KI auf GitHub, ob das Label da ist.
 
 ## Kurzform
 
@@ -137,7 +133,7 @@ Für Issues mit höchstens einem neuen Punkt oder ohne fachliches Verhalten. Die
 
 - **Lesen** (Abschnitt 1) nur das Issue samt Kommentaren, seine eingetragenen Abhängigkeiten und die betroffenen Dateien, nicht alle offenen Issues und nicht die ganze Doku.
 - **Themen** (Abschnitt 2) nur, soweit sie zutreffen.
-- **Unverändert bleiben:** Fragen einzeln (Abschnitt 3), Zusammenfassung (Abschnitt 4), Szenarien, wenn nötig (Abschnitt 5), Entwurf und Zielbild, wenn nötig (Abschnitt 6), Protokoll (Abschnitt 7) und Sebastians Okay vor dem Label (Abschnitt 9).
+- **Unverändert bleiben:** Fragen einzeln (Abschnitt 3), Zusammenfassung (Abschnitt 4), Szenarien, wenn nötig (Abschnitt 5), Entwurf und Zielbild, wenn nötig (Abschnitt 6), Protokoll (Abschnitt 7) und die Freigabe durch Sebastian (Abschnitt 9).
 
 ## Danach
 
