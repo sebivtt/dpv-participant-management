@@ -469,3 +469,94 @@ def test_grill_me_bittet_sebastian_um_geklaert_statt_es_selbst_zu_setzen():
     assert "bittet die KI Sebastian, das Label `geklärt` selbst zu setzen" in release
     assert "prüft die KI auf GitHub, ob das Label da ist" in release
     assert "die Freigabe durch Sebastian (Abschnitt 9)" in _section(GRILL_ME, "Kurzform")
+
+
+# --- Prüfumfang nach Art der Änderung (#235) ------------------------------------------------------
+
+
+def _schritt(nummer):
+    """Text eines nummerierten Schritts aus „Ablauf je Aufgabe“ (bis zum nächsten Schritt)."""
+    section = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    match = re.search(rf"(?:^| ){nummer}\. \*\*(.*?)(?= {nummer + 1}\. \*\*|$)", section)
+    assert match, f"Schritt {nummer} fehlt in „Ablauf je Aufgabe“"
+    return match.group(0)
+
+
+def test_ablauf_nr3_je_szenario_ein_test_weitere_nur_mit_fehlermechanismus_oder_risiko():
+    step = _schritt(3)
+
+    assert "je Szenario einer" in step
+    assert "Fehlermechanismus, den noch kein Test prüft" in step
+    assert "begründete Risikovariante" in step
+    assert "von gleichartigen Schreibweisen nur eine Auswahl" in step
+    assert "die Pflichtfälle aus `CONTRIBUTING.md` bleiben" in step
+
+
+def test_ablauf_nr4_prueft_passend_zur_aenderung_mit_schnellem_lauf():
+    step = _schritt(4)
+
+    assert "`./pruefen.sh schnell`" in step
+    assert "betroffenen Testdateien" in step
+    assert "ihrer Aufrufer" in step
+    for guard in ["Rundumtests", "Prüfung der Rechtematrix", "Rauchtests der betroffenen Seiten"]:
+        assert guard in step, guard
+    assert "Regeltexten, Doku und `.claude/`" in step
+    assert "begründet die Auswahl in einem Satz" in step
+
+
+def test_ablauf_nr4_voller_lauf_auf_github_lokal_nur_in_den_ausnahmen():
+    step = _schritt(4)
+
+    assert "Den vollen Lauf (`./pruefen.sh`) macht die Prüfung auf GitHub" in step
+    assert "nur bei Änderungen an Paketen, Docker, `pruefen.sh` oder dem Prüfablauf auf GitHub" in step
+    assert "vor der unabhängigen Prüfung" in step
+    assert "ausgeführt, übersprungen, nicht ausgewählt und nur empfohlen" in step
+    assert "alle automatischen Prüfungen lokal" not in step
+
+
+def test_ablauf_nr5_unabhaengige_pruefung_einmal_zweite_nur_nach_hoch():
+    step = _schritt(5)
+
+    assert "einmal, sobald der Stand fertig zur Prüfung und der schnelle Lauf grün ist" in step
+    assert "nie gleichzeitig mit einem Prüflauf derselben Arbeitskopie" in step
+    assert "Eine zweite gibt es nur nach einem Befund „hoch“, und nur für dessen Korrektur" in step
+
+
+def test_unabhaengige_pruefung_nennt_die_drei_schweregrade_nach_der_folge():
+    section = _section(CLAUDE_MD, "Unabhängige Prüfung")
+
+    assert "der Schweregrad nach der Folge" in section
+    for level in ["**hoch** bei", "**mittel** bei", "**gering** bei"]:
+        assert level in section, level
+    assert "unberechtigtem Zugriff" in section
+    assert "doppeltem Mailversand" in section
+    assert "Ausfall eines Kernablaufs" in section
+    assert "einem fehlenden Test ohne belegten Fehler" in section
+
+
+def test_pull_request_begruendet_zusaetzliche_tests_mit_fehlermechanismus_oder_risiko():
+    rules = _text(CLAUDE_MD)
+
+    assert "begründet zusätzliche Tests mit ihrem Fehlermechanismus oder Risiko" in rules
+    assert "nennt die Tests, die über die Szenarien hinaus dazugekommen sind" not in rules
+
+
+def test_vorlage_und_leitfaden_verweisen_fuer_die_pruefungen_auf_claude_md():
+    template = _text(PR_TEMPLATE)
+    guide = _text(BASE_DIR / "docs" / "review-leitfaden.md")
+
+    assert "nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4" in template
+    assert "welcher Lauf, welche Tests mit Begründung, wie viele übersprungen" in template
+    assert "wird geprüft wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 4" in guide
+    assert "laufen die betroffenen Tests und alle Prüfungen" not in guide
+
+
+def test_entscheidung_zum_pruefumfang_loest_den_satz_zu_gleichem_pruefen_ab():
+    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
+    entries = re.split(r"^## ", text, flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#235)")), None)
+
+    assert entry, "Eintrag zu #235 fehlt in docs/entscheidungen.md"
+    flat = _flat(entry)
+    assert "lokal und auf GitHub wird gleich geprüft" in flat
+    assert "löst" in flat
