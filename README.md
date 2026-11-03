@@ -92,7 +92,13 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
     ```bash
     ./pruefen.sh
     ```
-    Danach: Für jede Prüfung eine Zeile `--> grün: ...`, ganz unten `Alle Prüfungen grün.` Ist etwas rot, steht unten `Nicht bestanden:` mit der Liste. Auf einem Mac mit macOS 27 steht beim Rauchtest zusätzlich `SKIPPED ... Firefox startet unter macOS 27 nicht`: Firefox von Playwright startet dort nicht; auf GitHub läuft Firefox mit.
+    Danach: Für jede Prüfung eine Zeile `--> grün: ... (Dauer)`, ganz unten `Alle Prüfungen grün.`, wenn kein Test übersprungen wurde. Wurden Tests übersprungen, steht stattdessen `Alle gelaufenen Prüfungen grün, N Tests übersprungen (Gründe oben unter SKIPPED).`; „grün“ heißt dann nicht „alles gelaufen“, und die Gründe stehen oben bei der jeweiligen Prüfung hinter `SKIPPED`. Ist etwas rot, steht unten `ROT. Nicht bestanden:` mit der Liste und kein grüner Satz. Auf einem Mac mit macOS 27 steht beim Rauchtest zusätzlich `SKIPPED ... Firefox startet unter macOS 27 nicht`: Firefox von Playwright startet dort nicht; auf GitHub läuft Firefox mit.
+
+    Schneller Lauf (der Regelfall bei der Arbeit, `CLAUDE.md`, Ablauf je Aufgabe Nr. 4): dieselben vier Prüfungen ohne Tests (Paketliste, ruff, Django-Systemprüfung, Migrationen) und dazu nur die Testdateien, die du hinter `schnell` nennst. Dateien aus `tests/` laufen in einem Lauf, Dateien aus `rauchtests/` in einem eigenen, wie im vollen Lauf. Container-Prüfung und pip-audit laufen nie. Beispiel:
+    ```bash
+    ./pruefen.sh schnell tests/test_arbeitsregeln.py
+    ```
+    Danach: dieselben Zeilen `--> grün: ... (Dauer)` für die gelaufenen Prüfungen, ganz unten `Schneller Lauf grün. Nicht ausgewählt: übrige Tests, alle Rauchtests, Testumgebung im Container, pip-audit.` Übersprungene Tests stehen davor: `Schneller Lauf grün, N Tests übersprungen (Gründe oben unter SKIPPED). Nicht ausgewählt: ...` Ohne Dateien (`./pruefen.sh schnell`) laufen nur die vier Prüfungen ohne Tests. Eine Datei, die es nicht gibt oder die nicht in `tests/` oder `rauchtests/` liegt, und jede Option hinter `schnell` (etwa `-x`) bricht sofort mit einer Meldung ab (`pruefen.sh: ...`), ohne dass eine Prüfung läuft. Der schnelle Lauf ersetzt den vollen nicht: Den macht die Prüfung auf GitHub.
 
 **Übrige Test-Datenbanken entfernen** (nur bei Bedarf, etwa nachdem alte Arbeitskopien gelöscht wurden)
 

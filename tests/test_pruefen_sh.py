@@ -50,9 +50,9 @@ def kind():
     if rest[:1] == ["pip-audit"]:
         return "audit"
     if rest[:1] == ["pytest"]:
-        if "rauchtests" in rest:
+        if any(arg.startswith("rauchtests") for arg in rest):
             return "pytest-rauch"
-        if "containertests" in rest:
+        if any(arg.startswith("containertests") for arg in rest):
             return "pytest-container"
         return "pytest-tests"
     return None
@@ -91,7 +91,7 @@ class Lauf:
         env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_ACTIONS", "DJANGO_ALLOW_ASYNC_UNSAFE")}
         env["PATH"] = f"{self.fake_dir}{os.pathsep}{env['PATH']}"
         env["FAKE_DIR"] = str(self.fake_dir)
-        done = subprocess.run(
+        done = subprocess.run(  # noqa: S603 -- fester Aufruf der Wegwerf-Kopie des Skripts mit erfundenen Argumenten
             ["/bin/sh", str(self.root / "pruefen.sh"), *args],
             capture_output=True,
             text=True,

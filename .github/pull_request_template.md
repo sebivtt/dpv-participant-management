@@ -19,7 +19,7 @@
 - Szenarien (Link zum Kommentar „Szenarien (Datum)“ und Tests, die darüber hinaus dazugekommen sind; ohne Szenarien der Grund aus der Klärung):
 - Test für den erlaubten Fall:
 - Test für den verbotenen Fall (wer darf das nicht?):
-- Lokal ausgeführte Prüfungen und Ergebnis (`./pruefen.sh`):
+- Lokal ausgeführte Prüfungen nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (welcher Lauf, welche Tests mit Begründung, wie viele übersprungen):
 - Prüfungen auf GitHub für den letzten Stand (alle grün?):
 - Rauchtest des Hauptablaufs:
 - Unabhängige Prüfung: Befunde und was daraus wurde:
