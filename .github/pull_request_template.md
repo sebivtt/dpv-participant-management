@@ -1,6 +1,10 @@
 <!-- In Alltagssprache schreiben. Sebastian liest den Code nicht; diese Beschreibung ist seine Prüfgrundlage (CONTRIBUTING.md, Abschnitt 8).
 Für Sebastian: Ist „PR-Angaben“ rot oder läuft noch, nicht übernehmen. Unter „Details“ steht, was fehlt; das an die KI geben und den neuen grünen Lauf abwarten. -->
 
+## Für Sebastian
+
+<!-- Kurz, nach CONTRIBUTING.md, Abschnitt 8. -->
+
 ## Was sich für Nutzende ändert
 
 

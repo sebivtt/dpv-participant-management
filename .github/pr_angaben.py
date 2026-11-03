@@ -4,6 +4,8 @@ Läuft auf GitHub bei jedem Öffnen, Bearbeiten und neuen Stand eines Pull Reque
 (`.github/workflows/pr-angaben.yml`). Sie zeigt, dass die Angaben da sind und zusammenpassen:
 
 - genau ein „Closes #N“, und Issue N trägt das Label `geklärt`;
+- die Beschreibung beginnt mit dem Abschnitt „Für Sebastian“: einmal, als erster Abschnitt, 1 bis 5 nicht
+  leere Zeilen und höchstens 600 Zeichen (Länge und Platz, nicht ob er verständlich ist);
 - ein Link auf einen Kommentar „Szenarien (…)“ aus genau diesem Issue, oder der Verzicht
   „Szenarien: keine, weil …“, den auch der Text des Issues festhält;
 - bei Codeänderung ein Test-Commit (nur Tests, mindestens eine Zeile hinzugefügt), vor dem kein
@@ -50,6 +52,10 @@ SCHLIESST = re.compile(
 SZENARIEN_KOPF = re.compile(r"\s*(?:#+\s*)?(?:\*\*|__)?\s*Szenarien \(")
 VERZICHT = re.compile(r"Szenarien:\s*keine\b(.*)", re.IGNORECASE)
 VERZICHT_IM_ISSUE = re.compile(r"^[\s>*_-]*(?:\*\*|__)?Szenarien: keine\.(?:\*\*|__)?[ \t]*(.+)$", re.MULTILINE)
+KOPF_NAME = "Für Sebastian"
+KOPF_MAX_ZEILEN = 5
+KOPF_MAX_ZEICHEN = 600
+UEBERSCHRIFT = re.compile(r"^## (.*?)[ \t]*$", flags=re.MULTILINE)
 KENNUNG = re.compile(r"[0-9a-f]{7,40}")
 ENTFAELLT = re.compile(r"entfällt\b[\s,:;.]*(?:weil\b)?[\s,:;.]*(.*)", re.IGNORECASE)
 
@@ -159,6 +165,44 @@ def _fuegt_zeilen_hinzu(commit):
 
 
 # --- Prüfregeln -------------------------------------------------------------------------------
+
+
+def _kopf_abschnitt(text):
+    """Der Inhalt des Abschnitts nach der ersten Überschrift „## “ bis zur nächsten, sonst None."""
+    erste = UEBERSCHRIFT.search(text)
+    if erste is None:
+        return None
+    naechste = UEBERSCHRIFT.search(text, erste.end())
+    return text[erste.end() : naechste.start() if naechste else len(text)]
+
+
+def _pruefe_kopf(text):
+    """Der Kopf „Für Sebastian“: einmal, an erster Stelle, 1 bis 5 nicht leere Zeilen, höchstens 600 Zeichen."""
+    ueberschriften = UEBERSCHRIFT.findall(text)
+    anzahl = ueberschriften.count(KOPF_NAME)
+    if anzahl == 0:
+        return [
+            f"Kopf: Die Beschreibung beginnt nicht mit dem Abschnitt „## {KOPF_NAME}“ "
+            "(höchstens fünf Zeilen: was sich ändert, was du ansehen solltest, was offen ist)."
+        ]
+    if ueberschriften[0] != KOPF_NAME:
+        return [f"Kopf: Der Abschnitt „{KOPF_NAME}“ muss der erste Abschnitt der Beschreibung sein (HTML-Kommentare zählen nicht)."]
+    if anzahl > 1:
+        return [f"Kopf: Den Abschnitt „{KOPF_NAME}“ darf es nur einmal geben, gefunden: {anzahl}."]
+    zeilen = [zeile.strip() for zeile in _kopf_abschnitt(text).splitlines() if zeile.strip()]
+    if not zeilen:
+        return [f"Kopf: Der Abschnitt „{KOPF_NAME}“ ist leer; er braucht ein bis fünf Zeilen."]
+    mangel = []
+    if len(zeilen) > KOPF_MAX_ZEILEN:
+        mangel.append(
+            f"Kopf: Der Abschnitt „{KOPF_NAME}“ hat {len(zeilen)} Zeilen; erlaubt sind höchstens fünf Zeilen."
+        )
+    laenge = len("".join(zeilen))
+    if laenge > KOPF_MAX_ZEICHEN:
+        mangel.append(
+            f"Kopf: Der Abschnitt „{KOPF_NAME}“ hat {laenge} Zeichen; erlaubt sind höchstens {KOPF_MAX_ZEICHEN} Zeichen."
+        )
+    return mangel
 
 
 def _pruefe_closes(text):
@@ -345,7 +389,8 @@ def pruefe(beschreibung, issue, kommentare, commits):
     if issue is not None:
         issue = {**issue, "body": einheitliche_zeilen(issue["body"])}
     abschnitt = wie_geprueft(text)
-    mangel = _pruefe_closes(text)
+    mangel = _pruefe_kopf(text)
+    mangel += _pruefe_closes(text)
     nummer = closes_nummer(beschreibung)
     if nummer is not None:
         mangel += _pruefe_issue(nummer, issue)

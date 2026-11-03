@@ -6,6 +6,25 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-11-03 · Die KI wartet selbst auf GitHub, jede Beschreibung beginnt mit dem Kopf „Für Sebastian“ (#239)
+
+**Entscheidung** (Paket P-04, Teil a, der Projektprüfung, Issue #239; Freigabe E-065 von Sebastian am 03.11.2026; Regel-Review G-09):
+
+1. Die Sitzung wartet auf GitHub selbst: Sie startet einen Hintergrundauftrag, der sie am Ende des Laufs weckt (die PR-Beobachtung des Werkzeugs, wo es eine hat, sonst `gh pr checks <nummer> --watch`), und bittet Sebastian nie, Bescheid zu geben. Bis alles grün ist, meldet sie nur „PR angelegt, Prüfung läuft“, ohne Link; der Link kommt erst bei Grün, auch nach einem roten Lauf. Lässt sich keine Beobachtung starten, sagt sie das offen und fragt den Stand selbst ab. Endet die Sitzung vorher, stehen Nummer des Pull Requests und letzter geprüfter Stand im Issue (`CLAUDE.md`, Ablauf je Aufgabe Nr. 6).
+2. Die Steuerungssession stellt selbst fest, ob ein Lauf grün oder ein Pull Request übernommen ist (`gh pr view <nummer> --json state,mergedAt`, beim Warten mit einem Hintergrundauftrag), nicht über Sebastians Meldung (Skill `phase-steuern`, Abschnitt 2).
+3. Jede Beschreibung eines Pull Requests beginnt mit dem Abschnitt „Für Sebastian“: höchstens fünf Zeilen und 600 Zeichen (`CONTRIBUTING.md`, Abschnitt 8). Die Prüfung „PR-Angaben“ ist rot, wenn er fehlt, nicht der erste Abschnitt ist (HTML-Kommentare zählen nicht), doppelt vorkommt, leer ist oder nur einen Kommentar enthält, mehr als fünf nicht leere Zeilen oder mehr als 600 Zeichen hat. Gezählt wird im Quelltext, je Zeile ohne Leerraum am Rand und ohne Zeilenumbrüche; Markdown-Zeichen und Linkadressen zählen mit.
+
+**Begründung:** Sitzungen schickten den Link oft vor dem grünen Lauf, und Sebastian war Wecker und Bote (BF-099, BF-100, BF-113, MU-02); PR-Beschreibungen waren im Schnitt über 7.000 Zeichen lang (BF-120, BF-089, MU-10).
+
+**Grenzen:**
+
+- Die Prüfung sieht Platz und Länge des Kopfs, nicht, ob der Kopf verständlich ist; das sieht das Review und Sebastians Urteil.
+- Erst die Praxis zeigt, ob das Wecken in jeder Umgebung klappt (Desktop-App, Terminal): In den nächsten 5 Pull Requests soll der Link erst nach dem grünen Lauf kommen, ohne Meldung von Sebastian dazwischen.
+- Eine Sperre gegen zwei Prüfläufe gleichzeitig in derselben Arbeitskopie ist nicht beschlossen.
+- Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16).
+
+**Umsetzung:** `CLAUDE.md`, `CONTRIBUTING.md` (Abschnitt 8), `.claude/skills/phase-steuern/SKILL.md`, `.github/pull_request_template.md`, `.github/pr_angaben.py`, `tests/test_pr_angaben.py`, `tests/test_arbeitsregeln.py`.
+
 ## 2026-11-03 · Pflichtangaben im Pull Request werden geprüft, Test-Commit vor dem Code (#237)
 
 **Entscheidung** (Paket P-02 der Projektprüfung, Issue #237; Einzelentscheidungen E-031, E-057 und E-058, Freigabe E-059, alle von Sebastian am 03.11.2026; Regel-Review G-08):

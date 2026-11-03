@@ -40,6 +40,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 
 - **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat und alles, was die Umsetzung wissen muss, in seinem Text steht. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
 - **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
+- **Stand selbst feststellen:** Ob ein Lauf grün oder ein Pull Request übernommen ist, stellt die Steuerungssession selbst fest, nicht über Sebastians Meldung: für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6; für die Übernahme bei jedem Wiedereinstieg mit `gh pr view <nummer> --json state,mergedAt`, und wartet sie darauf, mit einem Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt.
 - **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und Issues, die ein Zielbild brauchen, rechtzeitig zum Klären geben.
 
 ## 3. Phasen-Issue pflegen

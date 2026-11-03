@@ -69,6 +69,7 @@ Was ein Programm prüfen kann, prüft GitHub bei jeder Änderung automatisch, so
 
 - **Klein und thematisch:** ein Thema pro Pull Request. (Review)
 - **Nur grüne Pull Requests werden übernommen.** Alle Prüfungen auf GitHub müssen für den letzten Stand grün sein; die Beschreibung nennt das Ergebnis. Wer einen Pull Request zur Durchsicht schickt, tut das erst, wenn alles grün ist. GitHub sperrt das Übernehmen bei diesem privaten Repo nicht, deshalb gilt die Regel, bis die Sperre mit der Veröffentlichung kommt (#16). (Review, Entscheidung vom 21.10.2026)
+- Die Beschreibung beginnt mit dem Abschnitt „Für Sebastian“: höchstens fünf Zeilen und 600 Zeichen, was sich ändert, was er ansehen sollte und was offen ist; Regeländerungen als „vorher / nachher“. (automatisch: Prüfung „PR-Angaben“ prüft Platz und Länge; ob der Kopf verständlich ist: Review)
 - Die Beschreibung folgt der Vorlage (`.github/pull_request_template.md`) und erklärt in Alltagssprache:
   1. was sich für Nutzende ändert,
   2. welche Anforderungen, Regeln oder Entscheidungen umgesetzt sind,
