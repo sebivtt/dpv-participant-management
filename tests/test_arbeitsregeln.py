@@ -560,3 +560,88 @@ def test_entscheidung_zum_pruefumfang_loest_den_satz_zu_gleichem_pruefen_ab():
     flat = _flat(entry)
     assert "lokal und auf GitHub wird gleich geprüft" in flat
     assert "löst" in flat
+
+
+# --- Pflichtangaben im Pull Request werden geprüft (#237) --------------------------------------
+
+
+def test_vorlage_hat_die_zeile_test_commit_hinter_der_szenarien_zeile_und_erklaert_sie():
+    text = PR_TEMPLATE.read_text(encoding="utf-8")
+    checks = text.split("## Wie geprüft wurde", 1)[1].split("\n## ", 1)[0]
+    zeilen = [line for line in checks.splitlines() if line.startswith("- ")]
+    flat = _flat(checks)
+
+    assert zeilen[0].startswith("- Szenarien (Link zum Kommentar „Szenarien (Datum)“")
+    assert zeilen[1] == "- Test-Commit:"
+    assert "Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-Links in diesem Abschnitt" in flat
+    assert "Test-Commit: Kennung des Commits, der nur Tests hinzufügt, vor dem Code; mehrere durch Komma" in flat
+    assert "ein leeres Gerüst davor als „Gerüst-Commit:“; ohne Codeänderung „entfällt, weil …“" in flat
+    assert "(Begriffe in `CONTRIBUTING.md`, Abschnitt 3)" in flat
+
+
+def test_vorlage_sagt_sebastian_was_er_bei_rotem_oder_laufendem_pr_angaben_tut():
+    kopf = _flat(PR_TEMPLATE.read_text(encoding="utf-8").split("\n## ", 1)[0])
+
+    assert "Für Sebastian: Ist „PR-Angaben“ rot oder läuft noch, nicht übernehmen." in kopf
+    assert "Unter „Details“ steht, was fehlt" in kopf
+    assert "den neuen grünen Lauf abwarten" in kopf
+
+
+def test_claude_md_verlangt_test_commit_vor_dem_code_und_gruene_pr_angaben_vor_dem_link():
+    rules = _text(CLAUDE_MD)
+
+    assert "Ändert er Code, kommen die Tests als eigener Commit vor den Code" in rules
+    assert "die Beschreibung nennt „Closes #<nummer>“ und diesen Test-Commit" in rules
+    assert "Die Prüfung „PR-Angaben“ auf GitHub prüft diese Angaben, den Szenarien-Link und das Label `geklärt`" in rules
+    assert "auch nach der letzten Bearbeitung der Beschreibung" in rules
+    assert "Ändert sich danach am Issue etwas (Text, Label, Szenarien), läuft sie vor dem Link neu." in rules
+    assert "Ein Issue ergibt einen Pull Request mit eigenem Test. Die Beschreibung nennt" not in rules
+
+
+def test_claude_md_kennt_vor_dem_start_auch_die_zeile_szenarien_keine():
+    rules = _text(CLAUDE_MD)
+
+    assert "mit Sebastians Entscheidungen steht oder das Issue nach Schritt 3 die Zeile „Szenarien: keine.“" in rules
+    assert "mit dem Grund aus der Klärung enthält. Fehlt er, hält sie an" in rules
+
+
+def test_contributing_erklaert_test_commit_code_und_was_automatisch_geprueft_wird():
+    abschnitt = _section(CONTRIBUTING, "Korrektheit und Tests")
+
+    assert "Ändert ein Pull Request Code, kommen die Tests als eigener Commit vor dem Code" in abschnitt
+    assert "ein leeres Gerüst darf als eigener Commit davor stehen" in abschnitt
+    assert "*Code* heißt dabei jede Datei außer unter `docs/`, `tests/`, `rauchtests/`, `containertests/`, " in abschnitt
+    assert "`.github/ISSUE_TEMPLATE/` und außer `*.md`" in abschnitt
+    assert "auch Prüfskripte, CI und `.claude/`-Einstellungen sind Code" in abschnitt
+    assert "Ohne Code entfällt der Test-Commit; das ist unabhängig davon, ob Szenarien nötig sind." in abschnitt
+    assert "Prüfung „PR-Angaben“ prüft, dass der Test-Commit genannt ist, nur Tests ändert und kein Code vor ihm liegt" in abschnitt
+    assert "ob er aus dem richtigen Grund rot ist und ob ein Gerüst nur Gerüst ist: Review" in abschnitt
+
+
+def test_grill_me_nennt_den_verzicht_als_zeile_im_issue_text():
+    freigeben = _section(GRILL_ME, "Freigeben")
+
+    assert "dass es keine Szenarien braucht, und zwar als Zeile „Szenarien: keine.“ mit dem Grund im Text des Issues" in freigeben
+    assert "diese Form liest die Prüfung „PR-Angaben“" in freigeben
+
+
+def test_entscheidung_zu_den_pflichtangaben_im_pull_request_nennt_regel_und_grenzen():
+    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
+    entries = re.split(r"^## ", text, flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#237)")), None)
+
+    assert entry, "Eintrag zu #237 fehlt in docs/entscheidungen.md"
+    assert entry.startswith("2026-11-03 · ")
+    flat = _flat(entry)
+    for teil in [
+        "Prüfung „PR-Angaben“",
+        "Test-Commit vor dem Code",
+        "Gerüst-Commit",
+        "`geklärt`",
+        "*Code*",
+        "Mensch und KI schreiben unter demselben Konto",
+        "aus dem richtigen Grund",
+        "Commit-Zeiten lassen sich fälschen",
+        "sperrt das Übernehmen weiterhin nicht (#16)",
+    ]:
+        assert teil in flat, teil
