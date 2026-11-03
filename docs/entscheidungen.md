@@ -8,7 +8,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ## 2026-11-03 · Prüfumfang nach Art der Änderung, eine unabhängige Prüfung, Schweregrad nach der Folge (#235)
 
-**Entscheidung** (Paket P-14 der Projektprüfung, Issue #235; Einzelfragen E-051 bis E-054 der Projektprüfung, freigegeben von Sebastian am 03.11.2026):
+**Entscheidung** (Paket P-14 der Projektprüfung, Issue #235; Einzelentscheidungen E-051 bis E-054 und Freigabe E-055 der Projektprüfung, alle von Sebastian am 03.11.2026):
 
 1. Lokal läuft während der Arbeit und nach Korrekturen `./pruefen.sh schnell` mit den betroffenen Testdateien: Paketliste, ruff, Django-Systemprüfung, Migrationen und nur die genannten Dateien aus `tests/` und `rauchtests/`. Welche Dateien betroffen sind, wählt die KI nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (Tests der geänderten Teile, ihrer Aufrufer und der gemeinsamen Schutzprüfungen) und begründet es im Bericht in einem Satz. Eine automatische Erkennung gibt es nicht.
 2. Den vollen Lauf (`./pruefen.sh`) macht die Prüfung auf GitHub. Lokal läuft er nur bei Änderungen an Paketen, Docker, `pruefen.sh` oder dem Prüfablauf auf GitHub, dann vor der unabhängigen Prüfung. Das löst die Aussage „lokal und auf GitHub wird gleich geprüft“ (Eintrag vom 21.10.2026 „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Punkt 2) für den lokalen Regelfall ab: Es ist dasselbe Skript, aber lokal meist der schnelle Lauf. Die Freigabe eines Pull Requests an Sebastian bleibt an grüne Prüfungen auf GitHub für den letzten Stand gebunden (derselbe Eintrag, Punkt 1).
