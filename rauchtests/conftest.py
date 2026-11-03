@@ -14,8 +14,8 @@ Das Tool läuft hier auf einem eigenen Port (tests/check_ports.py), nicht auf Po
 eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167). Ein Rauchtest aus
 einer anderen Arbeitskopie läuft erst, wenn dieser fertig ist (#184).
 
-Rauchtests haben keine Zeitgrenze: Ein Test, der hängt, läuft unbegrenzt weiter, bis jemand den
-Lauf abbricht.
+Rauchtests haben keine eigene Zeitgrenze: Ein Test, der hängt, läuft lokal weiter, bis jemand den
+Lauf abbricht; auf GitHub beendet ihn erst das Zeitlimit des ganzen Laufs.
 """
 
 import os
