@@ -634,3 +634,215 @@ def test_skript_ruft_nie_eine_adresse_aus_einem_link_ab(fremd):
     pa.pruefe_pull_request(12, schnittstelle)
 
     assert all(adresse.startswith("/") for adresse in schnittstelle.adressen)
+
+
+# --- Befunde der unabhängigen Prüfung (B1 bis B6) ---------------------------------------------
+
+
+def _doku_mit_verzicht(**aenderungen):
+    angaben = {
+        "beschreibung": _beschreibung(
+            szenarien="- Szenarien: keine, weil das Issue kein fachliches Verhalten hat.",
+            test_commit="- Test-Commit: entfällt, weil nur Regeltexte geändert sind.",
+        ),
+        "issue": _issue(body=VERZICHT_ISSUE),
+        "kommentare": {},
+        "commits": DOKU_COMMITS,
+    }
+    angaben.update(aenderungen)
+    return angaben
+
+
+def test_beschreibung_mit_zeilenenden_aus_dem_browser_ist_gruen():
+    # B1: Nach einer Bearbeitung im Browser kann die Beschreibung „\r\n“ als Zeilenende haben.
+    _gruen(beschreibung=_beschreibung().replace("\n", "\r\n"))
+
+
+def test_verzicht_mit_zeilenenden_aus_dem_browser_gilt_in_beschreibung_und_issue():
+    angaben = _doku_mit_verzicht()
+    angaben["beschreibung"] = angaben["beschreibung"].replace("\n", "\r\n")
+    angaben["issue"] = _issue(body=VERZICHT_ISSUE.replace("\n", "\r\n"))
+
+    assert pa.pruefe(**angaben) == []
+
+
+@pytest.mark.parametrize(
+    "weiteres",
+    [
+        "- Fixes: #13",
+        "- Closes: #13",
+        f"- Fixes https://github.com/{REPO}/issues/13",
+        f"- Fixes {REPO}#13",
+        "- resolved #13",
+    ],
+)
+def test_jede_weitere_schliessende_angabe_von_github_ist_rot(weiteres):
+    # B2: GitHub schließt auch mit Doppelpunkt, voller Adresse oder „inhaber/repo#N“; so würde
+    # still ein zweites Issue mitgeschlossen, dessen Label nie geprüft wurde.
+    _rot("Closes", beschreibung=_beschreibung(closes="- Closes #12\n" + weiteres))
+
+
+def test_closes_mit_doppelpunkt_allein_ist_rot_mit_hinweis_auf_die_form():
+    _rot("Closes", beschreibung=_beschreibung(closes="- Closes: #12"))
+
+
+def test_issue_nummer_im_fliesstext_ohne_schliessendes_wort_bleibt_gruen():
+    _gruen(beschreibung=_beschreibung(davor="Baut auf #233 auf; #235 ist geschlossen, #236 closed."))
+
+
+def test_vorlage_erklaert_die_form_des_verzichts_auf_szenarien():
+    # B3: Wer die Vorlage ausfüllt, soll die Form kennen, die die Prüfung liest.
+    assert "„- Szenarien: keine, weil …“" in VORLAGE.read_text(encoding="utf-8")
+
+
+def test_die_ausgefuellte_neue_vorlage_mit_verzicht_ist_gruen():
+    text = VORLAGE.read_text(encoding="utf-8")
+    text = text.replace("## Anforderungen und Entscheidungen\n", "## Anforderungen und Entscheidungen\n\n- Closes #12\n")
+    text = re.sub(r"^- Szenarien.*$", "- Szenarien: keine, weil nur Regeltexte.", text, flags=re.M)
+    text = text.replace("- Test-Commit:", "- Test-Commit: entfällt, weil nur Regeltexte geändert sind.")
+
+    assert pa.pruefe(**_doku_mit_verzicht(beschreibung=text)) == []
+
+
+def test_link_mit_grossbuchstaben_im_namen_des_repos_zaehlt():
+    link = _link().replace("sebivtt", "Sebivtt")
+    _gruen(beschreibung=_beschreibung(szenarien="- Szenarien: " + link))
+
+
+def _merge(n, minute):
+    """Abgleich mit `main` („Update branch“): zwei Vorgänger, bringt fremden Code mit."""
+    commit = _commit(n, minute, _datei("core/aus_main.py", added=40))
+    commit["parents"] = [_sha(n - 1), "f" * 40]
+    return commit
+
+
+def test_abgleich_mit_main_vor_dem_test_commit_zaehlt_nicht_als_code():
+    # B4: Ein Merge-Commit bringt Code aus `main`, nicht Code dieses Pull Requests.
+    _gruen(commits=[_merge(1, 5), _tests(2, 10), _code(3, 20)], beschreibung=_beschreibung(test_commit="- Test-Commit: " + _kurz(2)))
+
+
+def test_abgleich_mit_main_nach_dem_test_commit_ersetzt_keinen_code_commit():
+    _rot("kein Commit Code", commits=[_tests(1, 10), _merge(2, 20)])
+
+
+def test_code_vor_dem_test_commit_bleibt_rot_auch_mit_abgleich_dazwischen():
+    commits = [_code(1, 5), _merge(2, 6), _tests(3, 10), _code(4, 20)]
+    _rot("vor dem ersten Test-Commit", commits=commits, beschreibung=_beschreibung(test_commit="- Test-Commit: " + _kurz(3)))
+
+
+def test_kommentar_aus_einem_anderen_repo_mit_gleicher_nummer_zaehlt_nicht():
+    # B5: Die Herkunft eines Kommentars zählt, nicht nur die Nummer des Issues.
+    antworten = _antworten(_kette(_tests(1, 10), _code(2, 20)))
+    antworten["/issues/comments/500"]["issue_url"] = "https://api.github.com/repos/fremd/anderes/issues/12"
+
+    mangel, _ = pa.pruefe_pull_request(12, _Schnittstelle(antworten))
+
+    assert any("Szenarien" in m for m in mangel), mangel
+
+
+def test_issue_das_in_ein_anderes_repo_verschoben_wurde_ist_nicht_pruefbar():
+    antworten = _antworten(_kette(_tests(1, 10), _code(2, 20)))
+    antworten["/issues/12"]["url"] = "https://api.github.com/repos/fremd/anderes/issues/7"
+
+    mangel, _ = pa.pruefe_pull_request(12, _Schnittstelle(antworten))
+
+    assert mangel
+    assert all("nicht prüfbar" in m for m in mangel)
+
+
+class _Antwort:
+    def __init__(self, inhalt):
+        self.inhalt = inhalt
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def read(self, *_):
+        return self.inhalt
+
+
+def _abruf_mit(monkeypatch, verhalten):
+    anfragen = []
+
+    def urlopen(anfrage, timeout):
+        anfragen.append(anfrage)
+        return verhalten(anfrage)
+
+    monkeypatch.setattr(pa.urllib.request, "urlopen", urlopen)
+    return pa.github_abrufen("erfundener-schluessel"), anfragen
+
+
+def test_abruf_schickt_den_schluessel_nicht_bei_einer_weiterleitung_mit(monkeypatch):
+    abrufen, anfragen = _abruf_mit(monkeypatch, lambda _: _Antwort(b"{}"))
+
+    assert abrufen("/pulls/12") == {}
+    assert anfragen[0].full_url == f"https://api.github.com/repos/{REPO}/pulls/12"
+    assert "Authorization" not in anfragen[0].headers
+    assert anfragen[0].unredirected_hdrs.get("Authorization") == "Bearer erfundener-schluessel"
+
+
+def _http_fehler(code):
+    def verhalten(anfrage):
+        raise pa.urllib.error.HTTPError(anfrage.full_url, code, "Fehler", {}, None)
+
+    return verhalten
+
+
+def test_abruf_ohne_treffer_gibt_none(monkeypatch):
+    abrufen, _ = _abruf_mit(monkeypatch, _http_fehler(404))
+
+    assert abrufen("/issues/9999") is None
+
+
+@pytest.mark.parametrize("verhalten", [_http_fehler(403), _http_fehler(500), lambda _: _Antwort(b"kein json")])
+def test_abruf_mit_fehler_oder_unlesbarer_antwort_ist_nicht_pruefbar(monkeypatch, verhalten):
+    abrufen, _ = _abruf_mit(monkeypatch, verhalten)
+
+    with pytest.raises(pa.NichtPruefbar):
+        abrufen("/pulls/12")
+
+
+def _ereignis(tmp_path, inhalt):
+    pfad = tmp_path / "ereignis.json"
+    pfad.write_text(inhalt, encoding="utf-8")
+    return {"GITHUB_EVENT_PATH": str(pfad), "GITHUB_TOKEN": "erfunden"}
+
+
+def test_main_liest_aus_der_ereignisdatei_nur_die_nummer_und_die_beschreibung_frisch(tmp_path, monkeypatch, capsys):
+    # In der Ereignisdatei steht eine alte Beschreibung ohne Angaben; maßgeblich ist die frisch gelesene.
+    antworten = _antworten(_kette(_tests(1, 10), _code(2, 20)))
+    monkeypatch.setattr(pa, "github_abrufen", lambda _: _Schnittstelle(antworten))
+    umgebung = _ereignis(tmp_path, '{"pull_request": {"number": 12, "body": "alt, ohne Angaben"}}')
+
+    assert pa.main(umgebung) == 0
+    assert "Alle Pflichtangaben sind da" in capsys.readouterr().out
+
+
+def test_main_gibt_maengel_als_fehlermeldung_aus_und_endet_rot(tmp_path, monkeypatch, capsys):
+    antworten = _antworten(_kette(_tests(1, 10), _code(2, 20)), beschreibung=_beschreibung(closes=""))
+    monkeypatch.setattr(pa, "github_abrufen", lambda _: _Schnittstelle(antworten))
+
+    assert pa.main(_ereignis(tmp_path, '{"pull_request": {"number": 12}}')) == 1
+    assert "::error title=PR-Angaben::Closes" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("inhalt", ['{"pull_request": {"number": "12; rm"}}', '{"issue": {}}', "kein json"])
+def test_main_ohne_gueltige_nummer_ist_rot(tmp_path, capsys, inhalt):
+    assert pa.main(_ereignis(tmp_path, inhalt)) == 1
+    assert "nicht prüfbar" in capsys.readouterr().out
+
+
+def test_commit_mit_dreihundert_dateien_ist_nicht_pruefbar():
+    viele = _commit(1, 10, *[_datei(f"tests/test_{i}.py") for i in range(300)])
+    mangel, _ = pa.pruefe_pull_request(12, _Schnittstelle(_antworten(_kette(viele, _code(2, 20)))))
+
+    assert mangel
+    assert all("nicht prüfbar" in m for m in mangel)
+
+
+def test_code_der_in_die_testordner_verschoben_wird_macht_den_test_commit_rot():
+    verschoben = _commit(1, 10, _datei("tests/test_neu.py", added=12, vorher="core/alt.py"))
+    _rot("nicht nur Tests", commits=[verschoben, _code(2, 20)])
