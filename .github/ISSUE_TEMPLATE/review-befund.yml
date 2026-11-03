@@ -98,19 +98,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: status
-    attributes:
-      label: Status
-      description: Beim Anlegen „offen“. Danach im Text dieses Issues fortschreiben.
-      options:
-        - offen
-        - mit grill-me geklärt
-        - in Arbeit
-        - behoben und geprüft
-    validations:
-      required: true
-
   - type: textarea
     id: klaerung
     attributes:

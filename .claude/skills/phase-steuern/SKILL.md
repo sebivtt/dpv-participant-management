@@ -7,6 +7,8 @@ description: Eine Phase als Steuerungssession führen, vom Phasenstart über Auf
 
 Die Regeln dazu stehen in `CLAUDE.md`, Abschnitte „Ein Ort je Angabe“, „Ablauf einer Phase“ und „Steuerungssession und Umsetzungs-Sessions“. Dieser Skill enthält nur die Handgriffe. Was die Steuerungssession darf und wann sie wechselt, steht dort und wird hier nicht wiederholt.
 
+In der Cloud-Umgebung von Claude Code ist die GitHub-Suche (`search/issues`) gesperrt; dort nur Adressen unter `repos/...` verwenden, wie in den Befehlen dieses Skills.
+
 Das Phasen-Issue folgt der Vorlage `.github/ISSUE_TEMPLATE/phase.yml`. Für P2 ist es #106 (bis zum Umbau nach der Vorlage in #170 noch ohne den Abschnitt „Stand für die nächste Steuerungssession“). Nach der Vorlage angelegte Phasen-Issues findet dieser Befehl; `<phase>` ist das Label der Phase, etwa `P3`:
 
 ```bash
@@ -41,6 +43,8 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 - **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat und alles, was die Umsetzung wissen muss, in seinem Text steht. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
 - **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
 - **Stand selbst feststellen:** Ob ein Lauf grün oder ein Pull Request übernommen ist, stellt die Steuerungssession selbst fest, nicht über Sebastians Meldung: für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6; für die Übernahme bei jedem Wiedereinstieg mit `gh pr view <nummer> --json state,mergedAt`, und wartet sie darauf, mit einem Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt.
+- **Nachträge** zu einem geklärten Issue nach `CLAUDE.md` („Neuer Inhalt zu einem geklärten Issue“) an eine Klärung mit `grill-me` geben (Kurzform möglich).
+- **In der Claude-Code-Desktop-App:** Wird der Zug der Steuerungssession durch die Meldung einer anderen Session ausgelöst, kann sie selbst keine neue Session starten. Sie legt sie stattdessen als Vorschlag an (eine Karte in der App), den Sebastian mit einem Klick startet; der Inhalt ist der Auftrag nach `CLAUDE.md`, „Auftrag“.
 - **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und Issues, die ein Zielbild brauchen, rechtzeitig zum Klären geben.
 
 ## 3. Phasen-Issue pflegen
@@ -53,22 +57,26 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.bod
 gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -F body=@phase.md
 ```
 
-- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk.
+- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`); auf sein Ende muss die Steuerungssession vor dem nächsten Auftrag nicht warten (`CLAUDE.md`, „Ablauf einer Phase“, „Umsetzen“).
 - **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub, Stunden mit Verweis auf Sebastians Zustimmung (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - **Was nicht ins Phasen-Issue gehört,** ergibt sich aus `CLAUDE.md`, „Ein Ort je Angabe“: Es steht an seinem eigenen Ort und wird hier höchstens verlinkt.
 - **Protokolle** (Bestandsaufnahme, Prüfung der Planung) kommen als Kommentar ins Phasen-Issue; der Text des Issues verlinkt sie.
 
 ## 4. Übergabe an die nächste Steuerungssession
 
-Wann gewechselt wird, steht in `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“. Beim Wechsel den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue neu schreiben, kurz und ohne Wiederholung dessen, was schon anderswo steht:
+Wann gewechselt wird, steht in `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“. Beim Wechsel den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue neu schreiben.
+
+Der Stand hat höchstens 15 Zeilen, keine Zeile länger als ein Satz, und nur diese fünf Angaben:
 
 - Datum und Uhrzeit der Übergabe,
 - welches Issue zuletzt umgesetzt und eingetragen wurde,
-- was gerade läuft (Klärung, offene Frage an Sebastian, wartender Pull Request), mit Link,
+- was gerade läuft (Klärung, offene Frage an Sebastian, wartender Pull Request, Hintergrundauftrag), mit Link,
 - welches Issue als Nächstes beauftragt wird,
 - Besonderheiten, die nirgends sonst stehen; gehören sie in ein Issue, dort eintragen und hier nur verlinken.
 
-Dann Sebastian sagen, dass die Session endet und eine neue mit diesem Skill weitermacht.
+Nichts Abgeschlossenes als „Davor: …“; der Verlauf steht in der Bearbeitungshistorie des Issues.
+
+Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für die nächste und sonst nichts: „Steuere Phase <Pn> weiter, Phasen-Issue #<nr>, nach `CLAUDE.md` und Skill `phase-steuern`.“
 
 ## 5. Abschluss
 

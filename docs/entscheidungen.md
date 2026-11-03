@@ -6,6 +6,28 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-11-03 · Verweise statt Fassungen, Memory aus, Sitzungswechsel an Ereignissen (#240)
+
+**Entscheidung** (Paket P-04, Teil b, der Projektprüfung, Issue #240; Freigabe E-065, Memory abschalten E-064, Nachbesserung zum Warten E-069, Bestandsaufnahme E-068, alle von Sebastian am 03.11.2026; Regel-Review G-09 und G-10):
+
+1. Texte, die die KI selbst schreibt (Aufträge, Prompts für die nächste Sitzung, Stand im Phasen-Issue), enthalten nur Verweise und den Stand, nie eine eigene Fassung einer Regel; Kürzel aus einer Klärung stehen mit Issue-Nummer (`CLAUDE.md`, „Ein Ort je Angabe“).
+2. Die automatische Memory von Claude Code ist für dieses Projekt abgeschaltet (Einstellung `autoMemoryEnabled` auf `false` in `.claude/settings.json`). Was eine spätere Sitzung wissen muss, steht im Issue oder in den Projektdateien. Der Memory-Ordner wird nach der Übernahme gesichert und geleert.
+3. Die Steuerungssession wechselt nach jedem Issue mit übernommenem und eingetragenem Pull Request, nicht mehr nach Prozenten der Kontextanzeige, die nur Sebastian sieht. Nach einer automatischen Zusammenfassung beginnt eine Session nichts Neues, schreibt ihren Stand mit allem, was noch läuft, und endet. Ein Hook (`SessionStart`, Auslöser `compact`, `.claude/hooks/zusammenfassung.py`) gibt dann einen Verweis auf `CLAUDE.md` aus.
+4. Der Stand im Phasen-Issue hat höchstens 15 Zeilen und einen festen Startsatz; Nachträge zu geklärten Issues gibt die Steuerung an eine Klärung. Die Vorlage für Review-Befunde hat kein Feld „Status“ mehr (Label und Schließen genügen); die Stufe bleibt.
+5. Die Weck-Beobachtung beim Warten auf GitHub weckt bei Grün wie bei Rot (`gh pr checks <nummer> --watch`); Sebastian erlaubt dafür und für die Abfrage der Übernahme (`gh pr view <nummer> --json state,mergedAt`) ausdrücklich, auch wo ein Werkzeug solche Abfragen sonst nicht vorsieht. Technische Sperren gelten weiter. Nach einer Übernahme wird der Lauf auf `main` abgefragt, ohne vor dem nächsten Auftrag auf sein Ende zu warten.
+
+**Begründung:** Eine Steuerung arbeitete nach einer automatischen Zusammenfassung weiter und wechselte erst auf Bitte; drei von vier Memory-Einträgen waren veraltet oder widersprachen `CLAUDE.md`; der Stand in #106 war ein Verlauf mit 107 Zeilen (BF-079, BF-080, BF-081, BF-102, BF-070, BF-088, BF-110, BF-111; MU-01, MU-03).
+
+**Grenzen:**
+
+- Der Hook erinnert nur, er beendet keine Sitzung. Codex und Gemini kennen ihn nicht; sie arbeiten nach `CLAUDE.md` im Projekt nur lesend.
+- Ob die Einstellung zur Memory aus der Projektdatei in jeder Umgebung wirkt, zeigt eine Probe mit einer neuen Sitzung; sie ist nicht Teil der Tests.
+- Die Sperren (`deny`-Regeln und `sperren.py`) bleiben unverändert.
+
+**Umsetzung:** `CLAUDE.md`, `.claude/skills/phase-steuern/SKILL.md`, `.claude/settings.json`, `.claude/hooks/zusammenfassung.py`, `.github/ISSUE_TEMPLATE/review-befund.yml`, `tests/test_arbeitsregeln.py`, `tests/test_issue_vorlagen.py`, `tests/test_zusammenfassung.py`, zwei Kommentare in `rauchtests/`.
+
+---
+
 ## 2026-11-03 · Die KI wartet selbst auf GitHub, jede Beschreibung beginnt mit dem Kopf „Für Sebastian“ (#239)
 
 **Entscheidung** (Paket P-04, Teil a, der Projektprüfung, Issue #239; Freigabe E-065 von Sebastian am 03.11.2026; Regel-Review G-09):
