@@ -6,6 +6,23 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 
 ---
 
+## 2026-11-03 · Prüfumfang nach Art der Änderung, eine unabhängige Prüfung, Schweregrad nach der Folge (#235)
+
+**Entscheidung** (Paket P-14 der Projektprüfung, Issue #235; Einzelentscheidungen E-051 bis E-054 und Freigabe E-055 der Projektprüfung, alle von Sebastian am 03.11.2026):
+
+1. Lokal läuft während der Arbeit und nach Korrekturen `./pruefen.sh schnell` mit den betroffenen Testdateien: Paketliste, ruff, Django-Systemprüfung, Migrationen und nur die genannten Dateien aus `tests/` und `rauchtests/`. Welche Dateien betroffen sind, wählt die KI nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (Tests der geänderten Teile, ihrer Aufrufer und der gemeinsamen Schutzprüfungen) und begründet es im Bericht in einem Satz. Eine automatische Erkennung gibt es nicht.
+2. Den vollen Lauf (`./pruefen.sh`) macht die Prüfung auf GitHub. Lokal läuft er nur bei Änderungen an Paketen, Docker, `pruefen.sh` oder dem Prüfablauf auf GitHub, dann vor der unabhängigen Prüfung. Das löst die Aussage „lokal und auf GitHub wird gleich geprüft“ (Eintrag vom 21.10.2026 „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Punkt 2) für den lokalen Regelfall ab: Es ist dasselbe Skript, aber lokal meist der schnelle Lauf. Die Freigabe eines Pull Requests an Sebastian bleibt an grüne Prüfungen auf GitHub für den letzten Stand gebunden (derselbe Eintrag, Punkt 1).
+3. Die unabhängige Prüfung läuft einmal, sobald der Stand fertig zur Prüfung und der schnelle Lauf grün ist, und nie gleichzeitig mit einem Prüflauf derselben Arbeitskopie. Eine zweite gibt es nur nach einem Befund „hoch“, und nur für dessen Korrektur.
+4. Jeder Befund der unabhängigen Prüfung trägt einen Schweregrad nach seiner Folge (hoch, mittel, gering), bestimmt nach `CLAUDE.md`, Abschnitt „Unabhängige Prüfung“.
+5. Je Szenario ein Test; weitere nur für einen Fehlermechanismus, den noch kein Test prüft, oder eine begründete Risikovariante, von gleichartigen Schreibweisen nur eine Auswahl. Die Pflichtfälle aus `CONTRIBUTING.md` bleiben.
+6. `pruefen.sh` meldet am Ende, was wirklich gelaufen ist: die Betriebsart, rot oder grün, die Zahl der übersprungenen Tests (Summe über alle pytest-Läufe, bei fehlender Zusammenfassung „Zahl unbekannt“, nie 0) und im schnellen Lauf, was nicht ausgewählt war. „Alle Prüfungen grün.“ steht nur im vollen Lauf ohne Übersprungenes. Jede Prüfung nennt ihre Dauer.
+
+**Begründung:** Bei #233 (P-01) kosteten zwei volle Läufe rund 38 Minuten, etwa drei Viertel der Umsetzungszeit, für eine Änderung ohne Code des Tools; der volle Lauf lief gleichzeitig mit der unabhängigen Prüfung und war nach deren Befunden wertlos, und die Tests wuchsen auf 138 Einzelfälle für eine Datei. Auf dem Mac wurde außerdem rund ein Drittel der Rauchtests übersprungen (Firefox), und die Schlusszeile meldete trotzdem „Alle Prüfungen grün.“ (Befunde BF-147, BF-046, BF-037, BF-047 der Projektprüfung).
+
+**Grenzen:** Weniger lokal Geprüftes kann mehr rote Läufe auf GitHub bedeuten, wenn die Auswahl zu eng war. Das ist gewollt abgewogen und leicht umkehrbar: Der Rücknahmeweg ist, den Pull Request rückgängig zu machen. `./pruefen.sh` ohne Zusatz verhält sich bis auf Schlusszeile, Dauerangabe und die Gründe für Übersprungenes wie vorher; `.github/workflows/ci.yml` ist unverändert. Die Erfahrung „Rauchtests im Browser mehrmals laufen lassen“ (21.10.2026) in `CLAUDE.md` gilt weiter.
+
+**Umsetzung:** `pruefen.sh`, `CLAUDE.md`, `.github/pull_request_template.md`, `docs/review-leitfaden.md`, `README.md`, `tests/test_pruefen_sh.py`, `tests/test_arbeitsregeln.py`.
+
 ## 2026-11-02 · Sperren für die KI, Freigaben gibt Sebastian selbst (#233)
 
 **Entscheidung** (Paket P-01 der Projektprüfung, Issue #233):

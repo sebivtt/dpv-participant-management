@@ -89,7 +89,7 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
 11. Eine neue Claude-Sitzung starten und den Auftrag zur Zusammenführung (Abschnitt 9) mit der Nummer des Review-Issues hineinkopieren.
 12. **Nur wenn die Zusammenführung ein drittes Modell vorschlägt** (Abschnitt 4, Fall 1): einem dritten Modell in einem neuen Chat die ZIP-Datei und den Auftrag „Strittiger Befund“ (Abschnitt 9) geben; die Zusammenführung füllt ihn vorher mit dem Befund und beiden Begründungen aus. Die Antwort als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen und der Claude-Sitzung Bescheid geben.
 13. Die vorgeschlagene Einordnung durchgehen und je Befund entscheiden. Danach legt die Claude-Sitzung die Befund-Issues an.
-14. Jedes Befund-Issue vor der Umsetzung mit `grill-me` klären, wie jedes andere Issue. Blockierende zuerst. Nach jeder Behebung laufen die betroffenen Tests und alle Prüfungen mit `./pruefen.sh`; im Befund-Issue steht, womit geprüft wurde.
+14. Jedes Befund-Issue vor der Umsetzung mit `grill-me` klären, wie jedes andere Issue. Blockierende zuerst. Nach jeder Behebung wird geprüft wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (mit `./pruefen.sh`); im Befund-Issue steht, womit geprüft wurde.
 15. Sind alle Befunde eingeordnet und alle blockierenden behoben: die Abschlussentscheidung ins Review-Issue schreiben und es schließen. Erst dann wechselt der „Stand“ im `README.md`.
 
 ## 7. Zusammenführung
