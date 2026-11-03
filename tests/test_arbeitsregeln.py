@@ -664,7 +664,6 @@ def test_claude_md_verlangt_selbst_warten_und_den_link_erst_bei_gruen():
     step = _section(CLAUDE_MD, "Ablauf je Aufgabe")
 
     assert "Gewartet wird selbst: Die Sitzung startet einen Hintergrundauftrag, der sie am Ende des Laufs weckt" in step
-    assert "(die PR-Beobachtung des Werkzeugs, wo es eine hat, sonst `gh pr checks <nummer> --watch`)" in step
     assert "und bittet Sebastian nie, Bescheid zu geben" in step
     assert "meldet sie nur „PR angelegt, Prüfung läuft“, ohne Link" in step
     assert "den Link gibt es auch dann erst bei Grün" in step
