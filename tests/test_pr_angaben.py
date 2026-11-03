@@ -721,8 +721,10 @@ def test_abgleich_mit_main_vor_dem_test_commit_zaehlt_nicht_als_code():
     _gruen(commits=[_merge(1, 5), _tests(2, 10), _code(3, 20)], beschreibung=_beschreibung(test_commit="- Test-Commit: " + _kurz(2)))
 
 
-def test_abgleich_mit_main_nach_dem_test_commit_ersetzt_keinen_code_commit():
-    _rot("kein Commit Code", commits=[_tests(1, 10), _merge(2, 20)])
+def test_abgleich_mit_main_nach_dem_test_commit_ist_kein_eigener_code():
+    # Ohne eigenen Code ist das ein Pull Request nur mit Tests; der genannte Test-Commit wird geprüft.
+    _gruen(commits=[_tests(1, 10), _merge(2, 20)])
+    _gruen(commits=[_tests(1, 10), _merge(2, 20)], beschreibung=_beschreibung(test_commit="- Test-Commit: entfällt, weil nur Tests."))
 
 
 def test_code_vor_dem_test_commit_bleibt_rot_auch_mit_abgleich_dazwischen():
