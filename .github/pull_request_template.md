@@ -16,7 +16,7 @@ Für Sebastian: Ist „PR-Angaben“ rot oder läuft noch, nicht übernehmen. Un
 ## Wie geprüft wurde
 
 <!-- Nur, was tatsächlich ausgeführt wurde, mit Ergebnis. Was nur empfohlen ist, gehört unter „Nicht geprüft und offen“.
-Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-Links in diesem Abschnitt und die Zeile „Test-Commit“ (Begriffe in `CONTRIBUTING.md`, Abschnitt 3). Test-Commit: Kennung des Commits, der nur Tests hinzufügt, vor dem Code; mehrere durch Komma; ein leeres Gerüst davor als „Gerüst-Commit:“; ohne Codeänderung „entfällt, weil …“. -->
+Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-Links in diesem Abschnitt und die Zeile „Test-Commit“ (Begriffe in `CONTRIBUTING.md`, Abschnitt 3). Test-Commit: Kennung des Commits, der nur Tests hinzufügt, vor dem Code; mehrere durch Komma; ein leeres Gerüst davor als „Gerüst-Commit:“; ohne Codeänderung „entfällt, weil …“. Ohne Szenarien die Zeile „Szenarien“ ersetzen durch „- Szenarien: keine, weil …“. -->
 
 - Szenarien (Link zum Kommentar „Szenarien (Datum)“ und Tests, die darüber hinaus dazugekommen sind; ohne Szenarien der Grund aus der Klärung):
 - Test-Commit:

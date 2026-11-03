@@ -40,8 +40,13 @@ MAX_DATEIEN = 300
 TESTORDNER = ("tests/", "rauchtests/", "containertests/")
 KEIN_CODE = ("docs/", ".github/ISSUE_TEMPLATE/", *TESTORDNER)
 
-CLOSES = re.compile(r"\bcloses\s+#(\d+)", re.IGNORECASE)
-ANDERE_SCHLUESSELWORTE = re.compile(r"\b(?:fix|fixes|fixed|close|closed|resolve|resolves|resolved)\s+#\d+", re.IGNORECASE)
+# Alle Formen, mit denen GitHub ein Issue schließt: Wort, optional „:“, dann „#N“, „inhaber/repo#N“ oder
+# die Adresse des Issues. Erlaubt ist nur „Closes #N“; jede andere Form wäre ein still mitgeschlossenes Issue.
+SCHLIESST = re.compile(
+    r"\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)(:?)[ \t]+"
+    r"(#|[\w.-]+/[\w.-]+#|https?://github\.com/[\w.-]+/[\w.-]+/issues/)(\d+)",
+    re.IGNORECASE,
+)
 SZENARIEN_KOPF = re.compile(r"\s*(?:#+\s*)?(?:\*\*|__)?\s*Szenarien \(")
 VERZICHT = re.compile(r"Szenarien:\s*keine\b(.*)", re.IGNORECASE)
 VERZICHT_IM_ISSUE = re.compile(r"^[\s>*_-]*(?:\*\*|__)?Szenarien: keine\.(?:\*\*|__)?[ \t]*(.+)$", re.MULTILINE)
@@ -70,13 +75,18 @@ def _hat_grund(text):
     return re.search(r"\w", text) is not None
 
 
+def einheitliche_zeilen(text):
+    """Nach einer Bearbeitung im Browser schickt GitHub „\\r\\n“; die Prüfung liest nur „\\n“."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _kurz(commit):
     return commit["sha"][:7]
 
 
 def ohne_kommentare(text):
     """Die Hinweise der Vorlage stehen in HTML-Kommentaren und zählen nicht als Angabe."""
-    return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+    return re.sub(r"<!--.*?-->", "", einheitliche_zeilen(text), flags=re.DOTALL)
 
 
 def wie_geprueft(text):
@@ -93,7 +103,7 @@ def _zeilenwert(abschnitt, name):
 def _kommentar_kennungen(abschnitt):
     """Kennungen der Kommentare, auf die der Abschnitt in diesem Repo verlinkt (nur diese Adresse zählt)."""
     muster = rf"https://github\.com/{re.escape(REPO)}/issues/\d+#issuecomment-(\d+)"
-    return list(dict.fromkeys(int(kennung) for kennung in re.findall(muster, abschnitt)))
+    return list(dict.fromkeys(int(kennung) for kennung in re.findall(muster, abschnitt, flags=re.IGNORECASE)))
 
 
 def szenarien_links(beschreibung):
@@ -101,10 +111,18 @@ def szenarien_links(beschreibung):
     return _kommentar_kennungen(wie_geprueft(ohne_kommentare(beschreibung)))
 
 
+def _schliessende(text):
+    """Je schließende Angabe: (Wortlaut, erlaubt?, Nummer)."""
+    return [
+        (t.group(0), t.group(1).lower() == "closes" and not t.group(2) and t.group(3) == "#", int(t.group(4)))
+        for t in SCHLIESST.finditer(text)
+    ]
+
+
 def closes_nummer(beschreibung):
-    """Die Nummer, wenn genau ein „Closes #N“ dasteht, sonst None."""
-    nummern = CLOSES.findall(ohne_kommentare(beschreibung))
-    return int(nummern[0]) if len(nummern) == 1 else None
+    """Die Nummer, wenn genau eine schließende Angabe dasteht und sie „Closes #N“ heißt, sonst None."""
+    angaben = _schliessende(ohne_kommentare(beschreibung))
+    return angaben[0][2] if len(angaben) == 1 and angaben[0][1] else None
 
 
 # --- Dateien und Commits ----------------------------------------------------------------------
@@ -122,8 +140,13 @@ def _pfade(commit):
     return [pfad for datei in commit["dateien"] for pfad in (datei["name"], datei.get("vorher")) if pfad]
 
 
+def ist_abgleich(commit):
+    """Merge-Commit (etwa „Update branch“): bringt Code aus `main`, keinen eigenen."""
+    return len(commit.get("parents", [])) > 1
+
+
 def aendert_code(commit):
-    return any(ist_code(pfad) for pfad in _pfade(commit))
+    return not ist_abgleich(commit) and any(ist_code(pfad) for pfad in _pfade(commit))
 
 
 def _nur_tests(commit):
@@ -141,11 +164,16 @@ def _fuegt_zeilen_hinzu(commit):
 def _pruefe_closes(text):
     """Regel 1: genau ein „Closes #N“."""
     mangel = []
-    anzahl = len(CLOSES.findall(text))
+    angaben = _schliessende(text)
+    anzahl = sum(1 for _, erlaubt, _ in angaben if erlaubt)
     if anzahl != 1:
         mangel.append(f"Closes: Es muss genau ein „Closes #<Nummer>“ stehen, gefunden: {anzahl}.")
-    for treffer in ANDERE_SCHLUESSELWORTE.findall(text):
-        mangel.append(f"Closes: „{treffer}“ ist nicht erlaubt; die Regel nennt „Closes #<Nummer>“.")
+    for wortlaut, erlaubt, _ in angaben:
+        if not erlaubt or anzahl > 1:
+            mangel.append(
+                f"Closes: „{wortlaut}“ ist nicht erlaubt; es schließt auf GitHub ein Issue, die Regel nennt genau ein "
+                "„Closes #<Nummer>“."
+            )
     return mangel
 
 
@@ -164,6 +192,8 @@ def _sortiere_links(abschnitt, nummer, kommentare):
         kommentar = kommentare.get(kennung)
         if kommentar is None:
             probleme.append(f"Kommentar {kennung} nicht gefunden.")
+        elif kommentar["issue"] is None:
+            probleme.append(f"Kommentar {kennung} gehört nicht zu diesem Repo.")
         elif kommentar["issue"] != nummer:
             probleme.append(f"Kommentar {kennung} gehört zu Issue #{kommentar['issue']}, nicht zu #{nummer}.")
         elif not SZENARIEN_KOPF.match(kommentar["body"]):
@@ -312,6 +342,8 @@ def pruefe(beschreibung, issue, kommentare, commits):
                   "dateien": [{"name", "vorher", "added", "deleted"}]}.
     """
     text = ohne_kommentare(beschreibung)
+    if issue is not None:
+        issue = {**issue, "body": einheitliche_zeilen(issue["body"])}
     abschnitt = wie_geprueft(text)
     mangel = _pruefe_closes(text)
     nummer = closes_nummer(beschreibung)
@@ -379,6 +411,8 @@ def _lese_issue(nummer, abrufen):
     roh = abrufen(f"/issues/{nummer}")
     if roh is None or "pull_request" in roh:
         return None, None
+    if "url" in roh and not roh["url"].startswith(f"{API}/issues/"):
+        raise NichtPruefbar(f"Issue #{nummer} liegt inzwischen in einem anderen Repo.")
     issue = {"number": nummer, "body": roh["body"] or "", "labels": [label["name"] for label in roh["labels"]]}
     return issue, roh.get("updated_at")
 
@@ -390,7 +424,8 @@ def _lese_kommentare(beschreibung, abrufen):
         if roh is None:
             kommentare[kennung] = None
         else:
-            nummer = int(roh["issue_url"].rstrip("/").rsplit("/", 1)[1])
+            adresse = roh["issue_url"].rstrip("/")
+            nummer = int(adresse.rsplit("/", 1)[1]) if adresse.startswith(f"{API}/issues/") else None
             kommentare[kennung] = {"issue": nummer, "body": roh["body"] or "", "updated_at": roh["updated_at"]}
     return kommentare
 
@@ -431,9 +466,10 @@ def github_abrufen(token):
         if not pfad.startswith("/"):
             raise NichtPruefbar("Ungültiger Pfad.")
         kopf = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
-        if token:
-            kopf["Authorization"] = f"Bearer {token}"
         anfrage = urllib.request.Request(API + pfad, headers=kopf)  # noqa: S310 (feste https-Adresse)
+        if token:
+            # Nicht bei einer Weiterleitung mitschicken: der Schlüssel geht nur an die feste Adresse.
+            anfrage.add_unredirected_header("Authorization", f"Bearer {token}")
         try:
             with urllib.request.urlopen(anfrage, timeout=30) as antwort:  # noqa: S310 (feste https-Adresse)
                 return json.load(antwort)
