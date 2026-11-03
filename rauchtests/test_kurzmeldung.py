@@ -27,6 +27,8 @@ LEISTE = 264  # Breite der Seitenleiste am PC (core/static/core/app.css)
 
 def _stop_clock(page: Page) -> None:
     """Hält die Uhr aller folgenden Seiten an; Zeit vergeht nur noch mit `_later`."""
+    # Bei angehaltener Uhr darf axe nie aufgerufen werden: axe wartet auf Zeitgeber, die dann nie
+    # ablaufen, und der Test hängt (#186). `_axe` lässt die Uhr deshalb vorher kurz weiterlaufen.
     page.clock.install(time=datetime(2026, 10, 27, 10, 0, 0))
     page.clock.pause_at(datetime(2026, 10, 27, 10, 0, 1))
 

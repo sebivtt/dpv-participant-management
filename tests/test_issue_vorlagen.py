@@ -100,7 +100,6 @@ def test_vorlage_befund_hat_alle_felder_aus_26():
         "beleg",
         "auswirkung",
         "sicherheit",
-        "status",
         "klaerung",
         "entscheidung",
         "abnahmekriterien",
@@ -108,8 +107,10 @@ def test_vorlage_befund_hat_alle_felder_aus_26():
     assert expected <= fields.keys()
     # Klärung, Entscheidung und Abnahmekriterien entstehen erst mit grill-me, alles andere
     # steht beim Anlegen fest.
-    must = {"review", "kategorie", "fundstelle", "beobachtung", "beleg", "auswirkung", "sicherheit", "stufe", "status"}
+    must = {"review", "kategorie", "fundstelle", "beobachtung", "beleg", "auswirkung", "sicherheit", "stufe"}
     assert {name for name, field in fields.items() if _required(field)} == must
+    assert "status" not in fields, "Der zweite Status neben Label und Schließen entfällt (#240); die Stufe bleibt"
+    assert "stufe" in fields
     assert "review-befund" in template["labels"]
 
 
