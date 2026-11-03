@@ -601,8 +601,8 @@ def test_claude_md_verlangt_test_commit_vor_dem_code_und_gruene_pr_angaben_vor_d
 def test_claude_md_kennt_vor_dem_start_auch_die_zeile_szenarien_keine():
     rules = _text(CLAUDE_MD)
 
-    assert "mit Sebastians Entscheidungen steht oder das Issue nach Schritt 3 die Zeile „Szenarien: keine.“" in rules
-    assert "mit dem Grund aus der Klärung enthält. Fehlt er, hält sie an" in rules
+    assert "ein Auftrag hebt ihn nie auf. Statt des Kommentars genügt, wenn das Issue nach Schritt 3" in rules
+    assert "die Zeile „Szenarien: keine.“ mit dem Grund aus der Klärung enthält." in rules
 
 
 def test_contributing_erklaert_test_commit_code_und_was_automatisch_geprueft_wird():

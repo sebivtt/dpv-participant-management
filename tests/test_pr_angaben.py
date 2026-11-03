@@ -460,7 +460,7 @@ class _Schnittstelle:
         basis, _, abfrage = pfad.partition("?")
         antwort = self.antworten.get(basis)
         if isinstance(antwort, list):
-            seite = int(re.search(r"page=(\d+)", abfrage).group(1))
+            seite = int(re.search(r"(?:^|&)page=(\d+)", abfrage).group(1))
             return antwort[(seite - 1) * 100 : seite * 100]
         return antwort
 
