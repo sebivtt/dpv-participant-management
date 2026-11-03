@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sperren.py\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sperren.py\" || exit 2"
           }
         ]
       }

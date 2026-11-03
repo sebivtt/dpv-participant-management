@@ -11,7 +11,7 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 **Entscheidung** (Paket P-01 der Projektprüfung, Issue #233):
 
 1. Nur Sebastian setzt das Label `geklärt` und übernimmt Pull Requests, jeweils selbst auf GitHub. Die KI bittet ihn darum und schickt den Link. Das löst in `grill-me` den Handgriff ab, mit dem die KI das Label nach seinem Okay selbst setzte.
-2. In Claude Code sind gesperrt, auch im Auto-Modus: Pull Request übernehmen (auch über `gh api` und GraphQL), auf `main` hochladen, Hochladen mit Force, `--all`, `--mirror` oder Löschen, Hochladen ohne ausdrückliches Ziel, `.env` lesen, `geklärt` setzen (beim Anlegen und Bearbeiten, auch über `gh api`). Den eigenen Zweig hochladen, Pull Requests und Issues anlegen, andere Labels setzen, `geklärt` entfernen und lesende `gh`-Befehle gehen weiter.
+2. In Claude Code sind gesperrt, auch im Auto-Modus: Pull Request übernehmen (auch über `gh api` und GraphQL), auf `main` hochladen (mit `git push`), Hochladen mit Force, `--all`, `--mirror` oder Löschen, Hochladen ohne ausdrückliches Ziel, `.env` lesen, `geklärt` setzen (beim Anlegen und Bearbeiten, auch über `gh api`). `.env` aus der Vorlage anlegen (`cp .env.example .env`, wie im README) geht weiter. Den eigenen Zweig hochladen, Pull Requests und Issues anlegen, andere Labels setzen, `geklärt` entfernen und lesende `gh`-Befehle gehen weiter.
 
 **Begründung:** Diese Grenzen standen nur als Text in `CLAUDE.md`. Im Probelauf ohne Sperrliste (Claude Code 2.1.309, Auto-Modus, erfundener Inhalt) lud die KI auf `main` hoch, übernahm einen Pull Request und las `.env`. Mit Sperrliste und Prüfschritt wurden alle geprüften Sperrfälle abgewiesen, gestartet im Projektordner und in einer frischen Arbeitskopie; die Gegenfälle liefen.
 
@@ -22,9 +22,10 @@ Format: Datum · Entscheidung · Begründung · Umsetzung
 - Die Sperre gilt nur in Claude Code; andere KI-Werkzeuge haben keine und arbeiten im Projekt nur lesend.
 - Schutz vor Versehen und Gewohnheit, nicht vor Absicht: Absichtlich verschleierte Befehle (Skript, Variable) kommen durch.
 - Mensch und KI teilen ein GitHub-Konto; wer geklickt hat, lässt sich technisch nicht nachweisen.
-- Fehlt die Datei des Prüfschritts, weist Claude Code jeden Bash-Befehl ab (Probe), bis sie wieder da ist.
+- Andere Schreibwege der GitHub-API sind nicht abgedeckt, etwa Zweige direkt setzen (`git/refs`), Dateien schreiben (`contents`), Zusammenführen (`merges`) oder ein Label in `geklärt` umbenennen (`gh label edit`). „Auf `main` hochladen“ meint die Wege über `git push`.
+- Scheitert der Prüfschritt selbst (Datei fehlt, Fehler im Programm, kein `python3`), macht `|| exit 2` im Befehl in `.claude/settings.json` daraus eine Abweisung: Claude Code weist dann jeden Bash-Befehl ab, bis der Fehler behoben ist.
 
-**Technische Wahl** (KI): Zwei Teile, weil die Sperrliste von Claude Code nur nach dem Anfang eines Befehls unterscheidet. `.claude/settings.json` sperrt `Read` auf `.env` und `gh pr merge`; der Prüfschritt `.claude/hooks/sperren.py` (Hook `PreToolUse`, nur Python-Standardbibliothek) zerlegt jeden Bash-Befehl in seine Teile und prüft je Teil die Wirkung, etwa das tatsächliche Ziel eines `git push`. Was er nicht sicher zerlegen kann und `git`, `gh` oder `.env` enthält, weist er ab, ebenso jeden Befehl bei einem eigenen Fehler.
+**Technische Wahl** (KI): Zwei Teile, weil die Sperrliste von Claude Code nur nach dem Anfang eines Befehls unterscheidet. `.claude/settings.json` sperrt `Read` auf `.env` und `gh pr merge`; der Prüfschritt `.claude/hooks/sperren.py` (Hook `PreToolUse`, nur Python-Standardbibliothek) zerlegt jeden Bash-Befehl in seine Teile und prüft je Teil die Wirkung, etwa das tatsächliche Ziel eines `git push`. Was er nicht sicher zerlegen kann (offene Anführungszeichen, Ziel aus `$(…)` oder Variable, Inhalt aus einer Datei bei Labels, Übernehmen oder GraphQL) und `git`, `gh` oder `.env` betrifft, weist er ab; Dateien liest er nie.
 
 **Umsetzung:** `.claude/settings.json`, `.claude/hooks/sperren.py`, `CLAUDE.md`, `.claude/skills/grill-me/SKILL.md`, `tests/test_sperren.py`, `tests/test_arbeitsregeln.py`.
 

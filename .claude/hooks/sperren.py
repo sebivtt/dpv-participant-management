@@ -11,8 +11,10 @@ tatsächlich tun würden. `git push origin feature/main-menu` geht also durch, `
 HEAD:refs/heads/main` nicht. Das ist ein Schutz vor Versehen und Gewohnheit, keiner gegen
 absichtliches Verschleiern (Skript, Variable): Solche Befehle kann der Prüfschritt nicht sehen.
 
-Was sich nicht sicher zerlegen lässt (offenes Anführungszeichen) und `git`, `gh` oder `.env`
-enthält, wird abgewiesen, ebenso jeder Befehl, wenn im Prüfschritt selbst ein Fehler auftritt.
+Was sich nicht sicher zerlegen lässt (offenes Anführungszeichen, Ziel aus `$(…)` oder Variable,
+Inhalt aus einer Datei) und `git`, `gh` oder `.env` betrifft, wird abgewiesen. Scheitert der
+Prüfschritt selbst, macht `|| exit 2` im Befehl in `.claude/settings.json` daraus eine Abweisung,
+auch bei Fehlern, die Python vor `main()` meldet (Syntaxfehler, fehlende Datei, kein `python3`).
 Nur Python-Standardbibliothek, damit der Prüfschritt ohne eingerichtete Umgebung läuft.
 """
 
@@ -25,22 +27,20 @@ import sys
 import unicodedata
 
 MESSAGE = "Gesperrt nach CLAUDE.md, ‚Was die KI nie allein entscheidet oder tut‘. Sebastian führt das selbst aus."
-STILL_LOCKED = (
-    "Pull Requests übernehmen, auf main oder mit Force hochladen, .env lesen und `geklärt` setzen "
-    "bleiben gesperrt; das führt Sebastian selbst aus."
-)
-NAME_TARGET = "Bitte das Ziel ausdrücklich nennen: git push origin <zweig>."
+NAME_TARGET = "Mit ausdrücklichem Ziel geht es weiter: git push origin <zweig>."
+NAME_BRANCH = "Mit ausdrücklichem Zweignamen geht es weiter: git push origin <zweig> (oder git push -u origin HEAD)."
 SIMPLE = (
-    "Bitte eine einfache Schreibweise verwenden: keine offenen Anführungszeichen, "
+    "Mit einer einfachen Schreibweise geht es weiter: keine offenen Anführungszeichen, "
     "längere Texte als Datei (etwa --body-file oder -F body=@datei.md)."
 )
+INLINE = "Mit Feldern im Befehl geht es weiter, etwa -f 'labels[]=P2' oder -f query='…'; Texte weiter mit -F body=@datei.md."
 LABEL = "geklärt"
 PROTECTED_BRANCH = "main"
 MENTIONS = re.compile(r"\bgit\b|\bgh\b|\.env")
 
 
 class Blocked(Exception):
-    """Ein Teil des Befehls ist gesperrt (`forbidden`) oder nicht sicher prüfbar."""
+    """Ein Teil des Befehls ist gesperrt oder nicht sicher prüfbar; `hint` nennt eine erlaubte Schreibweise."""
 
     def __init__(self, reason, hint=None):
         super().__init__(reason)
@@ -48,9 +48,9 @@ class Blocked(Exception):
         self.hint = hint
 
     def text(self):
-        if self.hint is None:
-            return f"{MESSAGE}\nGrund: {self.reason}."
-        return f"Abgewiesen vom Prüfschritt .claude/hooks/sperren.py: {self.reason}. {self.hint}\n{STILL_LOCKED}"
+        """Meldung für Claude Code: Regel, Grund und, wo es einen gibt, der Hinweis."""
+        message = f"{MESSAGE}\nGrund: {self.reason}."
+        return message if self.hint is None else f"{message}\nHinweis: {self.hint}"
 
 
 class Unparsable(Exception):
@@ -66,8 +66,11 @@ class _Lexer:
     """Zerlegt einen Shell-Befehl in Teile (je Teil eine Wortliste), wie die Shell es täte.
 
     Anführungszeichen und `\\` werden aufgelöst. Der Inhalt von `$(…)` und `` `…` `` wird als
-    eigene Teile mitgeprüft; der Text von Heredocs (`<<EOF … EOF`) ist nur Text und bleibt außen
-    vor, damit etwa eine PR-Beschreibung, die `git push origin main` erwähnt, nicht sperrt.
+    eigene Teile mitgeprüft. Der Text von Heredocs (`<<EOF … EOF`) ist nur Text, damit etwa eine
+    PR-Beschreibung, die `git push origin main` erwähnt, nicht sperrt; steht die Endmarke ohne
+    Anführungszeichen, führt die Shell `$(…)` darin aber aus, deshalb wird das mitgeprüft.
+    Das Ziel einer Umleitung (`> datei`, `2>&1`) kommt in einen eigenen Teil: Es ist kein
+    Argument des Programms, wird aber weiter auf `.env` geprüft.
     """
 
     def __init__(self, text, pos=0, in_substitution=False):
@@ -79,6 +82,8 @@ class _Lexer:
         self.word = None
         self.heredocs = []
         self.nested_segments = []
+        self.redirect_segments = []
+        self.redirect_target = False
 
     def run(self):
         while self.pos < len(self.text):
@@ -91,18 +96,23 @@ class _Lexer:
         return self._result()
 
     def _result(self):
-        return [segment for segment in self.segments if segment]
+        return [segment for segment in self.segments + self.redirect_segments if segment]
 
     def _add(self, chars):
         self.word = (self.word or "") + chars
 
     def _end_word(self):
         if self.word is not None:
-            self.segments[-1].append(self.word)
+            if self.redirect_target:
+                self.redirect_segments.append(["<umleitung>", self.word])
+            else:
+                self.segments[-1].append(self.word)
             self.word = None
+            self.redirect_target = False
 
     def _new_segment(self):
         self._end_word()
+        self.redirect_target = False
         self.segments.append([])
 
     def _step(self):
@@ -196,9 +206,14 @@ class _Lexer:
         if text.startswith("<<", self.pos) and not text.startswith("<<<", self.pos):
             self._heredoc_start()
             return
+        if self.word is not None and self.word.isdigit():
+            self.word = None  # Nummer der Ausgabe wie in `2>&1`, kein Argument
         self._end_word()
         while self.pos < len(text) and text[self.pos] in "<>&|":
             self.pos += 1
+        while self.pos < len(text) and text[self.pos] in " \t":
+            self.pos += 1
+        self.redirect_target = True
 
     def _heredoc_start(self):
         self._end_word()
@@ -211,12 +226,14 @@ class _Lexer:
         match = re.match(r"'([^']*)'|\"([^\"]*)\"|([^\s;&|<>()]+)", self.text[self.pos :])
         if not match:
             raise Unparsable("Heredoc ohne Endmarke")
-        self.heredocs.append((next(group for group in match.groups() if group is not None), strip_tabs))
+        delimiter = next(group for group in match.groups() if group is not None)
+        self.heredocs.append((delimiter, strip_tabs, match.group(3) is None))
         self.pos += match.end()
 
     def _read_heredocs(self):
         """Überspringt die Zeilen der Heredocs, die in der vorigen Zeile begonnen haben."""
-        for delimiter, strip_tabs in self.heredocs:
+        for delimiter, strip_tabs, quoted in self.heredocs:
+            body = []
             while self.pos < len(self.text):
                 end = self.text.find("\n", self.pos)
                 end = len(self.text) if end == -1 else end
@@ -224,7 +241,30 @@ class _Lexer:
                 self.pos = min(end + 1, len(self.text))
                 if (line.lstrip("\t") if strip_tabs else line) == delimiter:
                     break
+                body.append(line)
+            if not quoted:
+                self._scan_heredoc("\n".join(body))
         self.heredocs = []
+
+    def _scan_heredoc(self, body):
+        """Prüft `$(…)` und `` `…` `` im Text eines Heredocs; Anführungszeichen sind dort nur Text."""
+        pos = 0
+        while pos < len(body):
+            if body[pos] == "\\":
+                pos += 2
+            elif body.startswith("$(", pos):
+                inner = _Lexer(body, pos + 2, in_substitution=True)
+                self.nested_segments.extend(inner.run() + inner.nested_segments)
+                pos = inner.pos
+            elif body[pos] == "`":
+                end = body.find("`", pos + 1)
+                if end == -1:
+                    raise Unparsable("offenes Anführungszeichen (`) im Heredoc")
+                inner = _Lexer(body[pos + 1 : end])
+                self.nested_segments.extend(inner.run() + inner.nested_segments)
+                pos = end + 1
+            else:
+                pos += 1
 
     def _operator_or_char(self):
         text = self.text
@@ -251,7 +291,6 @@ def _lex(text):
     return segments + lexer.nested_segments
 
 
-
 # --- Prüfen -----------------------------------------------------------------------------------
 
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
@@ -268,19 +307,43 @@ def check(command, cwd):
             raise Blocked(f"Befehl nicht sicher zerlegbar ({error})", SIMPLE) from error
         return
     for words in segments:
+        cwd = _check_segment(words, cwd)
+
+
+def _program(word):
+    return word.rsplit("/", 1)[-1]
+
+
+def _check_segment(words, cwd):
+    """Prüft einen Teil der Befehlskette; gibt das Arbeitsverzeichnis für die folgenden Teile zurück."""
+    command = _strip_prefixes(words)
+    if not _is_template_copy(command):
         _check_env(words)
-        words = _strip_prefixes(words)
-        if not words:
-            continue
-        program = words[0].rsplit("/", 1)[-1]
-        if program == "cd" and len(words) > 1:
-            cwd = os.path.join(cwd, os.path.expanduser(words[1]))
-        elif program == "git":
-            _check_git(words, cwd)
-        elif program == "gh":
-            _check_gh(words, cwd)
-        elif program in SHELLS or program == "eval":
-            _check_shell(program, words, cwd)
+    if not command:
+        return cwd
+    program = _program(command[0])
+    if program == "cd" and len(command) > 1:
+        return os.path.join(cwd, os.path.expanduser(command[1]))
+    if program in SHELLS or program == "eval":
+        _check_shell(program, command, cwd)
+    # `git` und `gh` an jeder Stelle, damit Vorsätze wie `timeout 60`, `xargs` oder
+    # `git submodule foreach` nichts verdecken.
+    for index, word in enumerate(command):
+        if _program(word) == "git":
+            _check_git(command[index:], cwd)
+        elif _program(word) == "gh":
+            _check_gh(command[index:])
+    return cwd
+
+
+def _is_template_copy(command):
+    """`cp .env.example .env` wie im README legt `.env` aus der Vorlage an, ohne sie zu lesen."""
+    return (
+        len(command) == 3
+        and command[0] == "cp"
+        and command[1].endswith(".env.example")
+        and command[2] == command[1].removesuffix(".example")
+    )
 
 
 def _strip_prefixes(words):
@@ -322,7 +385,7 @@ def _check_env(words):
 # Git ---------------------------------------------------------------------------------------
 
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env", "--super-prefix"}
-PUSH_OPTIONS_WITH_VALUE = {"--push-option", "--repo", "--receive-pack", "--exec", "--recurse-submodules"}
+PUSH_OPTIONS_WITH_VALUE = {"--push-option", "--repo", "--receive-pack", "--exec"}
 PUSH_FORBIDDEN = {"--mirror", "--all", "--branches", "--delete", "--prune"}
 
 
@@ -344,6 +407,8 @@ def _check_push(args, repo_dir):
     index = 0
     while index < len(args):
         arg = args[index]
+        if "$" in arg or "`" in arg:
+            raise Blocked(f"git push mit Ziel oder Option aus Variable oder $(…) ({arg}), nicht prüfbar", NAME_BRANCH)
         if arg == "--":
             positional += args[index + 1 :]
             break
@@ -351,7 +416,7 @@ def _check_push(args, repo_dir):
             name = arg.split("=", 1)[0]
             if name in PUSH_FORBIDDEN or name.startswith("--force"):
                 raise Blocked(f"git push {name}")
-            if name in PUSH_OPTIONS_WITH_VALUE and "=" not in arg and name != "--recurse-submodules":
+            if name in PUSH_OPTIONS_WITH_VALUE and "=" not in arg:
                 index += 1
         elif arg.startswith("-") and len(arg) > 1:
             index += _check_short_push_options(arg)
@@ -414,7 +479,16 @@ API_OPTIONS_WITH_VALUE = {
     "-q", "--jq", "-t", "--template", "--hostname", "--cache", "-p", "--preview",
 }
 API_SHORT_WITH_VALUE = {"-X", "-f", "-F", "-H", "-q", "-t", "-p"}
+# Optionen von `gh issue|pr create|edit` mit eigenem Wert; ihr Wert wird nicht als Option gelesen.
+ISSUE_OPTIONS_WITH_VALUE = {
+    "-t", "--title", "-b", "--body", "-F", "--body-file", "-a", "--assignee", "-m", "--milestone",
+    "-p", "--project", "-B", "--base", "-H", "--head", "-r", "--reviewer", "-T", "--template",
+    "-R", "--repo", "--remove-label", "--add-assignee", "--remove-assignee", "--add-project",
+    "--remove-project", "--add-reviewer", "--remove-reviewer", "--recover",
+}
 MERGE_PATH = re.compile(r"(^|/)pulls/[^/]+/merge/?$")
+# Ziele, bei denen ein Inhalt aus `--input` Labels setzen, übernehmen oder GraphQL schreiben könnte.
+INPUT_PATH = re.compile(r"^graphql$|(^|/)(issues|pulls|labels)(/|$)")
 MUTATION = re.compile(r"\bmutation\b", re.IGNORECASE)
 
 
@@ -432,11 +506,11 @@ def _positionals(args):
     return result
 
 
-def _check_gh(words, cwd):
+def _check_gh(words):
     args = words[1:]
     command = _positionals(args)[:2]
     if command[:1] == ["api"]:
-        _check_api(args[args.index("api") + 1 :], cwd)
+        _check_api(args[args.index("api") + 1 :])
     elif command == ["pr", "merge"]:
         raise Blocked("gh pr merge")
     elif len(command) == 2 and command[0] in ("issue", "pr") and command[1] in ("create", "new", "edit"):
@@ -444,10 +518,16 @@ def _check_gh(words, cwd):
 
 
 def _check_label_options(args):
-    for index, arg in enumerate(args):
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in ISSUE_OPTIONS_WITH_VALUE:
+            index += 2
+            continue
         name, value = _option(arg, args[index + 1 : index + 2])
         if name in LABEL_OPTIONS and value is not None and LABEL in _normalized(value):
             raise Blocked(f"Label {LABEL} setzen ({arg})")
+        index += 1
 
 
 def _option(arg, following):
@@ -462,21 +542,22 @@ def _option(arg, following):
     return None, None
 
 
-def _check_api(args, cwd):
+def _check_api(args):
+    """Prüft `gh api`; Inhalte liest der Prüfschritt nie aus Dateien, sie müssen im Befehl stehen."""
     endpoint, method, fields, inputs = _parse_api(args)
     path = re.sub(r"^https?://[^/]+/", "", endpoint or "").lstrip("/").split("?", 1)[0]
     if MERGE_PATH.search(path) and (method or "").upper() != "GET":
         raise Blocked("Pull Request über gh api übernehmen")
     for name, value, from_file in fields:
-        relevant = path == "graphql" or name.startswith("labels")
-        if relevant and from_file:
-            value = _read(value, cwd)
-        if path == "graphql" and MUTATION.search(value):
+        query = path == "graphql" and name == "query"
+        if (query or name.startswith("labels")) and from_file:
+            raise Blocked(f"gh api mit {name} aus einer Datei, Inhalt nicht prüfbar", INLINE)
+        if query and MUTATION.search(value):
             raise Blocked("gh api graphql mit mutation")
         if name.startswith("labels") and LABEL in _normalized(value):
             raise Blocked(f"Label {LABEL} über gh api setzen")
-    for source in inputs:
-        _check_api_input(source, path, cwd)
+    if inputs and INPUT_PATH.search(path):
+        raise Blocked("gh api --input, Inhalt nicht prüfbar", INLINE)
 
 
 def _parse_api(args):
@@ -501,42 +582,6 @@ def _parse_api(args):
     return endpoint, method, fields, inputs
 
 
-def _read(source, cwd):
-    """Inhalt einer Datei, die `gh` mit `@datei` oder `--input` liest; nicht lesbar heißt nicht prüfbar."""
-    source = source.removeprefix("@")
-    if source == "-":
-        raise Blocked("gh api liest von der Standardeingabe, Inhalt nicht prüfbar", SIMPLE)
-    try:
-        with open(os.path.join(cwd, os.path.expanduser(source)), encoding="utf-8") as handle:
-            return handle.read()
-    except (OSError, UnicodeDecodeError) as error:
-        raise Blocked(f"Datei {source} für gh api nicht lesbar, Inhalt nicht prüfbar", SIMPLE) from error
-
-
-def _check_api_input(source, path, cwd):
-    content = _read(source, cwd)
-    if path == "graphql" and MUTATION.search(content):
-        raise Blocked("gh api graphql mit mutation")
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
-        return
-    if _labels_in(data):
-        raise Blocked(f"Label {LABEL} über gh api setzen")
-
-
-def _labels_in(data):
-    if isinstance(data, dict):
-        return any(
-            (str(key).startswith("labels") and LABEL in _normalized(json.dumps(value, ensure_ascii=False)))
-            or _labels_in(value)
-            for key, value in data.items()
-        )
-    if isinstance(data, list):
-        return any(_labels_in(item) for item in data)
-    return False
-
-
 # --- Aufruf durch Claude Code -----------------------------------------------------------------
 
 
@@ -553,9 +598,8 @@ def main():
     # Sicherer Stillstand: Ein Fehler im Prüfschritt darf keinen gesperrten Befehl durchlassen.
     # Deshalb hier bewusst jeder Fehler, und der Befehl wird abgewiesen statt ausgeführt.
     except Exception as error:
-        sys.stderr.write(
-            f"Abgewiesen: Fehler im Prüfschritt .claude/hooks/sperren.py ({type(error).__name__}). {SIMPLE}\n{STILL_LOCKED}\n"
-        )
+        blocked = Blocked(f"Fehler im Prüfschritt .claude/hooks/sperren.py ({type(error).__name__})", SIMPLE)
+        sys.stderr.write(blocked.text() + "\n")
         return 2
     return 0
 
