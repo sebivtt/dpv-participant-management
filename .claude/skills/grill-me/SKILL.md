@@ -125,7 +125,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<sammel>/sub_issues -F su
 
 ## 9. Freigeben
 
-Ist alles geklärt, bittet die KI Sebastian, das Label `geklärt` selbst zu setzen, und schickt den Link zum Issue (bei einer Aufteilung zu jedem Unter-Issue; das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht. Braucht es ein Zielbild, müssen auch Zielbild und Nachklärung im Issue stehen (Abschnitt 6). Danach prüft die KI auf GitHub, ob das Label da ist.
+Ist alles geklärt, bittet die KI Sebastian, das Label `geklärt` selbst zu setzen, und schickt den Link zum Issue (bei einer Aufteilung zu jedem Unter-Issue; das Sammel-Issue selbst wird nicht umgesetzt). Vorher muss im Issue der Kommentar „Szenarien (Datum)“ stehen, oder das Issue hält fest, dass es keine Szenarien braucht, und zwar als Zeile „Szenarien: keine.“ mit dem Grund im Text des Issues (diese Form liest die Prüfung „PR-Angaben“). Braucht es ein Zielbild, müssen auch Zielbild und Nachklärung im Issue stehen (Abschnitt 6). Danach prüft die KI auf GitHub, ob das Label da ist.
 
 ## Kurzform
 

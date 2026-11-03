@@ -1,4 +1,5 @@
-<!-- In Alltagssprache schreiben. Sebastian liest den Code nicht; diese Beschreibung ist seine Prüfgrundlage (CONTRIBUTING.md, Abschnitt 8). -->
+<!-- In Alltagssprache schreiben. Sebastian liest den Code nicht; diese Beschreibung ist seine Prüfgrundlage (CONTRIBUTING.md, Abschnitt 8).
+Für Sebastian: Ist „PR-Angaben“ rot oder läuft noch, nicht übernehmen. Unter „Details“ steht, was fehlt; das an die KI geben und den neuen grünen Lauf abwarten. -->
 
 ## Was sich für Nutzende ändert
 
@@ -14,9 +15,11 @@
 
 ## Wie geprüft wurde
 
-<!-- Nur, was tatsächlich ausgeführt wurde, mit Ergebnis. Was nur empfohlen ist, gehört unter „Nicht geprüft und offen“. -->
+<!-- Nur, was tatsächlich ausgeführt wurde, mit Ergebnis. Was nur empfohlen ist, gehört unter „Nicht geprüft und offen“.
+Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-Links in diesem Abschnitt und die Zeile „Test-Commit“ (Begriffe in `CONTRIBUTING.md`, Abschnitt 3). Test-Commit: Kennung des Commits, der nur Tests hinzufügt, vor dem Code; mehrere durch Komma; ein leeres Gerüst davor als „Gerüst-Commit:“; ohne Codeänderung „entfällt, weil …“. -->
 
 - Szenarien (Link zum Kommentar „Szenarien (Datum)“ und Tests, die darüber hinaus dazugekommen sind; ohne Szenarien der Grund aus der Klärung):
+- Test-Commit:
 - Test für den erlaubten Fall:
 - Test für den verbotenen Fall (wer darf das nicht?):
 - Lokal ausgeführte Prüfungen nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (welcher Lauf, welche Tests mit Begründung, wie viele übersprungen):
