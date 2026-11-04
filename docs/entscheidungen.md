@@ -12,7 +12,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 |---|---|---|
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
 | Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
-| Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge) |
+| Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge); 26.10.2026, #180, Nr. 4 |
 | Zweite Zeile der Rollenkacheln | 30.10.2026, #219, Nr. 1 | 25.10.2026, #161, Nr. 3 (Nachklärung Kacheln) |
 | Marke am eigenen Bund, Seite „Verband“ | 30.10.2026, #218, Nr. 2 | 30.10.2026, #94, Nr. 1 und 4 |
 | Felder der Liste der Leitungen | 28.10.2026, #189, „Alle Rechte aus der zentralen Prüfung“; 27.10.2026, #156, Nr. 4 | 25.10.2026, #90, „Leitungen nur mit Name und Rolle“ |
@@ -23,18 +23,20 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wortlaut „E-Mail-Adresse“, „stammen aus“ | 25.10.2026, #161, Nr. 3 | 25.10.2026, #96 |
 | Kennungen in Adressen | 25.10.2026, #64 | 25.10.2026, #90, „Leere Werte ergeben verboten“ (Satz zur Zahl) |
 | „hat Ringe“ ausschalten | 24.10.2026, #136, Nr. 8 | 23.10.2026, Einheiten (#88), Nr. 2 |
-| Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil) |
+| Wechsel und Ende der Mitgliedschaft | 24.10.2026, #136, Nr. 7 und 11 | 23.10.2026, #89, Nr. 3 und 5 |
+| Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
+| Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
 
 ---
 
 ## 2026-11-04 · Die unabhängige Prüfung liest über den Diff hinaus, Nachziehen vor der Prüfung, Übersicht der Ersetzungen (#244)
 
-**Entscheidung** (Paket P-05, Teil a, der Projektprüfung, Issue #244; Freigabe E-074, Texte E-075, beide von Sebastian am 03.11.2026; Regel-Review G-11):
+**Entscheidung** (Paket P-05, Teil a, der Projektprüfung, Issue #244; Freigabe E-074, Texte E-075, beide von Sebastian am 03.11.2026; Nachtrag E-076 am 04.11.2026; Regel-Review G-11):
 
 1. Die unabhängige Prüfung liest außer dem Diff auch Text und Szenarien des Issues und die zum Verstehen nötigen Aufrufer, Rechtehilfen, Modelle und Tests und sucht nach Stellen, die sich auf Geändertes beziehen. Ihr Bericht nennt, was sie außerhalb des Diffs geprüft hat, auch wenn sie nichts fand. Sie bleibt lesend und läuft einmal. Einen Fehler außerhalb des Diffs, den der Pull Request nicht verursacht hat, behebt der Pull Request nicht mit; er kommt als eigenes Issue (`CLAUDE.md`, „Unabhängige Prüfung“).
 2. Vor der unabhängigen Prüfung sucht die KI nach Verweisen auf das Issue und nach Stichworten des Geänderten und zieht nach, was dadurch veraltet ist; der Pull Request nennt Suchbegriffe und Ergebnis (`CLAUDE.md`, „Für die Umsetzung gilt außerdem“; neue Zeile „Nachziehen“ in der Vorlage). Die Zeile in der Vorlage verlangt bei der unabhängigen Prüfung alle Befunde mit Schweregrad und einem Stichwort zur Fehlerart.
-3. Ersetzt ein neuer Eintrag in diesem Protokoll einen älteren ganz oder teilweise, nennt er ihn und trägt das in die neue Übersicht „Geltende Grundsätze“ am Anfang der Datei ein; die Übersicht verweist nur. Ihr Anfangsbestand sind 15 Zeilen aus der Bestandsaufnahme aller bisherigen Einträge. Die alten Einträge bleiben unverändert.
+3. Ersetzt ein neuer Eintrag in diesem Protokoll einen älteren ganz oder teilweise, nennt er ihn und trägt das in die neue Übersicht „Geltende Grundsätze“ am Anfang der Datei ein; die Übersicht verweist nur. Ihr Anfangsbestand sind 17 Zeilen aus einer Suche über alle bisherigen Einträge; eine Ersetzung ohne jeden Hinweis im Text kann fehlen. Die alten Einträge bleiben unverändert.
 4. Die Klärung (Skill `grill-me`, Abschnitt 5) fragt für jedes Issue mit Szenarien, welche bestehenden Abläufe dieselben Daten, Adressen oder Rechte berühren und was gleich bleiben muss; die Antwort steht im Szenarien-Kommentar.
 
 **Begründung:** Die unabhängige Prüfung sollte Abweichungen vom Issue und Rechtefehler über Aufrufer finden, durfte laut Regel aber nur den Diff prüfen; überholte Angaben blieben stehen und wurden in neuer Arbeit zu falschen Annahmen, und alte Protokolleinträge zeigten nicht, dass sie ersetzt waren (BF-082, BF-006; Muster MU-06, MU-04, MU-07 der Projektprüfung).
@@ -45,6 +47,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 - Alte Stellen werden nicht nachgezogen; der Eintrag regelt den Schritt für künftige Änderungen.
 - htmx hat keine Zeile in der Übersicht und wird nicht bereinigt, bis das entschieden ist (spätere Pakete der Projektprüfung).
 - Aufräumen und Störungen der Prüfläufe sind Teil b (#245) und nicht Gegenstand dieses Eintrags.
+- Der Satz zu Fehlern außerhalb des Diffs gilt für Befunde der unabhängigen Prüfung; Funde beim Bau eines Rauchtests regelt weiter der Eintrag vom 27.10.2026 zu #78, Nr. 3.
 - Dieser Eintrag ersetzt keinen älteren Eintrag.
 
 **Umsetzung:** `CLAUDE.md`, `docs/entscheidungen.md`, `docs/review-leitfaden.md`, `.claude/skills/grill-me/SKILL.md`, `.github/pull_request_template.md`, `tests/test_arbeitsregeln.py`.
