@@ -15,7 +15,7 @@ eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167). Ei
 einer anderen Arbeitskopie läuft erst, wenn dieser fertig ist (#184).
 
 Rauchtests haben keine eigene Zeitgrenze: Ein Test, der hängt, läuft lokal weiter, bis jemand den
-Lauf abbricht; auf GitHub beendet ihn erst das Zeitlimit des ganzen Laufs.
+Lauf abbricht; auf GitHub beendet ihn erst das Zeitlimit des Schritts „Alle Prüfungen“ (#256).
 """
 
 import os
