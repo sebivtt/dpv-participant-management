@@ -69,7 +69,8 @@ def found_by_bruno(org, text: str) -> list[str]:
 # ---------- Erlaubt ----------
 
 
-def test_e1_bruno_findet_ottos_bestaetigte_mail(org):
+@pytest.mark.rechtematrix("PK-13")
+def test_e1_bruno_findet_ottos_bestaetigte_mail_und_zeigt_sie_nicht(org):
     dialog = test_benennen.search(org.bundesleitung, org.walhall, OTTO)
 
     found = test_benennen.hits(dialog)
@@ -81,6 +82,7 @@ def test_e2_gross_und_kleinschreibung_ist_egal(org):
     assert found_by_bruno(org, "OTTO.Ohne@Example.ORG") == ["Otto Ohne"]
 
 
+@pytest.mark.rechtematrix("PK-13")
 def test_e3_vera_findet_ottos_bestaetigte_mail_im_dialog_verband(org):
     dialog = test_verband.search(org.verbandsleitung, test_verband.lead_address(org.boreas), OTTO)
 
@@ -102,6 +104,7 @@ def test_e5_zwei_konten_mit_derselben_bestaetigten_mail_erscheinen_beide(org):
 # ---------- Verboten ----------
 
 
+@pytest.mark.rechtematrix("PK-13")
 def test_v1_bruno_findet_ullis_unbestaetigte_mail_nicht(org):
     stranger("ulli.unbestaetigt", "ulli@example.org", verified=False)
 
@@ -111,6 +114,7 @@ def test_v1_bruno_findet_ullis_unbestaetigte_mail_nicht(org):
     assert test_benennen.notices(dialog) == [NOT_FOUND]
 
 
+@pytest.mark.rechtematrix("PK-13")
 def test_v2_vera_findet_ullis_unbestaetigte_mail_im_dialog_verband_nicht(org):
     stranger("ulli.unbestaetigt", "ulli@example.org", verified=False)
 
@@ -127,6 +131,7 @@ def test_v3_anna_bestaetigt_ulli_unbestaetigt_nur_anna_erscheint(org):
     assert found_by_bruno(org, "gemeinsam@example.org") == ["Anna Fremd"]
 
 
+@pytest.mark.rechtematrix("PK-13")
 def test_v4_ein_benutzername_wie_eine_mail_findet_ulli_nicht(org):
     ulli = stranger("ulli.unbestaetigt", "ulli@example.org", verified=False)
     User.objects.filter(pk=ulli.pk).update(username="anna@example.org")
