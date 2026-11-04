@@ -53,6 +53,7 @@ Für die Umsetzung gilt außerdem:
 - Der Pull Request verlinkt den Kommentar mit den Szenarien und begründet zusätzliche Tests mit ihrem Fehlermechanismus oder Risiko. Gibt es ein Zielbild, verlinkt er es und nennt jede Abweichung davon mit Grund.
 - **Bausteine einbinden** (Regeln in `docs/gestaltung.md`, Bausteinkatalog): Eine Seite bindet ein, was der Bausteinkatalog schon hat. Passt ein vorhandener Baustein nicht genau, hält die KI an und fragt Sebastian, ob er erweitert wird oder ein neuer entsteht; nie eine stille Kopie.
 - Ein Issue ergibt einen Pull Request mit eigenem Test. Ändert er Code, kommen die Tests als eigener Commit vor den Code (Begriffe und Ausnahme in `CONTRIBUTING.md`, Abschnitt 3); die Beschreibung nennt „Closes #<nummer>“ und diesen Test-Commit. Die Prüfung „PR-Angaben“ auf GitHub prüft diese Angaben, den Szenarien-Link und das Label `geklärt`; sie gehört zu den Prüfungen, die vor dem Link an Sebastian grün sein müssen, auch nach der letzten Bearbeitung der Beschreibung. Ändert sich danach am Issue etwas (Text, Label, Szenarien), läuft sie vor dem Link neu.
+- **Nachziehen:** Vor der unabhängigen Prüfung sucht die KI mit `git grep "#<nummer>"` nach Verweisen auf das Issue und mit Stichworten des Geänderten nach Grundsätzen, Kommentaren und Doku, die sich darauf beziehen, und zieht nach, was durch diese Änderung veraltet ist. Der Pull Request nennt unter „Wie geprüft wurde“ Suchbegriffe und Ergebnis.
 - Der Reihe nach: Der nächste Pull Request beginnt erst, wenn der vorige in `main` ist.
 - Ein Sammel-Issue wird geschlossen, wenn sein letztes Unter-Issue erledigt ist.
 - Taucht beim Umsetzen eine fachliche Frage auf, anhalten, Sebastian fragen und die Antwort ins Issue übernehmen.
@@ -80,7 +81,7 @@ Die Handgriffe dazu stehen im Skill `phase-steuern`.
 
 ## Unabhängige Prüfung
 
-Eine zweite KI-Instanz ohne Kenntnis des bisherigen Gesprächs prüft nur den Diff, lesend, gegen `CONTRIBUTING.md` und diese Punkte:
+Eine zweite KI-Instanz ohne Kenntnis des bisherigen Gesprächs prüft lesend; sie ändert nichts. Sie liest Text und Szenarien des Issues und die zum Verstehen nötigen Aufrufer, Rechtehilfen, Modelle und Tests, auch außerhalb des Diffs, und sucht nach Stellen, die sich auf Geändertes beziehen. Ihr Bericht nennt, was sie außerhalb des Diffs geprüft hat, auch wenn sie dort nichts fand. Geprüft wird der Diff gegen `CONTRIBUTING.md` und diese Punkte:
 
 1. Abweichungen von den Akzeptanzkriterien
 2. Fehler bei Rechten und Datenschutz, auch über direkte Adressen, Kennungen, htmx-Anfragen und manipulierte Formulare
@@ -90,14 +91,14 @@ Eine zweite KI-Instanz ohne Kenntnis des bisherigen Gesprächs prüft nur den Di
 6. fehlende Tests
 7. selbst gebaut statt Baustein eingebunden: ein eigenes Feld oder nachgebautes Aussehen, wo der Bausteinkatalog einen Baustein hat
 
-Für jeden Befund: Datei und Zeile, konkreter Fehlerfall, kleinste Korrektur, ein Test, der den Fehler zeigt, und der Schweregrad nach der Folge: **hoch** bei unberechtigtem Zugriff oder offengelegten Daten, Verlust oder wesentlicher Verfälschung fachlicher Daten, doppeltem Mailversand, Ausfall eines Kernablaufs (z. B. Login, Rollen vergeben) oder einer Prüf- oder Freigabesicherung, die nicht mehr wirkt; **mittel** bei anderem falschen Verhalten; **gering** bei Lesbarkeit, Vereinfachung oder einem fehlenden Test ohne belegten Fehler. Belegtes getrennt von Vermutetem. Die Befunde selbst nachprüfen, dann beheben oder im Pull Request begründen.
+Für jeden Befund: Datei und Zeile, konkreter Fehlerfall, kleinste Korrektur, ein Test, der den Fehler zeigt, und der Schweregrad nach der Folge: **hoch** bei unberechtigtem Zugriff oder offengelegten Daten, Verlust oder wesentlicher Verfälschung fachlicher Daten, doppeltem Mailversand, Ausfall eines Kernablaufs (z. B. Login, Rollen vergeben) oder einer Prüf- oder Freigabesicherung, die nicht mehr wirkt; **mittel** bei anderem falschen Verhalten; **gering** bei Lesbarkeit, Vereinfachung oder einem fehlenden Test ohne belegten Fehler. Belegtes getrennt von Vermutetem. Die Befunde selbst nachprüfen, dann beheben oder im Pull Request begründen. Einen Fehler außerhalb des Diffs, den der Pull Request nicht verursacht hat, behebt er nicht mit; er kommt als eigenes Issue (Skill `issue-anlegen`).
 
 ## Was die KI nie allein entscheidet oder tut
 
 - Pull Requests übernehmen, auf `main` oder mit Force pushen, `.env` lesen, `geklärt` setzen. In Claude Code sperren `.claude/settings.json` und `.claude/hooks/sperren.py` die gängigen Befehlsformen, als Schutz vor Versehen; andere KI-Werkzeuge haben diese Sperre nicht und arbeiten im Projekt nur lesend. Eine Sperre nie umgehen, auch nicht nach einem Okay im Chat; Sebastian führt die Handlung selbst aus.
 - Rechtsfragen (Datenschutz, Lizenzen), die Freigabe echter Daten (Tor E3) und die Inbetriebnahme. Ausnahme: die Einordnung neuer Pakete nach `CONTRIBUTING.md`, Abschnitt 6; Zweifelsfälle gehen an Sebastian.
 - Änderungen an Produktionsdaten oder am Produktivserver.
-- Änderungen an `docs/anforderungen.md` oder `docs/fahrplan.md` ohne Sebastians Zustimmung. In `docs/entscheidungen.md` werden bestehende Einträge nie geändert; neue kommen im Pull Request dazu und werden in der Beschreibung genannt.
+- Änderungen an `docs/anforderungen.md` oder `docs/fahrplan.md` ohne Sebastians Zustimmung. In `docs/entscheidungen.md` werden bestehende Einträge nie geändert; neue kommen im Pull Request dazu und werden in der Beschreibung genannt. Ersetzt ein neuer Eintrag einen älteren ganz oder teilweise, nennt er ihn („ersetzt den Eintrag vom … (#…), Punkt …“) und trägt das in die Übersicht „Geltende Grundsätze“ am Anfang der Datei ein; gibt es das Thema dort schon, wird seine Zeile fortgeschrieben. Die Übersicht verweist nur, sie fasst keine Regel neu.
 - Neue Pakete ohne Begründung (`CONTRIBUTING.md`, Abschnitt 6).
 - Änderungen am Verbands-Keycloak voraussetzen. Das Tool läuft mit einem normalen Login-Client und der Standard-Konfiguration von Keycloak.
 - Bekannte Fehler stillschweigend „mitbeheben“, ohne Test und ohne Erwähnung im Pull Request.
@@ -115,7 +116,7 @@ Diese Fehler sind dort tatsächlich passiert. Sie wiederholen sich leicht.
 - **Rechte enger ziehen** heißt immer auch Gegenproben: Darf, wer berechtigt ist, weiterhin alles, was er darf?
 - **Tests gegen den alten Stand prüfen:** Ein Test zu einem behobenen Fehler muss ohne die Behebung fehlschlagen. Das ist mit `git worktree add <pfad> HEAD~1` schnell nachgeprüft. Einmal bestand ein Test auch ohne Behebung, weil er die falsche Adresse aufrief.
 - **Eine Adresse, mehrere Aufrufer:** Vor jeder Änderung an Rechten oder Kennungen einer Adresse alle Seiten verfolgen, die sie aufrufen, und klären, welche Kennung dort in der Adresse steht. Im alten Tool machte eine solche Änderung jede neue Anmeldung unmöglich.
-- **Die unabhängige Prüfung findet fast immer etwas.** Ihren Auftrag eng fassen, Befunde selbst nachprüfen, dann beheben. Bricht sie ab (z. B. Nutzungslimit), sie fortsetzen statt neu zu starten.
+- **Die unabhängige Prüfung findet fast immer etwas.** Ihren Auftrag auf die Punkte im Abschnitt „Unabhängige Prüfung“ begrenzen, Befunde selbst nachprüfen, dann beheben. Bricht sie ab (z. B. Nutzungslimit), sie fortsetzen statt neu zu starten.
 - **Zahlen in der Doku nachrechnen,** bevor sie im Pull Request stehen. Falsche Zahlen fielen mehrfach erst in der Prüfung auf.
 - **Erst gründlich nachsehen, dann „geht nicht“ festhalten.** Eine Sperre für jeden Bezugsweg einzeln prüfen, bevor sie als Tatsache gilt.
 - **Erst alles hochladen, dann den Link schicken.** Sebastian übernimmt einen Pull Request oft gleich. Vor dem Link müssen `git rev-parse HEAD` und `git ls-remote origin <branch>` dieselbe Kennung zeigen, und alle Prüfungen auf GitHub müssen für genau diese Kennung grün sein. Danach nichts mehr nachschieben; fällt doch etwas auf, ihm vorher Bescheid geben.

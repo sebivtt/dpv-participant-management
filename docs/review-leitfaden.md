@@ -8,7 +8,7 @@ Das Review sucht, was im Alltag durchrutscht: Lücken bei Rechten, Datenschutz u
 
 | Prüfung | Wann | Was | Wer |
 | --- | --- | --- | --- |
-| Unabhängige Prüfung (`CLAUDE.md`) | vor jedem Pull Request | nur der Diff | zweite Claude-Instanz |
+| Unabhängige Prüfung (`CLAUDE.md`) | vor jedem Pull Request | der Diff, dazu Issue, nötige Aufrufer und Nachbarstellen | zweite Claude-Instanz |
 | Prüfung vom 20.10.2026 (`docs/pruefung-2026-10-20.md`) | einmalig | Fahrplan und Anforderungen | ChatGPT und Gemini, ausgewertet von Claude |
 | **Externes Review** (dieser Leitfaden) | am Ende jeder Phase P1 bis P10 | der ganze Stand zum geprüften Commit | zwei externe Modelle, zusammengeführt von Claude |
 | Prüfer (`docs/fahrplan.md`, E1, E3, E6) | an drei Prüfpunkten | ob die Basis trägt | ein Mensch |
