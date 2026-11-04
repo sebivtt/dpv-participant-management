@@ -134,6 +134,60 @@ Bis #199 bekamen die erfundenen Konten bei jedem Start von Keycloak eine neue Ke
     ```
     Danach: `Container dpv-dev-postgres-1 Removed` und `Container dpv-dev-keycloak-1 Removed`.
 
+## Pull Request lokal ausprobieren
+
+Setzt eine eingerichtete Umgebung voraus (Schritte 1 bis 5 unter „Projekt starten (Mac)“). Das brauchst du nur, wenn du eine Änderung selbst bedienen willst; die HTML-Datei der Vorschau (`CLAUDE.md`, „Vorschau“) öffnest du ohne all das einfach im Browser.
+
+1. In den Ordner des Projekts wechseln.
+   ```bash
+   cd ~/Entwicklung/dpv-participant-management
+   ```
+   Danach: keine Ausgabe.
+2. Den neuesten Stand von GitHub holen.
+   ```bash
+   git fetch origin
+   ```
+   Danach: keine Ausgabe oder Zeilen mit `From https://github.com/...` und `new branch`.
+3. Den Stand der Änderung ansehen; statt `<zweig>` den Namen des Zweigs einsetzen, vor dem Pull Request statt `origin/<zweig>` die Kennung, die die Sitzung nennt.
+   ```bash
+   git switch --detach origin/<zweig>
+   ```
+   Danach: `HEAD is now at ...` und ein Hinweis auf den „detached HEAD“; der ist hier gewollt. `--detach` holt nur den Stand, ohne den Zweig zu belegen. Ein einfaches `git switch <zweig>` scheitert mit `is already used by worktree`, solange die Sitzung in ihrer Arbeitskopie daran arbeitet.
+4. Die Pakete auf den Stand der Änderung bringen.
+   ```bash
+   uv sync
+   ```
+   Danach: `Installed ... packages` oder `Audited ... packages`.
+5. Docker öffnen (Schritt 6 oben) und die Testumgebung starten (Schritt 7 oben).
+   ```bash
+   docker compose -f dev/docker-compose.yml up -d --wait
+   ```
+   Danach: `Container dpv-dev-postgres-1 Healthy` und `Container dpv-dev-keycloak-1 Healthy`.
+6. Prüfen, ob der Stand eine Migration mitbringt, also eine Änderung an der Datenbank.
+   ```bash
+   git diff --name-only origin/main...HEAD -- '*/migrations/*'
+   ```
+   Danach: Steht dort nichts, bringt der Stand keine Migration mit. Steht dort etwas, nennt die Sitzung vorher den Befehl zum Zurückstellen und sagt, ob er alles wiederherstellt.
+7. Die Datenbank auf den Stand der Änderung bringen.
+   ```bash
+   uv run --env-file .env python manage.py migrate
+   ```
+   Danach: `Applying ... OK` oder `No migrations to apply.`
+8. Das Tool starten (Schritt 9 oben) und anmelden. Welche Rollen und Einheiten du zum Ausprobieren brauchst, nennt die Sitzung; einen festen Befehl für Testdaten bringt #103.
+   ```bash
+   uv run --env-file .env python manage.py runserver
+   ```
+   Danach: `Starting WSGI development server at http://127.0.0.1:8000/`; im Browser http://127.0.0.1:8000/ öffnen.
+9. Das Tool beenden mit `ctrl` + `C` im Terminal.
+   Danach: Die Eingabezeile ist wieder frei.
+10. Nur wenn Schritt 6 etwas zeigte und der Stand noch nicht in `main` ist: den Befehl zum Zurückstellen ausführen, den die Sitzung genannt hat, solange der Stand noch ausgecheckt ist, denn auf `main` fehlen die Dateien dazu.
+    Danach: so, wie die Sitzung es beschrieben hat.
+11. Zurück auf den Hauptzweig wechseln.
+    ```bash
+    git switch main
+    ```
+    Danach: `Switched to branch 'main'`.
+
 ## Testumgebung im Container (Mac)
 
 So läuft das Tool auf deinem Mac genauso wie später in der Testumgebung auf dem Server des DPV (#58): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
