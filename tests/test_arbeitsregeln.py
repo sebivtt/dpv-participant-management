@@ -1072,7 +1072,9 @@ def test_phase_steuern_wertet_im_rueckblick_die_befunde_aus_und_gleicht_neustart
     assert "mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben" in schritt
     assert "die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“)" in schritt
     assert "Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen" in schritt
-    assert '`gh run list --workflow "Prüfungen" --limit 200 --json attempt,headSha,url`, Versuch über 1' in schritt
+    assert '`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1' in schritt
+    assert "kommen genau 1000 zurück, das offen sagen" in schritt
+    assert "Streichungen und neue Erfahrungen kommen als Issue" in schritt
 
 
 def test_roter_main_geht_vor_und_andere_umsetzungen_warten_auf_gruen():
@@ -1080,12 +1082,14 @@ def test_roter_main_geht_vor_und_andere_umsetzungen_warten_auf_gruen():
 
     assert "auf sein Ende warten muss sie vor dem nächsten Auftrag nicht." in umsetzen
     for teil in [
-        "Ist der letzte beendete Lauf „Prüfungen“ auf `main` rot oder abgebrochen, geht die Behebung vor",
-        "legt ein Fehler-Issue an; es läuft wie jedes Issue, sein Pull Request bekommt den Link nach seinen eigenen grünen Prüfungen",
-        "Andere Umsetzungen beginnen erst, wenn der Lauf auf `main` wieder grün ist, und eine laufende bekommt ihren Link erst dann",
-        "Sieht es nur nach einem wackelnden Test aus, entscheidet Sebastian, ob neu gestartet wird.",
+        "Ist der letzte beendete Lauf „Prüfungen“ auf `main` rot, oder abgebrochen, ohne dass ein neuerer läuft, beginnt keine andere Umsetzung, bis er grün ist.",
+        "Die Steuerungssession stellt die Ursache fest.",
+        "Erfüllt der Lauf die Bedingungen für den Neustart aus Nr. 6, startet sie ihn neu;",
+        "sieht es sonst nur nach einer Störung oder einem wackelnden Test aus, entscheidet Sebastian, ob sie neu startet.",
+        "Sonst legt sie ein Fehler-Issue an; es läuft wie jedes Issue, auch vor einem offenen Pull Request.",
     ]:
         assert teil in umsetzen, teil
+    assert "bekommt ihren Link erst dann" not in umsetzen
     # Die Regel zum roten Lauf kommt nach dem Satz zum Warten, der bleibt.
     assert umsetzen.index("auf sein Ende warten muss sie") < umsetzen.index("Ist der letzte beendete Lauf")
 
@@ -1094,10 +1098,18 @@ def test_phase_steuern_prueft_vor_dem_auftrag_den_letzten_beendeten_lauf_auf_mai
     vor_dem_auftrag = _section(PHASE_STEUERN, "Aufträge").split("- **Vor dem Auftrag**", 1)[1].split("- **Den Auftrag**", 1)[0]
 
     assert (
-        'und der letzte beendete Lauf auf `main` grün ist (`gh run list --workflow "Prüfungen" --branch main --status completed --limit 1`; '
-        "außer für die Behebung selbst, Regel in `CLAUDE.md`, „Umsetzen“). "
+        'und der Lauf auf `main` nicht dagegen spricht (`gh run list --workflow "Prüfungen" --branch main --limit 2`; '
+        "Regel in `CLAUDE.md`, „Umsetzen“; außer für die Behebung selbst). "
         "Geht die Abfrage nicht, das offen sagen und Sebastian fragen."
     ) in vor_dem_auftrag
+    assert "Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2)." in _section(PHASE_STEUERN, "Einstieg")
+
+
+def test_befehle_im_skill_nennen_den_namen_des_laufs_aus_der_pruefung_auf_github():
+    name = re.search(r"^name: (.+)$", (BASE_DIR / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"), flags=re.M).group(1)
+
+    for abschnitt in ["Aufträge", "Abschluss"]:
+        assert f'gh run list --workflow "{name}"' in _section(PHASE_STEUERN, abschnitt), abschnitt
 
 
 def test_contributing_lockert_keine_pruefbedingung_um_einen_lauf_gruen_zu_bekommen():
@@ -1112,7 +1124,11 @@ def test_contributing_lockert_keine_pruefbedingung_um_einen_lauf_gruen_zu_bekomm
         "Hat ein neuer Test eine Anforderung falsch übersetzt, wird er im selben Pull Request korrigiert; "
         "die Beschreibung nennt das unveränderte Kriterium, vorher und nachher."
     ) in section
-    assert "Ein roter Lauf allein ist dafür kein Grund. (Review)" in section
+    assert (
+        "Das ist die einzige Ausnahme vom Punkt davor: Das Issue nennt die unveränderte Anforderung und warum die bisherige "
+        "Prüfung falsch war, und Sebastian entscheidet."
+    ) in section
+    assert "Ein roter Lauf allein ist für beides kein Grund. (Review)" in section
     # Der Satz zu bestehenden Tests bleibt, die neue Regel steht dahinter.
     assert section.index("Bestehende Tests werden nur geändert oder gelöscht") < section.index("Eine Prüfbedingung wird nicht gelockert")
 
@@ -1135,7 +1151,7 @@ def test_entscheidung_zu_aufraeumen_rueckblick_rotem_main_und_neustarts_nennt_fr
     assert entry, "Eintrag zu #245 fehlt in docs/entscheidungen.md"
     assert entry.startswith("2026-11-04 · ")
     flat = _flat(entry)
-    for teil in ["E-074", "E-075", "G-11", "Aufräumen", "Rückblick", "`main`", "#243", "CONTRIBUTING.md"]:
+    for teil in ["E-074", "E-075", "E-078", "G-11", "G-12", "Aufräumen", "Rückblick", "`main`", "#243", "CONTRIBUTING.md"]:
         assert teil in flat, teil
     # Die Übersicht „Geltende Grundsätze“ wird nur fortgeschrieben, wenn der Eintrag etwas ersetzt; er sagt, was gilt.
     assert "ersetzt keinen" in flat or "ersetzt den Eintrag vom" in flat
