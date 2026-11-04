@@ -7,6 +7,7 @@ Fokus, die kurze Meldung erscheint, nichts steht seitlich über, und die Seiten 
 auf Barrierefreiheit. Die Regeln selbst prüft tests/test_verband.py. Alle Namen sind erfunden.
 """
 
+from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from playwright.sync_api import Page, expect
@@ -39,6 +40,7 @@ def _verband_for_erika() -> dict:
     otto.email = "otto.ohne@example.org"
     otto.last_login = timezone.now()
     otto.save()
+    EmailAddress.objects.create(user=otto, email=otto.email, verified=True, primary=True)
     return {"dpv": dpv, "boreas": boreas, "bruno": bruno, "otto": otto}
 
 

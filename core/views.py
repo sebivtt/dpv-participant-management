@@ -268,7 +268,7 @@ def organisation_appoint(request: HttpRequest, unit: str) -> HttpResponse:
 
 @checks_rights(*APPOINT_ROWS)
 def organisation_search(request: HttpRequest, unit: str) -> HttpResponse:
-    """„Suchen“ im Dialog: ein Konto über die genaue Mail oder den genauen Benutzernamen (PK-13, PK-24).
+    """„Suchen“ im Dialog: ein Konto über die genaue bestätigte Mail oder den genauen Benutzernamen (PK-13, PK-24).
 
     Jede Suche mit Begriff zählt fürs Suchlimit, auch ohne Treffer; eine abgewiesene nicht. Ein
     leeres Feld oder nur Platzhalterzeichen wie „*“ zeigen nichts und zählen nicht (PK-15).

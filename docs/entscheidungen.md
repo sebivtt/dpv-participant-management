@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
 | Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
@@ -28,6 +29,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-04 · Kontosuche findet nur bestätigte Mails (#251)
+
+**Entscheidung** (Paket P-07a der Projektprüfung, Issue #251; Schutzniveau A beschlossen von Sebastian, E-038; Freigabe E-090; Antwort zu Keycloak E-087; Befund BF-121; Wortlaut und Szenarien von Sebastian am 04.11.2026 im Issue bestätigt):
+
+1. **Nur bestätigte Mails:** Die Kontosuche (PK-13, „Suchen“ im Dialog „… benennen“, auch in den Dialogen auf der Seite „Verband“) findet über eine Mail nur Konten, deren Mail Keycloak beim letzten Login als bestätigt gemeldet hat. Eine unbestätigte Mail zeigt dieselbe Meldung wie kein Konto („Kein Konto gefunden. …“, gezählt fürs Suchlimit PK-24). Der genaue Benutzername findet ein Konto weiter, auch bei unbestätigter Mail. Ersetzt den Eintrag vom 24.10.2026 (#136), Punkt 6, und den vom 28.10.2026 (#190), Punkt 1, jeweils nur im Satz „genaue Mail“; Benutzernamen mit @ regelt Nr. 2.
+2. **Ein Suchbegriff mit @ zählt nur als Mail**, nie als Benutzername. Sonst bliebe der Weg aus BF-121 offen: Wer in Keycloak `anna@example.org` als Benutzernamen hat, würde über Annas Mail gefunden.
+3. **Nur genau `True` zählt als bestätigt.** Ein Text wie „false“ oder eine fehlende Angabe aus Keycloak gilt als unbestätigt (bisher machte `bool()` aus dem Text „false“ ein Ja). Das gilt auch beim ersten Login, der mit einem solchen Text bisher auf einer Fehlerseite endete; das Konto entsteht jetzt mit unbestätigter Mail.
+4. **Meldung ohne Treffer bleibt unverändert** (Sebastian), weil ein angemeldetes Konto im Normalfall eine bestätigte Mail hat: Laut Sebastian verlangt der Keycloak des DPV die Bestätigung der Mail, sonst ist keine Anmeldung möglich (E-087). Die Prüfung im Tool ist die zweite Sicherung, falls sich diese Einstellung ändert (E-038).
+
+**Begründung:** Die Suche über die Mail machte jedes Konto an einer Mail auffindbar, die niemand bestätigt hatte. Wer in Keycloak eine fremde Mail eintragen konnte, wurde so zum Treffer für die Mail einer anderen Person (BF-121). Der Schutz hing allein an einer Einstellung im Verbands-Keycloak, die das Tool nicht kontrolliert.
+
+**Grenzen:** Meldet der Login-Client „Mail bestätigt“ nicht mit, gälte jede Mail als unbestätigt; das zeigt sich beim Login auf dem Testserver (#63). Bestätigt jemand die Mail erst nach dem letzten Login, gilt das ab dem nächsten Login. Der Benutzername bleibt ein Suchweg (BF-122 gehört nicht hierher).
+
+**Umsetzung:** `access/rights.py`, `accounts/adapter.py`, `accounts/keycloak_abgleich.py`, `docs/rechtematrix.md` (PK-13), `docs/entscheidungen.md`, `tests/test_kontosuche_bestaetigt.py`; in `tests/test_benennen.py`, `rauchtests/test_benennen.py` und `rauchtests/test_verband.py` die Vorbereitung um einen bestätigten Eintrag in der Mail-Liste ergänzt; `rauchtests/test_benennen.py` prüft zusätzlich am echten Keycloak, dass die Mail als bestätigt ankommt.
 
 ---
 
