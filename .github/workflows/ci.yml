@@ -29,7 +29,9 @@ jobs:
     # und jeder Rauchtest in WebKit war rot (#192). Ein Wechsel der Fassung kommt bewusst mit
     # eigenem Pull Request, sobald Playwright sie unterstützt.
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    # 70 Minuten: zwei hängende Versuche der Browser-Installation (je 10), der dritte Versuch,
+    # der Vorlauf und bis zu 45 Minuten Prüfungen müssen hineinpassen (#256).
+    timeout-minutes: 70
     services:
       postgres:
         image: postgres:18
@@ -146,4 +148,6 @@ jobs:
           docker logs keycloak
           exit 1
       - name: Alle Prüfungen
+        # Eigenes Limit, damit ein hängender Test den Lauf nicht bis zum Limit des Laufs blockiert (#256).
+        timeout-minutes: 45
         run: ./pruefen.sh

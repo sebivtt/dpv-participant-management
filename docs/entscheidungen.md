@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Zeitlimit des Prüflaufs auf GitHub | 04.11.2026, #256 | 25.10.2026, #133, Nr. 1 (nur der Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten) |
 | Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
@@ -29,6 +30,21 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-04 · Zeitlimit des Prüflaufs: 45 Minuten für die Prüfungen, 70 für den Lauf (#256)
+
+**Entscheidung** (Paket P-15, Teil a, der Projektprüfung, Issue #256; getrennte Limits E-101; Freigabe E-103; Befund BF-047; Text des Issues von Sebastian am 04.11.2026 mit dem Label `geklärt` freigegeben):
+
+1. **Der Schritt „Alle Prüfungen“ hat ein eigenes Zeitlimit von 45 Minuten, der ganze Lauf eines von 70 Minuten.** Das reicht für zwei hängende Versuche der Browser-Installation (je 10 Minuten), den dritten Versuch, den Vorlauf und die Prüfungen. Drei Versuche zu je 10 Minuten bleiben (#133, Nr. 1). Ersetzt den Eintrag vom 25.10.2026 (#133), Punkt 1, nur im Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten; alles andere dort gilt weiter.
+2. **Kein Test und keine Prüfung entfällt.** Alle Prüfungen laufen weiter, und ein hängender Lauf endet von selbst. Die Grenze von 35 Minuten war falsch, weil die erlaubten Versuche nicht hineinpassten.
+
+**Begründung:** Ein normaler Lauf braucht 25 bis 34 Minuten, fast alles davon die Prüfungen. Hängt die Installation einmal 10 Minuten, brach der Lauf ab, ohne dass ein Test rot war; am 04.11.2026 geschah das auf `main` (Lauf 41899114419, #243). Der Neustart kostet gut 30 Minuten, und ein abgebrochener Lauf auf `main` hält jede Umsetzung an.
+
+**Grenzen:** Ob GitHub die Limits so anwendet, zeigt erst ein Hänger im echten Lauf; der Test (`tests/test_pruefung_auf_github.py`) prüft nur, was in `ci.yml` steht, und rechnet nach, dass die Summe passt. Die Summe gilt für einen schnellen dritten Versuch (höchstens gut drei Minuten). Läuft er bis zu seinem Limit von 10 Minuten, bleiben für die Prüfungen gut 38 Minuten; bisher brauchten sie höchstens knapp 32. Nicht Teil dieser Entscheidung: Prüfungen auf mehrere Läufe verteilen, die Laufzeit senken, die Dauer der Versuche ändern.
+
+**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`, `rauchtests/conftest.py` (Dateikopf), `docs/entscheidungen.md`.
 
 ---
 
