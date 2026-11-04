@@ -7,11 +7,13 @@ sind erfunden.
 """
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 
+from accounts.keycloak_abgleich import keep_only_used_data
 from tests.keycloak_fake import ERIKA, MAX, login
 
 pytestmark = pytest.mark.django_db
@@ -129,3 +131,15 @@ def test_fehlt_eine_angabe_wird_nur_gespeichert_was_da_ist(client, keycloak):
     stored = _stored(ERIKA["sub"])
     _assert_only_used(stored, keycloak.person)
     assert "family_name" not in _leaves(stored)
+
+
+# Kein Szenario: Fehlermechanismus „andere Quelle als allauth“. Liefert Keycloak die Angaben nur im
+# Kennungs-Token, liest allauth sie dort; die Kürzung muss dieselbe Quelle nehmen, sonst geht die Mail verloren.
+def test_stehen_die_angaben_nur_im_kennungs_token_bleiben_die_genutzten_erhalten(client, keycloak):
+    login(client)
+    account = SocialAccount.objects.get(uid=ERIKA["sub"])
+    account.extra_data = {"userinfo": {}, "id_token": {**ERIKA, "birthdate": BIRTHDATE}}
+
+    keep_only_used_data(SimpleNamespace(account=account))
+
+    _assert_only_used(_stored(ERIKA["sub"]), ERIKA)
