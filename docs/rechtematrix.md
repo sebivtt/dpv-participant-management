@@ -272,7 +272,7 @@ Jede Tabelle der Datenbank steht hier mit dem Abschnitt, der ihre Rechte regelt.
 | `roles.RoleChange` | Protokoll der Rollenänderungen | Protokolle |
 | `units.UnitChange` | Protokoll der Strukturänderungen | Protokolle |
 | `sessions.Session` | Sitzungen | Technische Daten des Logins |
-| `socialaccount.SocialAccount` | Verknüpfung mit dem DPV-Konto und was Keycloak beim Login mitschickt | Technische Daten des Logins |
+| `socialaccount.SocialAccount` | Verknüpfung mit dem DPV-Konto; dazu nur die vom Tool genutzten Angaben aus Keycloak (Mail, „Mail bestätigt“, Benutzername, Vor- und Nachname), nichts sonst (#252) | Technische Daten des Logins |
 | `socialaccount.SocialApp` | Zugang zum Keycloak | Technische Daten des Logins |
 | `socialaccount.SocialToken` | Schlüssel aus dem Login; das Tool speichert keine | Technische Daten des Logins |
 | `account.EmailAddress` | Mail-Liste des Login-Bausteins; bei jedem Login an Keycloak angeglichen, genau ein Eintrag (#76) | Technische Daten des Logins |
