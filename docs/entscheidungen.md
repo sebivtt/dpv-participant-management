@@ -34,7 +34,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ## 2026-11-04 · Kontosuche findet nur bestätigte Mails (#251)
 
-**Entscheidung** (Paket P-07a der Projektprüfung, Issue #251; Schutzniveau A beschlossen von Sebastian, E-038; Freigabe E-090; Antwort zu Keycloak E-087; Befunde BF-121, BF-126; Wortlaut und Szenarien von Sebastian am 04.11.2026 im Issue bestätigt):
+**Entscheidung** (Paket P-07a der Projektprüfung, Issue #251; Schutzniveau A beschlossen von Sebastian, E-038; Freigabe E-090; Antwort zu Keycloak E-087; Befund BF-121; Wortlaut und Szenarien von Sebastian am 04.11.2026 im Issue bestätigt):
 
 1. **Nur bestätigte Mails:** Die Kontosuche (PK-13, „Suchen“ im Dialog „… benennen“, auch in den Dialogen auf der Seite „Verband“) findet über eine Mail nur Konten, deren Mail Keycloak beim letzten Login als bestätigt gemeldet hat. Eine unbestätigte Mail zeigt dieselbe Meldung wie kein Konto („Kein Konto gefunden. …“, gezählt fürs Suchlimit PK-24). Der genaue Benutzername findet ein Konto weiter, auch bei unbestätigter Mail. Ersetzt den Eintrag vom 24.10.2026 (#136), Punkt 6, und den vom 28.10.2026 (#190), Punkt 1, jeweils nur im Satz „genaue Mail“.
 2. **Ein Suchbegriff mit @ zählt nur als Mail**, nie als Benutzername. Sonst bliebe der Weg aus BF-121 offen: Wer in Keycloak `anna@example.org` als Benutzernamen hat, würde über Annas Mail gefunden.
@@ -43,7 +43,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Begründung:** Die Suche über die Mail machte jedes Konto an einer Mail auffindbar, die niemand bestätigt hatte. Wer in Keycloak eine fremde Mail eintragen konnte, wurde so zum Treffer für die Mail einer anderen Person (BF-121). Der Schutz hing allein an einer Einstellung im Verbands-Keycloak, die das Tool nicht kontrolliert.
 
-**Grenzen:** Meldet der Login-Client „Mail bestätigt“ nicht mit, gälte jede Mail als unbestätigt; das zeigt sich beim Login auf dem Testserver (#63). Bestätigt jemand die Mail erst nach dem letzten Login, gilt das ab dem nächsten Login. Der Benutzername bleibt ein Suchweg (BF-122 gehört nicht hierher). Beim ersten Login mit dem Text „false“ scheitert allauth selbst vor dem Tool; das Konto entsteht dann nicht (siehe Pull Request).
+**Grenzen:** Meldet der Login-Client „Mail bestätigt“ nicht mit, gälte jede Mail als unbestätigt; das zeigt sich beim Login auf dem Testserver (#63). Bestätigt jemand die Mail erst nach dem letzten Login, gilt das ab dem nächsten Login. Der Benutzername bleibt ein Suchweg (BF-122 gehört nicht hierher). Beim ersten Login mit dem Text „false“ scheitert allauth selbst vor dem Tool mit einem Fehler; das Konto entsteht dann nicht und bleibt unauffindbar.
 
 **Umsetzung:** `access/rights.py`, `accounts/keycloak_abgleich.py`, `docs/rechtematrix.md` (PK-13), `docs/entscheidungen.md`, `tests/test_kontosuche_bestaetigt.py`; in `tests/test_benennen.py`, `rauchtests/test_benennen.py` und `rauchtests/test_verband.py` nur die Vorbereitung um einen bestätigten Eintrag in der Mail-Liste ergänzt.
 
