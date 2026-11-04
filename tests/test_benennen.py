@@ -12,6 +12,7 @@ import threading
 from datetime import timedelta
 
 import pytest
+from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
@@ -37,11 +38,16 @@ org_189 = test_organisation.org
 
 @pytest.fixture
 def org(org_189):
-    """Die Personen aus #189; Finn heißt „Flink“ wie im Beispiel, und jedes Konto war schon einmal angemeldet."""
+    """Die Personen aus #189; Finn heißt „Flink“ wie im Beispiel, und jedes Konto war schon einmal angemeldet.
+
+    Jede Mail steht, wie nach einem Login, als bestätigter Eintrag in der Mail-Liste (#251).
+    """
     org = org_189
     org.falke.scout_name = "Flink"
     org.falke.save()
     User.objects.update(last_login=timezone.now())
+    for user in User.objects.exclude(email=""):
+        EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
     for name in vars(org):
         value = getattr(org, name)
         if isinstance(value, User):

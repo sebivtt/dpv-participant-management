@@ -8,6 +8,7 @@ bestehen die Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_
 Namen sind erfunden.
 """
 
+from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from playwright.sync_api import Page, expect
@@ -40,6 +41,7 @@ def _walhall_for_erika() -> dict:
     otto.email = "otto.ohne@example.org"
     otto.last_login = timezone.now()
     otto.save()
+    EmailAddress.objects.create(user=otto, email=otto.email, verified=True, primary=True)
     return {"walhall": walhall, "falken": falken, "finn": finn, "otto": otto}
 
 
