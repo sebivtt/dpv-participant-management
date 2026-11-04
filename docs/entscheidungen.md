@@ -32,6 +32,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-04 · Nur genutzte Login-Angaben speichern (#252)
+
+**Entscheidung** (Paket P-07b der Projektprüfung, Issue #252; Freigabe E-090; Befund BF-126; Umfang und Szenarien von Sebastian am 04.11.2026 im Issue bestätigt):
+
+1. **Gespeichert wird nur, was das Tool nutzt:** In `SocialAccount.extra_data` stehen nach jedem Login nur Mail, „Mail bestätigt“, Benutzername, Vor- und Nachname, soweit Keycloak sie liefert. Alles andere, was Keycloak mitschickt (etwa ein Geburtsdatum), wird nicht gespeichert. Die Kennung der Person steht weiter im Konto selbst (`uid`).
+2. **Als Erstes beim Login gekürzt,** auch bei einem Login, der danach abgelehnt wird (gesperrtes Konto, ohne Mail): allauth speichert bei einem bestehenden Konto die volle Antwort schon vor der Prüfung des Tools. Alte, vollständige Angaben werden beim nächsten Login des Kontos überschrieben; eine Datenmigration ist nicht nötig, weil es noch keine echten Daten gibt.
+
+**Begründung:** Datensparsamkeit. Liefert der Verbands-Keycloak später weitere Merkmale (etwa Geburtsdatum), lägen sie sonst ohne Zweck in der Datenbank, auch für Minderjährige mit Konto (BF-126).
+
+**Grenzen:** Das Kennungs-Token in der Sitzung kann das Geburtsdatum weiter enthalten (BF-124, P-19); abgelaufene Sitzungen bleiben liegen (BF-125). BF-126 ist damit nur für `extra_data` behoben.
+
+**Bezug:** Das Schreiben in `SocialAccount` steht in `accounts/keycloak_abgleich.py` und fällt unter die Ausnahme vom 25.10.2026 (#76): Es ändert nur das Konto, das sich gerade anmeldet, zeigt nichts an und wird nur aus dem Adapter aufgerufen.
+
+**Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py`, `docs/rechtematrix.md` (Zeile `socialaccount.SocialAccount`, Beschreibung in TD-01), `docs/entscheidungen.md`, `tests/test_login_angaben.py`.
+
+---
+
 ## 2026-11-04 · Kontosuche findet nur bestätigte Mails (#251)
 
 **Entscheidung** (Paket P-07a der Projektprüfung, Issue #251; Schutzniveau A beschlossen von Sebastian, E-038; Freigabe E-090; Antwort zu Keycloak E-087; Befund BF-121; Wortlaut und Szenarien von Sebastian am 04.11.2026 im Issue bestätigt):

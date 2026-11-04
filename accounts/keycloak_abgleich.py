@@ -1,4 +1,5 @@
-"""Abgleich mit Keycloak bei jedem Login: Mail-Liste von allauth und Benutzername (#76, ORG-03).
+"""Abgleich mit Keycloak bei jedem Login: Mail-Liste von allauth, Benutzername (#76, ORG-03) und
+die gespeicherten Angaben aus Keycloak (#252).
 
 Eigene Datei, weil sie Anmeldedaten selbst aus der Datenbank liest und schreibt. Der Rundumtest
 lässt das nur hier zu (`tests/test_rundumtest.py`): Die Funktionen ändern allein das Konto, das
@@ -10,7 +11,7 @@ import logging
 import re
 
 from allauth.account.models import EmailAddress
-from allauth.socialaccount.models import SocialLogin
+from allauth.socialaccount.models import SocialAccount, SocialLogin
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
@@ -37,6 +38,26 @@ def trimmed(value, max_length: int | None = None) -> str:
     if max_length is None:
         return value
     return _EDGE_SPACES.sub("", value[:max_length])
+
+
+# Die Angaben aus Keycloak, die das Tool nutzt (#252): Mail, „Mail bestätigt“, Benutzername, Vor- und Nachname.
+# Nutzt das Tool weitere Angaben aus dem DPV-Konto (#116), kommen sie hier dazu.
+USED_CLAIMS = ("email", "email_verified", "preferred_username", "given_name", "family_name")
+
+
+def keep_only_used_data(sociallogin: SocialLogin) -> None:
+    """Begrenzt die Angaben aus Keycloak, die allauth speichert, auf die genutzten (#252, BF-126).
+
+    allauth speichert die ganze Antwort von Keycloak, bei einem bestehenden Konto schon, bevor
+    das Tool prüft (`SocialLogin.lookup`). Deshalb wird als Erstes gekürzt, auch bei einem
+    Login, der danach abgelehnt wird. Die Kennung (`sub`) steht im Konto selbst (`uid`) und
+    wird hier nicht mitgespeichert. Das Kennungs-Token in der Sitzung bleibt unberührt (BF-124).
+    """
+    account = sociallogin.account
+    source = account.get_provider_account().get_user_data()
+    account.extra_data = {"userinfo": {claim: source[claim] for claim in USED_CLAIMS if claim in source}}
+    if account.pk:
+        SocialAccount.objects.filter(pk=account.pk).update(extra_data=account.extra_data)
 
 
 def align_mail_list(user, sociallogin: SocialLogin) -> None:

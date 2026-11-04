@@ -2,7 +2,8 @@
 
 allauth übernimmt den Austausch mit Keycloak. Hier steht, was das Tool anders macht als
 allauths Grundeinstellung: Name, Mail und Benutzername bei jedem Login neu übernehmen, dazu
-allauths Mail-Liste angleichen (#76), ohne Mail ablehnen,
+allauths Mail-Liste angleichen (#76), nur die genutzten Angaben aus Keycloak speichern (#252),
+ohne Mail ablehnen,
 nur den Login zulassen (kein Verknüpfen weiterer Konten), und bei jedem Problem zurück zur
 Login-Seite mit einem kurzen Hinweis statt einer Fehlerseite.
 """
@@ -21,7 +22,7 @@ from django.shortcuts import resolve_url
 from requests import RequestException
 
 from accounts import texts
-from accounts.keycloak_abgleich import align_mail_list, take_over_username, trimmed
+from accounts.keycloak_abgleich import align_mail_list, keep_only_used_data, take_over_username, trimmed
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,10 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
           sie sonst nur beim ersten Login.
         - Als bestätigt zählt nur ein echtes Ja aus Keycloak (#251). allauth speichert die Mail
           beim ersten Login selbst, und ein Text wie „false“ endete dort mit einer Fehlerseite.
+        - Als Erstes werden die gespeicherten Angaben aus Keycloak auf die genutzten gekürzt
+          (#252), auch wenn der Login danach abgelehnt wird.
         """
+        keep_only_used_data(sociallogin)
         if sociallogin.state.get("process", AuthProcess.LOGIN) != AuthProcess.LOGIN:
             logger.warning("Login abgelehnt: anderer Ablauf als Login angefragt")
             raise back_to_login_page(request, texts.LOGIN_CANCELLED)
