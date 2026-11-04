@@ -45,7 +45,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Bezug:** Das Schreiben in `SocialAccount` steht in `accounts/keycloak_abgleich.py` und fällt unter die Ausnahme vom 25.10.2026 (#76): Es ändert nur das Konto, das sich gerade anmeldet, zeigt nichts an und wird nur aus dem Adapter aufgerufen.
 
-**Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py`, `docs/rechtematrix.md` (Zeile `socialaccount.SocialAccount`), `docs/entscheidungen.md`, `tests/test_login_angaben.py`.
+**Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py`, `docs/rechtematrix.md` (Zeile `socialaccount.SocialAccount`, Beschreibung in TD-01), `docs/entscheidungen.md`, `tests/test_login_angaben.py`.
 
 ---
 

@@ -257,7 +257,7 @@ Tabellen, die die Bausteine für Login und Sitzung selbst anlegen. Was Leitungen
 
 | Kennung | Wer | Daten | Aktion | Ergebnis | Quelle | Stand |
 | --- | --- | --- | --- | --- | --- | --- |
-| TD-01 | Jede Person mit Konto, auch Admins (auch im Support-Zugang) | Sitzungen, Verknüpfung mit dem DPV-Konto samt dem, was Keycloak beim Login mitschickt, Mail-Liste des Login-Bausteins, Zugang zum Keycloak, Djangos Berechtigungen und Tabellenverzeichnis | ansehen, ändern im Tool | verboten; nur der Login selbst schreibt sie | Entscheidung vom 23.10.2026 (#87) | gebaut: erlaubt `tests/test_rechte_ohne_seite.py::test_konto_entsteht_beim_ersten_login`; verboten `tests/test_rechte_ohne_seite.py::test_keine_adresse_aendert_die_technischen_daten_des_logins`, `tests/test_rechte_ohne_seite.py::test_keine_adresse_zeigt_die_technischen_daten_des_logins`, `tests/test_rechte_ohne_seite.py::test_keine_adresse_zeigt_oder_aendert_eine_fremde_sitzung` |
+| TD-01 | Jede Person mit Konto, auch Admins (auch im Support-Zugang) | Sitzungen, Verknüpfung mit dem DPV-Konto samt den genutzten Angaben aus Keycloak, Mail-Liste des Login-Bausteins, Zugang zum Keycloak, Djangos Berechtigungen und Tabellenverzeichnis | ansehen, ändern im Tool | verboten; nur der Login selbst schreibt sie | Entscheidung vom 23.10.2026 (#87) | gebaut: erlaubt `tests/test_rechte_ohne_seite.py::test_konto_entsteht_beim_ersten_login`; verboten `tests/test_rechte_ohne_seite.py::test_keine_adresse_aendert_die_technischen_daten_des_logins`, `tests/test_rechte_ohne_seite.py::test_keine_adresse_zeigt_die_technischen_daten_des_logins`, `tests/test_rechte_ohne_seite.py::test_keine_adresse_zeigt_oder_aendert_eine_fremde_sitzung` |
 
 ## Tabellen in der Datenbank
 
