@@ -20,14 +20,18 @@ RAHMEN_HOEHE = 900
 
 _STYLESHEET = re.compile(r"""<link\b[^>]*>""", re.IGNORECASE)
 _SCRIPT = re.compile(r"""<script\b[^>]*\bsrc=["'](?P<pfad>[^"']+)["'][^>]*>\s*</script>""", re.IGNORECASE)
-_RESTLICHE_STATISCHE_DATEI = re.compile(r"""/static/[^\s"'<>)]*""")
 
-# Sperrt alles, was die Seite verlassen oder etwas speichern würde. Läuft am Ende jeder Seite.
+# Sperrt, was die Seite verlassen oder etwas speichern würde, auch das Schließen eines Dialogs
+# (`app.js` lädt dabei eine neue Adresse). Läuft am Ende jeder Seite.
 _SPERRE = """<script>
 document.addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest("a[href], button[type=submit], input[type=submit]")) { e.preventDefault(); }
 }, true);
 document.addEventListener("submit", function (e) { e.preventDefault(); }, true);
+document.addEventListener("cancel", function (e) { e.preventDefault(); e.stopPropagation(); }, true);
+document.addEventListener("click", function (e) {
+  if (e.target.matches && e.target.matches("dialog[data-dialog]")) { e.stopPropagation(); }
+}, true);
 </script>"""
 
 _STIL = """
@@ -57,9 +61,14 @@ zeige(0);
 """
 
 
+def _vorspann():
+    """Der Anfang der Adressen statischer Dateien, etwa `/static/`."""
+    return "/" + settings.STATIC_URL.strip("/") + "/"
+
+
 def _statische_datei(pfad):
     """Inhalt der statischen Datei zu einer Adresse wie `/static/core/app.css`."""
-    vorspann = "/" + settings.STATIC_URL.strip("/") + "/"
+    vorspann = _vorspann()
     gefunden = finders.find(pfad[len(vorspann) :]) if pfad.startswith(vorspann) else None
     if not gefunden:
         raise ValueError(f"Die Vorschau kann {pfad} nicht einbetten (statische Datei nicht gefunden).")
@@ -69,15 +78,20 @@ def _statische_datei(pfad):
 def _bette_ein(seite, name):
     """Die Seite ohne Verweis auf statische Dateien: Gestaltung und Skript stehen in ihr selbst."""
     skripte = []
+    stile = []
+    vorspann = _vorspann()
 
     def stil(treffer):
         tag = treffer.group(0)
         pfad = re.search(r"""\bhref=["']([^"']+)["']""", tag)
-        if not pfad or "/static/" not in pfad.group(1):
+        ist_stylesheet = re.search(r"""\brel=["']stylesheet["']""", tag, re.IGNORECASE)
+        if not pfad or (vorspann not in pfad.group(1) and not ist_stylesheet):
             return tag
-        if not re.search(r"""\brel=["']stylesheet["']""", tag, re.IGNORECASE):
-            raise ValueError(f"Die Vorschau kann {pfad.group(1)} nicht einbetten (kein Stylesheet), Fall „{name}“.")
-        return "<style>\n" + _statische_datei(pfad.group(1)).replace("</style", "<\\/style") + "\n</style>"
+        if not ist_stylesheet or not pfad.group(1).startswith(vorspann):
+            raise ValueError(f"Die Vorschau kann {pfad.group(1)} nicht einbetten, Fall „{name}“.")
+        stile.append(pfad.group(1))
+        text = re.sub("</style", "<\\\\/style", _statische_datei(pfad.group(1)), flags=re.IGNORECASE)
+        return "<style>\n" + text + "\n</style>"
 
     def skript(treffer):
         skripte.append(_statische_datei(treffer.group("pfad")).replace("</", "<\\/"))
@@ -85,9 +99,11 @@ def _bette_ein(seite, name):
 
     seite = _STYLESHEET.sub(stil, seite)
     seite = _SCRIPT.sub(skript, seite)
-    uebrig = _RESTLICHE_STATISCHE_DATEI.search(seite)
+    uebrig = re.search(re.escape(vorspann) + r"""[^\s"'<>)]*""", seite)
     if uebrig:
         raise ValueError(f"Die Vorschau kann {uebrig.group(0)} nicht einbetten, Fall „{name}“.")
+    if not stile:
+        raise ValueError(f"Fall „{name}“ lädt keine Gestaltung; ist die Seite eine Weiterleitung oder nur ein Stück?")
     ende = "".join(f"<script>\n{text}\n</script>\n" for text in skripte) + _SPERRE
     kopf, trenner, rest = seite.rpartition("</body>")
     return (kopf + ende + trenner + rest) if trenner else (seite + ende)
@@ -106,8 +122,11 @@ def schreibe_vorschau(faelle, ziel, titel="Vorschau"):
 
     faelle: Liste von (Name, HTML der fertigen Seite).
     Fehlt der Ordner von `ziel`, wird er angelegt; eine vorhandene Datei wird überschrieben.
-    Kann eine Seite nicht vollständig eingebettet werden, wird nichts geschrieben.
+    Fehlen Fälle, lädt ein Fall keine Gestaltung (etwa eine Weiterleitung ohne Inhalt) oder kann
+    eine Seite nicht vollständig eingebettet werden, wird nichts geschrieben.
     """
+    if not faelle:
+        raise ValueError("Die Vorschau hat keine Fälle.")
     ziel = Path(ziel)
     seiten = [(name, _bette_ein(seite, name)) for name, seite in faelle]
     knoepfe = "".join(f'<button type="button">{html.escape(name)}</button>' for name, _ in seiten)
@@ -123,7 +142,7 @@ def schreibe_vorschau(faelle, ziel, titel="Vorschau"):
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{html.escape(titel)}</title><style>{_STIL}</style></head><body>"
         f"<header><h1>{html.escape(titel)}</h1><nav>{knoepfe}</nav>"
-        '<p class="hinweis">Nur zum Ansehen: Links und Speichern sind gesperrt, Neuladen und Springen der Seite sind hier nicht zu sehen.</p>'
+        '<p class="hinweis">Nur zum Ansehen: Links und Speichern sind gesperrt, Neuladen und Springen der Seite sind hier nicht zu sehen, Dialoge schließen sich nicht, und Vorschläge beim Tippen bleiben leer.</p>'
         f"</header><main>{bereiche}</main><script>{_UMSCHALTER}</script></body></html>\n"
     )
     ziel.parent.mkdir(parents=True, exist_ok=True)

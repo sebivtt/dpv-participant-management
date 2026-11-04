@@ -188,6 +188,8 @@ Setzt eine eingerichtete Umgebung voraus (Schritte 1 bis 5 unter „Projekt star
     ```
     Danach: `Switched to branch 'main'`.
 
+Spätere Verweise auf einen Schritt mit Zahl in dieser Datei meinen die Liste unter „Projekt starten (Mac)“, nicht diese hier.
+
 ## Testumgebung im Container (Mac)
 
 So läuft das Tool auf deinem Mac genauso wie später in der Testumgebung auf dem Server des DPV (#58): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
@@ -200,7 +202,7 @@ T1. Die Umgebungsdatei der Testumgebung aus der Vorlage anlegen. Sie enthält nu
    ```
    Danach: keine Ausgabe.
 
-**Starten und Aktualisieren** (zuerst Schritt 3)
+**Starten und Aktualisieren** (zuerst Schritt 3 unter „Projekt starten (Mac)“)
 
 T2. Die Testumgebung bauen und starten. Derselbe Befehl bringt sie nach einer Änderung auf den neuesten Stand; vorher die Änderungen mit `git pull` holen.
    ```bash
@@ -231,7 +233,7 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
 
 In P2 legen Admins den Verband und die Bünde per Befehl an, nicht über eine Seite im Tool (#88; eine Seite ist für später vorgemerkt, #107). Dieselben Befehle benennen um und schalten „hat Ringe“ ein oder aus. Ringe, Stämme und Gruppen legen später die Leitungen im Tool an (#95). Löschen gibt es nicht (Entscheidung W5 in `docs/entscheidungen.md`). Die Befehle prüfen dieselben Regeln wie das Tool: genau ein Verband, keine leeren oder doppelten Namen, höchstens 100 Zeichen; „Boreas“ und „ boreas “ gelten als gleich. Jedes Anlegen, Umbenennen und Umschalten schreibt einen Eintrag ins Protokoll der Strukturänderungen, mit „Befehl auf dem Server“ als Urheber (#131); ein Befehl ohne Änderung schreibt keinen.
 
-Lokal (zuerst Schritte 3, 6, 7 und 8):
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
 
 V1. Den Verband anlegen. Ihn gibt es nur einmal.
    ```bash
@@ -269,7 +271,7 @@ In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-f
 
 Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung. Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt. Beide Befehle schreiben einen Eintrag ins Protokoll der Rollenänderungen, mit „Befehl auf dem Server“ als Urheber (#91).
 
-Lokal (zuerst Schritte 3, 6, 7 und 8):
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
 
 A1. Eine Person zum Admin ernennen, hier das erfundene Konto `erika.testfrau`.
    ```bash
