@@ -1021,3 +1021,137 @@ def test_review_leitfaden_beschreibt_den_umfang_der_unabhaengigen_pruefung_wie_c
     text = _text(REVIEW_LEITFADEN)
 
     assert "der Diff, dazu Issue, nötige Aufrufer und Nachbarstellen" in text
+
+
+# --- #245 (P-05b): Aufräumen je Phase, Rückblick, roter main, gelockerte Prüfbedingungen, Neustarts ---
+
+
+def _phase_punkt(name):
+    """Text eines Punkts („**Start:**“ usw.) aus „Ablauf einer Phase“ bis zum nächsten Punkt."""
+    section = _section(CLAUDE_MD, "Ablauf einer Phase")
+    rest = section.split(f"**{name}:**", 1)[1]
+    return re.split(r" - \*\*", rest, maxsplit=1)[0]
+
+
+def test_ab_p3_gibt_es_je_phase_ein_issue_aufraeumen_das_wie_jedes_issue_laeuft():
+    start = _phase_punkt("Start")
+
+    assert (
+        "Ab P3 legt sie dabei ein Issue „Aufräumen“ an; es benennt die Zusammenführungen und Bereinigungen "
+        "dieser Phase, die das Verhalten nicht ändern, und läuft wie jedes andere Issue."
+    ) in start
+    # Der bisherige Start bleibt davor stehen.
+    assert start.index("Eine zweite KI prüft die Planung, bevor die erste Umsetzung beginnt.") < start.index("Ab P3 legt sie")
+
+
+def test_phase_steuern_legt_ab_p3_das_issue_aufraeumen_beim_phasenstart_an():
+    schritt = _section(PHASE_STEUERN, "Phasenstart").split("2. **Bestandsaufnahme:**", 1)[1].split("3. **Grundlagen", 1)[0]
+
+    assert (
+        "Ab P3 dabei das Issue „Aufräumen“ anlegen (Regel in `CLAUDE.md`, „Ablauf einer Phase“, „Start“), "
+        "mit Vorschlägen aus dem letzten Rückblick und offenen Befunden."
+    ) in schritt
+
+
+def test_rueckblick_streicht_zuerst_wertet_die_pruefbefunde_aus_und_fragt_vor_jeder_neuen_regel_nach_einer_schranke():
+    abschluss = _phase_punkt("Abschluss")
+
+    assert "folgt ein Rückblick. Er prüft zuerst, welche Regeln sich streichen, zusammenfassen oder durch eine Prüfschranke ersetzen lassen" in abschluss
+    assert "und wertet die Befunde der unabhängigen Prüfung nach Fehlerarten aus" in abschluss
+    assert "erst dann kommt Neues dazu, und vor jeder neuen Regel die Frage, ob eine Prüfschranke genügt" in abschluss
+    assert "Neue Erfahrungen kommen unten in diese Datei." in abschluss
+    # Die Reihenfolge des Abschlusses bleibt: Review, Rückblick, erst dann der „Stand“.
+    assert abschluss.index("externe Review") < abschluss.index("Rückblick") < abschluss.index("„Stand“")
+
+
+def test_phase_steuern_wertet_im_rueckblick_die_befunde_aus_und_gleicht_neustarts_mit_dem_issue_ab():
+    schritt = _section(PHASE_STEUERN, "Abschluss").split("3. Sind alle", 1)[1].split("4. Erst danach", 1)[0]
+
+    assert "was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase" in schritt
+    assert "bis zu drei häufige Fehlerarten mit je einer Folgerung" in schritt
+    assert "mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben" in schritt
+    assert "die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“)" in schritt
+    assert "Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen" in schritt
+    assert '`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1' in schritt
+    assert "kommen genau 1000 zurück, das offen sagen" in schritt
+    assert "Streichungen und neue Erfahrungen kommen als Issue" in schritt
+
+
+def test_roter_main_geht_vor_und_andere_umsetzungen_warten_auf_gruen():
+    umsetzen = _phase_punkt("Umsetzen")
+
+    assert "auf sein Ende warten muss sie vor dem nächsten Auftrag nicht." in umsetzen
+    for teil in [
+        "Ist der letzte beendete Lauf „Prüfungen“ auf `main` rot, oder abgebrochen, ohne dass ein neuerer läuft, beginnt keine andere Umsetzung, bis er grün ist.",
+        "Die Steuerungssession stellt die Ursache fest.",
+        "Erfüllt der Lauf die Bedingungen für den Neustart aus Nr. 6, startet sie ihn neu;",
+        "sieht es sonst nur nach einer Störung oder einem wackelnden Test aus, entscheidet Sebastian, ob sie neu startet.",
+        "Sonst legt sie ein Fehler-Issue an; es läuft wie jedes Issue, auch vor einem offenen Pull Request.",
+    ]:
+        assert teil in umsetzen, teil
+    assert "bekommt ihren Link erst dann" not in umsetzen
+    # Die Regel zum roten Lauf kommt nach dem Satz zum Warten, der bleibt.
+    assert umsetzen.index("auf sein Ende warten muss sie") < umsetzen.index("Ist der letzte beendete Lauf")
+
+
+def test_phase_steuern_prueft_vor_dem_auftrag_den_letzten_beendeten_lauf_auf_main():
+    vor_dem_auftrag = _section(PHASE_STEUERN, "Aufträge").split("- **Vor dem Auftrag**", 1)[1].split("- **Den Auftrag**", 1)[0]
+
+    assert (
+        'und der Lauf auf `main` nicht dagegen spricht (`gh run list --workflow "Prüfungen" --branch main --limit 2`; '
+        "Regel in `CLAUDE.md`, „Umsetzen“; außer für die Behebung selbst). "
+        "Geht die Abfrage nicht, das offen sagen und Sebastian fragen."
+    ) in vor_dem_auftrag
+    assert "Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2)." in _section(PHASE_STEUERN, "Einstieg")
+
+
+def test_befehle_im_skill_nennen_den_namen_des_laufs_aus_der_pruefung_auf_github():
+    name = re.search(r"^name: (.+)$", (BASE_DIR / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"), flags=re.M).group(1)
+
+    for abschnitt in ["Aufträge", "Abschluss"]:
+        assert f'gh run list --workflow "{name}"' in _section(PHASE_STEUERN, abschnitt), abschnitt
+
+
+def test_contributing_lockert_keine_pruefbedingung_um_einen_lauf_gruen_zu_bekommen():
+    section = _section(CONTRIBUTING, "Korrektheit und Tests")
+
+    assert "**Eine Prüfbedingung wird nicht gelockert, um einen Lauf grün zu bekommen.**" in section
+    assert (
+        "Wird in einem bestehenden Test oder gegenüber einem Szenario oder Akzeptanzkriterium eine Zusicherung, ein Grenzwert "
+        "oder ein Zeitfenster schwächer oder ein Test übersprungen, geschieht das nur in einem eigenen Issue, nie im selben Pull Request."
+    ) in section
+    assert (
+        "Hat ein neuer Test eine Anforderung falsch übersetzt, wird er im selben Pull Request korrigiert; "
+        "die Beschreibung nennt das unveränderte Kriterium, vorher und nachher."
+    ) in section
+    assert (
+        "Das ist die einzige Ausnahme vom Punkt davor: Das Issue nennt die unveränderte Anforderung und warum die bisherige "
+        "Prüfung falsch war, und Sebastian entscheidet."
+    ) in section
+    assert "Ein roter Lauf allein ist für beides kein Grund. (Review)" in section
+    # Der Satz zu bestehenden Tests bleibt, die neue Regel steht dahinter.
+    assert section.index("Bestehende Tests werden nur geändert oder gelöscht") < section.index("Eine Prüfbedingung wird nicht gelockert")
+
+
+def test_jeder_neustart_kommt_als_kommentar_ins_issue_wackelnde_pruefungen():
+    pull_request = _section(CLAUDE_MD, "Ablauf je Aufgabe").split("6. **Pull Request**", 1)[1]
+
+    assert (
+        "Jeder Neustart, auch auf `main` und durch Sebastian, kommt als Kommentar mit Link zum Lauf, Commit, Versuch und Grund "
+        "ins Issue „Wackelnde Prüfungen“ (#243); das erlaubt keinen weiteren Neustart."
+    ) in pull_request
+    # Der Neustart ohne Rückfrage bleibt, wie er war.
+    assert "darf die KI ihn einmal pro Stand ohne Rückfrage neu starten" in pull_request
+
+
+def test_entscheidung_zu_aufraeumen_rueckblick_rotem_main_und_neustarts_nennt_freigabe_regel_und_grenzen():
+    entries = re.split(r"^## ", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#245)")), None)
+
+    assert entry, "Eintrag zu #245 fehlt in docs/entscheidungen.md"
+    assert entry.startswith("2026-11-04 · ")
+    flat = _flat(entry)
+    for teil in ["E-074", "E-075", "E-078", "G-11", "G-12", "Aufräumen", "Rückblick", "`main`", "#243", "CONTRIBUTING.md"]:
+        assert teil in flat, teil
+    # Die Übersicht „Geltende Grundsätze“ wird nur fortgeschrieben, wenn der Eintrag etwas ersetzt; er sagt, was gilt.
+    assert "ersetzt keinen" in flat or "ersetzt den Eintrag vom" in flat
