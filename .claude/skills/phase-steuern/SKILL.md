@@ -18,7 +18,7 @@ gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&la
 
 ## 0. Einstieg einer neuen Steuerungssession
 
-Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben.
+Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben. Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2).
 
 ```bash
 gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.title, .body'
@@ -40,7 +40,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 
 ## 2. Aufträge
 
-- **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat, alles, was die Umsetzung wissen muss, in seinem Text steht und der letzte beendete Lauf auf `main` grün ist (`gh run list --workflow "Prüfungen" --branch main --status completed --limit 1`; außer für die Behebung selbst, Regel in `CLAUDE.md`, „Umsetzen“). Geht die Abfrage nicht, das offen sagen und Sebastian fragen. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
+- **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat, alles, was die Umsetzung wissen muss, in seinem Text steht und der Lauf auf `main` nicht dagegen spricht (`gh run list --workflow "Prüfungen" --branch main --limit 2`; Regel in `CLAUDE.md`, „Umsetzen“; außer für die Behebung selbst). Geht die Abfrage nicht, das offen sagen und Sebastian fragen. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
 - **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
 - **Stand selbst feststellen:** Ob ein Lauf grün oder ein Pull Request übernommen ist, stellt die Steuerungssession selbst fest, nicht über Sebastians Meldung: für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6; für die Übernahme bei jedem Wiedereinstieg mit `gh pr view <nummer> --json state,mergedAt`, und wartet sie darauf, mit einem Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt.
 - **Nachträge** zu einem geklärten Issue nach `CLAUDE.md` („Neuer Inhalt zu einem geklärten Issue“) an eine Klärung mit `grill-me` geben (Kurzform möglich).
@@ -82,5 +82,5 @@ Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für di
 
 1. Alle Abschlusskriterien im Phasen-Issue abgehakt, jedes mit Beleg; Sebastian die Liste zeigen.
 2. Externes Review nach `docs/review-leitfaden.md` anstoßen (Vorlage `externes-review.yml`); das Review-Issue verlinkt das Phasen-Issue.
-3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --limit 200 --json attempt,headSha,url`, Versuch über 1). Die neuen Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen aus dem Vorgänger-Repo“.
+3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1; kommen genau 1000 zurück, das offen sagen). Streichungen und neue Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen aus dem Vorgänger-Repo“.
 4. Erst danach geht der „Stand“ im `README.md` ebenso per Issue und Auftrag an eine Umsetzungs-Session. Ist er in `main`, das Phasen-Issue schließen.
