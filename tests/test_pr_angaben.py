@@ -1021,3 +1021,39 @@ def test_kopf_im_codeblock_weiter_unten_ist_kein_zweiter_kopf():
 def test_nicht_geschlossener_kommentar_im_kopf_ist_leer_und_rot():
     _rot("Für Sebastian", "leer", beschreibung=_beschreibung(kopf=_kopf("<!-- Kurz.")))
 
+
+
+# --- Abschnitt „Vorschau“ (#249): der Link steht dort, nicht unter „Wie geprüft wurde“ ------------
+
+
+VORSCHAU_LINK = f"[Vorschau (04.11.2026)](https://github.com/{REPO}/issues/12#issuecomment-501)"
+
+
+def test_vorschau_link_im_eigenen_abschnitt_ist_gruen():
+    davor = "## Vorschau\n\n" + VORSCHAU_LINK
+
+    _gruen(beschreibung=_beschreibung(davor=davor), kommentare={500: _kommentar(), 501: _kommentar(body="**Vorschau (04.11.2026)**\n\nFälle.", minute=6)})
+
+
+def test_vorschau_link_unter_wie_geprueft_wurde_bleibt_rot():
+    szenarien = f"- Szenarien: {VORSCHAU_LINK}"
+
+    _rot(
+        "Szenarien",
+        "beginnt nicht mit",
+        beschreibung=_beschreibung(szenarien=szenarien),
+        kommentare={501: _kommentar(body="**Vorschau (04.11.2026)**\n\nFälle.", minute=6)},
+    )
+
+
+def test_vorlage_mit_ausgefuelltem_abschnitt_vorschau_ist_gruen():
+    text = VORLAGE.read_text(encoding="utf-8")
+    text = text.replace("## Für Sebastian\n", "## Für Sebastian\n\nKurz und verständlich.\n")
+    text = text.replace("## Anforderungen und Entscheidungen\n", "## Anforderungen und Entscheidungen\n\n- Closes #12\n")
+    text = text.replace("## Zielbild\n", "## Zielbild\n\nnicht nötig\n")
+    text = re.sub(r"^- Szenarien.*$", "- Szenarien: " + _link(), text, flags=re.M)
+    text = text.replace("- Test-Commit:", "- Test-Commit: " + _kurz(1))
+    text = text.replace("## Vorschau\n", "## Vorschau\n\n" + VORSCHAU_LINK + "\n")
+
+    assert "## Vorschau" in text
+    _gruen(beschreibung=text, kommentare={500: _kommentar(), 501: _kommentar(body="**Vorschau (04.11.2026)**\n\nFälle.", minute=6)})
