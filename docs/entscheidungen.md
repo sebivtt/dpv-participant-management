@@ -43,6 +43,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Grenzen:** Das Kennungs-Token in der Sitzung kann das Geburtsdatum weiter enthalten (BF-124, P-19); abgelaufene Sitzungen bleiben liegen (BF-125). BF-126 ist damit nur für `extra_data` behoben.
 
+**Bezug:** Das Schreiben in `SocialAccount` steht in `accounts/keycloak_abgleich.py` und fällt unter die Ausnahme vom 25.10.2026 (#76): Es ändert nur das Konto, das sich gerade anmeldet, zeigt nichts an und wird nur aus dem Adapter aufgerufen.
+
 **Umsetzung:** `accounts/keycloak_abgleich.py`, `accounts/adapter.py`, `docs/rechtematrix.md` (Zeile `socialaccount.SocialAccount`), `docs/entscheidungen.md`, `tests/test_login_angaben.py`.
 
 ---

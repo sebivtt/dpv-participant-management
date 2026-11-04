@@ -2,7 +2,8 @@
 
 allauth übernimmt den Austausch mit Keycloak. Hier steht, was das Tool anders macht als
 allauths Grundeinstellung: Name, Mail und Benutzername bei jedem Login neu übernehmen, dazu
-allauths Mail-Liste angleichen (#76), ohne Mail ablehnen,
+allauths Mail-Liste angleichen (#76), nur die genutzten Angaben aus Keycloak speichern (#252),
+ohne Mail ablehnen,
 nur den Login zulassen (kein Verknüpfen weiterer Konten), und bei jedem Problem zurück zur
 Login-Seite mit einem kurzen Hinweis statt einer Fehlerseite.
 """

@@ -1,4 +1,5 @@
-"""Abgleich mit Keycloak bei jedem Login: Mail-Liste von allauth und Benutzername (#76, ORG-03).
+"""Abgleich mit Keycloak bei jedem Login: Mail-Liste von allauth, Benutzername (#76, ORG-03) und
+die gespeicherten Angaben aus Keycloak (#252).
 
 Eigene Datei, weil sie Anmeldedaten selbst aus der Datenbank liest und schreibt. Der Rundumtest
 lässt das nur hier zu (`tests/test_rundumtest.py`): Die Funktionen ändern allein das Konto, das
@@ -40,6 +41,7 @@ def trimmed(value, max_length: int | None = None) -> str:
 
 
 # Die Angaben aus Keycloak, die das Tool nutzt (#252): Mail, „Mail bestätigt“, Benutzername, Vor- und Nachname.
+# Nutzt das Tool weitere Angaben aus dem DPV-Konto (#116), kommen sie hier dazu.
 USED_CLAIMS = ("email", "email_verified", "preferred_username", "given_name", "family_name")
 
 
@@ -52,8 +54,7 @@ def keep_only_used_data(sociallogin: SocialLogin) -> None:
     wird hier nicht mitgespeichert. Das Kennungs-Token in der Sitzung bleibt unberührt (BF-124).
     """
     account = sociallogin.account
-    data = account.extra_data
-    source = data.get("userinfo") or data.get("id_token") or data
+    source = account.get_provider_account().get_user_data()
     account.extra_data = {"userinfo": {claim: source[claim] for claim in USED_CLAIMS if claim in source}}
     if account.pk:
         SocialAccount.objects.filter(pk=account.pk).update(extra_data=account.extra_data)
