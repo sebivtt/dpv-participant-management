@@ -8,7 +8,7 @@ alle Versuche, ist der Lauf rot mit klarer Meldung. Diese Tests sorgen dafür, d
 still aus ci.yml verschwindet. Ob GitHub es tatsächlich so ausführt, zeigt erst ein Lauf dort.
 
 Issue #256 (04.11.2026): Die 35 Minuten für den ganzen Lauf waren zu knapp, weil ein Hänger
-zehn Minuten kostet und die Prüfungen allein bis 34 Minuten brauchen. Der Schritt „Alle
+zehn Minuten kostet und der ganze Lauf bis 34 Minuten braucht. Der Schritt „Alle
 Prüfungen“ hat jetzt 45 Minuten, der ganze Lauf 70; die Summe wird hier nachgerechnet.
 """
 
@@ -125,12 +125,14 @@ def test_browser_kommen_aus_dem_zwischenspeicher_passend_zur_playwright_fassung(
 
 
 # Fester Rest im Lauf, der nicht aus den Prüfungen und nicht aus zwei hängenden Versuchen
-# stammt (#256). Gemessen an Lauf 41899114419: Vorlauf bis zum ersten Installationsversuch
+# stammt (#256). Gemessen an Lauf 41899114419, Versuch 2: Vorlauf bis zum ersten Installationsversuch
 # 41 Sekunden (Container, Keycloak starten, Zwischenspeicher), Installation 45 Sekunden,
-# Warten auf Keycloak 1 Sekunde, Aufräumen 1 Sekunde, zusammen gut anderthalb Minuten. Dazu
+# Warten auf Keycloak 1 Sekunde, Aufräumen 1 Sekunde, zusammen knapp anderthalb Minuten. Dazu
 # kommen vor einem weiteren Versuch bis zu zwei Minuten Wartezeit auf die apt-Sperre. Drei
 # hängende Versuche enden ohnehin rot, ohne dass Prüfungen laufen; die Summe muss also nur
-# für zwei hängende Versuche, den dritten (erfolgreichen) und die Prüfungen reichen.
+# für zwei hängende Versuche, den dritten (erfolgreichen) und die Prüfungen reichen. Sie gilt
+# für einen schnellen dritten Versuch (gut drei Minuten). Läuft er bis zu seinem Limit, bleiben
+# für die Prüfungen gut 38 Minuten; bisher brauchten sie höchstens knapp 32.
 REST_MINUTEN = 5
 
 
