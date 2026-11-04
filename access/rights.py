@@ -31,10 +31,11 @@ from collections.abc import Callable
 from datetime import timedelta
 from functools import cached_property
 
+from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import BooleanField, CharField, ExpressionWrapper, F, Model, Q, QuerySet, Value
+from django.db.models import BooleanField, CharField, Exists, ExpressionWrapper, F, Model, OuterRef, Q, QuerySet, Value
 from django.db.models.functions import Concat
 from django.http import Http404
 from django.utils import timezone
@@ -392,7 +393,12 @@ class Rights:
         return self._hits(list(found))
 
     def find_accounts(self, text: str) -> list[dict]:
-        """Konten über die genaue Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung (PK-13).
+        """Konten über die genaue bestätigte Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung (PK-13).
+
+        Bestätigt heißt: Keycloak hat die Mail beim letzten Login des Kontos als bestätigt gemeldet
+        (`EmailAddress.verified`, #251). Eine unbestätigte Mail zeigt dasselbe wie kein Konto. Ein
+        Suchbegriff mit @ zählt nur als Mail, nie als Benutzername; sonst fände ein Benutzername, der
+        wie eine fremde Mail aussieht, das Konto an der Mail vorbei.
 
         Für Leitungen von Gruppe bis Bund und für die Verbandsleitung (#94); eine Namenssuche hat
         die Verbandsleitung nicht, `suggestions()` gibt ihr nichts (PK-12).
@@ -408,7 +414,12 @@ class Rights:
         if not self.sees_menu() or not text or set(text) <= WILDCARDS:
             return []
         accounts = get_user_model().objects.filter(is_active=True, last_login__isnull=False)
-        found = accounts.filter(Q(email__iexact=text) | Q(username__iexact=text)).order_by("username")
+        if "@" in text:
+            confirmed = EmailAddress.objects.filter(user=OuterRef("pk"), email__iexact=text, verified=True)
+            found = accounts.filter(Exists(confirmed))
+        else:
+            found = accounts.filter(username__iexact=text)
+        found = found.order_by("username")
         return self._hits(list(found[:SUGGESTION_MOST]))
 
     def _hits(self, users: list) -> list[dict]:

@@ -45,8 +45,9 @@ def align_mail_list(user, sociallogin: SocialLogin) -> None:
     Danach steht dort genau ein Eintrag: die Mail aus Keycloak in genau dieser Schreibweise, ohne
     Leerzeichen am Rand (#77), und Keycloaks Angabe, ob sie bestätigt ist (`email_verified`).
     Ältere Einträge werden gelöscht.
-    Die Liste nutzt das Tool selbst noch nicht; die Prüfung „Mail bestätigt“ (#10) kann darauf
-    aufbauen. Dass Keycloak eine Mail liefert, hat `pre_social_login` schon geprüft.
+    Die Kontosuche findet nur bestätigte Mails (#251), deshalb zählt nur genau `True` als bestätigt;
+    ein Text wie „false“ oder eine fehlende Angabe gilt als unbestätigt. Dass Keycloak eine Mail
+    liefert, hat `pre_social_login` schon geprüft.
     """
     provider = sociallogin.account.get_provider()
     address = provider.extract_email_addresses(sociallogin.account.extra_data)[0]
@@ -57,7 +58,7 @@ def align_mail_list(user, sociallogin: SocialLogin) -> None:
         get_user_model().objects.select_for_update().filter(pk=user.pk).exists()
         EmailAddress.objects.filter(user=user).exclude(email=email).delete()
         EmailAddress.objects.update_or_create(
-            user=user, email=email, defaults={"verified": bool(address.verified), "primary": True}
+            user=user, email=email, defaults={"verified": address.verified is True, "primary": True}
         )
 
 
