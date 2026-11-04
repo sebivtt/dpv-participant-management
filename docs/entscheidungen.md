@@ -42,9 +42,9 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Begründung:** Ein normaler Lauf braucht 25 bis 34 Minuten, fast alles davon die Prüfungen. Hängt die Installation einmal 10 Minuten, brach der Lauf ab, ohne dass ein Test rot war; am 04.11.2026 geschah das auf `main` (Lauf 41899114419, #243). Der Neustart kostet gut 30 Minuten, und ein abgebrochener Lauf auf `main` hält jede Umsetzung an.
 
-**Grenzen:** Ob GitHub die Limits so anwendet, zeigt erst ein Hänger im echten Lauf; der Test (`tests/test_pruefung_auf_github.py`) prüft nur, was in `ci.yml` steht, und rechnet nach, dass die Summe passt. Nicht Teil dieser Entscheidung: Prüfungen auf mehrere Läufe verteilen, die Laufzeit senken, die Dauer der Versuche ändern.
+**Grenzen:** Ob GitHub die Limits so anwendet, zeigt erst ein Hänger im echten Lauf; der Test (`tests/test_pruefung_auf_github.py`) prüft nur, was in `ci.yml` steht, und rechnet nach, dass die Summe passt. Die Summe gilt für einen schnellen dritten Versuch (höchstens gut drei Minuten). Läuft er bis zu seinem Limit von 10 Minuten, bleiben für die Prüfungen gut 38 Minuten; bisher brauchten sie höchstens knapp 32. Nicht Teil dieser Entscheidung: Prüfungen auf mehrere Läufe verteilen, die Laufzeit senken, die Dauer der Versuche ändern.
 
-**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`, `docs/entscheidungen.md`.
+**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`, `rauchtests/conftest.py` (Dateikopf), `docs/entscheidungen.md`.
 
 ---
 
