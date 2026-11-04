@@ -871,6 +871,8 @@ UEBERSICHT_THEMEN = [
     "Wortlaut „E-Mail-Adresse“, „stammen aus“",
     "Kennungen in Adressen",
     "„hat Ringe“ ausschalten",
+    "Wechsel und Ende der Mitgliedschaft",
+    "Wer Leitungen sieht",
     "Stunden erfassen",
     "Code aus dem alten Repo",
 ]
@@ -988,7 +990,7 @@ def test_entscheidung_zu_pruefumfang_und_nachziehen_nennt_freigabe_und_ersetzt_n
     assert entry, "Eintrag zu #244 fehlt in docs/entscheidungen.md"
     assert entry.startswith("2026-11-04 · ")
     flat = _flat(entry)
-    for teil in ["E-074", "E-075", "G-11", "Nachziehen", "Geltende Grundsätze", "ersetzt keinen"]:
+    for teil in ["E-074", "E-075", "E-076", "G-11", "Nachziehen", "Geltende Grundsätze", "ersetzt keinen", "#78, Nr. 3"]:
         assert teil in flat, teil
 
 
