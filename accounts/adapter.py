@@ -87,6 +87,8 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         - Bei einem bestehenden Konto kommen Name, Mail und Benutzername bei jedem Login neu
           aus Keycloak, und die Mail-Liste wird angeglichen (ORG-03, #76); allauth übernimmt
           sie sonst nur beim ersten Login.
+        - Als bestätigt zählt nur ein echtes Ja aus Keycloak (#251). allauth speichert die Mail
+          beim ersten Login selbst, und ein Text wie „false“ endete dort mit einer Fehlerseite.
         """
         if sociallogin.state.get("process", AuthProcess.LOGIN) != AuthProcess.LOGIN:
             logger.warning("Login abgelehnt: anderer Ablauf als Login angefragt")
@@ -101,6 +103,8 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         if sociallogin.is_existing and not sociallogin.user.is_active:
             logger.warning("Login abgelehnt: Konto im Tool gesperrt")
             raise back_to_login_page(request, texts.LOGIN_CANCELLED)
+        for address in sociallogin.email_addresses:
+            address.verified = address.verified is True
         if sociallogin.is_existing:
             user = sociallogin.user
             self.populate_user(request, sociallogin, data)
