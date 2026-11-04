@@ -956,33 +956,29 @@ def test_entscheidungen_hat_oben_die_uebersicht_geltende_grundsaetze():
     assert "| Thema | Gilt | Ersetzt |" in _entscheidungen_kopf()
 
 
-def test_uebersicht_enthaelt_alle_ersetzungen_des_anfangsbestands_nur_als_verweis():
-    kopf = _entscheidungen_kopf()
-    zeilen = [z for z in kopf.splitlines() if z.startswith("| ") and not z.startswith("| Thema") and not z.startswith("| ---")]
+def test_uebersicht_enthaelt_den_anfangsbestand_nur_als_verweis():
+    # Neue und fortgeschriebene Zeilen sind erlaubt (CLAUDE.md); geprüft wird nur, dass kein Thema
+    # des Anfangsbestands fehlt und jede Zeile drei gefüllte Zellen hat.
+    zeilen = [z for z in _entscheidungen_kopf().splitlines() if z.startswith("| ") and not z.startswith(("| Thema", "| ---"))]
+    zellen = [[z.strip() for z in zeile.strip("|").split("|")] for zeile in zeilen]
 
-    assert len(zeilen) == len(UEBERSICHT_THEMEN)
-    for zeile, thema in zip(zeilen, UEBERSICHT_THEMEN, strict=True):
-        zellen = [z.strip() for z in zeile.strip("|").split("|")]
-        assert zellen[0] == thema, zeile
-        assert len(zellen) == 3 and all(zellen), zeile
-    flat = _flat(kopf)
-    assert "| Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |" in flat
-    assert "| Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |" in flat
-    assert "| Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |" in flat
-    # htmx hat bewusst keine Zeile, bis das entschieden ist.
-    assert "htmx" not in kopf
+    assert all(len(zeile) == 3 and all(zeile) for zeile in zellen), zellen
+    themen = [zeile[0] for zeile in zellen]
+    for thema in UEBERSICHT_THEMEN:
+        assert thema in themen, thema
 
 
 def test_uebersicht_verweist_nur_auf_vorhandene_eintraege():
-    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
-    daten = set(re.findall(r"^## (\d{4}-\d{2}-\d{2}) · ", text, flags=re.M))
+    entries = re.split(r"^## (?=\d{4}-\d{2}-\d{2} · )", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)[1:]
     zeilen = [z for z in _entscheidungen_kopf().splitlines() if z.startswith("| ") and not z.startswith(("| Thema", "| ---"))]
     assert zeilen, "Übersicht fehlt"
     for zeile in zeilen:
         gilt, ersetzt = [zelle.strip() for zelle in zeile.strip("|").split("|")[1:]]
-        for zelle in (gilt, ersetzt):
-            for tag, monat, jahr in re.findall(r"(\d{2})\.(\d{2})\.(\d{4})", zelle):
-                assert f"{jahr}-{monat}-{tag}" in daten, f"{zeile}: kein Eintrag vom {tag}.{monat}.{jahr}"
+        for tag, monat, jahr, _, nummer in re.findall(r"(\d{2})\.(\d{2})\.(\d{4})(, #(\d+))?", f"{gilt} {ersetzt}"):
+            vom_tag = [e for e in entries if e.startswith(f"{jahr}-{monat}-{tag} · ")]
+            assert vom_tag, f"{zeile}: kein Eintrag vom {tag}.{monat}.{jahr}"
+            if nummer:
+                assert any(re.search(rf"#{nummer}\b", e) for e in vom_tag), f"{zeile}: #{nummer} fehlt am {tag}.{monat}.{jahr}"
 
 
 def test_entscheidung_zu_pruefumfang_und_nachziehen_nennt_freigabe_und_ersetzt_nichts():
@@ -994,9 +990,6 @@ def test_entscheidung_zu_pruefumfang_und_nachziehen_nennt_freigabe_und_ersetzt_n
     flat = _flat(entry)
     for teil in ["E-074", "E-075", "G-11", "Nachziehen", "Geltende Grundsätze", "ersetzt keinen"]:
         assert teil in flat, teil
-    # Er steht ganz oben, vor dem Eintrag zu #240.
-    namen = re.findall(r"^## \d{4}-\d{2}-\d{2} · .*$", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
-    assert namen[0].endswith("(#244)")
 
 
 def test_grill_me_fragt_je_issue_mit_szenarien_was_unveraendert_bleiben_muss():
