@@ -35,7 +35,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ## 2026-11-04 · Zeitlimit des Prüflaufs: 45 Minuten für die Prüfungen, 70 für den Lauf (#256)
 
-**Entscheidung** (Paket P-15, Teil a, der Projektprüfung, Issue #256; Befund BF-047; Umfang von Sebastian am 04.11.2026 im Issue bestätigt):
+**Entscheidung** (Paket P-15, Teil a, der Projektprüfung, Issue #256; getrennte Limits E-101; Freigabe E-103; Befund BF-047; Text des Issues von Sebastian am 04.11.2026 mit dem Label `geklärt` freigegeben):
 
 1. **Der Schritt „Alle Prüfungen“ hat ein eigenes Zeitlimit von 45 Minuten, der ganze Lauf eines von 70 Minuten.** Das reicht für zwei hängende Versuche der Browser-Installation (je 10 Minuten), den dritten Versuch, den Vorlauf und die Prüfungen. Drei Versuche zu je 10 Minuten bleiben (#133, Nr. 1). Ersetzt den Eintrag vom 25.10.2026 (#133), Punkt 1, nur im Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten; alles andere dort gilt weiter.
 2. **Kein Test und keine Prüfung entfällt.** Alle Prüfungen laufen weiter, und ein hängender Lauf endet von selbst. Die Grenze von 35 Minuten war falsch, weil die erlaubten Versuche nicht hineinpassten.
