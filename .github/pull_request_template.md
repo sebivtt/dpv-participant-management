@@ -9,6 +9,10 @@ Für Sebastian: Ist „PR-Angaben“ rot oder läuft noch, nicht übernehmen. Un
 
 
 
+## Vorschau
+
+<!-- Link zum Kommentar „Vorschau (Datum)“ im Issue (CLAUDE.md, „Vorschau“). Ohne sichtbare Änderung „nicht nötig“ mit Grund; bei einem Verzicht der Grund aus dem Issue. Der Link steht hier, nicht unter „Wie geprüft wurde“: Dort liest „PR-Angaben“ jeden Kommentar-Link als Szenarien-Link. -->
+
 ## Zielbild
 
 <!-- Braucht das Issue ein Zielbild (CLAUDE.md, „Zielbild vor Gestaltung“): Link zum Kommentar mit dem Zielbild im Issue und jede Abweichung der Seite davon mit Grund, wie in `docs/zielbilder/README.md`. Sonst „nicht nötig“ mit dem Grund aus der Klärung. -->

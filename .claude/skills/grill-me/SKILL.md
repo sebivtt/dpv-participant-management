@@ -49,6 +49,7 @@ Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrif
 - **Meldungen:** Was sieht man bei Fehlern oder im Erfolgsfall, mit welchem Wortlaut?
 - **Aussehen und Bedienung,** wenn die Oberfläche betroffen ist, auch auf dem Handy.
 - **Zielbild:** Braucht das Issue eines? Wann es nötig ist, regelt `CLAUDE.md`, „Zielbild vor Gestaltung“; bei einem neuen Abschnitt einer bestehenden Seite entscheidet Sebastian. Die Antwort kommt ins Protokoll und in den Text des Issues, auch wenn keins nötig ist.
+- **Vorschau:** Ändert das Issue, was man auf einer Seite sieht oder bedient, gehört sie zur Umsetzung (`CLAUDE.md`, „Vorschau“). Spricht etwas dagegen, entscheidet Sebastian über den Verzicht; die Zeile dazu kommt in den Text des Issues.
 - **Abhängigkeiten:** zu offenen Issues (blockiert durch, blockiert, berührt dieselbe Stelle, Dublette).
 - **Umsetzungsmöglichkeiten** mit spürbaren Folgen, jeweils mit Empfehlung.
 - **Risiken:** Was könnte dabei kaputtgehen? Vor allem der Anmeldeablauf.

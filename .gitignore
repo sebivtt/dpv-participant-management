@@ -30,6 +30,9 @@ htmlcov/
 /media/
 *.log
 
+# Vorübergehende Tests für die Vorschau (Skill `vorschau`), nie im Repo
+tests/test_zz_vorschau_*.py
+
 # Schlüssel und gespeicherte Login-Sitzungen
 *.pem
 *.key

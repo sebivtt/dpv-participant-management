@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
 | Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
 | Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge); 26.10.2026, #180, Nr. 4 |
@@ -27,6 +28,24 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-04 · Vorschau vor dem Pull Request, nach den roten Tests (#249)
+
+**Entscheidung** (Paket P-06 der Projektprüfung, Issue #249; Weg A beschlossen von Sebastian, E-037; Freigabe E-083, Form E-082, Geltung bei jeder sichtbaren Änderung E-080, Umgang mit Anmerkungen E-081; Regel-Review G-13; Befunde BF-093, BF-108, BF-114, BF-118, Muster MU-09):
+
+1. **Vorschau vor dem Pull Request:** Ändert ein Issue, was man auf einer Seite sieht oder bedient, bekommt Sebastian das Ergebnis als HTML-Datei aus den echten Vorlagen mit erfundenen Daten zu sehen, nachdem die Tests rot waren und bevor die unabhängige Prüfung beginnt. Die Sitzung sagt dazu, was die Datei nicht zeigt. Lokal ausprobiert wird nur auf Sebastians Wunsch, nach der neuen Anleitung im `README.md`. Verzichten kann nur die Klärung, mit der Zeile „Vorschau: keine.“ und dem Grund im Text des Issues. Ohne Sebastians Okay beginnt die unabhängige Prüfung nicht.
+2. **Anmerkungen aus der Vorschau:** Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut setzt die KI direkt um, auch wenn ein Szenario den alten Text nennt, und zeigt die neue Fassung; `geklärt` bleibt, der Text des Issues hält die Änderung fest. Ändern sich Voraussetzung, Handlung, Ergebnis oder Rechte eines Szenarios, oder kommt eines dazu, gilt wie bisher „Neuer Inhalt zu einem geklärten Issue“. Das ersetzt den Eintrag vom 26.10.2026 (#169), Punkt 2, nur für Anmerkungen aus der Vorschau zu Aussehen, Abständen und gleichbedeutendem Wortlaut; für alles andere gilt Punkt 2 unverändert.
+3. **Ein Kommentar hält fest, was gezeigt und gesagt wurde:** „Vorschau (Datum)“ im Issue, mit Stand, Fällen, Sebastians Anmerkungen und seinem Okay in seinen Worten. Der Pull Request verlinkt ihn in einem eigenen Abschnitt „Vorschau“, nicht unter „Wie geprüft wurde“, weil die Prüfung „PR-Angaben“ dort jeden Kommentar-Link als Szenarien-Link liest. Der Kommentar „Szenarien (Datum)“ wird nach dem Test-Commit nicht mehr bearbeitet.
+
+**Begründung:** Sebastian sah Änderungen oft erst im fertigen Pull Request oder danach, und dann folgten Korrekturen: In fünf Tagen nach der Übernahme entstanden zehn Folge-Issues an Bausteinen, und in vier von sechs Sitzungen änderte sich etwas erst beim Sehen (BF-093, BF-108). Die Reihenfolge „Szenarien, Tests rot, Code“ bleibt unangetastet (E-037), die Vorschau kommt danach; sie fängt Gestaltung also erst nach den Tests ab, dafür ohne Regeländerung an diesem Ablauf. Ob die Vorschau den Aufwand der Nachbesserungen senkt, misst der nächste Rückblick; ob dieser Zeitposten so groß ist wie angenommen, ist nicht gemessen.
+
+**Technische Wahl** (KI): Die Datei entsteht in einem vorübergehenden Test, den git ignoriert und der gleich danach gelöscht wird, weil `pruefen.sh` ohne Auswahl alle Tests unter `tests/` sammelt. Ein kleiner Helfer (`tests/vorschau.py`) bettet die statischen Dateien ein, sperrt Links und Formulare und zeigt jeden Fall in PC- und Handybreite; er bricht ab, wenn `core/templates/base.html` eine Datei lädt, die er nicht einbetten kann, statt die Seite still ungestaltet zu zeigen. Die Handgriffe stehen im neuen Skill `vorschau`, in `CLAUDE.md` nur die Regel.
+
+**Grenzen:** Die Datei zeigt keine Abläufe nach einem Klick oder Speichern, kein Neuladen und kein Springen der Seite (BF-108). Ob die Sitzung die Vorschau auslässt, prüft kein Test und keine Prüfung auf GitHub; das zeigt der Rückblick. Bildschirmfotos in gestalterischen Pull Requests sind nicht Teil dieses Eintrags (P-16). Einen festen Befehl für Testdaten gibt es noch nicht (#103).
+
+**Umsetzung:** `CLAUDE.md`, `README.md`, `.gitignore`, `.github/pull_request_template.md`, `.claude/skills/grill-me/SKILL.md`, `.claude/skills/vorschau/SKILL.md`, `docs/entscheidungen.md`, `tests/vorschau.py`, `tests/test_vorschau.py`, `tests/test_arbeitsregeln.py`, `tests/test_pr_angaben.py`.
 
 ---
 

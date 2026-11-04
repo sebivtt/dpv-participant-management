@@ -27,7 +27,8 @@ SKILL_DIR = BASE_DIR / ".claude" / "skills"
 GRILL_ME = SKILL_DIR / "grill-me" / "SKILL.md"
 ISSUE_ANLEGEN = SKILL_DIR / "issue-anlegen" / "SKILL.md"
 PHASE_STEUERN = SKILL_DIR / "phase-steuern" / "SKILL.md"
-SKILLS = [GRILL_ME, ISSUE_ANLEGEN, PHASE_STEUERN]
+VORSCHAU = SKILL_DIR / "vorschau" / "SKILL.md"
+SKILLS = [GRILL_ME, ISSUE_ANLEGEN, PHASE_STEUERN, VORSCHAU]
 
 # So viele Wörter in Folge darf ein Skill aus CLAUDE.md übernehmen, ohne dass es als
 # wiederholte Regel gilt. Kürzere Folgen sind Verweise und feste Begriffe wie
@@ -1155,3 +1156,215 @@ def test_entscheidung_zu_aufraeumen_rueckblick_rotem_main_und_neustarts_nennt_fr
         assert teil in flat, teil
     # Die Übersicht „Geltende Grundsätze“ wird nur fortgeschrieben, wenn der Eintrag etwas ersetzt; er sagt, was gilt.
     assert "ersetzt keinen" in flat or "ersetzt den Eintrag vom" in flat
+
+
+# --- Vorschau vor dem Pull Request (#249) -------------------------------------------------------
+
+
+def _vorschau_regel():
+    rules = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    assert "**Vorschau:**" in rules, "Regel „Vorschau“ fehlt unter „Für die Umsetzung gilt außerdem“"
+    return rules.split("**Vorschau:**", 1)[1].split("- **Nachziehen:**", 1)[0]
+
+
+def test_vorschau_steht_unter_fuer_die_umsetzung_vor_nachziehen_ohne_neue_nummer():
+    section = _section(CLAUDE_MD, "Ablauf je Aufgabe")
+    umsetzung = section.split("Für die Umsetzung gilt außerdem", 1)[1]
+
+    assert "- **Vorschau:**" in umsetzung
+    assert umsetzung.index("- **Vorschau:**") < umsetzung.index("- **Nachziehen:**")
+    assert not re.search(r"(?:^| )7\. \*\*", section), "Die Nummern 1 bis 6 bleiben; die Vorschau ist keine Nummer 7"
+    assert not re.search(r"\d\. \*\*Vorschau", section)
+
+
+def test_vorschau_wann_und_was_wird_gezeigt():
+    rule = _vorschau_regel()
+
+    assert "Ändert ein Issue, was man auf einer Seite sieht oder bedient" in rule
+    assert "auch Fehlerseiten, Meldungen und den Bausteinkatalog; nicht Mails und nicht reine Tests" in rule
+    assert "zeigt die KI Sebastian das Ergebnis, nachdem die Tests rot waren und bevor die unabhängige Prüfung beginnt" in rule
+    assert "eine HTML-Datei aus den echten Vorlagen mit erfundenen Daten (Skill `vorschau`)" in rule
+    assert "Sie nennt dabei, was die Datei nicht zeigt" in rule
+    assert "lokal ausprobiert wird nur auf seinen Wunsch (`README.md`, „Pull Request lokal ausprobieren“)" in rule
+
+
+def test_vorschau_verzicht_nur_durch_die_klaerung_mit_zeile_im_issue():
+    rule = _vorschau_regel()
+
+    assert "Verzichten kann nur die Klärung, mit der Zeile „Vorschau: keine.“ und dem Grund im Text des Issues" in rule
+
+
+def test_vorschau_anmerkungen_aussehen_direkt_verhalten_ueber_die_nachklaerung():
+    rule = _vorschau_regel()
+
+    assert "Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut setzt die KI direkt um" in rule
+    assert "auch wenn ein Szenario den alten Text nennt, und zeigt die neue Fassung" in rule
+    assert "`geklärt` bleibt, und der Text des Issues hält die Änderung fest" in rule
+    assert "Ändern sich Voraussetzung, Handlung, Ergebnis oder Rechte eines Szenarios, oder kommt eines dazu" in rule
+    assert "gilt „Neuer Inhalt zu einem geklärten Issue“, mit neuer Fassung der Szenarien" in rule
+
+
+def test_vorschau_laesst_bausteine_und_zielbild_gelten_und_fordert_okay_im_kommentar():
+    rule = _vorschau_regel()
+
+    assert "„Bausteine einbinden“ und „Zielbild vor Gestaltung“ gelten weiter" in rule
+    assert "Der Kommentar „Vorschau (Datum)“ im Issue hält beim Zeigen den Stand fest" in rule
+    assert "danach Sebastians Anmerkungen und sein Okay in seinen Worten; der Pull Request verlinkt ihn" in rule
+    assert "Ohne dieses Okay beginnt die unabhängige Prüfung nicht" in rule
+    assert "Ändert sich danach noch etwas Sichtbares, zeigt sie es erneut" in rule
+
+
+def test_neuer_inhalt_zu_einem_geklaerten_issue_nimmt_die_vorschau_anmerkungen_aus():
+    section = _section(CLAUDE_MD, "Ablauf einer Phase")
+    rule = section.split("**Neuer Inhalt zu einem geklärten Issue**", 1)[1].split("- **Labels:**", 1)[0]
+
+    assert "Ausgenommen sind Anmerkungen aus der Vorschau zu Aussehen, Abständen und gleichbedeutendem Wortlaut" in rule
+    assert "(Punkt „Vorschau“ unter „Für die Umsetzung gilt außerdem“)" in rule
+    assert rule.rstrip().endswith("(Punkt „Vorschau“ unter „Für die Umsetzung gilt außerdem“).")
+
+
+def test_reihenfolge_szenarien_tests_code_bleibt():
+    step = _schritt(3)
+
+    assert "Szenarien vor Code:" in step
+    assert "sie müssen fehlschlagen, und zwar aus dem richtigen Grund" in step
+    assert "Erst dann kommt der Code" in step
+    for nummer in range(1, 7):
+        assert _schritt(nummer)
+
+
+def test_grill_me_fragt_nach_der_vorschau_nach_dem_zielbild():
+    themen = _section(GRILL_ME, "Übersicht zeigen")
+
+    assert "- **Vorschau:**" in themen
+    assert themen.index("**Zielbild:**") < themen.index("**Vorschau:**") < themen.index("**Abhängigkeiten:**")
+    thema = themen.split("**Vorschau:**", 1)[1].split(" - **", 1)[0]
+    assert "gehört sie zur Umsetzung (`CLAUDE.md`, „Vorschau“)" in thema
+    assert "Spricht etwas dagegen, entscheidet Sebastian über den Verzicht; die Zeile dazu kommt in den Text des Issues" in thema
+
+
+def test_skill_vorschau_hat_kopf_und_vier_schritte():
+    text = VORSCHAU.read_text(encoding="utf-8")
+    kopf = text.split("---", 2)[1]
+    ueberschriften = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+
+    assert "name: vorschau" in kopf
+    assert "description: Eine sichtbare Änderung vor dem Pull Request als HTML-Datei aus den echten Vorlagen zeigen." in kopf
+    assert "Verwenden, sobald bei einem Issue mit sichtbarer Änderung die Seite steht und die Tests vorher rot waren." in kopf
+    assert text.index("# Vorschau: das Ergebnis zeigen, bevor der Pull Request entsteht") > 0
+    assert [u.split(".")[0] for u in ueberschriften] == ["1", "2", "3", "4"]
+    assert ueberschriften == ["1. Fälle wählen", "2. Datei erzeugen", "3. Zeigen", "4. Antwort festhalten"]
+
+
+def test_skill_vorschau_verweist_fuer_die_regel_auf_claude_md():
+    text = _text(VORSCHAU)
+
+    assert "Wann sie nötig ist und was aus Anmerkungen wird: `CLAUDE.md`, Punkt „Vorschau“. Hier steht nur der Handgriff." in text
+
+
+def test_skill_vorschau_erzeugt_die_datei_mit_dem_helfer_und_loescht_den_test():
+    text = _section(VORSCHAU, "Datei erzeugen")
+
+    assert "`tests/test_zz_vorschau_<nummer>.py`" in text
+    assert "git ignoriert ihn" in text
+    assert "`schreibe_vorschau` aus `tests/vorschau.py`" in text
+    assert "`lokal/vorschau-<nummer>.html`" in text
+    assert "Gleich danach den vorübergehenden Test löschen, sonst liefe er im vollen Prüflauf mit" in text
+    assert "braucht keinen laufenden Server" in text
+    assert "Nicht gleichzeitig mit einem anderen Prüflauf derselben Arbeitskopie" in text
+
+
+def test_skill_vorschau_zeigen_committet_zuerst_und_prueft_ob_der_ordner_den_stand_kennt():
+    text = _section(VORSCHAU, "Zeigen")
+
+    assert "Den Stand committen; die Tests liegen schon als eigener Commit davor." in text
+    assert "Dann den Kommentar „Vorschau (Datum)“ ins Issue" in text
+    assert "„wartet auf Sebastian“" in text
+    assert "Links und Speichern sind gesperrt, Neuladen und Springen der Seite sind nicht zu sehen" in text
+    assert "„Pull Request lokal ausprobieren“ im `README.md`" in text
+    assert "git -C ~/Entwicklung/dpv-participant-management cat-file -e <kennung>" in text
+    assert "sonst den Zweig hochladen, ohne Pull Request" in text
+
+
+def test_skill_vorschau_haelt_anmerkungen_im_vorschau_kommentar_nicht_bei_den_szenarien():
+    text = _section(VORSCHAU, "Antwort festhalten")
+
+    assert "Sebastians Anmerkungen wörtlich" in text
+    assert "sein Okay wörtlich" in text
+    assert "Den Kommentar „Szenarien (Datum)“ nicht bearbeiten, sonst wird die Prüfung „PR-Angaben“ rot" in text
+    assert "gilt `CONTRIBUTING.md`, Abschnitt 3: erst der Test, dann der Code" in text
+    assert "nennt die neue Fassung die anderen Seiten, die sich mitändern" in text
+
+
+def test_vorlage_hat_den_abschnitt_vorschau_zwischen_nutzende_und_zielbild():
+    text = PR_TEMPLATE.read_text(encoding="utf-8")
+    ueberschriften = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+    abschnitt = _section(PR_TEMPLATE, "Vorschau")
+
+    assert ueberschriften.index("Was sich für Nutzende ändert") + 1 == ueberschriften.index("Vorschau")
+    assert ueberschriften.index("Vorschau") + 1 == ueberschriften.index("Zielbild")
+    assert "Link zum Kommentar „Vorschau (Datum)“ im Issue (CLAUDE.md, „Vorschau“)" in abschnitt
+    assert "Ohne sichtbare Änderung „nicht nötig“ mit Grund; bei einem Verzicht der Grund aus dem Issue" in abschnitt
+    assert "Der Link steht hier, nicht unter „Wie geprüft wurde“" in abschnitt
+    assert "„PR-Angaben“ jeden Kommentar-Link als Szenarien-Link" in abschnitt
+
+
+def test_readme_verweise_auf_schritte_nennen_die_liste():
+    """#249: Über den späteren Abschnitten steht jetzt eine zweite nummerierte Liste; „Schritt 3“ allein träfe sie."""
+    readme = BASE_DIR / "README.md"
+    abschnitt = _section(readme, "Pull Request lokal ausprobieren")
+    spaeter = readme.read_text(encoding="utf-8").split("## Testumgebung im Container (Mac)", 1)[1]
+    anweisungen = re.findall(r"^.*\(zuerst Schritte? \d.*$", spaeter, flags=re.MULTILINE)
+
+    assert "meinen die Liste unter „Projekt starten (Mac)“, nicht diese hier" in abschnitt
+    assert len(anweisungen) == 3
+    for zeile in anweisungen:
+        assert "unter „Projekt starten (Mac)“" in zeile, zeile
+
+
+def test_readme_erklaert_den_pull_request_lokal_auszuprobieren():
+    readme = BASE_DIR / "README.md"
+    text = readme.read_text(encoding="utf-8")
+    ueberschriften = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
+    abschnitt = _section(readme, "Pull Request lokal ausprobieren")
+
+    assert ueberschriften.index("Pull Request lokal ausprobieren") + 1 == ueberschriften.index("Testumgebung im Container (Mac)")
+    assert abschnitt.startswith("Setzt eine eingerichtete Umgebung voraus (Schritte 1 bis 5 unter „Projekt starten (Mac)“).")
+    for befehl in [
+        "cd ~/Entwicklung/dpv-participant-management",
+        "git fetch origin",
+        "git switch --detach origin/<zweig>",
+        "uv sync",
+        "docker compose -f dev/docker-compose.yml up -d --wait",
+        "git diff --name-only origin/main...HEAD -- '*/migrations/*'",
+        "uv run --env-file .env python manage.py migrate",
+        "uv run --env-file .env python manage.py runserver",
+        "git switch main",
+    ]:
+        assert befehl in abschnitt, befehl
+    assert abschnitt.count("Danach:") >= 6
+    assert "vor dem Pull Request statt `origin/<zweig>` die Kennung, die die Sitzung nennt" in abschnitt
+    assert "`--detach` holt nur den Stand, ohne den Zweig zu belegen." in abschnitt
+    assert "scheitert mit `is already used by worktree`" in abschnitt
+    assert "nennt die Sitzung vorher den Befehl zum Zurückstellen und sagt, ob er alles wiederherstellt" in abschnitt
+    assert "einen festen Befehl für Testdaten bringt #103" in abschnitt
+    assert "solange der Stand noch ausgecheckt ist, denn auf `main` fehlen die Dateien dazu" in abschnitt
+    # Reihenfolge: Zurückstellen vor dem Wechsel auf main
+    assert abschnitt.index("Zurückstellen ausführen") < abschnitt.index("git switch main")
+
+
+def test_entscheidung_zur_vorschau_nennt_was_sie_ersetzt_und_steht_in_der_uebersicht():
+    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
+    uebersicht = text.split("## Geltende Grundsätze", 1)[1].split("\n---\n", 1)[0]
+    eintraege = re.split(r"^## ", text, flags=re.M)
+    eintrag = next((e for e in eintraege if e.split("\n", 1)[0].endswith("(#249)")), None)
+
+    assert eintrag, "Eintrag zu #249 fehlt in docs/entscheidungen.md"
+    assert eintrag.startswith("2026-11-04 · ")
+    flat = _flat(eintrag)
+    assert "ersetzt den Eintrag vom 26.10.2026 (#169), Punkt 2, nur für Anmerkungen aus der Vorschau zu Aussehen, Abständen und gleichbedeutendem Wortlaut" in flat
+    assert "Vorschau" in uebersicht
+    assert "#249" in uebersicht
+    assert "26.10.2026, #169, Nr. 2" in _flat(uebersicht.split("Vorschau", 1)[1].split("\n", 1)[0])
+    assert "Vorschau" in eintrag.split("\n", 1)[0]
+    assert text.index(eintrag.split("\n", 1)[0]) < text.index("(#245)"), "Neue Einträge stehen oben"
