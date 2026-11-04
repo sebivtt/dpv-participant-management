@@ -961,7 +961,7 @@ def test_uebersicht_enthaelt_alle_ersetzungen_des_anfangsbestands_nur_als_verwei
     zeilen = [z for z in kopf.splitlines() if z.startswith("| ") and not z.startswith("| Thema") and not z.startswith("| ---")]
 
     assert len(zeilen) == len(UEBERSICHT_THEMEN)
-    for zeile, thema in zip(zeilen, UEBERSICHT_THEMEN):
+    for zeile, thema in zip(zeilen, UEBERSICHT_THEMEN, strict=True):
         zellen = [z.strip() for z in zeile.strip("|").split("|")]
         assert zellen[0] == thema, zeile
         assert len(zellen) == 3 and all(zellen), zeile
