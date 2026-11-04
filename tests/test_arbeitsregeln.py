@@ -851,3 +851,178 @@ def test_entscheidung_zu_verweisen_memory_und_sitzungswechsel_nennt_regel_und_gr
         "nur lesend",
     ]:
         assert teil in flat, teil
+
+
+# --- #244 (P-05a): Prüfumfang der unabhängigen Prüfung, Nachziehen, Übersicht der Grundsätze ---
+
+REVIEW_LEITFADEN = BASE_DIR / "docs" / "review-leitfaden.md"
+
+UEBERSICHT_THEMEN = [
+    "Lokaler Prüfumfang",
+    "Wechsel der Sessions",
+    "Länge des Fahrtennamens",
+    "Zweite Zeile der Rollenkacheln",
+    "Marke am eigenen Bund, Seite „Verband“",
+    "Felder der Liste der Leitungen",
+    "Zwei Prüfläufe gleichzeitig",
+    "Bedienung des Felds Fahrtenname",
+    "Stelle für den fehlenden Namen",
+    "Aufträge nennen den Schritt",
+    "Wortlaut „E-Mail-Adresse“, „stammen aus“",
+    "Kennungen in Adressen",
+    "„hat Ringe“ ausschalten",
+    "Stunden erfassen",
+    "Code aus dem alten Repo",
+]
+
+
+def _entscheidungen_kopf():
+    """Alles vor dem ersten Eintrag (erste Überschrift `## <Jahr>-…`)."""
+    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
+    return re.split(r"^## \d{4}-\d{2}-\d{2} ", text, maxsplit=1, flags=re.M)[0]
+
+
+def test_unabhaengige_pruefung_liest_auch_ausserhalb_des_diffs_und_aendert_nichts():
+    section = _section(CLAUDE_MD, "Unabhängige Prüfung")
+
+    assert "prüft lesend; sie ändert nichts" in section
+    assert "Sie liest Text und Szenarien des Issues" in section
+    assert "die zum Verstehen nötigen Aufrufer, Rechtehilfen, Modelle und Tests, auch außerhalb des Diffs" in section
+    assert "sucht nach Stellen, die sich auf Geändertes beziehen" in section
+    assert "Ihr Bericht nennt, was sie außerhalb des Diffs geprüft hat, auch wenn sie dort nichts fand" in section
+    assert "Geprüft wird der Diff gegen `CONTRIBUTING.md` und diese Punkte:" in section
+    # Die sieben Punkte und die Schweregrade bleiben.
+    assert "7. selbst gebaut statt Baustein eingebunden" in section
+    assert "**hoch**" in section and "**mittel**" in section and "**gering**" in section
+
+
+def test_fehler_ausserhalb_des_diffs_wird_nicht_mitbehoben_sondern_eigenes_issue():
+    section = _section(CLAUDE_MD, "Unabhängige Prüfung")
+
+    assert section.rstrip().endswith(
+        "Einen Fehler außerhalb des Diffs, den der Pull Request nicht verursacht hat, behebt er nicht mit; "
+        "er kommt als eigenes Issue (Skill `issue-anlegen`)."
+    )
+
+
+def test_erfahrung_zur_unabhaengigen_pruefung_begrenzt_den_auftrag_auf_die_punkte_des_abschnitts():
+    text = _text(CLAUDE_MD)
+
+    assert "Ihren Auftrag auf die Punkte im Abschnitt „Unabhängige Prüfung“ begrenzen" in text
+    assert "Ihren Auftrag eng fassen" not in text
+
+
+def test_nachziehen_vor_der_unabhaengigen_pruefung_mit_suchbegriffen_im_pull_request():
+    text = _text(CLAUDE_MD)
+    start = text.index("Für die Umsetzung gilt außerdem:")
+    ende = text.index("## Ablauf einer Phase")
+    umsetzung = text[start:ende]
+
+    assert "**Nachziehen:** Vor der unabhängigen Prüfung sucht die KI mit `git grep \"#<nummer>\"`" in umsetzung
+    assert "nach Verweisen auf das Issue und mit Stichworten des Geänderten" in umsetzung
+    assert "nach Grundsätzen, Kommentaren und Doku, die sich darauf beziehen" in umsetzung
+    assert "zieht nach, was durch diese Änderung veraltet ist" in umsetzung
+    assert "Der Pull Request nennt unter „Wie geprüft wurde“ Suchbegriffe und Ergebnis." in umsetzung
+
+
+def test_ersetzender_eintrag_nennt_den_aelteren_und_schreibt_die_uebersicht_fort():
+    section = _section(CLAUDE_MD, "Was die KI nie allein entscheidet oder tut")
+
+    assert "neue kommen im Pull Request dazu und werden in der Beschreibung genannt. Ersetzt ein neuer Eintrag" in section
+    assert "nennt er ihn („ersetzt den Eintrag vom … (#…), Punkt …“)" in section
+    assert "Übersicht „Geltende Grundsätze“ am Anfang der Datei" in section
+    assert "gibt es das Thema dort schon, wird seine Zeile fortgeschrieben" in section
+    assert "Die Übersicht verweist nur, sie fasst keine Regel neu." in section
+
+
+def test_nur_den_diff_steht_nirgends_mehr_ausser_in_alten_eintraegen():
+    treffer = []
+    for path in [CLAUDE_MD, REVIEW_LEITFADEN, GRILL_ME, ISSUE_ANLEGEN, PHASE_STEUERN, PR_TEMPLATE, CONTRIBUTING]:
+        if re.search(r"nur (den|der) Diff", path.read_text(encoding="utf-8")):
+            treffer.append(path.name)
+
+    assert treffer == []
+
+
+def test_entscheidungen_hat_oben_die_uebersicht_geltende_grundsaetze():
+    kopf = _flat(_entscheidungen_kopf())
+
+    assert "Neue Einträge oben, unter der Übersicht." in kopf
+    assert "## Geltende Grundsätze" in _entscheidungen_kopf()
+    assert (
+        "Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je Teilthema eine Zeile. "
+        "Die Übersicht verweist nur; maßgeblich ist der genannte Eintrag. Die alten Einträge bleiben unverändert."
+    ) in kopf
+    assert "| Thema | Gilt | Ersetzt |" in _entscheidungen_kopf()
+
+
+def test_uebersicht_enthaelt_alle_ersetzungen_des_anfangsbestands_nur_als_verweis():
+    kopf = _entscheidungen_kopf()
+    zeilen = [z for z in kopf.splitlines() if z.startswith("| ") and not z.startswith("| Thema") and not z.startswith("| ---")]
+
+    assert len(zeilen) == len(UEBERSICHT_THEMEN)
+    for zeile, thema in zip(zeilen, UEBERSICHT_THEMEN):
+        zellen = [z.strip() for z in zeile.strip("|").split("|")]
+        assert zellen[0] == thema, zeile
+        assert len(zellen) == 3 and all(zellen), zeile
+    flat = _flat(kopf)
+    assert "| Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |" in flat
+    assert "| Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |" in flat
+    assert "| Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |" in flat
+    # htmx hat bewusst keine Zeile, bis das entschieden ist.
+    assert "htmx" not in kopf
+
+
+def test_uebersicht_verweist_nur_auf_vorhandene_eintraege():
+    text = ENTSCHEIDUNGEN.read_text(encoding="utf-8")
+    daten = set(re.findall(r"^## (\d{4}-\d{2}-\d{2}) · ", text, flags=re.M))
+    zeilen = [z for z in _entscheidungen_kopf().splitlines() if z.startswith("| ") and not z.startswith(("| Thema", "| ---"))]
+    assert zeilen, "Übersicht fehlt"
+    for zeile in zeilen:
+        gilt, ersetzt = [zelle.strip() for zelle in zeile.strip("|").split("|")[1:]]
+        for zelle in (gilt, ersetzt):
+            for tag, monat, jahr in re.findall(r"(\d{2})\.(\d{2})\.(\d{4})", zelle):
+                assert f"{jahr}-{monat}-{tag}" in daten, f"{zeile}: kein Eintrag vom {tag}.{monat}.{jahr}"
+
+
+def test_entscheidung_zu_pruefumfang_und_nachziehen_nennt_freigabe_und_ersetzt_nichts():
+    entries = re.split(r"^## ", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    entry = next((e for e in entries if e.split("\n", 1)[0].endswith("(#244)")), None)
+
+    assert entry, "Eintrag zu #244 fehlt in docs/entscheidungen.md"
+    assert entry.startswith("2026-11-04 · ")
+    flat = _flat(entry)
+    for teil in ["E-074", "E-075", "G-11", "Nachziehen", "Geltende Grundsätze", "ersetzt keinen"]:
+        assert teil in flat, teil
+    # Er steht ganz oben, vor dem Eintrag zu #240.
+    namen = re.findall(r"^## \d{4}-\d{2}-\d{2} · .*$", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    assert namen[0].endswith("(#244)")
+
+
+def test_grill_me_fragt_je_issue_mit_szenarien_was_unveraendert_bleiben_muss():
+    section = _section(GRILL_ME, "Szenarien")
+
+    assert "**Was bleibt unverändert?**" in section
+    assert "welche bestehenden Abläufe dieselben Daten, Adressen oder Rechte berühren und was dort gleich bleiben muss" in section
+    assert "Abschnitt „Was bleibt unverändert?“" in section
+    assert "berührt das Issue nichts Bestehendes, steht dort genau das mit Grund" in section
+
+
+def test_vorlage_fuer_pull_requests_hat_nachziehen_vor_der_unabhaengigen_pruefung():
+    text = PR_TEMPLATE.read_text(encoding="utf-8")
+    nachziehen = "- Nachziehen (Suchbegriffe und Ergebnis, `CLAUDE.md`, „Nachziehen“):"
+    pruefung = (
+        "- Unabhängige Prüfung: alle Befunde mit Schweregrad und einem Stichwort zur Fehlerart und was daraus wurde "
+        "(keine Befunde: das nennen):"
+    )
+
+    assert nachziehen in text and pruefung in text
+    assert text.index(nachziehen) < text.index(pruefung)
+    assert text.index("- Rauchtest des Hauptablaufs:") < text.index(nachziehen)
+    assert "- Unabhängige Prüfung: Befunde und was daraus wurde:" not in text
+
+
+def test_review_leitfaden_beschreibt_den_umfang_der_unabhaengigen_pruefung_wie_claude_md():
+    text = _text(REVIEW_LEITFADEN)
+
+    assert "der Diff, dazu Issue, nötige Aufrufer und Nachbarstellen" in text
