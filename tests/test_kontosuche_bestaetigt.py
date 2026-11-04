@@ -11,7 +11,6 @@ import pytest
 from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 
-from access.rights import Rights
 from accounts.models import AccountSearch
 from tests import test_benennen, test_organisation, test_verband
 from tests.keycloak_fake import login
@@ -158,6 +157,20 @@ def test_v5_mail_bestaetigt_als_text_false_oder_gar_nicht_gilt_als_unbestaetigt(
     assert found_by_bruno(org, PAULA["preferred_username"]) == ["Paula Pruefung"]
 
 
+@pytest.mark.parametrize("claim", ["false", "true", None])
+def test_v5_auch_beim_ersten_login_gilt_alles_ausser_einem_echten_ja_als_unbestaetigt(client, paula, org, claim):
+    if claim is None:
+        del paula.person["email_verified"]
+    else:
+        paula.person["email_verified"] = claim
+
+    login(client)
+
+    assert list(EmailAddress.objects.filter(user__username=PAULA["preferred_username"]).values_list("verified", flat=True)) == [False]
+    assert found_by_bruno(org, PAULA["email"]) == []
+    assert found_by_bruno(org, PAULA["preferred_username"]) == ["Paula Pruefung"]
+
+
 # ---------- Grenzfälle ----------
 
 
@@ -218,9 +231,3 @@ def test_gesperrte_und_nie_angemeldete_konten_erscheinen_mit_bestaetigter_mail_w
 
     assert found_by_bruno(org, "gesa@example.org") == []
     assert found_by_bruno(org, "nie@example.org") == []
-
-
-def test_find_accounts_gibt_ohne_bestaetigte_mail_nichts_heraus(org):
-    set_mail(org.ohne, OTTO, verified=False)
-
-    assert Rights(org.bundesleitung).find_accounts(OTTO) == []

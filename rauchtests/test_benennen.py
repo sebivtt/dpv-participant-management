@@ -49,6 +49,13 @@ def _dialog(page: Page):
     return page.locator("dialog.a-dialog")
 
 
+def test_der_echte_keycloak_meldet_die_mail_als_bestaetigt(pc):
+    """Die Kontosuche findet nur bestätigte Mails (#251); die übrigen Tests hier legen den Eintrag von Hand an."""
+    login(pc)
+
+    assert list(EmailAddress.objects.filter(user__username="erika.testfrau").values_list("verified", flat=True)) == [True]
+
+
 def test_am_pc_nur_mit_der_tastatur_benennen(pc):
     login(pc)
     units = _walhall_for_erika()
