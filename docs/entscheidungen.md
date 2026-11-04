@@ -30,6 +30,30 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-04 · Aufräumen je Phase, Rückblick baut zuerst ab, roter `main` geht vor, Prüfbedingungen und Neustarts (#245)
+
+**Entscheidung** (Paket P-05, Teil b, der Projektprüfung, Issue #245; Freigabe E-074, Texte E-075, beide von Sebastian am 03.11.2026; Regel-Review G-11; Befunde BF-095, BF-048):
+
+1. Ab P3 gibt es je Phase ein Issue „Aufräumen“, das Zusammenführungen und Bereinigungen benennt, die das Verhalten nicht ändern; die Steuerungssession legt es beim Phasenstart an, und es läuft wie jedes andere Issue (`CLAUDE.md`, „Ablauf einer Phase“, „Start“; Skill `phase-steuern`, Abschnitt 1).
+2. Der Rückblick am Ende einer Phase prüft zuerst, welche Regeln sich streichen, zusammenfassen oder durch eine Prüfschranke ersetzen lassen, und wertet die Befunde der unabhängigen Prüfung aus (bis zu drei häufige Fehlerarten, Zahl der ausgewerteten Pull Requests, fehlende Angaben). Gibt es nichts zu streichen, nennt er den Grund. Vor jeder neuen Regel kommt die Frage nach einer Prüfschranke. Neustarts werden mit dem Issue „Wackelnde Prüfungen“ (#243) abgeglichen (`CLAUDE.md`, „Abschluss“; Skill `phase-steuern`, Abschnitt 5).
+3. Ist der letzte beendete Lauf „Prüfungen“ auf `main` rot oder abgebrochen, geht die Behebung vor: Fehler-Issue, und nur dessen Pull Request bekommt den Link, sobald seine eigenen Prüfungen grün sind. Andere Umsetzungen warten bis zum grünen `main`. Auf das Ende eines noch laufenden Laufs wird weiter nicht gewartet. Sieht es nach einem wackelnden Test aus, entscheidet Sebastian über den Neustart. Geht die Abfrage nicht, sagt die Session das offen und fragt ihn (`CLAUDE.md`, „Umsetzen“; Skill `phase-steuern`, Abschnitt 2).
+4. Eine Prüfbedingung wird nicht gelockert, um einen Lauf grün zu bekommen. Schwächer machen oder überspringen in einem bestehenden Test oder gegenüber einem Szenario oder Akzeptanzkriterium geschieht nur in einem eigenen Issue. Hat ein neuer Test eine Anforderung falsch übersetzt, wird er im selben Pull Request korrigiert, und die Beschreibung nennt Kriterium, vorher und nachher (`CONTRIBUTING.md`, §3).
+5. Jeder Neustart, auch auf `main` und durch Sebastian, kommt als Kommentar mit Link zum Lauf, Commit, Versuch und Grund ins Issue „Wackelnde Prüfungen“ (#243); das erlaubt keinen weiteren Neustart (`CLAUDE.md`, „Ablauf je Aufgabe“, Nr. 6).
+
+**Begründung:** Zusammenlegen geprüften Codes hatte keinen erlaubten Ort, die Lernschleife kannte nur „Regel hinzufügen“, und 62 Befund-Commits wurden nie ausgewertet. `main` war einmal acht Stunden rot, und in einem Pull Request wurde eine Prüfbedingung gelockert, damit der Lauf grün wird (BF-095, BF-048; Muster MU-05, MU-11, MU-06, MU-08 der Projektprüfung). „Lockern nur in eigenem Issue“ steht in `CONTRIBUTING.md` statt in `CLAUDE.md`, weil es für jede Änderung und jedes Werkzeug gilt und dort schon die Regel zu bestehenden Tests steht.
+
+**Grenzen:**
+
+- Es gibt keine technische Sperre bei rotem `main`; die Regel bindet die Steuerungssession, GitHub sperrt nichts.
+- Das Abbauen wackelnder Prüfungen und das Kürzen von `CLAUDE.md` sind spätere Pakete der Projektprüfung; das Issue #243 wird nicht umgesetzt, bis das entschieden ist.
+- Der Neustart ohne Rückfrage bleibt auf die Browser-Installation begrenzt, einmal pro Stand (Eintrag vom 25.10.2026, #133); neu ist nur, dass jeder Neustart gezählt wird.
+- Nur Sebastian setzt `geklärt` und übernimmt Pull Requests (#233); das ändert dieser Eintrag nicht.
+- Dieser Eintrag ersetzt keinen älteren Eintrag und schreibt die Übersicht „Geltende Grundsätze“ nicht fort. Er ergänzt den Rückblick im Abschluss einer Phase (Eintrag vom 26.10.2026, #169, Nr. 2), ändert dort aber keine Aussage, und den Neustart (25.10.2026, #133, Nr. 2), dessen Bedingungen unverändert bleiben.
+
+**Umsetzung:** `CLAUDE.md`, `CONTRIBUTING.md`, `.claude/skills/phase-steuern/SKILL.md`, `docs/entscheidungen.md`, `tests/test_arbeitsregeln.py`.
+
+---
+
 ## 2026-11-04 · Die unabhängige Prüfung liest über den Diff hinaus, Nachziehen vor der Prüfung, Übersicht der Ersetzungen (#244)
 
 **Entscheidung** (Paket P-05, Teil a, der Projektprüfung, Issue #244; Freigabe E-074, Texte E-075, beide von Sebastian am 03.11.2026; Nachtrag E-076 am 04.11.2026; Regel-Review G-11):
