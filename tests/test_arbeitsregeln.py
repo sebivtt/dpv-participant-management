@@ -1309,6 +1309,19 @@ def test_vorlage_hat_den_abschnitt_vorschau_zwischen_nutzende_und_zielbild():
     assert "„PR-Angaben“ jeden Kommentar-Link als Szenarien-Link" in abschnitt
 
 
+def test_readme_verweise_auf_schritte_nennen_die_liste():
+    """#249: Über den späteren Abschnitten steht jetzt eine zweite nummerierte Liste; „Schritt 3“ allein träfe sie."""
+    readme = BASE_DIR / "README.md"
+    abschnitt = _section(readme, "Pull Request lokal ausprobieren")
+    spaeter = readme.read_text(encoding="utf-8").split("## Testumgebung im Container (Mac)", 1)[1]
+    anweisungen = re.findall(r"^.*\(zuerst Schritte? \d.*$", spaeter, flags=re.MULTILINE)
+
+    assert "meinen die Liste unter „Projekt starten (Mac)“, nicht diese hier" in abschnitt
+    assert len(anweisungen) == 3
+    for zeile in anweisungen:
+        assert "unter „Projekt starten (Mac)“" in zeile, zeile
+
+
 def test_readme_erklaert_den_pull_request_lokal_auszuprobieren():
     readme = BASE_DIR / "README.md"
     text = readme.read_text(encoding="utf-8")
