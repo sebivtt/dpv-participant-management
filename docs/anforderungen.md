@@ -1,10 +1,10 @@
 # Anforderungsdokument DPV-Anmeldetool
 
-Oct 19, 2026 · @Sebastian vetter
+Erstfassung 19.10.2026 · Sebastian Vetter
 
 ## Lesehinweise
 
-Dieses Dokument beschreibt die fachlichen Anforderungen (Why und What) an ein Anmelde- und Veranstaltungstool für den DPV e.V. Die technische Umsetzung (How) ist nicht Teil dieses Dokuments. Stand: zweiter Entwurf nach kritischer Durchsicht auf Widersprüche, Lücken, Prioritäten und Datenschutz.
+Dieses Dokument beschreibt die fachlichen Anforderungen (Why und What) an ein Anmelde- und Veranstaltungstool für den DPV e.V. Die technische Umsetzung (How) ist nicht Teil dieses Dokuments. Das Dokument wird laufend fortgeschrieben; warum sich etwas geändert hat, steht in `docs/entscheidungen.md`.
 
 Jede Anforderung hat eine eindeutige ID (z. B. ANM-03) und eine Priorität:
 

@@ -9,7 +9,7 @@ Die Regeln dazu stehen in `CLAUDE.md`, Abschnitte „Ein Ort je Angabe“, „Ab
 
 In der Cloud-Umgebung von Claude Code ist die GitHub-Suche (`search/issues`) gesperrt; dort nur Adressen unter `repos/...` verwenden, wie in den Befehlen dieses Skills.
 
-Das Phasen-Issue folgt der Vorlage `.github/ISSUE_TEMPLATE/phase.yml`. Für P2 ist es #106 (bis zum Umbau nach der Vorlage in #170 noch ohne den Abschnitt „Stand für die nächste Steuerungssession“). Nach der Vorlage angelegte Phasen-Issues findet dieser Befehl; `<phase>` ist das Label der Phase, etwa `P3`:
+Das Phasen-Issue folgt der Vorlage `.github/ISSUE_TEMPLATE/phase.yml`. Für P2 ist es #106. Nach der Vorlage angelegte Phasen-Issues findet dieser Befehl; `<phase>` ist das Label der Phase, etwa `P3`:
 
 ```bash
 gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&labels=<phase>&per_page=100" \
@@ -82,5 +82,5 @@ Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für di
 
 1. Alle Abschlusskriterien im Phasen-Issue abgehakt, jedes mit Beleg; Sebastian die Liste zeigen.
 2. Externes Review nach `docs/review-leitfaden.md` anstoßen (Vorlage `externes-review.yml`); das Review-Issue verlinkt das Phasen-Issue.
-3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1; kommen genau 1000 zurück, das offen sagen). Streichungen und neue Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen aus dem Vorgänger-Repo“.
+3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1; kommen genau 1000 zurück, das offen sagen). Streichungen und neue Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen“.
 4. Erst danach geht der „Stand“ im `README.md` ebenso per Issue und Auftrag an eine Umsetzungs-Session. Ist er in `main`, das Phasen-Issue schließen.

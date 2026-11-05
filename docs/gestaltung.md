@@ -1,6 +1,6 @@
 # Gestaltung des DPV Anmeldetools
 
-Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen bis auf die Technik in Nr. 8 (Entscheidung vom 05.11.2026). Gebaut sind bisher die Grundgestaltung und der Bausteinkatalog (`/bausteine/`, #176). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
+Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen bis auf die Technik in Nr. 8 (Entscheidung vom 05.11.2026). Der Bausteinkatalog steht unter `/bausteine/` (#176). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
 
 Wer eine Seite baut, nimmt die Bausteine aus dem Bausteinkatalog (unten) und die Farben aus `core/static/core/app.css`. Ob und wann vorher ein Zielbild nötig ist: `CLAUDE.md`, „Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162); die Zielbilder liegen unter `docs/zielbilder/`.
 
@@ -27,7 +27,7 @@ Protokolle in #7. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Ei
 - **Navigation:** Auf echten Seiten steht nur, was es gibt, und nur für Personen, die es nutzen dürfen (`core/navigation.py`). Keine leeren Platzhalter. Ausblenden ersetzt nie die Rechteprüfung auf dem Server.
 - **Fußbereich:** eine flache Zeile am Ende des Inhalts, links „Impressum“ und „Datenschutz“, rechts „© DPV e.V. · Anmeldetool 2026“; die Jahreszahl zählt weiter. Auf Seiten mit Seitenleiste steht er bei kurzem Inhalt am unteren Rand des Fensters; bei langem Inhalt folgt er dem Inhalt, klebt nicht am Fenster und überdeckt nichts (#206). Ausnahme: Auf der Login- und der Fehlerseite steht er mittig direkt unter der Karte.
 - **Login- und Fehlerseite:** ruhig und mittig, ohne Seitenleiste.
-- **Dashboard (gebaut in #28):** oben die Begrüßung, darunter einige Statusmeldungen, darunter am PC zwei Drittel „Kommende Veranstaltungen“ und ein Drittel „Schnellaktionen“; am Handy untereinander, Schnellaktionen zuerst.
+- **Dashboard (#28):** oben die Begrüßung, darunter einige Statusmeldungen, darunter am PC zwei Drittel „Kommende Veranstaltungen“ und ein Drittel „Schnellaktionen“; am Handy untereinander, Schnellaktionen zuerst.
 - **Veranstaltungen in Übersichten:** breite, flache Zeilen. Links ein Bild (Ausschnitt aus dem Banner oder eigenes Logo, #31), ohne Bild die Lilie; in der Mitte Name, Zeitraum, Ort, Organisation; rechts Zustand und Anmeldezahl. Mit Obergrenze „23 von 40 angemeldet“ mit Balken, voll zusätzlich „ausgebucht“; ohne Obergrenze nur „23 angemeldet“. Entwürfe gestrichelt umrandet und mit dem Wort „Entwurf“.
 - **Zustände (vorläufig, endgültig in #29):** „Entwurf“, „Anmeldung ab 01.12.“, „Anmeldung offen“, „Anmeldung geschlossen“.
 - **Menüs:** öffnen am PC beim Darüberfahren und zusätzlich per Klick, Antippen und Tastatur; sie schließen mit kurzer Verzögerung.

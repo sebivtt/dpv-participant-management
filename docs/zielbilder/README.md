@@ -17,7 +17,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 ### Abweichungen der Seite vom Zielbild
 
 1. **Fehlt, weil das Tool die Daten nicht hat:** „Profil freigeben“ und die Freigaben je Feld (#137), Geburtsdatum (#143), Adresse und Gesundheitsangaben (FRM-02 bis FRM-04). Sie kommen mit ihren Issues und folgen dann dem Zielbild. Den Fahrtennamen gibt es seit #111 (Punkt 10).
-2. **„Mitgliedschaft und Austritt verwaltest du in deiner Organisation.“ mit „Organisation öffnen“ fehlt.** Es widerspricht der Entscheidung zu #65: „Austreten“ kommt als Knopf direkt in die Fläche der Mitgliedschaft, an diese Stelle. Eine Seite „Organisation“ gibt es noch nicht (#93).
+2. **„Mitgliedschaft und Austritt verwaltest du in deiner Organisation.“ mit „Organisation öffnen“ fehlt.** Es widerspricht der Entscheidung zu #65: „Austreten“ kommt als Knopf direkt in die Fläche der Mitgliedschaft, an diese Stelle.
 3. **Reihenfolge der Rollen von klein nach groß** (Gruppenleitung zuerst, Admin zuletzt), nicht wie im Zielbild von groß nach klein; so in den Szenarien zu #96 entschieden und in #161 bestätigt.
 4. **Feste Sätze statt der Beschreibungen** unter Rollen im DPV ([Nachklärung Kacheln](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403407168)): Verbandsleitung „Leitung des Verbands“ statt „Verantwortung auf Verbandsebene“, DPV-Veranstaltungsteam „Veranstaltungen des Verbands“ statt „Verbandsweite Funktion“. Admin hängt an keiner Organisation und fehlt im Zielbild; die Kachel zeigt klein „Admin“, groß „DPV Anmeldetool“, darunter „Verwaltung des ganzen Tools“. Es sind feste Texte, keine gespeicherten Daten.
 5. **Farben in „Organisation und Rollen“** (Sebastian bei der Klärung von #161): Mitgliedschaft zart blau `#e9eff6` wie im Zielbild; die Rollen-Kacheln weiß mit feinem Rand `#dbe2ea` und oben einem schmalen blauen Streifen (3 Pixel, `#1a4b7e`) statt grauer Fläche. Der Rand ist eine bewusste Ausnahme von „Flächen statt Rahmen“ (`docs/gestaltung.md`). Die kleine Rollenmarke ist in den Kacheln zart blau statt weiß, weil sie auf weißer Kachel sonst verschwände (von Sebastian bestätigt, [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403556335)).
@@ -79,7 +79,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 ### Abweichungen der Seite vom Zielbild
 
 1. **Immer zugeklappt:** Organisationen ohne Zugriff stehen immer unter „… weitere ohne Zugriff“, auch eine einzelne; das Zielbild klappt erst ab drei zu (Nachklärung, N5).
-2. **Nur Anzeige in #189:** Der Knopf „… benennen“ mit seinem Dialog kam mit #190 (Abweichungen unten); „Entfernen“ und „Rolle abgeben“ kommen mit #191.
+2. **Nur Anzeige in #189:** Der Knopf „… benennen“ mit seinem Dialog kam mit #190 (Abweichungen unten); „Entfernen“ und „Rolle abgeben“ kamen mit #191.
 3. **Nicht Teil von #93, nur Ausblick im Zielbild:** der Abschnitt „Personen“ (#117, #65), die Sicht der Verbandsleitung (#94), das dunkle Steuerband und der gelbe Hinweiskasten.
 4. **Rolle als Rollenmarke:** Hinter jeder Leitung steht die Rolle als Rollenmarke wie auf „Mein Profil“, nicht als runde Pille (Sebastian, 28.10.2026, bei der Umsetzung von #189).
 5. **„Organisationen darunter“ als Rollenkachel:** wie die Kacheln auf „Mein Profil“, klein die Art als Rollenmarke, groß der Name, darunter die Leitung; ohne Zugriff grau, ohne blauen Streifen und nicht anklickbar (Sebastian, 28.10.2026, bei der Umsetzung von #189). Im Zielbild steht die Art in Großbuchstaben.
