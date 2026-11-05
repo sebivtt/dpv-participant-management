@@ -360,7 +360,7 @@ def test_verweise_auf_abschnitte_treffen_eine_ueberschrift_oder_einen_fetten_pun
     fehlt = []
 
     for path in VERWEISDATEIEN:
-        text = _ohne_codebloecke(path)
+        text = path.read_text(encoding="utf-8")
         for treffer in re.finditer(r"(?<![\w/.-])`?(CLAUDE\.md|CONTRIBUTING\.md|README\.md)`?", text):
             nummern, namen = _gliederung(_ZIELDATEIEN[treffer.group(1)])
             ort = treffer.end()
@@ -385,7 +385,7 @@ def test_verweise_auf_abschnitte_treffen_eine_ueberschrift_oder_einen_fetten_pun
     assert not fehlt, f"Diese Verweise treffen keinen Abschnitt: {fehlt}"
 
 
-_ENTSCHEIDUNG = re.compile(r"entscheidungen\.md`?,? (?:Eintrag vom )?(\d{2})\.(\d{2})\.(\d{4})(?:,? (?:zu )?#(\d+))?")
+_ENTSCHEIDUNG = re.compile(r"(?:entscheidungen\.md`?,? (?:Eintrag vom )?|Entscheidung vom )(\d{2})\.(\d{2})\.(\d{4})(?:,? (?:zu )?#(\d+))?")
 
 
 def _eintraege():
