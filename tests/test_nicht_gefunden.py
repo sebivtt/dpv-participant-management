@@ -2,11 +2,11 @@
 
 Regel (Klärung von #64 am 22.10.2026): Eine Adresse mit Kennung eines Eintrags zeigt ohne Recht
 dieselbe Antwort wie ein Eintrag, den es nicht gibt (404); eine Adresse ohne Kennung, also ein
-ganzer Bereich, zeigt ohne Recht „kein Zugriff“ (403). Das gilt auch für Formulare und für jemanden, der ein Recht mitten in der Arbeit verliert.
+ganzer Bereich, zeigt ohne Recht „kein Zugriff“ (403). Das gilt auch für Formulare und für
+jemanden, der ein Recht mitten in der Arbeit verliert.
 
-Seiten mit Personendaten gibt es in P2 erst mit #65, #93 und #117. Die Tests nutzen deshalb
-Testadressen in `tests/urls.py`, die so gebaut sind, wie Seiten es müssen: Einträge
-nur über die zentrale Rechteprüfung (`request.rights`). Verglichen wird die ganze Antwort:
+Die Tests nutzen Testadressen in `tests/urls.py`, die so gebaut sind, wie Seiten es müssen:
+Einträge nur über die zentrale Rechteprüfung (`request.rights`). Verglichen wird die ganze Antwort:
 Statuscode, Inhalt Byte für Byte und alle Kopfzeilen. Ausgenommen ist nur der Wert des
 Formularschutzes (CSRF) auf Seiten mit Formular: Django verschlüsselt ihn bei jeder Antwort neu,
 auch bei zwei gleichen Aufrufen. Die Fehlerseiten haben kein Formular, dort ist nichts
@@ -312,8 +312,8 @@ def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
             continue
         address = _example_address(pattern)
         with_real = address.replace(MISSING, next(iter(real.values()))) if has_key(pattern) else address
-        # Nur die Formulare (die letzten beiden Wege von answers()), wenn die Adresse eine Kennung hat.
-        forms_only = slice(2, None) if has_key(pattern) else slice(None)
+        # Nur das Formular (der letzte Weg von answers()), wenn die Adresse eine Kennung hat.
+        forms_only = slice(1, None) if has_key(pattern) else slice(None)
         compared = with_real if has_key(pattern) else address
         for user in users:
             shown, expected = answers(user, with_real, real), answers(user, compared, missing)

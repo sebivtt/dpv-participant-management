@@ -1,9 +1,8 @@
 """Tests für Konten ohne Zuordnung (#9; PK-06, EH-07, RO-08, dazu EP-01 und EP-03 als Gegenprobe).
 
 Die Kürzel S1 bis G4 verweisen auf Sebastians Szenarien vom 27.10.2026 im Issue #9 (Kommentar
-„Szenarien (27.10.2026)“). V4 und V5 (Veranstaltungen, Anmeldungen) prüfen #100 und #101. Seiten
-mit Personen, Einheiten und Leitungen gibt es in P2 erst mit #65 und #93; wie in #90 und #64
-prüfen die Tests die zentrale Rechteprüfung und die Testadressen in `tests/urls.py`, dazu
+„Szenarien (27.10.2026)“). V4 und V5 (Veranstaltungen, Anmeldungen) prüfen #100 und #101. Wie in
+#90 und #64 prüfen die Tests die zentrale Rechteprüfung und die Testadressen in `tests/urls.py`, dazu
 Startseite und „Mein Profil“, die einzigen Seiten, die ein Konto ohne Zuordnung heute öffnet.
 
 Der Hinweis richtet sich nach „weder Mitgliedschaft noch Rolle“, nicht nach „Zuordnung“: Ein
