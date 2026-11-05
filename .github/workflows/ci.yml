@@ -147,7 +147,14 @@ jobs:
           done
           docker logs keycloak
           exit 1
-      - name: Alle Prüfungen
-        # Eigenes Limit, damit ein hängender Test den Lauf nicht bis zum Limit des Laufs blockiert (#256).
+      - name: Wiederholungslauf (Wegwerf-Zweig, nie übernehmen)
         timeout-minutes: 45
-        run: ./pruefen.sh
+        run: |
+          rot=0
+          for lauf in 1 2 3 4 5 6 7 8 9 10; do
+            echo "=== Wiederholung $lauf von 10"
+            env DJANGO_ALLOW_ASYNC_UNSAFE=true uv run --locked pytest rauchtests/test_kurzmeldung.py \
+              rauchtests/test_zeichenzahl.py::test_zahl_beim_tippen_zu_lang_speichern_und_verwerfen -q -rfE || rot=$((rot + 1))
+          done
+          echo "Rote Läufe: $rot von 10"
+          exit "$rot"
