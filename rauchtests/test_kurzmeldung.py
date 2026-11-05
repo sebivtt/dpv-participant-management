@@ -12,7 +12,7 @@ from datetime import datetime
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import DatabaseError
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Error, Page, expect
 
 from rauchtests.conftest import BASE, PC, login, run_axe
 from rauchtests.test_rauchtest import _tab_to_element
@@ -37,6 +37,11 @@ def _later(page: Page, ms: int) -> None:
     page.clock.run_for(ms)
 
 
+def _pause_soon(page: Page) -> None:
+    now = page.evaluate("Date.now()")
+    page.clock.pause_at(datetime.fromtimestamp(now / 1000 + 0.05))
+
+
 def _axe(page: Page) -> list[str]:
     """Prüfung auf Barrierefreiheit; axe wartet selbst auf Zeitgeber, deshalb läuft die Uhr dafür kurz weiter.
 
@@ -46,12 +51,20 @@ def _axe(page: Page) -> list[str]:
     try:
         return run_axe(page)
     finally:
-        now = page.evaluate("Date.now()")
-        page.clock.pause_at(datetime.fromtimestamp(now / 1000 + 0.05))
+        try:
+            _pause_soon(page)
+        except Error as error:
+            # Ist der Browser langsamer als der Puffer von 0,05 s, liegt der Haltepunkt schon in der
+            # Vergangenheit. Playwright hält die Uhr trotzdem zuerst an und wirft erst danach (#253).
+            # Ein zweiter Versuch mit frisch gelesener Zeit klappt also; jede andere Meldung und ein
+            # zweites Scheitern bleiben ein Fehler.
+            if "Cannot fast-forward to the past" not in str(error):
+                raise
+            _pause_soon(page)
 
 
 def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch):
-    """Ist der Browser langsam, liegt der Haltepunkt von `_axe` schon in der Vergangenheit; die Uhr muss trotzdem stehen (#253)."""
+    """Auch wenn der Haltepunkt von `_axe` wegen eines langsamen Browsers schon vorbei ist, muss die Uhr stehen (#253)."""
     _stop_clock(pc)
     pc.goto(f"{BASE}/")
     clock = pc.clock
