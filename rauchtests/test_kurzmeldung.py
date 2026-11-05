@@ -50,6 +50,25 @@ def _axe(page: Page) -> list[str]:
         page.clock.pause_at(datetime.fromtimestamp(now / 1000 + 0.05))
 
 
+def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch):
+    """Ist der Browser langsam, liegt der Haltepunkt von `_axe` schon in der Vergangenheit; die Uhr muss trotzdem stehen (#253)."""
+    _stop_clock(pc)
+    pc.goto(f"{BASE}/")
+    clock = pc.clock
+    assert pc.clock is clock  # Die Hülle unten trifft nur, wenn `page.clock` jedes Mal dasselbe Objekt liefert.
+    original = clock.pause_at
+
+    def slow_pause_at(time_to_pause):
+        time.sleep(0.2)
+        return original(time_to_pause)
+
+    monkeypatch.setattr(clock, "pause_at", slow_pause_at)
+    _axe(pc)
+    first = pc.evaluate("Date.now()")
+    time.sleep(0.3)
+    assert pc.evaluate("Date.now()") == first
+
+
 def _short(page: Page):
     return page.locator("#kurzmeldungen .a-kurz")
 
