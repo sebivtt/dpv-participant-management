@@ -53,10 +53,9 @@ def client_for(user) -> Client:
     return client
 
 
-def save(who, value, client=None, htmx=False, **extra):
+def save(who, value, client=None, **extra):
     """Schickt als `who` das Formular „Fahrtenname“ ab, wie es der Knopf „Speichern“ tut."""
-    headers = {"HX-Request": "true"} if htmx else {}
-    return (client or client_for(who)).post(SAVE, {"scout_name": value, **extra}, headers=headers)
+    return (client or client_for(who)).post(SAVE, {"scout_name": value, **extra})
 
 
 def stored(user) -> str:
@@ -203,11 +202,10 @@ def foreign_fields(target) -> dict:
 
 
 @pytest.mark.rechtematrix("EP-04", "EP-03")
-@pytest.mark.parametrize("htmx", [False, True])
-def test_stammesleitung_aendert_mit_erikas_kennung_nur_den_eigenen_fahrtennamen(org, htmx):
+def test_stammesleitung_aendert_mit_erikas_kennung_nur_den_eigenen_fahrtennamen(org):
     set_stored(org.erika, "Kiwi")
 
-    save(org.lead, "Gekapert", htmx=htmx, **foreign_fields(org.erika))
+    save(org.lead, "Gekapert", **foreign_fields(org.erika))
 
     assert stored(org.erika) == "Kiwi"
     assert stored(org.lead) == "Gekapert"
@@ -219,10 +217,8 @@ def test_direkte_adresse_mit_erikas_kennung_gibt_es_nicht(org):
     client = client_for(org.lead)
 
     for address in (f"{SAVE}{org.erika.key}/", f"{SAVE}{org.erika.pk}/", f"/profil/{org.erika.key}/fahrtenname/"):
-        for htmx in (False, True):
-            headers = {"HX-Request": "true"} if htmx else {}
-            response = client.post(address, {"scout_name": "Gekapert"}, headers=headers)
-            assert response.status_code == 404, address
+        response = client.post(address, {"scout_name": "Gekapert"})
+        assert response.status_code == 404, address
         response = client.post(f"{SAVE}?person={org.erika.key}&user={org.erika.pk}", {"scout_name": "Gekapert"})
         assert response.status_code == 302
 
@@ -236,8 +232,7 @@ def test_admin_aendert_erikas_fahrtennamen_nicht(org):
     give(admin, R.ADMIN)
     set_stored(org.erika, "Kiwi")
 
-    for htmx in (False, True):
-        save(admin, "Gekapert", htmx=htmx, **foreign_fields(org.erika))
+    save(admin, "Gekapert", **foreign_fields(org.erika))
 
     assert stored(org.erika) == "Kiwi"
     assert stored(admin) == "Gekapert"
@@ -260,9 +255,8 @@ def test_keine_adresse_aendert_den_fahrtennamen_einer_anderen_person(org):
     for pattern, _entry in ALL:
         address = _example_address(pattern)
         for user in (org.max, org.lead, federation_lead, admin, without):
-            for method, htmx in (("get", False), ("post", False), ("post", True)):
-                headers = {"HX-Request": "true"} if htmx else {}
-                getattr(client_for(user), method)(address, form, headers=headers)
+            for method in ("get", "post"):
+                getattr(client_for(user), method)(address, form)
 
     assert stored(org.erika) == "Kiwi"
 
@@ -281,11 +275,9 @@ def test_gegenprobe_die_stammesleitung_aendert_ihren_eigenen_fahrtennamen(org):
 
 
 def test_ohne_login_geht_es_zur_anmeldung_und_nichts_wird_gespeichert(org):
-    for htmx in (False, True):
-        headers = {"HX-Request": "true"} if htmx else {}
-        response = Client().post(SAVE, {"scout_name": "Kiwi", **foreign_fields(org.erika)}, headers=headers)
-        assert response.status_code == 302
-        assert response["Location"].startswith("/anmelden/")
+    response = Client().post(SAVE, {"scout_name": "Kiwi", **foreign_fields(org.erika)})
+    assert response.status_code == 302
+    assert response["Location"].startswith("/anmelden/")
 
     assert User.objects.exclude(scout_name="").count() == 0
 

@@ -364,7 +364,6 @@ def test_c10_fietes_offene_seite_zeigt_beim_naechsten_klick_nicht_gefunden(org):
     remove(org.walhall_leitung, org.falken, role_of(org.falken_leitung, R.GROUP_LEAD, org.falken))
 
     assert fiete.get(unit_address(org.falken)).status_code == 404
-    assert fiete.get(unit_address(org.falken), headers={"HX-Request": "true"}).status_code == 404
     assert fiete.get("/organisation/").status_code == 403
     assert "Organisation" not in nav_labels(_tree(fiete.get("/profil/")))
 

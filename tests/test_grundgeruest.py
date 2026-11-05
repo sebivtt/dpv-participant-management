@@ -1,6 +1,7 @@
 """Tests für das Grundgerüst (#4): Start, Datenbank, Fassungen und Prüfeinstellungen."""
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -109,3 +110,34 @@ def test_readme_legt_das_projekt_nicht_in_einen_icloud_ordner():
     # Ohne „~“, damit auch Schreibweisen wie $HOME/Documents/ oder /Users/…/Documents/ auffallen.
     for icloud_folder in ["Documents/", "Desktop/"]:
         assert icloud_folder not in readme
+
+
+def test_kein_htmx_und_kein_alpine_in_code_vorlagen_und_tests():
+    """Technik im Browser ist das eigene Skript `core/static/core/app.js`; htmx und Alpine.js gibt es nicht (#264)."""
+    # Nur versionierte Dateien dieser Arbeitskopie, also weder `.venv/` noch andere Arbeitskopien.
+    listing = subprocess.run(
+        ["git", "ls-files", "-z"],  # noqa: S607 -- git aus dem Suchpfad wie bei jedem Aufruf
+        cwd=BASE_DIR,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    own_file = Path(__file__).resolve()
+    forbidden = re.compile(r"htmx|alpine|hx-request", re.IGNORECASE)
+    hits = []
+    for name in listing.stdout.split("\0"):
+        path = BASE_DIR / name
+        # `docs/` bleibt draußen: Zielbilder kommen von außen und dürfen sagen, was sie wollen.
+        if not name.endswith((".py", ".html", ".js")) or name.startswith("docs/") or path.resolve() == own_file:
+            continue
+        if not path.is_file():
+            continue  # im Arbeitsbaum gelöscht, aber noch nicht aus dem Index genommen
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if forbidden.search(line):
+                hits.append(f"{name}:{number}: {line.strip()}")
+
+    assert not hits, (
+        "htmx, Alpine.js und die Kopfzeile `HX-Request` sind nicht mehr Standard: Dynamik im Browser macht "
+        "`core/static/core/app.js` (Eintrag „Technik im Browser“ in `docs/entscheidungen.md`, #264). "
+        "Ob htmx doch kommt, klärt #30. Treffer:\n" + "\n".join(hits)
+    )

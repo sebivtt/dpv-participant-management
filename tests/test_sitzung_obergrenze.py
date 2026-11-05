@@ -97,15 +97,14 @@ def test_auch_wer_staendig_klickt_ist_nach_zwoelf_stunden_abgemeldet(client, key
     _assert_next_click_leads_to_login_with_hint(client)
 
 
-def test_htmx_anfrage_nach_zwoelf_stunden_wie_nach_zwei_stunden_ohne_klick(client, keycloak):
-    headers = {"HX-Request": "true"}
+def test_nach_zwoelf_stunden_wie_nach_zwei_stunden_ohne_klick(client, keycloak):
     login(client)
     Session.objects.update(expire_date=timezone.now() - timedelta(seconds=1))
-    after_idle = client.get("/", headers=headers)
+    after_idle = client.get("/")
 
     login(client)
     _set_login_time(client, TWELVE_HOURS + timedelta(seconds=1))
-    after_max = client.get("/", headers=headers)
+    after_max = client.get("/")
 
     assert after_idle.status_code == 302
     assert (after_max.status_code, after_max["Location"]) == (after_idle.status_code, after_idle["Location"])

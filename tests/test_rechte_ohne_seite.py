@@ -1,7 +1,7 @@
 """Tests für die Verbote, für die es im Tool keine Seite gibt (#90; EP-09, RO-19, PR-01, PR-03, TD-01).
 
 Diese Zeilen der Rechtematrix gelten, weil keine Adresse das Verbotene tut. Die Tests rufen
-deshalb jede Adresse des Tools auf, wie der Rundumtest: mit und ohne htmx, lesend und mit einem
+deshalb jede Adresse des Tools auf, wie der Rundumtest: lesend und mit einem
 manipulierten Formular, angemeldet als Mitglied, Leitung, Verbandsleitung, Admin, Konto ohne
 Zuordnung und als Person mit vielen Rollen zugleich (#136, A17: je Fall). Danach muss die
 Datenbank unverändert sein, und keine Antwort darf zeigen, was niemand im Tool sieht. Kommt eine
@@ -138,21 +138,14 @@ def every_attempt(org, patterns=ALL, keys=()):
 
 
 def _attempts(address: str, form: dict, org) -> list:
-    """Alle Antworten auf eine Adresse: lesend, per htmx, mit Formular, für jede Person aus `org.everyone`."""
+    """Alle Antworten auf eine Adresse: lesend, mit Daten und mit Formular, für jede Person aus `org.everyone`."""
     responses = []
     for user in org.everyone:
-        for method, data, htmx in (
-            ("get", None, False),
-            ("get", None, True),
-            ("get", form, False),
-            ("post", form, False),
-            ("post", form, True),
-        ):
+        for method, data in (("get", None), ("get", form), ("post", form)):
             client = Client()
             client.force_login(user)
-            headers = {"HX-Request": "true"} if htmx else {}
             call = getattr(client, method)
-            responses.append(call(address, data or {}, headers=headers))
+            responses.append(call(address, data or {}))
     return responses
 
 

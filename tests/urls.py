@@ -58,7 +58,7 @@ def forbidden(request: HttpRequest, number: int) -> HttpResponse:
 
 
 def show_person(request: HttpRequest, key: str) -> HttpResponse:
-    """Zeigt eine Person, die die angemeldete Person sehen darf; auch per htmx und Formular."""
+    """Zeigt eine Person, die die angemeldete Person sehen darf; auch per Formular."""
     return HttpResponse(request.rights.person(key).get_full_name())
 
 
