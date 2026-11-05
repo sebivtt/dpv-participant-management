@@ -36,6 +36,20 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-05 · Zustandsangaben nur an ihrem Ort, Fahrplan ohne externe Diagramme (#265)
+
+**Entscheidung** (Sebastian):
+
+1. Der „Stand“ im `README.md` nennt nur die laufende Phase und verweist auf das Phasen-Issue und die Rechtematrix. Was gebaut ist, steht dort.
+2. Zeitleiste und Diagramm des kritischen Pfads aus der Fassung vom 20.10.2026 sind nicht mehr maßgeblich; es gelten die Tabellen in `docs/fahrplan.md`.
+3. Der Kopf von `docs/anforderungen.md` nennt die Erstfassung und verweist auf dieses Protokoll, statt einen Entwurfsstand zu behaupten.
+
+**Begründung:** Diese Angaben waren veraltet oder verwiesen auf ein Dokument, das nicht maßgeblich und nicht immer lesbar ist.
+
+**Grenzen:** Dieser Eintrag ersetzt keinen älteren Eintrag; die Inhalte der Anforderungen ändern sich nicht.
+
+---
+
 ## 2026-11-05 · Technik im Browser: eigenes Skript statt htmx und Alpine.js (#264)
 
 **Entscheidung** (Sebastian):

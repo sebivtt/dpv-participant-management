@@ -2,7 +2,7 @@
 
 Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmeldungen einzeln und gesammelt annehmen, Teilnehmendenlisten führen. Login über den Keycloak des DPV. Ehrenamtlich entwickelt, gepflegt und betrieben.
 
-**Stand:** Laufende Phase P2 „Durchstich“, seit dem 22.10.2026 (Zieldatum 30.06.2027, `docs/fahrplan.md`). P1 „Gerüst“ ist abgeschlossen: Die Abschlusskriterien sind erfüllt (#57), aus dem externen Review blieben nach der Nachprüfung keine blockierenden Befunde (#73); der Login auf dem Testserver gehört seit #71 zu P2. Fachfunktionen gibt es noch nicht; zuerst werden die Issues von P2 erfasst und geklärt. Parallel laufen die Restpunkte von P0 „Klären und festlegen“ bis zum Prüfpunkt E0 am 29.11.2026 (`docs/entscheidungen.md`, 21.10.2026).
+**Stand:** Laufende Phase P2 „Durchstich“ (`docs/fahrplan.md`). Was in dieser Phase fertig ist und was als Nächstes kommt, steht im Phasen-Issue [#106](https://github.com/sebivtt/dpv-participant-management/issues/106). Welche Rechte schon gebaut sind, zeigt die Spalte „Stand“ in `docs/rechtematrix.md`.
 
 ## Wo was steht
 
@@ -15,6 +15,9 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`docs/review-leitfaden.md`](docs/review-leitfaden.md) | Leitfaden für das externe KI-Review am Ende jeder Phase |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Regeln für jede Änderung, egal ob von Menschen oder KI |
 | [`CLAUDE.md`](CLAUDE.md) | zusätzliche Hinweise für KI-Assistenten |
+| [`docs/rechtematrix.md`](docs/rechtematrix.md) | wer was darf, mit dem Stand je Zeile |
+| [`docs/gestaltung.md`](docs/gestaltung.md) | Leitlinie für die Gestaltung jeder Seite |
+| [`docs/zielbilder/`](docs/zielbilder/) | Sebastians Entwürfe für einzelne Seiten |
 
 Anforderungen und Fahrplan sind hier im Repo maßgeblich (Entscheidung vom 20.10.2026). Änderungen daran laufen wie alles andere über Pull Requests.
 
