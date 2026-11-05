@@ -348,8 +348,11 @@ def _gliederung(path):
 
 
 # Verweis auf eine der drei Dateien samt allem, was danach als Ziel folgt: Namen in „…“, „Abschnitt n“
-# oder „Ablauf je Aufgabe Nr. n“, auch mehrere hintereinander und auch ohne Backticks.
-_ZIEL = re.compile(r"[,;]? ?(?:(?:unter|im|in|und) |\(vor allem )?(?:Punkt )?(?:„([^“]+)“|Abschnitt (\d+)|Ablauf je Aufgabe Nr\. (\d+))")
+# oder ein Schritt von „Ablauf je Aufgabe“, auch mehrere hintereinander, in Klammern und ohne Backticks.
+_ZIEL = re.compile(
+    r"[,;]? ?\(?(?:vor allem )?(?:(?:unter|im|in|und) )?(?:Punkt |Abschnitte? )?"
+    r"(?:„Ablauf je Aufgabe“, Schritt (?P<schritt1>\d+)|Ablauf je Aufgabe Nr\. (?P<schritt2>\d+)|„(?P<name>[^“]+)“|Abschnitt (?P<nummer>\d+))"
+)
 _ZIELDATEIEN = {"CLAUDE.md": CLAUDE_MD, "CONTRIBUTING.md": CONTRIBUTING, "README.md": README}
 
 
@@ -358,12 +361,12 @@ def test_verweise_auf_abschnitte_treffen_eine_ueberschrift_oder_einen_fetten_pun
 
     for path in VERWEISDATEIEN:
         text = _ohne_codebloecke(path)
-        for treffer in re.finditer(r"`?(CLAUDE\.md|CONTRIBUTING\.md|README\.md)`?", text):
+        for treffer in re.finditer(r"(?<![\w/.-])`?(CLAUDE\.md|CONTRIBUTING\.md|README\.md)`?", text):
             nummern, namen = _gliederung(_ZIELDATEIEN[treffer.group(1)])
             ort = treffer.end()
             while ziel := _ZIEL.match(text, ort):
                 ort = ziel.end()
-                name, nummer, schritt = ziel.groups()
+                name, nummer, schritt = ziel["name"], ziel["nummer"], ziel["schritt1"] or ziel["schritt2"]
                 if name and name not in namen:
                     fehlt.append(f"{path.name}: {treffer.group(1)}, „{name}“")
                 if nummer and int(nummer) not in nummern:
