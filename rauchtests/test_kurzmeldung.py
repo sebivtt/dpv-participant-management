@@ -63,25 +63,6 @@ def _axe(page: Page) -> list[str]:
             _pause_soon(page)
 
 
-def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch):
-    """Auch wenn der Haltepunkt von `_axe` wegen eines langsamen Browsers schon vorbei ist, muss die Uhr stehen (#253)."""
-    _stop_clock(pc)
-    pc.goto(f"{BASE}/")
-    clock = pc.clock
-    assert pc.clock is clock  # Die Hülle unten trifft nur, wenn `page.clock` jedes Mal dasselbe Objekt liefert.
-    original = clock.pause_at
-
-    def slow_pause_at(time_to_pause):
-        time.sleep(0.2)
-        return original(time_to_pause)
-
-    monkeypatch.setattr(clock, "pause_at", slow_pause_at)
-    _axe(pc)
-    first = pc.evaluate("Date.now()")
-    time.sleep(0.3)
-    assert pc.evaluate("Date.now()") == first
-
-
 def _short(page: Page):
     return page.locator("#kurzmeldungen .a-kurz")
 
@@ -430,3 +411,22 @@ def test_ohne_skript_steht_die_meldung_fest_oben(pc, browser):
         assert notice.evaluate("e => getComputedStyle(e).boxShadow") == "none"
     finally:
         context.close()
+
+
+def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch):
+    """Auch wenn der Haltepunkt von `_axe` wegen eines langsamen Browsers schon vorbei ist, muss die Uhr stehen (#253)."""
+    _stop_clock(pc)
+    pc.goto(f"{BASE}/")
+    clock = pc.clock
+    assert pc.clock is clock  # Die Hülle unten trifft nur, wenn `page.clock` jedes Mal dasselbe Objekt liefert.
+    original = clock.pause_at
+
+    def slow_pause_at(time_to_pause):
+        time.sleep(0.2)
+        return original(time_to_pause)
+
+    monkeypatch.setattr(clock, "pause_at", slow_pause_at)
+    _axe(pc)
+    first = pc.evaluate("Date.now()")
+    time.sleep(0.3)
+    assert pc.evaluate("Date.now()") == first
