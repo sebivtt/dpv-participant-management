@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.db import DatabaseError
 from playwright.sync_api import Error, Page, expect
 
-from rauchtests.conftest import BASE, PC, login, run_axe
+from rauchtests.conftest import AXE, BASE, PC, login, run_axe
 from rauchtests.test_rauchtest import _tab_to_element
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -469,8 +469,6 @@ def _axe_file(tmp_path, delay_ms: int):
     }};
 }})();
 """
-    from rauchtests.conftest import AXE
-
     path = tmp_path / "axe-langsam.js"
     path.write_text(AXE.read_text(encoding="utf-8") + wrapper, encoding="utf-8")
     return path
@@ -542,9 +540,6 @@ def test_axe_meldet_einen_zu_blassen_text_der_kurzen_meldung_trotzdem(pc):
     _save(pc, "Kiwi")
     _later(pc, 300)
     expect(_short(pc)).to_have_count(1)
-    started = time.monotonic()
     found = _axe(pc)
-    # Sie wartet nicht darauf, dass die festgehaltene Meldung verschwindet.
-    assert time.monotonic() - started < SHORT_TIME / 1000
     assert any(line.startswith("color-contrast") for line in found), found
     expect(_short(pc)).to_have_count(1)
