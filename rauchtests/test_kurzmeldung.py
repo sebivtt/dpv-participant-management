@@ -421,12 +421,22 @@ def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch)
     assert pc.clock is clock  # Die Hülle unten trifft nur, wenn `page.clock` jedes Mal dasselbe Objekt liefert.
     original = clock.pause_at
 
+    calls = []
+
     def slow_pause_at(time_to_pause):
+        calls.append(time_to_pause)
         time.sleep(0.2)
         return original(time_to_pause)
 
+    def assert_clock_stands():
+        first = pc.evaluate("Date.now()")
+        time.sleep(0.3)
+        assert pc.evaluate("Date.now()") == first
+
     monkeypatch.setattr(clock, "pause_at", slow_pause_at)
     _axe(pc)
-    first = pc.evaluate("Date.now()")
-    time.sleep(0.3)
-    assert pc.evaluate("Date.now()") == first
+    assert len(calls) == 2  # Der erste Versuch kam zu spät, der zweite traf die stehende Uhr.
+    assert_clock_stands()
+    # Auch die nächste Seite übernimmt die stehende Uhr, obwohl ein Versuch gescheitert ist.
+    pc.reload()
+    assert_clock_stands()
