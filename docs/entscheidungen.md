@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Prüfung der Kernregeln durch Tests | 05.11.2026, #262, Nr. 1 und 2 | 26.10.2026, #169, „Technische Wahl“ (nur der Satzteil „die Kernregeln in `CLAUDE.md`“) |
 | Zeitlimit des Prüflaufs auf GitHub | 04.11.2026, #256 | 25.10.2026, #133, Nr. 1 (nur der Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten) |
 | Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
@@ -30,6 +31,22 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-05 · Regeltests prüfen Verweise und Kennungen statt einzelner Sätze (#262)
+
+**Entscheidung** (Paket P-09 der Projektprüfung, Issue #262; Befund BF-038, Muster MU-10; Freigaben E-111 bis E-113 von Sebastian; Liste der Tests nach Gegenprüfung G-14; Text des Issues von Sebastian mit dem Label `geklärt` freigegeben):
+
+1. **Verweise werden geprüft, Sätze nicht:** Drei Tests in `tests/test_arbeitsregeln.py` prüfen, dass jede in Backticks genannte Datei und jeder Ordner in den Regeln und der Doku existiert, dass Verweise auf Abschnitte von `CLAUDE.md`, `CONTRIBUTING.md` und `README.md` (mit Namen in „…“, „Abschnitt n“ oder „Ablauf je Aufgabe Nr. n“) eine Überschrift oder einen fetten Punkt treffen und dass Verweise auf `docs/entscheidungen.md` einen Eintrag dieses Tages (und, wo genannt, mit dieser Nummer in der Kopfzeile) treffen. Ein vierter Test hält fest, dass die Einträge zu #161, #162, #176, #235, #237, #239, #240, #244, #245 und #249 da sind, die bisher Regeltests schützten.
+2. **38 Kernregeln tragen eine unsichtbare Kennung** `<!-- Rnn -->` direkt hinter ihrem Satz oder Punkt, in `CLAUDE.md`, `CONTRIBUTING.md` und den Skills `grill-me` und `vorschau`. Ein Test verlangt jede Kennung genau einmal, mit mindestens fünf Wörtern davor in derselben Zeile; eine unbekannte Kennung ist ebenfalls rot. Wird eine Regel verschoben oder umformuliert, geht die Kennung mit, und kein Test ändert sich. Wird sie bewusst gestrichen, kommt die Kennung aus der Liste im Test, und der Pull Request nennt das. Das ersetzt den Eintrag vom 26.10.2026 (#169), „Technische Wahl“, nur im Satzteil „die Kernregeln in `CLAUDE.md`“.
+3. **Wortlauttests entfallen:** 81 Testfälle, die einzelne Sätze verglichen (80 in `tests/test_arbeitsregeln.py`, einer in `tests/test_pruefung_auf_github.py`), fallen weg; 13 Fälle werden auf Überschriften, Reihenfolge und Form gekürzt, 13 bleiben unverändert. Welcher Test durch welche Kennung oder welchen Verweistest ersetzt wird oder mit welchem Grund entfällt, steht im Text des Issues #262.
+
+**Begründung:** Die bisherigen Tests hielten Wortlaut und Ort der Regeln fest und machten jede Umformulierung rot, obwohl die Regel dieselbe blieb. Das blockiert den geplanten Rückbau der Regeln (P-10). Die Anforderung bleibt unverändert: Kernregeln verschwinden nicht still, und Verweise stimmen. Die Abschwächung geschieht nach `CONTRIBUTING.md`, Abschnitt 3, im eigenen Issue.
+
+**Grenzen:** Eine Regel, die inhaltlich schwächer wird und ihre Kennung behält, merkt kein Test; ebenso nicht die Reihenfolge von Schritten in einer Regel, die Liste der Befehle im `README.md`, die Handgriffe der Skills ohne Kennung und ob ein Punkt unter dem richtigen Elternabschnitt steht. Das prüft nur das Review. „Vorher / nachher“ im Kopf eines Pull Requests prüft kein Programm; die Pflicht selbst schützt die Kennung R35 (#262). Regeln ohne Kennung (außerhalb der 38) schützt nur das Review. Das gilt auch für die Punkte 1 bis 7 der unabhängigen Prüfung. Fällt aus einem Punkt mit mehreren Sätzen nur ein einzelner Satz weg und die Kennung bleibt, merkt das ebenfalls nur das Review; der Test sieht nur, ob in der Zeile noch mindestens fünf Wörter vor der Kennung stehen. Der Verweistest liest Namen nur hinter dem Dateinamen; Namen davor („der „Stand“ im `README.md`“) und Verweise innerhalb von `CLAUDE.md` ohne Dateinamen („Punkt „Vorschau“ unter …“, „Nr. 6“) prüft er nicht. Bewusst an Überschriften oder feste Felder gebunden bleiben die gekürzten Tests zu den Skills, der Test, dass jeder Skill auf `CLAUDE.md` verweist, die Vorlage für Pull Requests (`tests/test_pr_angaben.py`) und der Hinweis des Hooks auf seinen Abschnitt (`tests/test_zusammenfassung.py`); wandert dieser Abschnitt, müssen Hook und Test mit. Als Verweis auf eine Datei gilt nur, was in Backticks steht und eine übliche Dateiendung oder „/“ am Ende hat; `backend/notifications/` in `CONTRIBUTING.md` meint das alte Repo und ist die einzige Ausnahme.
+
+**Umsetzung:** `tests/test_arbeitsregeln.py`, `tests/test_pruefung_auf_github.py`, Kommentare `<!-- Rnn -->` in `CLAUDE.md`, `CONTRIBUTING.md`, `.claude/skills/grill-me/SKILL.md` und `.claude/skills/vorschau/SKILL.md`, `docs/entscheidungen.md`.
 
 ---
 
