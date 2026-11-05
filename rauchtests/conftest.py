@@ -153,6 +153,7 @@ SHORT_DELAY_MS = 100
 # 1. Ein Zeitgeber gleicher Länge wie der der Seite läuft sicher nach ihrem ab; danach steckt keine Meldung
 #    mehr im Warten, sondern steht im Bereich.
 # 2. Die Maus „darüber“ hält alle Meldungen an. Sie beginnen während der Prüfung nicht zu verschwinden.
+#    Endet dabei eine ältere, schon ausblendende Meldung, zählen die übrigen neu; volle 6 Sekunden bleiben ihnen.
 # 3. Ein- und Ausblenden laufen zu Ende (Animationen bleiben an). `allSettled`, weil `finished` abgelehnt
 #    wird, wenn die Meldung dabei entfernt wird.
 # Danach gilt wieder die echte Lage von Maus und Fokus: Wer die Maus wirklich darauf hält, hält sie weiter.
