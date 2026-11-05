@@ -13,7 +13,7 @@ Aus den Szenarien die Fälle, in denen die Seite anders aussieht: je Rolle oder 
 
 ## 2. Datei erzeugen
 
-Einen vorübergehenden Test `tests/test_zz_vorschau_<nummer>.py` schreiben; git ignoriert ihn. Er nutzt die Fixtures der bestehenden Tests, holt jede Seite mit dem Test-Client und gibt die Fälle an `schreibe_vorschau` aus `tests/vorschau.py`. Ausgabe nach `lokal/vorschau-<nummer>.html`; auch das ignoriert git, und der Helfer legt den Ordner bei Bedarf an. Gleich danach den vorübergehenden Test löschen, sonst liefe er im vollen Prüflauf mit; für eine weitere Runde neu anlegen. So enthält die Datei nur erfundene Daten und braucht keinen laufenden Server.
+Einen vorübergehenden Test `tests/test_zz_vorschau_<nummer>.py` schreiben; git ignoriert ihn. Er nutzt die Fixtures der bestehenden Tests, holt jede Seite mit dem Test-Client und gibt die Fälle an `schreibe_vorschau` aus `tests/vorschau.py`. Ausgabe nach `lokal/vorschau-<nummer>.html`; auch das ignoriert git, und der Helfer legt den Ordner bei Bedarf an. Gleich danach den vorübergehenden Test löschen, sonst liefe er im vollen Prüflauf mit; für eine weitere Runde neu anlegen. <!-- R38 --> So enthält die Datei nur erfundene Daten und braucht keinen laufenden Server.
 
 Nicht gleichzeitig mit einem anderen Prüflauf derselben Arbeitskopie laufen lassen. Eine Seite, die erst nach einem Klick oder Speichern entsteht, wird über den Zustand in den Fixtures erzeugt, ein Dialog als eigener Fall.
 

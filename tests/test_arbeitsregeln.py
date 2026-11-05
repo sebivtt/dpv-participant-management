@@ -12,6 +12,8 @@ Gestaltung“ (#162) hat grill-me die Handgriffe, die Regel selbst steht in CLAU
 
 import json
 import re
+import subprocess
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -1368,3 +1370,196 @@ def test_entscheidung_zur_vorschau_nennt_was_sie_ersetzt_und_steht_in_der_uebers
     assert "26.10.2026, #169, Nr. 2" in _flat(uebersicht.split("Vorschau", 1)[1].split("\n", 1)[0])
     assert "Vorschau" in eintrag.split("\n", 1)[0]
     assert text.index(eintrag.split("\n", 1)[0]) < text.index("(#245)"), "Neue Einträge stehen oben"
+
+
+# --- Verweise und Kennungen statt fester Sätze (#262) -----------------------------------------
+#
+# Diese fünf Tests schützen die Regeln, ohne einen Wortlaut festzuhalten: Eine Regel darf
+# umformuliert und verschoben werden. Rot wird nur, wenn ein Verweis ins Leere geht oder eine
+# Kernregel samt Kennung verschwindet. Nicht geprüft wird, ob eine Regel inhaltlich schwächer wird
+# und ob ein Punkt unter dem richtigen Elternabschnitt steht; das prüft das Review.
+
+README = BASE_DIR / "README.md"
+VERWEISDATEIEN = [CLAUDE_MD, CONTRIBUTING, README, PR_TEMPLATE, *SKILLS, GESTALTUNG, REVIEW_LEITFADEN]
+REGELDATEIEN = [CLAUDE_MD, CONTRIBUTING, *SKILLS]
+# Als Datei oder Ordner gilt eine Angabe in Backticks mit diesen Endungen oder mit „/“ am Ende;
+# alles andere (Benutzernamen wie `ohne.mail`, Adressen wie `search/issues`) ist kein Verweis.
+DATEIENDUNGEN = {".md", ".py", ".yml", ".json", ".html", ".svg", ".js", ".css", ".sh", ".toml", ".lock", ".example"}
+# Einzige Ausnahme: CONTRIBUTING.md meint damit einen Ordner des alten Repos.
+KEIN_VERWEIS = {"backend/notifications/"}
+
+
+def _ohne_codebloecke(path):
+    return re.sub(r"```.*?```", "", path.read_text(encoding="utf-8"), flags=re.S)
+
+
+def test_dateien_und_ordner_in_backticks_gibt_es_im_repo():
+    befehl = ["git", "ls-files"]
+    verfolgt = subprocess.run(befehl, cwd=BASE_DIR, capture_output=True, text=True, check=True).stdout  # noqa: S603 -- fester Befehl
+    namen = Counter(Path(zeile).name for zeile in verfolgt.splitlines())
+    uebersprungen, fehlt = 0, []
+
+    for path in VERWEISDATEIEN:
+        for angabe in re.findall(r"`([^`\n]+)`", _ohne_codebloecke(path)):
+            if re.search(r"[<*…\s]", angabe) or angabe.startswith(("/", "http")):
+                uebersprungen += 1
+            elif (angabe.endswith("/") or Path(angabe).suffix in DATEIENDUNGEN) and angabe not in KEIN_VERWEIS:
+                ziel = angabe.removeprefix("./")
+                # Ein bloßer Name gilt, wenn er im Wurzelordner steht oder genau einmal im Repo vorkommt.
+                if not (BASE_DIR / ziel).exists() and not ("/" not in ziel.rstrip("/") and namen[ziel] == 1):
+                    fehlt.append(f"{path.name}: `{angabe}`")
+
+    print(f"{uebersprungen} Angaben übersprungen (mit <, *, …, Leerzeichen, Anfang / oder http)")  # noqa: T201 -- Zahl für den Bericht
+    assert not fehlt, f"Diese Dateien oder Ordner gibt es nicht ({uebersprungen} Angaben übersprungen): {fehlt}"
+
+
+def _gliederung(path):
+    """Überschriften (mit ihrer Nummer) und fette Punkte eines Dokuments, ohne Codeblöcke."""
+    text = _ohne_codebloecke(path)
+    nummern, namen = set(), set()
+    for nummer, name in re.findall(r"^#+ (?:(\d+)\. )?(.+)$", text, flags=re.M):
+        namen.add(name.strip())
+        if nummer:
+            nummern.add(int(nummer))
+    namen |= {name.strip().rstrip(":,.") for name in re.findall(r"\*\*([^*]+)\*\*", text)}
+    return nummern, namen
+
+
+# Verweis auf eine der drei Dateien samt allem, was danach als Ziel folgt: Namen in „…“, „Abschnitt n“
+# oder „Ablauf je Aufgabe Nr. n“, auch mehrere hintereinander und auch ohne Backticks.
+_ZIEL = re.compile(r"[,;]? ?(?:(?:unter|im|in|und) |\(vor allem )?(?:Punkt )?(?:„([^“]+)“|Abschnitt (\d+)|Ablauf je Aufgabe Nr\. (\d+))")
+_ZIELDATEIEN = {"CLAUDE.md": CLAUDE_MD, "CONTRIBUTING.md": CONTRIBUTING, "README.md": README}
+
+
+def test_verweise_auf_abschnitte_treffen_eine_ueberschrift_oder_einen_fetten_punkt():
+    fehlt = []
+
+    for path in VERWEISDATEIEN:
+        text = _ohne_codebloecke(path)
+        for treffer in re.finditer(r"`?(CLAUDE\.md|CONTRIBUTING\.md|README\.md)`?", text):
+            nummern, namen = _gliederung(_ZIELDATEIEN[treffer.group(1)])
+            ort = treffer.end()
+            while ziel := _ZIEL.match(text, ort):
+                ort = ziel.end()
+                name, nummer, schritt = ziel.groups()
+                if name and name not in namen:
+                    fehlt.append(f"{path.name}: {treffer.group(1)}, „{name}“")
+                if nummer and int(nummer) not in nummern:
+                    fehlt.append(f"{path.name}: {treffer.group(1)}, Abschnitt {nummer}")
+                if schritt and not re.search(rf"(?:^| ){schritt}\. \*\*", _section(CLAUDE_MD, "Ablauf je Aufgabe")):
+                    fehlt.append(f"{path.name}: Ablauf je Aufgabe Nr. {schritt}")
+
+    # Ein „Abschnitt n“ ohne Dateiangabe meint in einem Skill dessen eigene Überschrift n.
+    for skill in SKILLS:
+        text = _ohne_codebloecke(skill)
+        eigene, _ = _gliederung(skill)
+        for treffer in re.finditer(r"Abschnitt (\d+)", text):
+            if not text[: treffer.start()].rstrip(" ,").endswith("`") and int(treffer.group(1)) not in eigene:
+                fehlt.append(f"{skill.parent.name}: Abschnitt {treffer.group(1)}")
+
+    assert not fehlt, f"Diese Verweise treffen keinen Abschnitt: {fehlt}"
+
+
+_ENTSCHEIDUNG = re.compile(r"entscheidungen\.md`?,? (?:Eintrag vom )?(\d{2})\.(\d{2})\.(\d{4})(?:,? (?:zu )?#(\d+))?")
+
+
+def _eintraege():
+    """Kopfzeilen der Einträge in docs/entscheidungen.md; die Übersicht oben ist kein Eintrag."""
+    kopfzeilen = re.findall(r"^## (.+)$", ENTSCHEIDUNGEN.read_text(encoding="utf-8"), flags=re.M)
+    return [kopf for kopf in kopfzeilen if kopf != "Geltende Grundsätze"]
+
+
+def test_verweise_auf_entscheidungen_treffen_einen_eintrag_des_tages():
+    eintraege = _eintraege()
+    fehlt = []
+
+    assert all(re.match(r"\d{4}-\d{2}-\d{2} · \S", kopf) for kopf in eintraege), "Kopfzeile ohne „JJJJ-MM-TT · …“"
+    for path in VERWEISDATEIEN:
+        for tag, monat, jahr, nummer in _ENTSCHEIDUNG.findall(path.read_text(encoding="utf-8")):
+            vom_tag = [kopf for kopf in eintraege if kopf.startswith(f"{jahr}-{monat}-{tag} · ")]
+            if not vom_tag:
+                fehlt.append(f"{path.name}: kein Eintrag vom {tag}.{monat}.{jahr}")
+            elif nummer and not any(re.search(rf"#{nummer}\b", kopf) for kopf in vom_tag):
+                fehlt.append(f"{path.name}: #{nummer} fehlt am {tag}.{monat}.{jahr}")
+
+    assert not fehlt, f"Diese Verweise treffen keinen Eintrag: {fehlt}"
+
+
+# Diese Einträge schützen heute Regeln; ihre Kopfzeilen ändern sich nie (CLAUDE.md).
+GESCHUETZTE_EINTRAEGE = [161, 162, 176, 235, 237, 239, 240, 244, 245, 249]
+
+
+def test_die_eintraege_zu_den_geschuetzten_regeln_gibt_es():
+    fehlt = [n for n in GESCHUETZTE_EINTRAEGE if not any(re.search(rf"#{n}\b", kopf) for kopf in _eintraege())]
+
+    assert not fehlt, f"In docs/entscheidungen.md fehlen die Einträge zu {fehlt}"
+
+
+# Die Kernregeln, die eine Kennung `<!-- Rnn -->` hinter ihrem Satz tragen (#262). Geschützt ist die
+# Regel, nicht ihr Wortlaut: Die Kennung geht mit, wenn die Regel wandert.
+KENNUNGEN = {
+    "R01": "Ein Ort je Angabe",
+    "R02": "Texte der KI enthalten nur Verweise",
+    "R03": "Phasenstart",
+    "R04": "Klären läuft voraus",
+    "R05": "Neuer Inhalt zu einem geklärten Issue",
+    "R06": "Rückblick streicht zuerst",
+    "R07": "Issue „Aufräumen“ ab P3",
+    "R08": "Roter Lauf auf `main` geht vor",
+    "R09": "Steuerungssession entscheidet nichts Fachliches",
+    "R10": "Freigaben gibt nur Sebastian",
+    "R11": "Auftrag ist nur Link und Verweis",
+    "R12": "Wechsel der Steuerungssession",
+    "R13": "Frische Session je Issue",
+    "R14": "Szenarien vor Code",
+    "R15": "Ohne Szenarien nur mit Klärung",
+    "R16": "Ohne Szenarien anhalten",
+    "R17": "Zielbild vor Gestaltung",
+    "R18": "Zielbild ist Orientierung, nur erfundene Daten",
+    "R19": "Ohne Zielbild anhalten",
+    "R20": "Passt ein Baustein nicht, fragen",
+    "R21": "Vorschau vor der Prüfung",
+    "R22": "Nachziehen",
+    "R23": "Test-Commit vor dem Code",
+    "R24": "Prüfumfang passend zur Änderung",
+    "R25": "Unabhängige Prüfung einmal, zweite nur nach „hoch“",
+    "R26": "Umfang der unabhängigen Prüfung",
+    "R27": "Schweregrade nach der Folge",
+    "R28": "Fremder Fehler wird eigenes Issue",
+    "R29": "Selbst warten, Link erst bei Grün",
+    "R30": "Neustart nach gescheiterter Browser-Installation",
+    "R31": "Neustarts werden gezählt",
+    "R32": "Sperren nie umgehen, andere Werkzeuge nur lesend",
+    "R33": "Ersetzender Eintrag nennt den älteren",
+    "R34": "Prüfbedingung nicht lockern",
+    "R35": "Kopf „Für Sebastian“ mit „vorher / nachher“",
+    "R36": "Was bleibt unverändert",
+    "R37": "Kurzform nur mit Sebastians Bestätigung",
+    "R38": "Vorübergehenden Vorschau-Test löschen",
+}
+
+
+def test_jede_kernregel_hat_ihre_kennung_genau_einmal_hinter_ihrem_satz():
+    gefunden, zu_kurz = {}, []
+
+    for path in REGELDATEIEN:
+        for zeile in path.read_text(encoding="utf-8").splitlines():
+            davor = 0
+            for treffer in re.finditer(r"<!-- (R\d+) -->", zeile):
+                woerter = len(re.findall(r"\w+", zeile[davor : treffer.start()]))
+                gefunden.setdefault(treffer.group(1), []).append(path.name)
+                if woerter < 5:
+                    zu_kurz.append(f"{treffer.group(1)} in {path.name} (nur {woerter} Wörter davor)")
+                davor = treffer.end()
+
+    fehlt = sorted(set(KENNUNGEN) - set(gefunden))
+    mehrfach = sorted(kennung for kennung, orte in gefunden.items() if len(orte) > 1)
+    unbekannt = sorted(set(gefunden) - set(KENNUNGEN))
+    hinweis = (
+        "Wird die Regel verschoben, geht die Kennung mit; wird sie bewusst gestrichen, kommt die Kennung aus der "
+        "Liste KENNUNGEN in tests/test_arbeitsregeln.py, und der Pull Request nennt das."
+    )
+    assert not (fehlt or mehrfach or unbekannt or zu_kurz), (
+        f"Kennungen fehlen: {[f'{k} ({KENNUNGEN[k]})' for k in fehlt]}; mehrfach: {mehrfach}; "
+        f"unbekannt: {unbekannt}; zu dicht hinter der vorigen: {zu_kurz}. {hinweis}"
+    )
