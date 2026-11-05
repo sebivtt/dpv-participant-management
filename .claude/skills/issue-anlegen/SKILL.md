@@ -68,7 +68,6 @@ Gehört das neue Issue zur laufenden Phase (Phase im `README.md` unter „Stand�
 
 - **Platz:** seine Nummer an der passenden Stelle der Reihenfolge; die Stelle mit dem Issue in Abschnitt 4 Sebastian zeigen.
 - **Abhängigkeiten:** die aus Abschnitt 3, auf GitHub eingetragen.
-- **Stunden:** Schätzung aus dem Puffer, Sebastian vorgelegt. Steht seine Zustimmung in seinen eigenen Worten im Issue oder Pull Request, kommt der Verweis darauf ins Phasen-Issue; die Zahlen selbst stehen in `docs/fahrplan.md` und ändern sich nur mit seiner Zustimmung.
 
 Wie das Phasen-Issue bearbeitet wird, steht im Skill `phase-steuern`, Abschnitt „Phasen-Issue pflegen“.
 

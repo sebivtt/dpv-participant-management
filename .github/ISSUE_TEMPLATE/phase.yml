@@ -14,7 +14,7 @@ body:
     id: phase
     attributes:
       label: Phase
-      description: Ziel, Anforderungen, Abschlusskriterien und Stunden stehen in `docs/fahrplan.md`, Abschnitt 3.
+      description: Ziel, Anforderungen und Abschlusskriterien stehen in `docs/fahrplan.md`, Abschnitt 3.
       options:
         - P0
         - P1

@@ -58,7 +58,7 @@ gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -
 ```
 
 - **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`; Regel in `CLAUDE.md`, „Ablauf einer Phase“, „Umsetzen“).
-- **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub, Stunden mit Verweis auf Sebastians Zustimmung (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
+- **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - **Was nicht ins Phasen-Issue gehört,** ergibt sich aus `CLAUDE.md`, „Ein Ort je Angabe“: Es steht an seinem eigenen Ort und wird hier höchstens verlinkt.
 - **Protokolle** (Bestandsaufnahme, Prüfung der Planung) kommen als Kommentar ins Phasen-Issue; der Text des Issues verlinkt sie.
 
