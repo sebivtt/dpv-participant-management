@@ -45,7 +45,7 @@ def _pause_soon(page: Page) -> None:
 def _axe(page: Page) -> list[str]:
     """Prüfung auf Barrierefreiheit; axe wartet selbst auf Zeitgeber, deshalb läuft die Uhr dafür kurz weiter.
 
-    Wer eine kurze Meldung dabei stehen lassen will, hält vorher die Maus darauf.
+    Eine kurze Meldung wartet `run_axe` selbst ab und hält sie währenddessen fest (#232).
     """
     page.clock.resume()
     try:
