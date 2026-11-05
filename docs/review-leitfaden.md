@@ -28,7 +28,7 @@ Das Review ersetzt keine der anderen Prüfungen. Übernommen aus der Prüfung vo
 - **Widersprüche** zwischen Anforderungen, Fahrplan, Entscheidungen und Code werden gemeldet, nie von einem Modell aufgelöst. Aufgelöst werden sie fachlich von Sebastian.
 - **Zwei Schwerpunkte:**
   - **A, breiter Blick:** Anforderungen und Abschlusskriterien, fehlende oder schwache Tests, Verständlichkeit, Widersprüche in der Doku, Regeln aus `CONTRIBUTING.md`.
-  - **B, Sicherheit, Rechte und Datenschutz:** Zugriff ohne Recht, auch über direkte Adressen, Kennungen, htmx-Anfragen und manipulierte Formulare; Personen- und Gesundheitsdaten in Logs, Mails oder Adressen; Zugangsdaten; Datenintegrität und gleichzeitige Anfragen.
+  - **B, Sicherheit, Rechte und Datenschutz:** Zugriff ohne Recht, auch über direkte Adressen, Kennungen, Anfragen aus dem Skript und manipulierte Formulare; Personen- und Gesundheitsdaten in Logs, Mails oder Adressen; Zugangsdaten; Datenintegrität und gleichzeitige Anfragen.
 
 ## 4. Wer prüft
 
@@ -192,7 +192,7 @@ Grenzen:
   Alles andere ist „vermutet“. Keine Vermutung als Tatsache.
 
 Schwerpunkt: Sicherheit, Rechte und Datenschutz. Zugriff ohne Recht, auch über direkte
-Adressen, Kennungen, htmx-Anfragen und manipulierte Formulare; Adressen ohne Login;
+Adressen, Kennungen, Anfragen aus dem Skript und manipulierte Formulare; Adressen ohne Login;
 Personen- oder Gesundheitsdaten in Logs, Mails, Fehlerseiten oder Adressen; Zugangsdaten
 im Code; Sitzung und Abmelden; Datenintegrität und gleichzeitige Anfragen; Pakete mit
 bekannten Lücken. Geprüft wird der ganze Stand, mit Schwerpunkt auf dem, was in dieser

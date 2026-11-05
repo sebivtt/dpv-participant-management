@@ -10,6 +10,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
+| Prüfwege für Anfragen aus dem Skript | 05.11.2026, #264, Nr. 4 | 28.10.2026, #190; 25.10.2026, #96, #8, #64, #90; 23.10.2026, #87 (je nur die Nennung von htmx) |
 | Prüfung der Kernregeln durch Tests | 05.11.2026, #262, Nr. 1 und 2 | 26.10.2026, #169, „Technische Wahl“ (nur der Satzteil „die Kernregeln in `CLAUDE.md`“) |
 | Zeitlimit des Prüflaufs auf GitHub | 04.11.2026, #256 | 25.10.2026, #133, Nr. 1 (nur der Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten) |
 | Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
@@ -31,6 +33,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-05 · Technik im Browser: eigenes Skript statt htmx und Alpine.js (#264)
+
+**Entscheidung** (Sebastian):
+
+1. Dynamik im Browser macht das eigene Skript `core/static/core/app.js`. Alpine.js entfällt.
+2. htmx ist nicht mehr Standard. Es kommt nur, wenn die Klärung von #30 die dort genannten Bedingungen erfüllt.
+3. SortableJS ist nicht mehr gesetzt; das entscheidet sich, wenn der Formular-Baukasten (FRM-10) dran ist.
+4. „htmx-Anfrage“, „per htmx“ und „htmx“ als Weg heißen in älteren Einträgen und Szenarien-Kommentaren „Anfrage aus dem Skript“. Sie ist eine gewöhnliche Anfrage und wird über die normalen Wege mitgeprüft: lesend (GET), mit Daten (GET) und als Formular (POST). Einen eigenen Durchlauf mit Kopfzeile gibt es nicht mehr.
+
+**Begründung:** Gebaut wurde ohne beide. Von 23 Fehler-Issues hätte htmx höchstens eines verhindert, Alpine.js keines; die meisten kommenden Seiten gehen mit Formularen und Seitenwechseln. Den ersten echten Bedarf bringt die Teilnehmendenliste (#30). Die Tests mit `HX-Request` wiederholten nur den normalen Aufruf, weil der Code die Kopfzeile nicht auswertet.
+
+**Ersetzt** den Eintrag vom 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS), und bei den Prüfwegen teilweise, jeweils nur die Nennung von htmx: 28.10.2026, #190 („auch per htmx“); 25.10.2026, #96 („htmx-Kopfzeilen“); 25.10.2026, #8 („auch bei htmx-Anfragen“); 25.10.2026, #64 („htmx-Anfragen“); 25.10.2026, #90 („mit htmx“); 23.10.2026, #87 („htmx-Anfragen“).
+
+**Umsetzung:** Doku, Rechtematrix, Prüfpunkte, Tests; `tests/test_grundgeruest.py` hält die Entscheidung fest.
 
 ---
 

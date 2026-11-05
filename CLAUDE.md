@@ -85,7 +85,7 @@ Die Handgriffe dazu stehen im Skill `phase-steuern`.
 Eine zweite KI-Instanz ohne Kenntnis des bisherigen Gesprächs prüft lesend; sie ändert nichts. Sie liest Text und Szenarien des Issues und die zum Verstehen nötigen Aufrufer, Rechtehilfen, Modelle und Tests, auch außerhalb des Diffs, und sucht nach Stellen, die sich auf Geändertes beziehen. Ihr Bericht nennt, was sie außerhalb des Diffs geprüft hat, auch wenn sie dort nichts fand. Geprüft wird der Diff gegen `CONTRIBUTING.md` und diese Punkte: <!-- R26 -->
 
 1. Abweichungen von den Akzeptanzkriterien
-2. Fehler bei Rechten und Datenschutz, auch über direkte Adressen, Kennungen, htmx-Anfragen und manipulierte Formulare
+2. Fehler bei Rechten und Datenschutz, auch über direkte Adressen, Kennungen, Anfragen aus dem Skript und manipulierte Formulare
 3. Datenintegrität und gleichzeitige Anfragen
 4. Fehlerbehandlung und doppelter Mailversand
 5. unnötige Komplexität

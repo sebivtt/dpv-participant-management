@@ -60,10 +60,10 @@ class User(AbstractUser):
 def display_name(first_name: str, last_name: str, scout_name: str) -> str:
     """Der volle Name einer Person, wie ihn jede Seite zeigt: „Kiwi (Erika Testfrau)“ (#111).
 
-    Die gemeinsame Stelle für „Mein Profil“ und später Listen und Suche (#93, #94, #65, #117;
-    Nachklärung vom 26.10.2026). Ohne Fahrtenname „Erika Testfrau“; ohne Vor- und Nachname
-    nur „Kiwi“, ohne leere Klammern. Fehlt alles, ist das Ergebnis leer, und die Seite
-    entscheidet, was sie stattdessen zeigt (auf „Mein Profil“ den Benutzernamen).
+    Die gemeinsame Stelle für „Mein Profil“, Listen und Suche (Nachklärung vom 26.10.2026).
+    Ohne Fahrtenname „Erika Testfrau“; ohne Vor- und Nachname nur „Kiwi“, ohne leere
+    Klammern. Fehlt alles, ist das Ergebnis leer, und die Seite entscheidet, was sie
+    stattdessen zeigt (auf „Mein Profil“ den Benutzernamen).
     """
     full_name = " ".join(part for part in (first_name, last_name) if part)
     if scout_name and full_name:

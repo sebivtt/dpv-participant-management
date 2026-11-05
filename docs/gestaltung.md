@@ -1,6 +1,6 @@
 # Gestaltung des DPV Anmeldetools
 
-Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen. Gebaut sind bisher die Grundgestaltung und der Bausteinkatalog (`/bausteine/`, #176). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
+Leitlinie für alle Seiten. Abschnitt 1 hält fest, was bei der Klärung von #7 am 21.10.2026 konkret entschieden wurde. Abschnitt 2 ist Sebastians Gestaltungskonzept vom 21.10.2026, unverändert übernommen bis auf die Technik in Nr. 8 (Entscheidung vom 05.11.2026). Gebaut sind bisher die Grundgestaltung und der Bausteinkatalog (`/bausteine/`, #176). Dashboard, „Veranstaltung anlegen“ und Teilnehmendenverwaltung kommen in eigenen Issues, wenn sie laut `docs/fahrplan.md` dran sind (#28, #29, #30).
 
 Wer eine Seite baut, nimmt die Bausteine aus dem Bausteinkatalog (unten) und die Farben aus `core/static/core/app.css`. Ob und wann vorher ein Zielbild nötig ist: `CLAUDE.md`, „Zielbild vor Gestaltung“ (Entscheidung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #162); die Zielbilder liegen unter `docs/zielbilder/`.
 
@@ -295,7 +295,7 @@ Die Oberfläche soll auch ohne ausschließlich farbliche Hinweise verständlich 
 
 ### 8. Technische Leitlinien
 
-Die Gestaltung soll zur vorgesehenen Architektur mit Django-Templates und htmx passen. Serverseitig gerenderte Seiten bilden die Grundlage; dynamische Interaktionen werden dort ergänzt, wo sie einen konkreten Bedienungsvorteil bieten.
+Die Gestaltung soll zur vorgesehenen Architektur mit Django-Templates und einem eigenen kleinen Skript passen. Serverseitig gerenderte Seiten bilden die Grundlage; dynamische Interaktionen werden dort ergänzt, wo sie einen konkreten Bedienungsvorteil bieten.
 
 Berechtigungen werden serverseitig geprüft und nicht allein durch das Ausblenden von Navigationselementen oder Aktionen abgesichert.
 

@@ -5,11 +5,8 @@ Grundlage sind BER-01 (geschlossene Liste der Gründe, Personendaten zu sehen), 
 Seite liest Personen- oder Anmeldedaten selbst aus der Datenbank (`CONTRIBUTING.md`,
 Abschnitt 4; der Rundumtest meldet Verstöße).
 
-Gebaut sind die Gründe 1 bis 3 von BER-01 und die Bausteine Bereich, Kette nach oben,
-Leitungspfad, einspringende Leitung und „Leitung der eigenen Einheit einer Person“, dazu die
-Rechte der Verbandsleitung auf der Seite „Verband“ (#94). Die übrigen Gründe und die einzelnen
-Aktionen kommen mit ihren Seiten an diese Stelle (#100, #101, #92, #65, #95, #117, #118; Protokoll
-der Nachklärung von #90 vom 25.10.2026).
+Was gebaut ist, zeigt die Spalte „Stand“ in `docs/rechtematrix.md`. Weitere Gründe und Aktionen
+kommen mit ihren Seiten an diese Stelle (Protokoll der Nachklärung von #90 vom 25.10.2026).
 
 Rollen und Einheiten werden beim ersten Bedarf einer Anfrage einmal geladen und mit der Anfrage
 verworfen. Einen Zwischenspeicher über Anfragen hinweg gibt es nicht: Wer eine Rolle verliert
@@ -544,7 +541,7 @@ class Rights:
         Nur Leitungsrollen von Gruppe bis Bund in ihrem Bereich, also genau dort, wo sie benennen
         darf (`may_appoint()`), auch bei gesperrten Konten (RO-21). Die eigenen Leitungsrollen liegen
         immer im eigenen Bereich. Mitgliedschaften, Verbandsleitung, DPV-Veranstaltungsteam und Admin
-        entfernt diese Stelle nie (CV3, CV8, RO-18, RO-19); die Verbandsleitung kommt mit #94.
+        entfernt diese Stelle nie (CV3, CV8, RO-18, RO-19).
         """
         return role.kind in LEADS_IN_UNITS and self.sees_organisation() and role.unit_id in self.area
 
@@ -717,7 +714,7 @@ class Rights:
         erfahren nichts von der Sperre (#189, Frage B). Die Verbandsleitung sieht außerdem
         gesperrte Bundesleitungen, Verbandsleitungen und Mitglieder des DPV-Veranstaltungsteams,
         wie vor #189; gesperrte Leitungen von Ringen, Stämmen und Gruppen außerhalb ihres Bereichs
-        nicht mehr. Was sie davon zeigt, entscheidet #94 mit ihrer Seite.
+        nicht mehr. Was sie davon zeigt, regelt die Seite „Verband“ (#94).
         """
         if self.user is None:
             return Role.objects.none().values(*LEAD_FIELDS, **LEAD_NAMES)

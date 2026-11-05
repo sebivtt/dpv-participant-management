@@ -1,7 +1,7 @@
 """Adressen des Tools.
 
 Öffentlich, also ohne Login erreichbar, sind nur die Login-Seiten (accounts/views.py).
-Alles andere schützt LoginRequiredMiddleware; der Rundumtest in tests/test_login.py prüft das.
+Alles andere schützt LoginRequiredMiddleware; der Rundumtest in tests/test_rundumtest.py prüft das.
 """
 
 from django.urls import path, register_converter
