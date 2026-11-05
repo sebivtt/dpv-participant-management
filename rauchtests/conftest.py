@@ -146,13 +146,42 @@ def login(page: Page, account=ERIKA) -> None:
     page.wait_for_url(f"{BASE}/")
 
 
+# Wartezeit der Seite, bevor eine kurze Meldung in ihren Bereich wandert (SHORT_DELAY in core/static/core/app.js)
+SHORT_DELAY_MS = 100
+
+# Wartet, bis eine kurze Meldung ganz da ist, und hält sie fest, solange axe läuft (#232):
+# 1. Ein Zeitgeber gleicher Länge wie der der Seite läuft sicher nach ihrem ab; danach steckt keine Meldung
+#    mehr im Warten, sondern steht im Bereich.
+# 2. Die Maus „darüber“ hält alle Meldungen an. Sie beginnen während der Prüfung nicht zu verschwinden.
+#    Endet dabei eine ältere, schon ausblendende Meldung, zählen die übrigen neu; volle 6 Sekunden bleiben ihnen.
+# 3. Ein- und Ausblenden laufen zu Ende (Animationen bleiben an). `allSettled`, weil `finished` abgelehnt
+#    wird, wenn die Meldung dabei entfernt wird.
+# Danach gilt wieder die echte Lage von Maus und Fokus: Wer die Maus wirklich darauf hält, hält sie weiter.
+_AXE_RUN = """async (delay) => {
+    const area = document.getElementById('kurzmeldungen');
+    if (area) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        area.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+        await Promise.allSettled(area.getAnimations({subtree: true}).map((a) => a.finished));
+    }
+    try {
+        return await axe.run(document, {runOnly: {type: 'tag',
+            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']}});
+    } finally {
+        if (area) area.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}));
+    }
+}"""
+
+
 def run_axe(page: Page) -> list[str]:
-    """Prüft die Seite mit axe auf Barrierefreiheit (WCAG 2.2 A und AA) und gibt die Verstöße zurück."""
+    """Prüft die Seite mit axe auf Barrierefreiheit (WCAG 2.2 A und AA) und gibt die Verstöße zurück.
+
+    Eine kurze Meldung (#186) blendet ein und aus und verschwindet nach 6 Sekunden; mitten darin ist
+    sie halb durchsichtig und fällt beim Kontrast durch. Deshalb steht sie während der Prüfung still
+    und ganz sichtbar (siehe oben). Ein echter Kontrastfehler der Meldung fällt weiter auf.
+    """
     page.add_script_tag(path=str(AXE))
-    result = page.evaluate(
-        """async () => await axe.run(document, {runOnly: {type: 'tag',
-            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']}})"""
-    )
+    result = page.evaluate(_AXE_RUN, SHORT_DELAY_MS)
     return [
         f"{v['id']} ({v['impact']}): {v['help']} – {[n['target'] for n in v['nodes']][:3]}" for v in result["violations"]
     ]
