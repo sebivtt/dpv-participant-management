@@ -504,7 +504,7 @@ def test_axe_beginnt_nicht_mitten_im_einblenden(request, browser_name, monkeypat
 
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_axe_haelt_die_meldung_fest_auch_wenn_sie_gleich_verschwunden_waere(request, browser_name, monkeypatch, tmp_path, device):
-    """Die Meldung hätte noch gut eine Sekunde; die Prüfung dauert drei. Sie darf trotzdem nicht ausblenden."""
+    """Die Meldung hätte noch gut zwei Sekunden; die Prüfung dauert drei. Sie darf trotzdem nicht ausblenden."""
     page: Page = request.getfixturevalue(device)
     monkeypatch.setattr("rauchtests.conftest.AXE", _axe_file(tmp_path, delay_ms=3000))
     login(page)
@@ -513,7 +513,7 @@ def test_axe_haelt_die_meldung_fest_auch_wenn_sie_gleich_verschwunden_waere(requ
     page.goto(f"{BASE}/profil/")
     _save(page, "Kiwi")
     _later(page, 300)
-    _later(page, SHORT_TIME - 1700)
+    _later(page, SHORT_TIME - 2700)
     expect(_short(page)).to_have_count(1)
     assert _axe(page) == []
     saw = page.evaluate("window.axeSaw")
