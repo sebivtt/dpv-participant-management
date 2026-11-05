@@ -317,9 +317,9 @@ K10. Wird der Zugang nicht mehr gebraucht: das Konto unter „Users“ öffnen, 
 
 Wer sich nach zehn falschen Passwörtern nicht mehr anmelden kann, wartet einige Minuten, höchstens 15; Keycloak sperrt das Konto nur vorübergehend. Name und Mail eines Kontos ändert nur der Admin, nicht die Person selbst, damit dort keine echten Angaben landen.
 
-## Technik (geplant)
+## Technik
 
-Django mit serverseitig erzeugten Seiten und htmx, PostgreSQL, Login per OIDC über den Keycloak des DPV. Begründung im Fahrplan, Abschnitte 1 und 3.
+Django mit serverseitig erzeugten Seiten und einem eigenen kleinen Skript, PostgreSQL, Login per OIDC über den Keycloak des DPV. Begründung im Fahrplan, Abschnitte 1 und 3.
 
 ## Vorgänger
 

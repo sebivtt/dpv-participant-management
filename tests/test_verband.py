@@ -505,9 +505,8 @@ def test_vv7_unbekannte_rolle_in_der_adresse(org):
 @pytest.mark.rechtematrix("EH-09", "PK-14", "EH-04", "PK-07", "RO-07")
 def test_vv8_tom_sieht_keinen_menuepunkt_keine_personen_und_benennt_niemanden(org):
     assert "Organisation" not in nav_labels(page_tree(org.team, "/"))
-    for htmx in (False, True):
-        response = client_for(org.team).get(ADDRESS, headers={"HX-Request": "true"} if htmx else {})
-        assert response.status_code == 403 and NO_ACCESS_TEXT in response.content.decode()
+    response = client_for(org.team).get(ADDRESS)
+    assert response.status_code == 403 and NO_ACCESS_TEXT in response.content.decode()
     assert set(Rights(org.team).persons().values_list("username", flat=True)) == {"tom.team"}
     assert Rights(org.team).find_accounts("otto.ohne") == []
     assert list(Rights(org.team).leads()) == []
@@ -596,9 +595,8 @@ def test_verbandsleitung_sieht_keine_personen_mit_konto_auf_keinem_weg(org):
         assert_like_missing(org.verbandsleitung, unit_address(where))
         assert_like_missing(org.verbandsleitung, f"{unit_address(where)}benennen/")
     for address in (ADDRESS, team_address(org), federation_lead_address(org), lead_address(org.boreas)):
-        for htmx in (False, True):
-            content = client_for(org.verbandsleitung).get(address, headers={"HX-Request": "true"} if htmx else {}).content.decode()
-            assert "@example.org" not in content and "Wilma" not in content and "Finn" not in content
+        content = client_for(org.verbandsleitung).get(address).content.decode()
+        assert "@example.org" not in content and "Wilma" not in content and "Finn" not in content
 
 
 @pytest.mark.rechtematrix("EH-28", "EH-05", "PK-07")

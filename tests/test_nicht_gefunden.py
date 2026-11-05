@@ -2,12 +2,11 @@
 
 Regel (Klärung von #64 am 22.10.2026): Eine Adresse mit Kennung eines Eintrags zeigt ohne Recht
 dieselbe Antwort wie ein Eintrag, den es nicht gibt (404); eine Adresse ohne Kennung, also ein
-ganzer Bereich, zeigt ohne Recht „kein Zugriff“ (403). Das gilt auch für htmx-Anfragen und
-Formulare und für jemanden, der ein Recht mitten in der Arbeit verliert.
+ganzer Bereich, zeigt ohne Recht „kein Zugriff“ (403). Das gilt auch für Formulare und für
+jemanden, der ein Recht mitten in der Arbeit verliert.
 
-Seiten mit Personendaten gibt es in P2 erst mit #65, #93 und #117. Die Tests nutzen deshalb
-Testadressen in `tests/urls.py`, die so gebaut sind, wie die späteren Seiten es müssen: Einträge
-nur über die zentrale Rechteprüfung (`request.rights`). Verglichen wird die ganze Antwort:
+Die Tests nutzen Testadressen in `tests/urls.py`, die so gebaut sind, wie Seiten es müssen:
+Einträge nur über die zentrale Rechteprüfung (`request.rights`). Verglichen wird die ganze Antwort:
 Statuscode, Inhalt Byte für Byte und alle Kopfzeilen. Ausgenommen ist nur der Wert des
 Formularschutzes (CSRF) auf Seiten mit Formular: Django verschlüsselt ihn bei jeder Antwort neu,
 auch bei zwei gleichen Aufrufen. Die Fehlerseiten haben kein Formular, dort ist nichts
@@ -63,17 +62,11 @@ def answer(response) -> tuple:
 
 
 def answers(user, address: str, form: dict | None = None) -> list[tuple]:
-    """Die Antworten auf jedem Weg: lesend, per htmx, als Formular und als Formular per htmx."""
+    """Die Antworten auf jedem Weg: lesend und als Formular."""
     form = form or {"name": "Gekapert", "unit": MISSING}
     found = []
-    for method, data, htmx in (
-        ("get", None, False),
-        ("get", None, True),
-        ("post", form, False),
-        ("post", form, True),
-    ):
-        headers = {"HX-Request": "true"} if htmx else {}
-        found.append(answer(getattr(client_for(user), method)(address, data or {}, headers=headers)))
+    for method, data in (("get", None), ("post", form)):
+        found.append(answer(getattr(client_for(user), method)(address, data or {})))
     return found
 
 
@@ -319,8 +312,8 @@ def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
             continue
         address = _example_address(pattern)
         with_real = address.replace(MISSING, next(iter(real.values()))) if has_key(pattern) else address
-        # Nur die Formulare (die letzten beiden Wege von answers()), wenn die Adresse eine Kennung hat.
-        forms_only = slice(2, None) if has_key(pattern) else slice(None)
+        # Nur das Formular (der letzte Weg von answers()), wenn die Adresse eine Kennung hat.
+        forms_only = slice(1, None) if has_key(pattern) else slice(None)
         compared = with_real if has_key(pattern) else address
         for user in users:
             shown, expected = answers(user, with_real, real), answers(user, compared, missing)
@@ -442,14 +435,11 @@ def test_vorhandene_eintraege_bekommen_bei_der_migration_je_eine_kennung():
 def answers_with_parameter(user, value: str) -> list[tuple]:
     """Die Antworten der Testseite, die die Einheit aus `?einheit=` oder dem Formularfeld `einheit` nimmt."""
     found = []
-    for method, address, data, htmx in (
-        ("get", f"/test/einheit/?einheit={value}", None, False),
-        ("get", f"/test/einheit/?einheit={value}", None, True),
-        ("post", "/test/einheit/", {"einheit": value}, False),
-        ("post", "/test/einheit/", {"einheit": value}, True),
+    for method, address, data in (
+        ("get", f"/test/einheit/?einheit={value}", None),
+        ("post", "/test/einheit/", {"einheit": value}),
     ):
-        headers = {"HX-Request": "true"} if htmx else {}
-        found.append(answer(getattr(client_for(user), method)(address, data or {}, headers=headers)))
+        found.append(answer(getattr(client_for(user), method)(address, data or {})))
     return found
 
 
@@ -474,18 +464,12 @@ def test_einheit_aus_parameter_oder_formularfeld_mit_kennung_ist_erreichbar(org)
 
 
 def query_counts(user, address: str) -> list[int]:
-    """Die Zahl der Datenbankabfragen je Weg: lesend, per htmx, als Formular und als Formular per htmx."""
+    """Die Zahl der Datenbankabfragen je Weg: lesend und als Formular."""
     counts = []
-    for method, data, htmx in (
-        ("get", None, False),
-        ("get", None, True),
-        ("post", {"name": "Gekapert"}, False),
-        ("post", {"name": "Gekapert"}, True),
-    ):
+    for method, data in (("get", None), ("post", {"name": "Gekapert"})):
         client = client_for(user)
-        headers = {"HX-Request": "true"} if htmx else {}
         with CaptureQueriesContext(connection) as queries:
-            getattr(client, method)(address, data or {}, headers=headers)
+            getattr(client, method)(address, data or {})
         counts.append(len(queries))
     return counts
 

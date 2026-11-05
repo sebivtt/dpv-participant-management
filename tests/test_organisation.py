@@ -88,9 +88,8 @@ def unlock(user) -> None:
 # ---------- Was beim Browser ankommt ----------
 
 
-def page_tree(user, address: str = ADDRESS, htmx: bool = False):
-    headers = {"HX-Request": "true"} if htmx else {}
-    return _tree(client_for(user).get(address, headers=headers))
+def page_tree(user, address: str = ADDRESS):
+    return _tree(client_for(user).get(address))
 
 
 def nav_labels(root) -> list[str]:
@@ -226,12 +225,10 @@ def test_av1_mitglieder_konten_ohne_zuordnung_team_verband_und_admin_sehen_keine
     ]
     for user in others:
         assert "Organisation" not in nav_labels(page_tree(user, "/")), user.username
-        for htmx in (False, True):
-            headers = {"HX-Request": "true"} if htmx else {}
-            for method in ("get", "post"):
-                response = getattr(client_for(user), method)(ADDRESS, headers=headers)
-                assert response.status_code == 403, (user.username, method, htmx)
-                assert NO_ACCESS_TEXT in response.content.decode()
+        for method in ("get", "post"):
+            response = getattr(client_for(user), method)(ADDRESS)
+            assert response.status_code == 403, (user.username, method)
+            assert NO_ACCESS_TEXT in response.content.decode()
 
 
 @pytest.mark.rechtematrix("EH-09", "EH-07")
@@ -833,13 +830,11 @@ def test_av5_anfragen_an_die_leseseite_aendern_nichts_und_zeigen_nicht_gefunden(
             "role": "x", "action": "benennen", "q": "Wan"}
     address = unit_address(org.walhall)
 
-    for htmx in (False, True):
-        headers = {"HX-Request": "true"} if htmx else {}
-        for suffix in ("", "?vorschlaege=Wan"):
-            shown = answer(client_for(org.falken_leitung).post(address + suffix, form, headers=headers))
-            missing = answer(client_for(org.falken_leitung).post(with_missing_keys(address) + suffix, form, headers=headers))
-            assert shown == missing
-            assert shown[0] == 404
+    for suffix in ("", "?vorschlaege=Wan"):
+        shown = answer(client_for(org.falken_leitung).post(address + suffix, form))
+        missing = answer(client_for(org.falken_leitung).post(with_missing_keys(address) + suffix, form))
+        assert shown == missing
+        assert shown[0] == 404
     assert set(Role.objects.values_list("user__username", "kind", "unit__name")) == roles_before
 
 

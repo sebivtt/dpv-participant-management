@@ -80,7 +80,7 @@ def test_genau_dreissig_zeichen_werden_gespeichert(org, value):
 def test_vierzig_zeichen_am_browser_vorbei_nichts_wird_gespeichert_auch_nicht_gekuerzt(org):
     set_stored(org.erika, "Kiwi")
 
-    response = save(org.erika, "K" * 40, htmx=True)
+    response = save(org.erika, "K" * 40)
 
     assert response.status_code == 200
     assert stored(org.erika) == "Kiwi"

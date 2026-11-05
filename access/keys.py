@@ -1,4 +1,4 @@
-"""Zufällige Kennungen für Einträge in Adressen, Formularen und htmx-Anfragen (#64, Auslegung von BER-01).
+"""Zufällige Kennungen für Einträge in Adressen, Formularen und Anfragen aus dem Skript (#64, Auslegung von BER-01).
 
 Einträge stehen in Adressen nie mit ihrer laufenden Nummer, sondern mit einer zufälligen Kennung
 (`key`), z. B. `/person/k7f3q9xm2abc4def5ghj/`. Aus laufenden Nummern ließe sich die Anzahl der

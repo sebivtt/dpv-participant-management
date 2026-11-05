@@ -53,12 +53,11 @@ def org():
     return o
 
 
-def open_profile(user, address: str = ADDRESS, method: str = "get", data=None, htmx: bool = False, client=None):
+def open_profile(user, address: str = ADDRESS, method: str = "get", data=None, client=None):
     if client is None:
         client = Client()
         client.force_login(user)
-    headers = {"HX-Request": "true"} if htmx else {}
-    return getattr(client, method)(address, data or {}, headers=headers)
+    return getattr(client, method)(address, data or {})
 
 
 def page(user, **kwargs):
@@ -554,9 +553,8 @@ def test_keine_teile_des_zielbilds_ohne_daten(org, roles):
 
 
 @pytest.mark.rechtematrix("EP-02", "EP-01")
-@pytest.mark.parametrize("htmx", [False, True])
 @pytest.mark.parametrize("method", ["get", "post"])
-def test_angehaengte_kennung_zeigt_trotzdem_nur_das_eigene_profil(org, method, htmx):
+def test_angehaengte_kennung_zeigt_trotzdem_nur_das_eigene_profil(org, method):
     leader = person("wanda.walhall", "Wanda", "Walhall")
     give(leader, R.TROOP_LEAD, org.walhall)
     give(org.max, R.MEMBER, org.falken)
@@ -565,7 +563,7 @@ def test_angehaengte_kennung_zeigt_trotzdem_nur_das_eigene_profil(org, method, h
         "id": org.max.pk, "pk": org.max.pk, "username": org.max.username, "email": org.max.email,
     }
 
-    response = open_profile(leader, method=method, data=foreign, htmx=htmx)
+    response = open_profile(leader, method=method, data=foreign)
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -581,10 +579,9 @@ def test_adresse_mit_kennung_gibt_es_nicht(org):
     give(org.max, R.MEMBER, org.falken)
 
     for address in (f"/profil/{org.max.key}/", f"/profil/{org.max.pk}/", f"/profil/{org.max.username}/"):
-        for htmx in (False, True):
-            response = open_profile(leader, address=address, htmx=htmx)
-            assert response.status_code == 404, address
-            assert "max.testmann" not in response.content.decode()
+        response = open_profile(leader, address=address)
+        assert response.status_code == 404, address
+        assert "max.testmann" not in response.content.decode()
 
 
 @pytest.mark.rechtematrix("EP-02")
@@ -606,9 +603,8 @@ def test_formular_an_die_seite_aendert_nichts(org):
     before = snapshot(User, "pk", "username", "first_name", "last_name", "email")
     changed = {"first_name": "Gekapert", "last_name": "Gekapert", "username": "gekapert", "email": "g@example.org"}
 
-    for htmx in (False, True):
-        for target in (org.erika, org.max):
-            open_profile(org.erika, method="post", data={**changed, "user": target.pk}, htmx=htmx)
+    for target in (org.erika, org.max):
+        open_profile(org.erika, method="post", data={**changed, "user": target.pk})
 
     assert snapshot(User, "pk", "username", "first_name", "last_name", "email") == before
 
@@ -656,11 +652,9 @@ def test_geaenderter_name_und_mail_erscheinen_nach_der_naechsten_anmeldung(clien
 
 
 def test_ohne_login_geht_es_zur_anmeldung():
-    for htmx in (False, True):
-        headers = {"HX-Request": "true"} if htmx else {}
-        response = Client().get(ADDRESS, headers=headers)
-        assert response.status_code == 302
-        assert response["Location"].startswith("/anmelden/")
+    response = Client().get(ADDRESS)
+    assert response.status_code == 302
+    assert response["Location"].startswith("/anmelden/")
 
 
 # Szenario 12: Startseite ohne den Kasten „Dein Konto“

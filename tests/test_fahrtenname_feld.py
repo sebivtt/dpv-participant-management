@@ -340,8 +340,7 @@ def test_im_feld_steht_keine_kennung_einer_person(org):
 def test_stammesleitung_aendert_erikas_fahrtennamen_auch_ueber_das_neue_feld_nicht(org):
     set_stored(org.erika, "Falkenflug")
 
-    for htmx in (False, True):
-        save(org.lead, "Gekapert", htmx=htmx, **foreign_fields(org.erika))
+    save(org.lead, "Gekapert", **foreign_fields(org.erika))
 
     assert stored(org.erika) == "Falkenflug"
     assert shown_value(profile(org.erika)) == "Falkenflug"

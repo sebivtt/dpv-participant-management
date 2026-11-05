@@ -1,8 +1,7 @@
 """Tests für die zentrale Rechteprüfung (#90, BER-01, ROL-02, `docs/rechtematrix.md`).
 
-Geprüft wird die Stelle selbst, ohne Seite: Seiten mit Personendaten gibt es in P2 erst mit #65,
-#93, #94, #95 und #117. Deshalb bleiben die genannten Zeilen der Matrix auf „geplant“; die
-Tests tragen ihre Kennung schon, damit die späteren Issues sie finden (Protokoll der
+Geprüft wird die Stelle selbst, ohne Seite. Zeilen der Matrix, deren Seite noch fehlt, bleiben auf
+„geplant“; die Tests tragen ihre Kennung schon, damit die späteren Issues sie finden (Protokoll der
 Nachklärung vom 25.10.2026). Jeder Fall einer Zeile hat einen eigenen Test (#136, A17), eine
 Zeile „erlaubt“ prüft den nächsten Nachbarn als verbotenen Fall. Alle Namen sind erfunden.
 """

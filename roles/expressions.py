@@ -1,4 +1,4 @@
-"""Datenbank-Ausdrücke für die Rollen, eigene Datei, damit Migrationen sie ohne das Datenmodell laden."""
+"""Datenbank-Ausdrücke für Rollen und Einheiten, eigene Datei, damit Migrationen sie ohne das Datenmodell laden."""
 
 from django.db import models
 

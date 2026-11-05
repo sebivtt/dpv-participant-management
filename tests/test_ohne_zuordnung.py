@@ -1,9 +1,8 @@
 """Tests für Konten ohne Zuordnung (#9; PK-06, EH-07, RO-08, dazu EP-01 und EP-03 als Gegenprobe).
 
 Die Kürzel S1 bis G4 verweisen auf Sebastians Szenarien vom 27.10.2026 im Issue #9 (Kommentar
-„Szenarien (27.10.2026)“). V4 und V5 (Veranstaltungen, Anmeldungen) prüfen #100 und #101. Seiten
-mit Personen, Einheiten und Leitungen gibt es in P2 erst mit #65 und #93; wie in #90 und #64
-prüfen die Tests deshalb die zentrale Rechteprüfung und die Testadressen in `tests/urls.py`, dazu
+„Szenarien (27.10.2026)“). V4 und V5 (Veranstaltungen, Anmeldungen) prüfen #100 und #101. Wie in
+#90 und #64 prüfen die Tests die zentrale Rechteprüfung und die Testadressen in `tests/urls.py`, dazu
 Startseite und „Mein Profil“, die einzigen Seiten, die ein Konto ohne Zuordnung heute öffnet.
 
 Der Hinweis richtet sich nach „weder Mitgliedschaft noch Rolle“, nicht nach „Zuordnung“: Ein
@@ -128,7 +127,7 @@ def test_h5_ohne_nachnamen_zuerst_der_hinweis_zum_namen_dann_dieser(org, address
     assert [visible(n) for n in warnings] == [HINT_NAME, HINT_NO_ORG]
 
 
-# V1 bis V3: Was Otto nicht sieht, auch über direkte Adressen, htmx und manipulierte Formulare
+# V1 bis V3: Was Otto nicht sieht, auch über direkte Adressen und manipulierte Formulare
 
 
 @pytest.mark.rechtematrix("PK-06")
@@ -145,11 +144,9 @@ def test_v2_otto_erreicht_keine_einheit_ueber_ihre_kennung(org):
     assert_like_missing(org.ohne, f"/test/einheit/{org.falken.key}/")
     client = client_for(org.ohne)
     for method in ("get", "post"):
-        for htmx in (False, True):
-            headers = {"HX-Request": "true"} if htmx else {}
-            response = getattr(client, method)("/test/einheit/", {"einheit": org.falken.key}, headers=headers)
-            assert response.status_code == 404, (method, htmx)
-            assert "Sippe Falken" not in response.content.decode()
+        response = getattr(client, method)("/test/einheit/", {"einheit": org.falken.key})
+        assert response.status_code == 404, method
+        assert "Sippe Falken" not in response.content.decode()
 
 
 @pytest.mark.rechtematrix("EH-07")
@@ -178,18 +175,16 @@ def test_v3_admin_ohne_support_zugang_sieht_keine_leitungen(org):
 
 @pytest.mark.rechtematrix("PK-06", "EH-07", "RO-08")
 def test_v1_bis_v3_startseite_und_profil_zeigen_nichts_fremdes_auch_mit_fremden_kennungen(org):
-    """Angehängte Kennungen, htmx und Formulare ändern an den beiden Seiten nichts."""
+    """Angehängte Kennungen und Formulare ändern an den beiden Seiten nichts."""
     client = client_for(org.ohne)
     data = {"person": org.falke.key, "einheit": org.falken.key, "scout_name": "Kauz"}
     for address in PAGES:
         for method in ("get", "post"):
-            for htmx in (False, True):
-                headers = {"HX-Request": "true"} if htmx else {}
-                response = getattr(client, method)(address, data, headers=headers, follow=True)
-                assert response.status_code == 200, (address, method, htmx)
-                content = response.content.decode()
-                for word in FOREIGN_WORDS:
-                    assert word not in content, (address, method, htmx, word)
+            response = getattr(client, method)(address, data, follow=True)
+            assert response.status_code == 200, (address, method)
+            content = response.content.decode()
+            for word in FOREIGN_WORDS:
+                assert word not in content, (address, method, word)
 
 
 # G1 bis G4: Rechte entstehen und enden mit Mitgliedschaft und Rolle, beim nächsten Klick

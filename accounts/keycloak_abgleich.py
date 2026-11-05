@@ -3,8 +3,8 @@ die gespeicherten Angaben aus Keycloak (#252).
 
 Eigene Datei, weil sie Anmeldedaten selbst aus der Datenbank liest und schreibt. Der Rundumtest
 lässt das nur hier zu (`tests/test_rundumtest.py`): Die Funktionen ändern allein das Konto, das
-sich gerade anmeldet, mit den Angaben aus Keycloak, und zeigen nichts an. Aufgerufen werden sie
-nur aus `accounts/adapter.py`.
+sich gerade anmeldet, mit den Angaben aus Keycloak, und zeigen nichts an. Ändernd aufgerufen werden sie
+nur aus `accounts/adapter.py`; `trimmed` ist eine reine Textfunktion und wird auch anderswo benutzt.
 """
 
 import logging

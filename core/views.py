@@ -160,8 +160,8 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
     return render(request, "core/profil.html", context)
 
 
-# Seite „Organisation“ (#189, Teil 1 von #93), nur Anzeige. Benennen (#190), Entfernen und Abgeben
-# (#191) kommen mit eigenen Adressen; diese Seiten nehmen deshalb nur lesende Aufrufe an. Jede
+# Seite „Organisation“ (#189, Teil 1 von #93), nur Anzeige. Benennen und Entfernen haben eigene
+# Adressen (#190, #191); diese Seiten nehmen deshalb nur lesende Aufrufe an. Jede
 # andere Anfrage, etwa ein manipuliertes Formular an die Leseseite, zeigt „nicht gefunden“ und
 # ändert nichts (AV5).
 READING = ("GET", "HEAD")
@@ -213,7 +213,7 @@ def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
 # Organisation, damit er auch ohne Skript geht: Der Knopf „… benennen“ führt dorthin, „Suchen“ und
 # „Benennen“ schicken Formulare dorthin, und jede Antwort zeigt die Seite mit offenem Dialog. Die
 # Organisation kommt immer aus der Adresse, nie aus dem Formular (BV7). Wer dort nicht benennen
-# darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per htmx (BV5, BV6, BV8).
+# darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per Skript (BV5, BV6, BV8).
 APPOINT_ROWS = ("PK-09", "PK-10", "PK-11", "PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24",
                 "RO-10", "RO-11", "RO-12", "RO-13", "RO-14", "RO-17", "EP-08")
 
@@ -358,7 +358,7 @@ def _after_removal(request: HttpRequest, found: Unit) -> str:
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
 # Rolle und Organisation kommen immer aus der Adresse, nie aus dem Formular. Ohne Rolle
-# Verbandsleitung sind alle diese Adressen „nicht gefunden“, auch per htmx (RO-18, VV7).
+# Verbandsleitung sind alle diese Adressen „nicht gefunden“, auch per Skript (RO-18, VV7).
 FEDERATION_ROWS = ("PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24", "RO-12", "RO-14", "RO-15", "RO-16",
                    "RO-17", "RO-18", "RO-19", "RO-20", "EH-27")
 
