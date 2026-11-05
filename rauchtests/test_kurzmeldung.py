@@ -440,3 +440,111 @@ def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch)
     # Auch die nächste Seite übernimmt die stehende Uhr, obwohl ein Versuch gescheitert ist.
     pc.reload()
     assert_clock_stands()
+
+
+# Prüfung auf Barrierefreiheit und kurze Meldung (#232): `run_axe` wartet, bis die Meldung ganz sichtbar ist,
+# und hält sie während der Prüfung fest.
+SHORT_FADE_SLOWED = "2s"  # Ein- und Ausblenden so lang, dass ein Treffer mitten darin sicher ist
+SHORT_TIME = 6000  # Standzeit einer kurzen Meldung (SHORT_TIME in core/static/core/app.js)
+
+
+def _axe_file(tmp_path, delay_ms: int):
+    """Eine Kopie von axe, deren `run` erst nach `delay_ms` losläuft und festhält, wie die Meldung dann aussieht.
+
+    Das Ergebnis steht danach in `window.axeSaw`: wie viele Meldungen offen sind, wie viele gerade
+    ausblenden und wie deckend die erste ist.
+    """
+    wrapper = f"""
+;(function () {{
+    const original = axe.run;
+    axe.run = async function (...args) {{
+        await new Promise((resolve) => setTimeout(resolve, {delay_ms}));
+        const all = Array.from(document.querySelectorAll('#kurzmeldungen .a-kurz'));
+        window.axeSaw = {{
+            open: all.filter((n) => !n.classList.contains('ist-weg')).length,
+            fading: all.filter((n) => n.classList.contains('ist-weg')).length,
+            opacity: all.length ? Number(getComputedStyle(all[0]).opacity) : null,
+        }};
+        return original.apply(this, args);
+    }};
+}})();
+"""
+    from rauchtests.conftest import AXE
+
+    path = tmp_path / "axe-langsam.js"
+    path.write_text(AXE.read_text(encoding="utf-8") + wrapper, encoding="utf-8")
+    return path
+
+
+def _slow_fade(page: Page) -> None:
+    """Streckt Ein- und Ausblenden der kurzen Meldung auf jeder neuen Seite, auch nach dem Speichern."""
+    page.add_init_script(
+        "document.addEventListener('DOMContentLoaded', () => {"
+        "const s = document.createElement('style');"
+        f"s.textContent = '.a-meldung.a-kurz, .a-meldung.a-kurz.ist-weg {{ animation-duration: {SHORT_FADE_SLOWED} !important; }}';"
+        "document.head.appendChild(s); });"
+    )
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_axe_beginnt_nicht_mitten_im_einblenden(request, browser_name, monkeypatch, tmp_path, device):
+    """Erscheint die Meldung erst während der Prüfung und blendet langsam ein, sieht axe sie erst, wenn sie ganz da ist."""
+    page: Page = request.getfixturevalue(device)
+    monkeypatch.setattr("rauchtests.conftest.AXE", _axe_file(tmp_path, delay_ms=1000))
+    login(page)
+    _set_scout_name("Falkenflug")
+    _slow_fade(page)
+    _stop_clock(page)
+    page.goto(f"{BASE}/profil/")
+    _save(page, "Kiwi")
+    # Die Uhr steht noch: Die Meldung ist auf der neuen Seite noch gar nicht im Bereich.
+    expect(_short(page)).to_have_count(0)
+    assert _axe(page) == []
+    saw = page.evaluate("window.axeSaw")
+    assert saw == {"open": 1, "fading": 0, "opacity": 1}, saw
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_axe_haelt_die_meldung_fest_auch_wenn_sie_gleich_verschwunden_waere(request, browser_name, monkeypatch, tmp_path, device):
+    """Die Meldung hätte noch gut eine Sekunde; die Prüfung dauert drei. Sie darf trotzdem nicht ausblenden."""
+    page: Page = request.getfixturevalue(device)
+    monkeypatch.setattr("rauchtests.conftest.AXE", _axe_file(tmp_path, delay_ms=3000))
+    login(page)
+    _set_scout_name("Falkenflug")
+    _stop_clock(page)
+    page.goto(f"{BASE}/profil/")
+    _save(page, "Kiwi")
+    _later(page, 300)
+    _later(page, SHORT_TIME - 1700)
+    expect(_short(page)).to_have_count(1)
+    assert _axe(page) == []
+    saw = page.evaluate("window.axeSaw")
+    assert saw == {"open": 1, "fading": 0, "opacity": 1}, saw
+    # Danach zählt sie neu und verschwindet von selbst.
+    _later(page, 100)
+    expect(_short(page)).to_have_count(1)
+    _later(page, SHORT_TIME + 500)
+    expect(_short(page)).to_have_count(0)
+
+
+def test_axe_meldet_einen_zu_blassen_text_der_kurzen_meldung_trotzdem(pc):
+    """Gegenprobe: Das Warten und Festhalten schwächt die Prüfung nicht ab; ein echter Kontrastfehler fällt auf."""
+    pc.add_init_script(
+        "document.addEventListener('DOMContentLoaded', () => {"
+        "const s = document.createElement('style');"
+        "s.textContent = '.a-kurz p { color: #d0d0d0 !important; }';"
+        "document.head.appendChild(s); });"
+    )
+    login(pc)
+    _set_scout_name("Falkenflug")
+    _stop_clock(pc)
+    pc.goto(f"{BASE}/profil/")
+    _save(pc, "Kiwi")
+    _later(pc, 300)
+    expect(_short(pc)).to_have_count(1)
+    started = time.monotonic()
+    found = _axe(pc)
+    # Sie wartet nicht darauf, dass die festgehaltene Meldung verschwindet.
+    assert time.monotonic() - started < SHORT_TIME / 1000
+    assert any(line.startswith("color-contrast") for line in found), found
+    expect(_short(pc)).to_have_count(1)
