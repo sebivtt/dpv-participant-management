@@ -67,7 +67,7 @@ Nicht geprüft habe ich: Tests, Build und Rauchtests ausführen, Verhalten auf d
 
 ## 3. Fahrplan
 
-Zieldaten: Generalproben-Version am 30.06.2028, Einsatzreife für das Verbandslager am 30.06.2030. Sie beruhen auf einer Schätzung vom 20.10.2026 bei rund 8 Stunden pro Woche. Stunden werden seither weder geschätzt noch fortgeschrieben (Entscheidung vom 05.11.2026); ob das Tempo reicht, messen E1 und E2 am Verzug gegenüber den Zieldaten.
+Zieldaten: Generalproben-Version am 30.06.2028, Einsatzreife für das Verbandslager am 30.06.2030. Sie beruhen auf einer Schätzung vom 20.10.2026 bei rund 8 Stunden pro Woche. Stunden werden seither weder geschätzt noch fortgeschrieben (Entscheidung vom 06.11.2026); ob das Tempo reicht, messen E1 und E2 am Verzug gegenüber den Zieldaten.
 
 Vier Muss-Anforderungen sind fest auf ihren ersten echten Bedarf nach der Generalprobe verschoben (Liste 1), weil nach der Schätzung vom 20.10.2026 nicht alle 77 bis Juni 2028 passen. Reicht das Tempo an E1 oder E2 nicht, greift Liste 2.
 
@@ -114,7 +114,7 @@ Bis zur Generalprobe laufen sieben Phasen hintereinander. Der Durchstich P2 ist 
 
 ### Phasen
 
-Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs, einmal davon nur mit Tastatur (NFA-03). Danach folgt das externe Review nach `docs/review-leitfaden.md`; abgeschlossen ist eine Phase erst, wenn dessen blockierende Befunde behoben sind (ab P1).
+Jede Phase endet mit einem grünen Rauchtest ihres Hauptablaufs, einmal davon nur mit Tastatur (NFA-03). Danach folgt das externe Review nach `docs/review-leitfaden.md`; abgeschlossen ist eine Phase erst, wenn dessen blockierende Befunde behoben sind (ab P1). Am Ende jeder Phase läuft außerdem der Leistungstest aus #145.
 
 | Phase | Ziel | Anforderungen | Abschlusskriterium | Zieldatum |
 | --- | --- | --- | --- | --- |
@@ -378,11 +378,11 @@ Ohne eigene Zeile, weil nur die Form betroffen ist: Die beiden Diagramme (Zeitle
 | --- | --- | --- | --- | --- |
 | 52 | Zeitleiste, kritischer Pfad, Abschnitt 6 (Absatz „Ohne eigene Zeile“), Planungsgrundlagen (Gestaltung) | Zeitleiste und Diagramm des kritischen Pfads als unverändert und in der Fassung vom 20.10.2026 geltend beschrieben; CSS-Grundlage „Bootstrap oder Pico.css“ mit Wahl in P1 | Maßgeblich sind die Tabellen; Zeitleiste und Diagramm aus der Fassung vom 20.10.2026 sind nicht mehr maßgeblich; CSS-Grundlage Bootstrap | Entscheidung vom 05.11.2026 (#265); die Wahl von Bootstrap fiel am 21.10.2026 |
 
-**Änderungen nach der Klärung von #271 vom 05.11.2026** (Pull Request zu #271):
+**Änderungen nach der Klärung von #271 vom 06.11.2026** (Pull Request zu #271):
 
 | Nr | Stelle | vorher | jetzt | warum |
 | --- | --- | --- | --- | --- |
-| 53 | Abschnitt 1 (Grenze 7 Stunden) und Abschnitt 3: Einleitung, Machbarkeit, Liste 2, Phasen | Machbarkeitsrechnung in Stunden, Puffer nach jeder Klärung fortgeschrieben (zuletzt rund 28 bis 29 Stunden), Spalte „Stunden“ der Phasen, Stunden je Punkt in Liste 2 | Zieldaten ohne Stunden-Rechnung; Liste 1 und 2 unverändert, ohne Stunden | Die Zahlen wurden seit dem 27.10.2026 nicht mehr nachgetragen und stimmten nicht mehr; Fortschritt messen die Zieldaten (Entscheidung vom 05.11.2026) |
+| 53 | Abschnitt 1 (Grenze 7 Stunden) und Abschnitt 3: Einleitung, Machbarkeit, Liste 2, Phasen | Machbarkeitsrechnung in Stunden, Puffer nach jeder Klärung fortgeschrieben (zuletzt rund 28 bis 29 Stunden), Spalte „Stunden“ der Phasen, Stunden je Punkt in Liste 2 | Zieldaten ohne Stunden-Rechnung; Liste 1 und 2 unverändert, ohne Stunden | Die Zahlen wurden seit dem 27.10.2026 nicht mehr nachgetragen und stimmten nicht mehr; Fortschritt messen die Zieldaten (Entscheidung vom 06.11.2026) |
 
 **Grundlagen:** [Anforderungsdokument](https://claude.ai/code/artifact/63f2b213-1e66-453f-a270-0de357af386b), [Fahrplan Neubau](https://claude.ai/code/artifact/3e8d079d-7652-4b49-bce3-edee342841b6) und [Bewertung von Claude](https://claude.ai/code/artifact/8ba0df78-1ae2-44a1-a865-f72ca5295fb3), die Bewertungen von ChatGPT und Gemini (Anhänge), Repository [sebivtt/scout-participant-management](https://github.com/sebivtt/scout-participant-management) Stand 9df4513, Django-Pflegezeiträume laut [djangoproject.com](https://www.djangoproject.com/download/). Dieser Fahrplan ersetzt den Fahrplan Neubau vom 20.10.2026.
 
