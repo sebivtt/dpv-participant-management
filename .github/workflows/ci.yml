@@ -89,8 +89,9 @@ jobs:
       # ganzen Laufs (#133). Deshalb: ein Versuch mit 5 Minuten, und die Browser selbst kommen aus
       # dem Zwischenspeicher von GitHub, solange die Fassung gleich ist. Die Systembibliotheken holt
       # jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein verhindert den Hänger also
-      # nicht. Ein zweiter Versuch im selben Lauf half selten, ein Neustart des Laufs auf einem
-      # neuen Rechner fast immer (#276); klappt die Installation, dauert sie meist unter 1,5 Minuten.
+      # nicht. Ein zweiter Versuch im selben Lauf half 3 von 7 Mal, ein Neustart des Laufs auf einem
+      # neuen Rechner fast immer (#276). Klappt die Installation, dauert sie meist unter 1,2 Minuten,
+      # bisher höchstens 4,2.
       - name: Playwright-Fassung aus uv.lock ermitteln
         id: playwright
         run: |
