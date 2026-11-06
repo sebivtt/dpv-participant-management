@@ -5,7 +5,7 @@ description: Eine Phase als Steuerungssession führen, vom Phasenstart über Auf
 
 # Phase steuern
 
-Die Regeln dazu stehen in `CLAUDE.md`, Abschnitte „Ein Ort je Angabe“, „Ablauf einer Phase“ und „Steuerungssession und Umsetzungs-Sessions“. Dieser Skill enthält nur die Handgriffe. Was die Steuerungssession darf und wann sie wechselt, steht dort und wird hier nicht wiederholt.
+Hier stehen die Regeln und Handgriffe, die nur die Steuerungssession betreffen. Was für jede Session gilt, steht in `CLAUDE.md` und wird hier nicht wiederholt.
 
 In der Cloud-Umgebung von Claude Code ist die GitHub-Suche (`search/issues`) gesperrt; dort nur Adressen unter `repos/...` verwenden, wie in den Befehlen dieses Skills.
 
@@ -18,6 +18,8 @@ gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&la
 
 ## 0. Einstieg einer neuen Steuerungssession
 
+**Was die Steuerungssession darf:** lesen, Aufträge verteilen und das Phasen-Issue pflegen, dazu, was ihr dieser Skill beim Start und bei neuen Issues zuweist (Issues mit `issue-anlegen` anlegen, Labels und Abhängigkeiten eintragen). Sie entscheidet nichts Fachliches. <!-- R09 -->
+
 Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben. Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2).
 
 ```bash
@@ -26,6 +28,8 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
 
 ## 1. Phasenstart
 
+Beim Start legt die Steuerungssession das Phasen-Issue nach Vorlage an und macht die Bestandsaufnahme: alle offenen Issues der Phase, dazu alle mit `vorgemerkt` oder ohne Phasen-Label (Issues ohne Phasen-Label sind bewusst offen, nicht vergessen); die Phasen-Labels werden dabei bei Bedarf korrigiert. <!-- R03 -->
+
 1. **Phasen-Issue anlegen** nach der Vorlage, mit den Labels `enhancement` und dem der Phase. Alle Überschriften der Vorlage als `### <Feldname>` in derselben Reihenfolge übernehmen (wie im Skill `issue-anlegen`, Abschnitt 2). Die Abschlusskriterien bekommen je ein Häkchen mit kurzem Stichwort und Verweis auf `docs/fahrplan.md`, nicht den Wortlaut.
 2. **Bestandsaufnahme:** alle offenen Issues lesen (Text, nicht nur Titel) und die eingetragenen Abhängigkeiten.
    ```bash
@@ -33,19 +37,19 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.tit
      --jq '.[] | select(.pull_request == null) | "#\(.number) [\(.labels | map(.name) | join(","))] \(.title)"'
    gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/dependencies/blocked_by --jq '.[] | "#\(.number) \(.state)"'
    ```
-   Abgleichen mit den Anforderungen und Abschlusskriterien der Phase in `docs/fahrplan.md`. Phasen-Labels bei Bedarf korrigieren. Widersprüche (zwischen Issues, Labels, Abhängigkeiten oder Doku) Sebastian einzeln mit Vorschlag vorlegen. Fehlende Issues mit dem Skill `issue-anlegen` anlegen. Ab P3 dabei das Issue „Aufräumen“ anlegen (Regel in `CLAUDE.md`, „Ablauf einer Phase“, „Start“), mit Vorschlägen aus dem letzten Rückblick und offenen Befunden.
+   Abgleichen mit den Anforderungen und Abschlusskriterien der Phase in `docs/fahrplan.md`. Phasen-Labels bei Bedarf korrigieren. Widersprüche (zwischen Issues, Labels, Abhängigkeiten oder Doku) Sebastian einzeln mit Vorschlag vorlegen. Fehlende Issues mit dem Skill `issue-anlegen` anlegen. Ab P3 legt sie dabei ein Issue „Aufräumen“ an; es benennt die Zusammenführungen und Bereinigungen dieser Phase, die das Verhalten nicht ändern, und läuft wie jedes andere Issue. <!-- R07 --> Vorschläge dafür kommen aus dem letzten Rückblick und den offenen Befunden.
 3. **Grundlagen zuerst:** Issues, von denen andere abhängen, kommen in der Reihenfolge nach vorn und werden zuerst mit `grill-me` geklärt.
 4. **Reihenfolge eintragen:** ins Phasen-Issue nur als nummerierte Liste von Issue-Nummern. Was technisch zuerst da sein muss, zusätzlich auf GitHub als „blockiert durch“ (Befehl im Skill `issue-anlegen`, Abschnitt 4).
 5. **Planung prüfen lassen:** Eine zweite KI-Instanz ohne Kenntnis des Gesprächs prüft lesend das Phasen-Issue, die Abhängigkeiten auf GitHub und `docs/fahrplan.md`. Auftrag: fehlende Issues, fehlende oder überflüssige Abhängigkeiten, Abschlusskriterien ohne passendes Issue, Widersprüche. Befunde selbst nachprüfen und Sebastian vorlegen. Erst danach startet die erste Umsetzung.
 
 ## 2. Aufträge
 
-- **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat, alles, was die Umsetzung wissen muss, in seinem Text steht und der Lauf auf `main` nicht dagegen spricht (`gh run list --workflow "Prüfungen" --branch main --limit 2`; Regel in `CLAUDE.md`, „Umsetzen“; außer für die Behebung selbst). Geht die Abfrage nicht, das offen sagen und Sebastian fragen. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
-- **Den Auftrag** nach `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“, Punkt „Auftrag“, in einer neuen Session erteilen.
+- **Vor dem Auftrag** prüfen, ob das Issue das Label `geklärt` trägt, keine offenen blockierenden Issues hat, alles, was die Umsetzung wissen muss, in seinem Text steht und der Lauf auf `main` nicht dagegen spricht (`gh run list --workflow "Prüfungen" --branch main --limit 2`; Regel in `CLAUDE.md`, „Roter Lauf auf `main` geht vor“; außer für die Behebung selbst). Geht die Abfrage nicht, das offen sagen und Sebastian fragen. Fehlt etwas, erst den Text des Issues ergänzen lassen (über `grill-me`), nicht den Auftrag.
+- **Auftrag:** Ein Auftrag besteht nur aus dem Link zum Issue und dem Verweis auf `CLAUDE.md`, etwa „Setze #123 um, nach `CLAUDE.md`.“ Was sonst wichtig ist, steht vorher im Issue. <!-- R11 --> Er geht an eine neue Session.
 - **Stand selbst feststellen:** Ob ein Lauf grün oder ein Pull Request übernommen ist, stellt die Steuerungssession selbst fest, nicht über Sebastians Meldung: für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6; für die Übernahme bei jedem Wiedereinstieg mit `gh pr view <nummer> --json state,mergedAt`, und wartet sie darauf, mit einem Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt.
 - **Nachträge** zu einem geklärten Issue nach `CLAUDE.md` („Neuer Inhalt zu einem geklärten Issue“) an eine Klärung mit `grill-me` geben (Kurzform möglich).
-- **In der Claude-Code-Desktop-App:** Wird der Zug der Steuerungssession durch die Meldung einer anderen Session ausgelöst, kann sie selbst keine neue Session starten. Sie legt sie stattdessen als Vorschlag an (eine Karte in der App), den Sebastian mit einem Klick startet; der Inhalt ist der Auftrag nach `CLAUDE.md`, „Auftrag“.
-- **Vorlauf beim Klären** im Blick behalten (`CLAUDE.md`, „Ablauf einer Phase“): Beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben und Issues, die ein Zielbild brauchen, rechtzeitig zum Klären geben.
+- **In der Claude-Code-Desktop-App:** Wird der Zug der Steuerungssession durch die Meldung einer anderen Session ausgelöst, kann sie selbst keine neue Session starten. Sie legt sie stattdessen als Vorschlag an (eine Karte in der App), den Sebastian mit einem Klick startet; der Inhalt ist der Auftrag nach Punkt „Auftrag“.
+- **Klären läuft voraus:** Richtwert sind die nächsten drei Issues der Reihe, geklärt in Gruppen, die fachlich zusammenhängen (also auch zwei, vier oder eines). Die nächste Gruppe ist spätestens in Klärung, wenn die Umsetzung der laufenden beginnt. Issues, die ein Zielbild brauchen (`CLAUDE.md`, „Zielbild vor Gestaltung“), kommen früher in Klärung, etwa zwei Gruppen vorher, weil das Warten auf das Zielbild dauert. <!-- R04 --> Dafür beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben.
 
 ## 3. Phasen-Issue pflegen
 
@@ -57,14 +61,15 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.bod
 gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -F body=@phase.md
 ```
 
-- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`; Regel in `CLAUDE.md`, „Ablauf einer Phase“, „Umsetzen“).
+- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`); auf sein Ende muss sie vor dem nächsten Auftrag nicht warten.
+- **Roter Lauf auf `main`** (Regel in `CLAUDE.md`, „Roter Lauf auf `main` geht vor“): Die Steuerungssession stellt die Ursache fest. Erfüllt der Lauf die Bedingungen für den Neustart aus `CLAUDE.md`, Ablauf je Aufgabe Nr. 6, startet sie ihn neu; sieht es sonst nur nach einer Störung oder einem wackelnden Test aus, entscheidet Sebastian, ob sie neu startet. Sonst legt sie ein Fehler-Issue an; es läuft wie jedes Issue, auch vor einem offenen Pull Request.
 - **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - **Was nicht ins Phasen-Issue gehört,** ergibt sich aus `CLAUDE.md`, „Ein Ort je Angabe“: Es steht an seinem eigenen Ort und wird hier höchstens verlinkt.
 - **Protokolle** (Bestandsaufnahme, Prüfung der Planung) kommen als Kommentar ins Phasen-Issue; der Text des Issues verlinkt sie.
 
 ## 4. Übergabe an die nächste Steuerungssession
 
-Wann gewechselt wird, steht in `CLAUDE.md`, „Steuerungssession und Umsetzungs-Sessions“. Beim Wechsel den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue neu schreiben.
+Die Steuerungssession wechselt nach jedem Issue, dessen Pull Request übernommen und im Phasen-Issue eingetragen ist, also zwischen zwei Umsetzungen, nie mitten in einer Umsetzung; Issues ohne Pull Request (Klärungen, Sammel-Issues) lösen keinen Wechsel aus. Vorher schreibt sie den Stand ins Phasen-Issue, mit allem, was noch läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge); die nächste macht allein damit weiter. Fasst Claude Code das Gespräch vorher automatisch zusammen, beginnt sie nichts Neues mehr, schreibt sofort den Stand ins Phasen-Issue und endet; ein Hook erinnert sie daran. <!-- R12 --> Beim Wechsel den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue neu schreiben.
 
 Der Stand hat höchstens 15 Zeilen, keine Zeile länger als ein Satz, und nur diese fünf Angaben:
 
@@ -80,7 +85,9 @@ Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für di
 
 ## 5. Abschluss
 
+Abgeschlossen ist eine Phase, wenn alle Häkchen im Phasen-Issue einen Beleg haben, das externe Review nach `docs/review-leitfaden.md` (ab P1) und danach der Rückblick gelaufen sind und die neuen Erfahrungen in `CLAUDE.md`, „Erfahrungen“, stehen. Wer das Review zusammenführt, arbeitet nur lesend, schreibt nur ins Review-Issue und legt Befund-Issues erst nach Sebastians Entscheidung an. Ist das Review-Issue eingeordnet und sind alle blockierenden Befunde behoben, prüft der Rückblick zuerst, welche Regeln sich streichen, zusammenfassen oder durch eine Prüfschranke ersetzen lassen, und wertet die Befunde der unabhängigen Prüfung nach Fehlerarten aus; erst dann kommt Neues dazu, und vor jeder neuen Regel die Frage, ob eine Prüfschranke genügt. <!-- R06 --> Erst dann wechselt der „Stand“ im `README.md`.
+
 1. Alle Abschlusskriterien im Phasen-Issue abgehakt, jedes mit Beleg; Sebastian die Liste zeigen.
 2. Externes Review nach `docs/review-leitfaden.md` anstoßen (Vorlage `externes-review.yml`); das Review-Issue verlinkt das Phasen-Issue.
-3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel in `CLAUDE.md`, „Abschluss“). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1; kommen genau 1000 zurück, das offen sagen). Streichungen und neue Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen“.
+3. Sind alle blockierenden Befunde behoben, Rückblick mit Sebastian: was lief gut, was nicht. Dazu aus den Zeilen „Unabhängige Prüfung“ der Pull Requests der Phase bis zu drei häufige Fehlerarten mit je einer Folgerung, mit der Zahl der ausgewerteten Pull Requests und fehlenden Angaben; die gestrichenen oder zusammengefassten Regeln oder der Grund, warum es keine gibt (Regel oben). Neustarts mit dem Issue „Wackelnde Prüfungen“ abgleichen (`gh run list --workflow "Prüfungen" --created ">=<Phasenstart>" --limit 1000 --json attempt,headSha,url`, Versuch über 1; kommen genau 1000 zurück, das offen sagen). Streichungen und neue Erfahrungen kommen als Issue (Skill `issue-anlegen`) und von dort per Auftrag an eine Umsetzungs-Session in `CLAUDE.md`, „Erfahrungen“.
 4. Erst danach geht der „Stand“ im `README.md` ebenso per Issue und Auftrag an eine Umsetzungs-Session. Ist er in `main`, das Phasen-Issue schließen.

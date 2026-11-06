@@ -29,7 +29,7 @@ Erst alles lesen, was die KI selbst nachsehen kann. Sebastian wird nie etwas gef
   gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/dependencies/blocked_by --jq '.[] | "#\(.number) \(.state)"'
   gh api repos/sebivtt/dpv-participant-management/issues/<nummer>/dependencies/blocking --jq '.[] | "#\(.number) \(.state)"'
   ```
-- `docs/entscheidungen.md` (widerspricht das Issue einer Entscheidung?), `docs/anforderungen.md` (betroffene Anforderungen, Glossar am Ende), `docs/fahrplan.md` (in welche Phase gehört es?).
+- **Leseweg** (gilt für jede Session, `CLAUDE.md`, „Warum“): Aus `docs/entscheidungen.md` die Übersicht „Geltende Grundsätze“, alle Überschriften der Einträge (`grep -n '^## 20' docs/entscheidungen.md`) und daraus die zum Thema, die Einträge, die die Suche nach der Issue-Nummer, den Nummern der Issues, auf denen es aufbaut, den Anforderungs-IDs und Stichworten trifft (`grep -n -E '#<nummer>\b|#<bezug>\b|<ID>|<Stichwort>' docs/entscheidungen.md`), und die Einträge, auf die Übersicht und Treffer für das Thema verweisen (widerspricht das Issue einer Entscheidung?). Aus `docs/anforderungen.md` die Lesehinweise, die Abschnitte der betroffenen Anforderungs-IDs und das Glossar am Ende. Aus `docs/fahrplan.md` Abschnitt 3: „Phasen“, Liste 1 und 2 und „Was ausdrücklich nicht gemacht wird“ (in welche Phase gehört es?), dazu Abschnitt 4, wenn ein Prüfpunkt berührt ist. Nicht die ganzen Dateien.
 - **Fehlendes Diagramm zum Lebenszyklus:** In `docs/anforderungen.md` steht unter „Veranstaltung planen“, „Lebenszyklus“ nur ein Platzhalter für das Diagramm „Lebenszyklus einer Veranstaltung · 8 Zustände“. Sebastian hat es lokal. Berührt das Issue den Lebenszyklus (Zustände einer Veranstaltung wie „Anmeldung offen“ oder „Geschlossen“, Wechsel zwischen ihnen, Fristen, Veröffentlichen, Löschen), Sebastian in der Übersicht (Abschnitt 2) danach fragen und es mit seiner Zustimmung an der Stelle des Platzhalters ergänzen. Ist es ergänzt, diesen Punkt hier streichen.
 - Den betroffenen Code: welche Seiten, Schritte im Anmeldeablauf, Dialoge, Schnittstellen und Rechte berührt sind, wie oft etwas vorkommt (z. B. wie viele Dialoge es gibt), was bestehende Daten betrifft. Die Erfahrungen in `CLAUDE.md` beachten (Adressen mit mehreren Aufrufern, Rechte).
 
@@ -80,7 +80,7 @@ Aus den Szenarien entstehen später die Tests; wann sie nötig sind und wann nic
 
 ## 6. Grober Entwurf und Zielbild
 
-Nur wenn das Issue ein Zielbild braucht (Abschnitt 2). Regel und Reihenfolge: `CLAUDE.md`, „Zielbild vor Gestaltung“. Vorbild ist der Ablauf bei #165.
+Nur wenn das Issue ein Zielbild braucht (Abschnitt 2). Wann eins nötig ist: `CLAUDE.md`, „Zielbild vor Gestaltung“. Reihenfolge: Klären und Szenarien → grober Entwurf als HTML-Datei, von der klärenden Session als Kommentar im Issue → Zielbild als Kommentar mit Prüfsumme im Issue → Nachklärung: jede Abweichung einzeln mit Sebastian klären, Issue und Szenarien angepasst → erst dann das Label `geklärt`. Vorbild ist der Ablauf bei #165.
 
 - **Grober Entwurf:** eine einzelne HTML-Datei, die sich mit Doppelklick im Browser öffnet. Grundlage sind die Szenarien, der Bausteinkatalog (`core/templates/core/bausteine.html`), die anderen Seiten und `docs/gestaltung.md`. Er zeigt nur, was geklärt ist, mit erfundenen Personen wie in den Szenarien, und lädt nichts von fremden Servern (Gestaltung und Symbole stehen in der Datei, Schrift ist die Systemschrift). Als Kommentar „Grober Entwurf (Datum)“ ins Issue, die Datei in einem aufklappbaren Codeblock; Sebastian bekommt sie zusätzlich als Datei zum Öffnen.
 - **Warten:** Sebastian baut daraus, etwa mit ChatGPT, das Zielbild. So lange ruht die Klärung; der Stand kommt als Kommentar ins Issue wie bei einer Pause (Abschnitt 3).
@@ -95,7 +95,7 @@ Nur wenn das Issue ein Zielbild braucht (Abschnitt 2). Regel und Reihenfolge: `C
   - **Anforderung:** als Akzeptanzkriterium, als Beispiel, unter „Wer darf das nicht?“ oder unter „Nicht Teil dieser Anforderung“. Unter „Offene Fragen“ steht danach „Keine, geklärt am <Datum>“.
   - **Fehler:** unter „Erwartetes Verhalten“, bei Bedarf ergänzt unter „Schritte zum Nachstellen“. Abgrenzungen, Abhängigkeiten und der Vermerk „Geklärt am <Datum>“ kommen unter „Bildschirmfotos und Hinweise“.
 - Abhängigkeiten über die eingebaute Funktion von GitHub eintragen (siehe Skill `issue-anlegen`, Abschnitt 4), zusätzlich im Text mit einem Satz Begründung.
-- Was in der Klärung auf später verschoben wurde, als eigenes Issue anlegen (Skill `issue-anlegen`; Regel in `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Was beim Klären auf später verschoben wird“).
+- Was in der Klärung auf später verschoben wurde, als eigenes Issue anlegen (Skill `issue-anlegen`, Abschnitt „Labels“).
 - Gehört das Issue zur laufenden Phase und ist es neu, seinen Platz im Phasen-Issue eintragen (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - Einen Kommentar mit dem Protokoll anhängen: jede Frage, die Antwort, bei Bedarf der Grund. So bleibt nachvollziehbar, warum etwas so entschieden wurde.
 - Regeln, die über dieses Issue hinaus gelten (z. B. „Alle Dialoge schließen mit ESC“), zusätzlich in `docs/entscheidungen.md` eintragen. Das geschieht im Pull Request der Umsetzung.
@@ -112,6 +112,8 @@ Aufteilen, wenn mindestens eines zutrifft:
 - Es braucht erst ein Grundgerüst (z. B. ein gemeinsames Aussehen), das danach an mehreren Stellen genutzt wird.
 - Ein Fehler würde einen wichtigen Ablauf treffen, vor allem die Anmeldung, und ein kleinerer Schritt senkt das Risiko.
 - Der Pull Request würde so groß, dass seine Beschreibung nicht mehr auf eine Bildschirmseite passt.
+
+Begleitende Doku oder kleine Folgearbeit, die im selben Pull Request erledigt werden soll, kommt in den Text desselben Issues, nicht in ein eigenes; die Prüfung „PR-Angaben“ lässt nur ein „Closes“ zu.
 
 Jeder Teil muss für sich umsetzbar sein, einen eigenen Test bekommen und etwas liefern, das Sebastian ausprobieren kann. Den Vorschlag (Teile, Reihenfolge, Begründung) Sebastian zeigen und sein Okay abwarten. Dann:
 - jeden Teil als eigenes Issue nach Vorlage anlegen, mit den Kriterien, die zu ihm gehören,

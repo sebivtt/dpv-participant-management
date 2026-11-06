@@ -1,5 +1,5 @@
 name: Phase
-description: Ein Issue je Phase für Reihenfolge, Belege der Abschlusskriterien und den Stand der Steuerung (CLAUDE.md, „Ablauf einer Phase“).
+description: Ein Issue je Phase für Reihenfolge, Belege der Abschlusskriterien und den Stand der Steuerung (Skill `phase-steuern`).
 title: "P3 „Kreise und Veranstaltung“: Reihenfolge und Abschlusskriterien"
 labels: ["enhancement"]
 body:
