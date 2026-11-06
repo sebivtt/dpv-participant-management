@@ -32,3 +32,5 @@ In denselben Kommentar: Sebastians Anmerkungen wörtlich, was daraus wurde, die 
 Weicht das Ergebnis im Wortlaut von einem Szenario ab, nennt der Text des Issues das mit der Kennung des Szenarios. Den Kommentar „Szenarien (Datum)“ nicht bearbeiten, sonst wird die Prüfung „PR-Angaben“ rot. Ändert eine Anmerkung einen Test, gilt `CONTRIBUTING.md`, Abschnitt 3: erst der Test, dann der Code.
 
 Trifft eine Anmerkung einen gemeinsamen Baustein, nennt die neue Fassung die anderen Seiten, die sich mitändern.
+
+Was eine Anmerkung auslöst, regeln `CLAUDE.md`, „Vorschau“ und „Neuer Inhalt zu einem geklärten Issue“. Handgriff: umsetzen, die neue Fassung zeigen, die Änderung im Text des Issues festhalten. Auch dabei gelten „Bausteine einbinden“ und „Zielbild vor Gestaltung“. Der Pull Request verlinkt den Kommentar „Vorschau (Datum)“.

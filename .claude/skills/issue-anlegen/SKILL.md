@@ -15,7 +15,7 @@ Gesprochen wird mit Sebastian nach `CLAUDE.md`, „Zusammenarbeit mit Sebastian�
 - **Anforderung** (Label `enhancement`): Das Tool soll etwas können, was bisher nicht vorgesehen ist. Vorlage `.github/ISSUE_TEMPLATE/anforderung.yml`.
 - **Befund aus einem externen Review** (Label `review-befund`): nur nach `docs/review-leitfaden.md`, Abschnitt 7, und erst nach Sebastians Einordnung. Vorlage `.github/ISSUE_TEMPLATE/review-befund.yml`; das Review-Issue einer Phase hat die Vorlage `externes-review.yml`.
 - Ein Thema pro Issue. Stecken mehrere Themen in einer Meldung, mehrere Issues vorschlagen.
-- Dazu das Label der Phase und bei Bedarf `vorgemerkt`, nach `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Labels“.
+- Dazu das Label der Phase und bei Bedarf `vorgemerkt`, nach Abschnitt „Labels“ unten.
 
 ## 2. Inhalt aufbauen
 
@@ -64,12 +64,18 @@ gh api repos/sebivtt/dpv-participant-management/issues/<neu>/dependencies/blocke
 
 ## 5. Laufende Phase
 
-Gehört das neue Issue zur laufenden Phase (Phase im `README.md` unter „Stand“), trägt es die KI im selben Schritt ins Phasen-Issue ein (Regel in `CLAUDE.md`, „Ablauf einer Phase“, Punkt „Neues während der Phase“):
+Gehört das neue Issue zur laufenden Phase (Phase im `README.md` unter „Stand“), bekommt es im selben Schritt seinen Platz in der Reihenfolge und seine Abhängigkeiten; die KI trägt es ins Phasen-Issue ein:
 
 - **Platz:** seine Nummer an der passenden Stelle der Reihenfolge; die Stelle mit dem Issue in Abschnitt 4 Sebastian zeigen.
 - **Abhängigkeiten:** die aus Abschnitt 3, auf GitHub eingetragen.
 
 Wie das Phasen-Issue bearbeitet wird, steht im Skill `phase-steuern`, Abschnitt „Phasen-Issue pflegen“.
+
+## Labels
+
+**Phase:** Jedes Issue trägt das Label der Phase (`P0` bis `P10`), in die es laut `docs/fahrplan.md` voraussichtlich gehört; ist sie unklar, keins. Was beim Klären auf später verschoben oder noch ungeklärt für eine spätere Phase angelegt wird, trägt zusätzlich `vorgemerkt`. Das Phasen-Label ist nur Orientierung, nie ein Filter.
+
+**Auf später verschoben:** Was beim Klären auf später verschoben wird, bekommt ein eigenes Issue mit `vorgemerkt` und Verweis auf das Protokoll, aus dem es stammt. Ein Vermerk nur unter „Nicht Teil dieser Anforderung“ geht verloren, sobald das Issue geschlossen ist.
 
 ## 6. Abschluss
 
