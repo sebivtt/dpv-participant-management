@@ -5,7 +5,7 @@ description: Eine sichtbare Änderung vor dem Pull Request als HTML-Datei aus de
 
 # Vorschau: das Ergebnis zeigen, bevor der Pull Request entsteht
 
-Wann sie nötig ist und was aus Anmerkungen wird: `CLAUDE.md`, Punkt „Vorschau“. Hier steht nur der Handgriff.
+Wann sie nötig ist: `CLAUDE.md`, Punkt „Vorschau“. Hier steht nur der Handgriff.
 
 ## 1. Fälle wählen
 

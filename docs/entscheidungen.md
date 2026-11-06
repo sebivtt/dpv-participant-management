@@ -44,12 +44,13 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 2. Was `CONTRIBUTING.md` regelt, steht in `CLAUDE.md` nur als Verweis.
 3. Aus `docs/entscheidungen.md` liest eine Session die Übersicht „Geltende Grundsätze“, alle Überschriften der Einträge und daraus die zum Thema, die Einträge, die die Suche nach der Issue-Nummer, den Nummern der Issues, auf denen es aufbaut, den Anforderungs-IDs und Stichworten trifft, und die Einträge, auf die Übersicht und Treffer verweisen (Leseweg im Skill `grill-me`, Abschnitt 1). Bestehende Einträge bleiben unverändert.
 4. Entfallen sind die Erfahrungen „Die unabhängige Prüfung findet fast immer etwas“, „Erst alles hochladen“, „Pull Requests nicht aufeinander aufbauen“, „Rauchtests im Browser mehrmals“ und „Szenarien vor Code fiel aus“; ihr Inhalt steht in den genannten Regeln oder wird geprüft.
-4a. Entfallen sind außerdem Sätze, die `CONTRIBUTING.md` regelt (nur grün übernehmen und das Ergebnis nennen, die fehlende Sperre auf GitHub bis #16, Test-Commit, echte Personendaten und Zugangsdaten), und Handgriffe, die jetzt in den Skills stehen (Vorschau, Zielbild, Steuerung).
+
+   Entfallen sind außerdem Sätze, die `CONTRIBUTING.md` regelt (nur grün übernehmen und das Ergebnis nennen, die fehlende Sperre auf GitHub bis #16, Test-Commit, echte Personendaten und Zugangsdaten), und Handgriffe, die jetzt in den Skills stehen (Vorschau, Zielbild, Steuerung).
 5. Schritt 2 im „Ablauf je Aufgabe“ heißt „Erst lesen“. Einen Plan mit Risiken, Annahmen und Testfällen nennt die KI nicht mehr eigens; Risiken und Offenes stehen wie bisher in der Beschreibung des Pull Requests.
 
 **Begründung:** Jede Session lud Regeln, die sie nicht brauchte, und Klärungen lasen ganze Dokumente; das kostete Nutzungslimit und machte Regeln leichter zu überlesen (Projektprüfung, 05.11.2026).
 
-**Grenzen:** Keine Regel wird inhaltlich schwächer. Ersetzt keinen älteren Eintrag.
+**Grenzen:** Keine Regel wird inhaltlich schwächer, außer der Plan in Nr. 5. Ersetzt keinen älteren Eintrag.
 
 ---
 
