@@ -61,6 +61,10 @@ def test_browser_werden_in_genau_einem_schritt_ohne_weitere_versuche_installiert
     install = _install()
 
     assert install["name"] == INSTALL_NAME
+    # Auch keine Wiederholung innerhalb des Schritts und kein zweiter Aufruf an anderer Stelle.
+    assert install["run"].strip() == INSTALL_COMMAND
+    assert "uses" not in install
+    assert [step for step in _steps() if "playwright install" in step.get("run", "")] == [install]
     assert "if" not in install
     assert [step["name"] for step in _steps() if step.get("name", "").startswith(INSTALL_NAME)] == [INSTALL_NAME]
 
@@ -105,8 +109,8 @@ def test_browser_kommen_aus_dem_zwischenspeicher_passend_zur_playwright_fassung(
     assert _index(sync) < _index(version_step) < _index(cache) < _index(_install())
 
 
-# Fester Rest im Lauf außer Installation und Prüfungen (#276): Vorlauf bis zur Installation gut
-# 1 Minute (Container, Keycloak starten, Zwischenspeicher; Lauf 41899114419: 41 Sekunden),
+# Fester Rest im Lauf außer Installation und Prüfungen (#276): Vorlauf bis zur Installation bis
+# gut 1 Minute (Container, Keycloak starten, Zwischenspeicher; Lauf 41899114419: 41 Sekunden),
 # Warten auf Keycloak höchstens 3 Minuten (90 Versuche à 2 Sekunden), Aufräumen wenige
 # Sekunden. Hängt die Installation, endet der Lauf nach ihren 5 Minuten rot, ohne dass
 # Prüfungen laufen; die Summe muss also nur für eine erfolgreiche Installation und die
