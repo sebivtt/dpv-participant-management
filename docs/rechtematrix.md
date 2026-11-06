@@ -2,7 +2,7 @@
 
 Wer im Tool welche Daten sehen und was damit tun darf, in Alltagssprache. Die Matrix ist das Prüfwerkzeug für die Rechte (Entscheidung 4 vom 20.10.2026): Sie lässt sich gegen `docs/anforderungen.md` lesen, ohne Code zu lesen. Sie wird dauerhaft fortgeschrieben; wer neue Daten ins Tool bringt, ergänzt im selben Pull Request ihre Zeilen (`CONTRIBUTING.md`, Abschnitt 4).
 
-Erster Entwurf für P2 vom 23.10.2026 (#87), korrigiert am 24.10.2026 nach dem externen Review (#136, Protokolle Teil 1 bis 3 und Nachtrag), ergänzt am 25.10.2026 (#150); die ersten Zeilen sind mit der zentralen Rechteprüfung gebaut (#90), EP-01, EP-02 und EP-05 mit „Mein Profil“ (#96), PK-06, EH-07 und RO-08 für Konten ohne Zuordnung (#9), EH-01, EH-03, EH-08, EH-09, EH-28, RO-01, RO-03, RO-04, RO-21 und RO-22 mit der Seite „Organisation“ (#189), PK-09 bis PK-16 und PK-24 sowie das Benennen aus RO-10 bis RO-14 und RO-17 mit „Leitung benennen“ (#190), das Entfernen aus RO-10, RO-11, RO-13, RO-14 und RO-17 und das Abgeben aus RO-20 für Leitungen von Gruppe bis Bund mit „Leitung entfernen“ (#191), EH-04, EH-05, EH-27, RO-05, RO-15, RO-16, RO-18 und die übrigen Teile für die Verbandsleitung mit der Seite „Verband“ (#94). Spätere Phasen ergänzen ihre Zeilen in ihren eigenen Issues. Den Umbau ins kompakte Format (Rollen als Spalten) plant #139.
+Erster Entwurf für P2 vom 23.10.2026 (#87). Was gebaut ist, zeigt allein die Spalte „Stand“; wann und warum sich die Matrix geändert hat, steht in `docs/entscheidungen.md`. Spätere Phasen ergänzen ihre Zeilen in ihren eigenen Issues. Den Umbau ins kompakte Format (Rollen als Spalten) plant #139.
 
 ## Inhalt
 

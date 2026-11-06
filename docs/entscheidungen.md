@@ -31,8 +31,22 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | „hat Ringe“ ausschalten | 24.10.2026, #136, Nr. 8 | 23.10.2026, Einheiten (#88), Nr. 2 |
 | Wechsel und Ende der Mitgliedschaft | 24.10.2026, #136, Nr. 7 und 11 | 23.10.2026, #89, Nr. 3 und 5 |
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
-| Stunden erfassen | 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1 |
+| Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-06 · Stunden werden nicht mehr erfasst, Fortschritt an den Zieldaten (#271)
+
+**Entscheidung** (Sebastian, 02.11.2026 in der Projektprüfung):
+
+1. Neue Issues bekommen keine Stundenschätzung und ziehen nichts vom Puffer ab; dafür braucht es keine Zustimmung mehr.
+2. `docs/fahrplan.md` nennt keine Stunden-Schätzungen mehr: Machbarkeitsrechnung, Puffer, die Spalte „Stunden“ der Phasen und die Stunden in Liste 2 entfallen. Zieldaten, Listen und Prüfpunkte bleiben; das Tempo messen E1 und E2 an den Zieldaten. Die Planungsgrundlage „8 Stunden pro Woche“ bleibt als Sebastians Zeitbudget.
+3. Was gebaut ist, zeigt in `docs/rechtematrix.md` allein die Spalte „Stand“.
+
+**Begründung:** Die Zahlen wurden nicht gepflegt und stimmten nicht mehr; Nachfragen danach kosteten Zeit in jedem neuen Issue. Termine stehen ohnehin fest (Eintrag vom 22.10.2026, #68).
+
+**Grenzen:** Ersetzt den Eintrag vom 22.10.2026 (#68), Begründung, nur den Satz „Die Schätzungen in Stunden bleiben als Planungsgrundlage (Annahme) stehen, werden aber nicht mehr nachgemessen“, den Eintrag vom 26.10.2026 (#169), Nr. 1 und 2, je nur den Stundenteil („Phasen, Abschlusskriterien, Stunden: `docs/fahrplan.md`“; „Stunden aus dem Puffer, die Stunden mit Sebastians Zustimmung“), und den Eintrag vom 26.10.2026 (#113), Nr. 2, nur den Halbsatz „seine Stunden kommen dazu, wenn #145 geklärt ist“. Einträge, die einzelnen Issues Stunden aus dem Puffer zuteilten, bleiben als Geschichte. E4 bleibt unverändert.
 
 ---
 
