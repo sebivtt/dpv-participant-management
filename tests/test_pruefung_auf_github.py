@@ -62,7 +62,7 @@ def test_browser_werden_in_genau_einem_schritt_ohne_weitere_versuche_installiert
 
     assert install["name"] == INSTALL_NAME
     assert "if" not in install
-    assert not [step for step in _steps() if step.get("name", "").startswith(INSTALL_NAME) and step is not install]
+    assert [step["name"] for step in _steps() if step.get("name", "").startswith(INSTALL_NAME)] == [INSTALL_NAME]
 
 
 def test_die_installation_hat_ein_zeitlimit_von_fuenf_minuten():
