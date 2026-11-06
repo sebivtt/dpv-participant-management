@@ -13,7 +13,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
 | Prüfwege für Anfragen aus dem Skript | 05.11.2026, #264, Nr. 4 | 28.10.2026, #190; 25.10.2026, #96, #8, #64, #90; 23.10.2026, #87 (je nur die Nennung von htmx) |
 | Prüfung der Kernregeln durch Tests | 05.11.2026, #262, Nr. 1 und 2 | 26.10.2026, #169, „Technische Wahl“ (nur der Satzteil „die Kernregeln in `CLAUDE.md`“) |
-| Zeitlimit des Prüflaufs auf GitHub | 04.11.2026, #256 | 25.10.2026, #133, Nr. 1 (nur der Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten) |
+| Zeitlimit des Prüflaufs auf GitHub | 06.11.2026, #276, Nr. 2; 04.11.2026, #256, Nr. 1 (nur die 45 Minuten für „Alle Prüfungen“) | 25.10.2026, #133, Nr. 1 (nur der Satzteil zum Zeitlimit des ganzen Laufs von 35 Minuten); 04.11.2026, #256, Nr. 1 (nur die 70 Minuten für den ganzen Lauf) |
+| Versuche der Browser-Installation auf GitHub | 06.11.2026, #276, Nr. 1 | 25.10.2026, #133, Nr. 1 (nur „je Versuch ein Zeitlimit von 10 Minuten und höchstens drei Versuche“); 04.11.2026, #256, Nr. 1 (nur die Sätze, die die Versuche nennen); 25.10.2026, #133, „Technische Wahl“ (nur die drei einzelnen Schritte und die Wiederholung) |
 | Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
@@ -33,6 +34,21 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-06 · Browser-Installation auf GitHub: ein Versuch mit 5 Minuten, Lauf 55 Minuten (#276)
+
+**Entscheidung** (Sebastian; Klärung von #276 am 06.11.2026 in der Kurzform, Protokoll im Issue):
+
+1. **Ein Versuch mit 5 Minuten:** Der Schritt „Browser für den Rauchtest installieren“ in der Prüfung auf GitHub hat genau einen Versuch mit einem Zeitlimit von 5 Minuten. Scheitert oder hängt die Installation, ist der Lauf rot; die Meldung nennt die Browser-Installation, sagt, dass kein Test gelaufen ist, und dass ein Neustart meist hilft. Der Zwischenspeicher für die Browser bleibt. Ersetzt den Eintrag vom 25.10.2026 (#133), Nr. 1, nur im Teil „je Versuch ein Zeitlimit von 10 Minuten und höchstens drei Versuche“, den Eintrag vom 04.11.2026 (#256), Nr. 1, in den Sätzen, die die Versuche nennen, und die „Technische Wahl“ im Eintrag vom 25.10.2026 (#133) nur in den drei einzelnen Schritten und der Wiederholung.
+2. **Zeitlimit des ganzen Laufs 55 Minuten statt 70:** 5 Minuten Installation, 45 Minuten „Alle Prüfungen“ (unverändert, #256) und 5 Minuten für Vorbereitung, Warten auf Keycloak und Aufräumen. Ersetzt den Eintrag vom 04.11.2026 (#256), Nr. 1, nur in den 70 Minuten für den ganzen Lauf. Abgelehnt: 70 Minuten lassen, weil ein unerwarteter Hänger dann 15 Minuten länger warten ließe.
+
+**Begründung:** Auswertung aller 142 Läufe vom 25.10. bis 06.11.2026: Klappt die Installation (131 Läufe), ist sie in 95 von 100 Läufen in unter 1,2 Minuten fertig, nie langsamer als 4,2 Minuten. Von 10 Hängern half Versuch 2 im selben Lauf 3 von 7 Mal, Versuch 3 nie (0 von 3); ein kompletter Neustart klappte 5 von 6 Mal sofort und einmal im zweiten Versuch, weil er einen neuen Rechner bekommt. Ein Hänger kostete bisher bis zu 30 Minuten, bevor ein Test lief oder ein Neustart möglich war.
+
+**Grenzen:** Der Neustart ohne Rückfrage (25.10.2026, #133, Nr. 2) und das Zählen der Neustarts in #243 bleiben unverändert. Ob GitHub die Limits so anwendet, zeigt erst ein Hänger im echten Lauf; `tests/test_pruefung_auf_github.py` prüft nur, was in `ci.yml` steht, und rechnet die Summe nach. Nicht Teil dieser Entscheidung: ein automatischer Neustart durch GitHub selbst und die Ursache beseitigen (fertiges Abbild, eigener Paketserver; abgelehnt in #133).
+
+**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`, `docs/entscheidungen.md`.
 
 ---
 

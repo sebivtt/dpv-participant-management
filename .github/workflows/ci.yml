@@ -29,9 +29,10 @@ jobs:
     # und jeder Rauchtest in WebKit war rot (#192). Ein Wechsel der Fassung kommt bewusst mit
     # eigenem Pull Request, sobald Playwright sie unterstützt.
     runs-on: ubuntu-24.04
-    # 70 Minuten: zwei hängende Versuche der Browser-Installation (je 10), der dritte Versuch,
-    # der Vorlauf und bis zu 45 Minuten Prüfungen müssen hineinpassen (#256).
-    timeout-minutes: 70
+    # 55 Minuten: Vorlauf, Installation der Browser (bis 5), Warten auf Keycloak und bis zu
+    # 45 Minuten Prüfungen müssen hineinpassen (#256, #276). Hängt die Installation, endet der
+    # Lauf ohnehin nach ihren 5 Minuten rot.
+    timeout-minutes: 55
     services:
       postgres:
         image: postgres:18
@@ -85,10 +86,12 @@ jobs:
       # Browser für den Rauchtest (#7) in der Fassung, die zu Playwright aus uv.lock gehört,
       # samt den Systembibliotheken, die sie unter Linux brauchen. Die Systembibliotheken kommen
       # vom Ubuntu-Paketserver; ist der langsam, hing der Schritt früher bis zum Zeitlimit des
-      # ganzen Laufs (#133). Deshalb: je Versuch 10 Minuten, höchstens drei Versuche, und die
-      # Browser selbst kommen aus dem Zwischenspeicher von GitHub, solange die Fassung gleich ist.
-      # Die Systembibliotheken holt jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein
-      # verhindert den Hänger also nicht.
+      # ganzen Laufs (#133). Deshalb: ein Versuch mit 5 Minuten, und die Browser selbst kommen aus
+      # dem Zwischenspeicher von GitHub, solange die Fassung gleich ist. Die Systembibliotheken holt
+      # jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein verhindert den Hänger also
+      # nicht. Ein zweiter Versuch im selben Lauf half 3 von 7 Mal, ein Neustart des Laufs auf einem
+      # neuen Rechner fast immer (#276). Klappt die Installation, dauert sie meist unter 1,2 Minuten,
+      # bisher höchstens 4,2.
       - name: Playwright-Fassung aus uv.lock ermitteln
         id: playwright
         run: |
@@ -103,41 +106,16 @@ jobs:
           # je Fassung eigene Browser lädt; sonst kämen nach einem Wechsel die alten aus dem
           # Zwischenspeicher (#192).
           key: playwright-browser-${{ steps.playwright.outputs.ubuntu }}-${{ steps.playwright.outputs.version }}
-      - name: Browser für den Rauchtest installieren (Versuch 1 von 3)
-        id: browser_versuch_1
-        timeout-minutes: 10
+      - name: Browser für den Rauchtest installieren
+        id: browser
+        timeout-minutes: 5
+        # Scheitert oder hängt die Installation, meldet das der nächste Schritt und beendet den Lauf.
         continue-on-error: true
         run: uv run --locked playwright install --with-deps chromium firefox webkit
-      - name: Browser für den Rauchtest installieren (Versuch 2 von 3)
-        id: browser_versuch_2
-        if: steps.browser_versuch_1.outcome == 'failure'
-        timeout-minutes: 10
-        continue-on-error: true
-        run: |
-          echo "::warning title=Browser-Installation::Versuch 1 ist gescheitert oder hing länger als 10 Minuten; neuer Versuch (#133)."
-          # Reste des abgebrochenen Versuchs beenden. GitHub beendet beim Zeitlimit nur den Schritt
-          # selbst; Playwright und apt-get können weiterlaufen und apt gesperrt halten. Die eckigen
-          # Klammern verhindern, dass pkill seinen eigenen Aufruf trifft. apt wartet danach bis zu
-          # zwei Minuten auf die Sperre, statt sofort zu scheitern.
-          pkill -f '[p]laywright.*install' || true
-          sudo pkill -x apt-get || true
-          echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
-          uv run --locked playwright install --with-deps chromium firefox webkit
-      - name: Browser für den Rauchtest installieren (Versuch 3 von 3)
-        id: browser_versuch_3
-        if: steps.browser_versuch_2.outcome == 'failure'
-        timeout-minutes: 10
-        continue-on-error: true
-        run: |
-          echo "::warning title=Browser-Installation::Versuch 2 ist gescheitert oder hing länger als 10 Minuten; letzter Versuch (#133)."
-          pkill -f '[p]laywright.*install' || true
-          sudo pkill -x apt-get || true
-          echo 'DPkg::Lock::Timeout "120";' | sudo tee /etc/apt/apt.conf.d/99-auf-sperre-warten > /dev/null
-          uv run --locked playwright install --with-deps chromium firefox webkit
       - name: Browser-Installation gescheitert
-        if: steps.browser_versuch_3.outcome == 'failure'
+        if: steps.browser.outcome == 'failure'
         run: |
-          echo "::error title=Browser-Installation gescheitert::Die Test-Browser ließen sich in drei Versuchen nicht installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen; am Code liegt es nicht. Ein Neustart des Laufs (Re-run jobs) hilft meist (#133)."
+          echo "::error title=Browser-Installation gescheitert::Die Test-Browser ließen sich nicht in 5 Minuten installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen; am Code liegt es nicht. Ein Neustart des Laufs (Re-run jobs) hilft meist (#133, #276)."
           exit 1
       - name: Warten, bis Keycloak bereit ist
         run: |
