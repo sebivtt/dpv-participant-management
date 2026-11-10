@@ -38,6 +38,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-10 · Ohne Skript bedienbar; am Handy springt „Menü“ ans Seitenende (#281)
+
+**Entscheidung** (Sebastian, Projektprüfung am 06.11.2026 und Klärung von #281 am 06.11.2026, Protokoll im Issue; Paket P-17, Befund BF-138):
+
+1. **Grundsatz:** Jede Aufgabe im Tool lässt sich ohne Skript erledigen, mit gleichem Ergebnis, notfalls umständlicher. Bequemlichkeit darf Skript brauchen, wenn es einen einfachen Ersatzweg gibt; eine Ausnahme ohne Ersatzweg entscheidet Sebastian je Fall. Der Grundsatz steht nur hier, nicht in `docs/anforderungen.md`.
+2. **Handy ohne Skript:** Unter 992 Pixel Breite springt „Menü“ ohne Skript, oder solange es noch nicht geladen ist, ans Ende der Seite. Dort stehen nach dem Inhalt und vor dem Fußbereich dieselben Navigationspunkte wie im Menü, der Profilkreis und „Abmelden“ als schlichte Liste. Mit Skript bleibt alles wie vorher: „Menü“ öffnet das Menü von links, die Liste gibt es dann nicht. Am PC ändert sich nichts.
+
+**Begründung:** Auf einem gemeinsam genutzten Handy darf niemand angemeldet bleiben müssen, nur weil das Skript bei schlechtem Netz nicht ankommt. Vorher öffnete allein das Skript das Menü, und ohne es war am Handy weder eine andere Seite noch „Abmelden“ erreichbar.
+
+**Technische Wahl** (KI): Der Server schickt „Menü“ als Sprung (`<a href="#menue-unten">`) und den Knopf, der das Menü öffnet, versteckt (`hidden`). Das Skript entfernt Sprung und Liste und zeigt den Knopf, sobald es läuft, auch wenn das erst nach einem Sprung ist; so sind Knopf, Tastatur und Tab-Stopps mit Skript dieselben wie vorher. Die Liste nimmt dieselben Bausteine wie Seitenleiste und Menü (`core/_navigation.html`, `core/_konto.html`) und damit dieselben Punkte aus `core/navigation.py`. Ausblenden ersetzt nie die Rechteprüfung auf dem Server. Die Liste allein mit CSS (`scripting`) auszublenden, ginge nicht: Lädt das Skript nicht, obwohl es erlaubt ist, wäre sie dann unsichtbar.
+
+**Grenzen:** Was nach dem Klick auf „Abmelden“ geschieht, regelt #280. Weitere Seiten wurden für diesen Eintrag nicht auf „ohne Skript“ durchgesehen; nach der Projektprüfung sind sie schon so gebaut (Dialog, kurze Meldung, Feld zum Antippen). Mit Skript steht die Liste ganz kurz unten auf der Seite, bis das Skript sie entfernt; oben verschiebt sich dabei nichts.
+
+**Umsetzung:** `core/templates/base_app.html`, `core/static/core/app.js`, `core/static/core/app.css`, `docs/gestaltung.md`, `docs/entscheidungen.md`, Tests in `tests/test_handy_ohne_skript.py` und `rauchtests/test_handy_ohne_skript.py`.
+
+---
+
 ## 2026-11-10 · Abmelden per Formular, ohne Kennungs-Token in der Adresse (#280)
 
 **Entscheidung** (Sebastian, Projektprüfung am 02.11.2026 und Klärung von #280 am 06.11.2026, Protokoll im Issue; Paket P-19, Befund BF-124):

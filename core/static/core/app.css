@@ -412,6 +412,16 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-menueknopf, .a-schliessen { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
 /* Beim Darüberfahren und Drücken wie die zarten Knöpfe (.btn-zart), denen sie in Ruhe gleichen (#216) */
 .a-menueknopf:hover, .a-menueknopf:active, .a-schliessen:hover, .a-schliessen:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
+/* Ohne Skript ist „Menü“ ein Sprung ans Seitenende (#281) und sieht aus wie der Knopf. */
+a.a-menueknopf { text-decoration: none; }
+/* Liste am Seitenende (#281): Navigation, Profilkreis und „Abmelden“ für das Handy ohne Skript, nach dem
+   Inhalt und vor dem Fußbereich. Am PC steht dasselbe in der Seitenleiste; mit Skript entfernt es die Liste. */
+.a-menue-unten { display: flex; flex-direction: column; gap: 16px; margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--linie); }
+.a-menue-unten > h2 { margin: 0; font-size: 1.25rem; }
+.a-menue-unten .a-konto { margin-top: 0; }
+@media (min-width: 992px) {
+  .a-menue-unten { display: none; }
+}
 dialog.a-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(320px, 86vw); max-width: 86vw; height: 100%; max-height: 100%; padding: 0; border: 0; border-radius: 0 var(--radius) var(--radius) 0; background: var(--flaeche); color: var(--text); box-shadow: 8px 0 32px rgba(15, 30, 50, .18); }
 dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 .a-drawer-innen { display: flex; flex-direction: column; gap: 24px; height: 100%; box-sizing: border-box; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
