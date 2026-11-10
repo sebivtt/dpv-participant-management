@@ -114,8 +114,8 @@ def tool(live_server, transactional_db, settings):
     return BASE
 
 
-def _context(browser: Browser, browser_name: str, device: dict) -> BrowserContext:
-    options = dict(device, locale="de-DE")
+def _context(browser: Browser, browser_name: str, device: dict, **extra) -> BrowserContext:
+    options = dict(device, locale="de-DE", **extra)
     # Firefox kennt keinen Handy-Modus; dort reichen Bildschirmgröße und Berührung.
     if device is HANDY and browser_name != "firefox":
         options["is_mobile"] = True
@@ -132,6 +132,22 @@ def pc(browser, browser_name, tool) -> Page:
 @pytest.fixture
 def handy(browser, browser_name, tool) -> Page:
     context = _context(browser, browser_name, HANDY)
+    yield context.new_page()
+    context.close()
+
+
+@pytest.fixture
+def pc_ohne_skript(browser, browser_name, tool) -> Page:
+    """Wie `pc`, aber mit abgeschaltetem Skript im Browser (#280)."""
+    context = _context(browser, browser_name, PC, java_script_enabled=False)
+    yield context.new_page()
+    context.close()
+
+
+@pytest.fixture
+def handy_ohne_skript(browser, browser_name, tool) -> Page:
+    """Wie `handy`, aber mit abgeschaltetem Skript im Browser (#280)."""
+    context = _context(browser, browser_name, HANDY, java_script_enabled=False)
     yield context.new_page()
     context.close()
 
