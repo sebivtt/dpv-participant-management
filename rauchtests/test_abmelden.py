@@ -72,8 +72,8 @@ def test_am_pc_ohne_skript_nur_mit_der_tastatur_ueber_den_knopf_abgemeldet(pc_oh
     _password_requested_again(page)
 
 
-# E2 am Handy: Den Weg zum Knopf „Abmelden“ ohne Skript regelt #281; hier schickt der Test das
-# Formular „Abmelden“ der Seite selbst ab und prüft alles danach.
+# E2 am Handy: Den Weg zum Knopf „Abmelden“ ohne Skript prüft rauchtests/test_handy_ohne_skript.py (#281);
+# hier schickt der Test das Formular „Abmelden“ der Seite selbst ab und prüft alles danach.
 def test_am_handy_ohne_skript_kurze_seite_mit_knopf(handy_ohne_skript):
     page = handy_ohne_skript
     login(page)
