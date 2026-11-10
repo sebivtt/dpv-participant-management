@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht); 04.11.2026, #252, „Grenzen“ (nur der Verweis auf BF-124, P-19) |
 | Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
 | Prüfwege für Anfragen aus dem Skript | 05.11.2026, #264, Nr. 4 | 28.10.2026, #190; 25.10.2026, #96, #8, #64, #90; 23.10.2026, #87 (je nur die Nennung von htmx) |
 | Prüfung der Kernregeln durch Tests | 05.11.2026, #262, Nr. 1 und 2 | 26.10.2026, #169, „Technische Wahl“ (nur der Satzteil „die Kernregeln in `CLAUDE.md`“) |
@@ -34,6 +35,21 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-10 · Abmelden per Formular, ohne Kennungs-Token in der Adresse (#280)
+
+**Entscheidung** (Sebastian, Projektprüfung am 02.11.2026 und Klärung von #280 am 06.11.2026, Protokoll im Issue; Paket P-19, Befund BF-124):
+
+1. **Formular statt Adresse:** Beim Abmelden zeigt das Tool eine kurze Seite im Stil der Login-Seite. Ihr Formular schickt das Kennungs-Token, die Client-Kennung und die Rücksprung-Adresse per POST an die Abmelde-Adresse von Keycloak; mit Skript (`core/static/core/app.js`) schickt es sich sofort selbst ab, ohne Skript steht ein Knopf da. Keine Adresse, die das Tool beim Abmelden aufruft oder weiterleitet, enthält das Token. Die kurze Seite speichert der Browser nicht (`Cache-Control: no-store`). Ersetzt den Eintrag vom 21.10.2026 („Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“), „Technische Wahl“, Punkt „Abmelden ohne Rückfrage bei Keycloak“, nur im Weg, auf dem das Token zu Keycloak geht; dass das Tool es mitschickt, damit Keycloak nicht nachfragt, bleibt.
+2. **Hinweis „Du bist abgemeldet.“:** Zurück auf der Login-Seite steht er einmal, auch nach abgelaufener Sitzung. Dafür setzt das Abmelden ein Cookie `dpv_abgemeldet` mit dem Wert `1`, ohne Bezug zur Person, das die Login-Seite löscht und das sonst nach 15 Minuten verfällt. Am Keycloak des DPV ändert sich nichts, auch nicht die Rücksprung-Adresse.
+
+**Begründung:** Datensparsamkeit. In der Grundeinstellung von Keycloak stehen im Token Name, Benutzername und Mail; es ist nur kodiert, nicht verschlüsselt. Eine Adresse landet im Browserverlauf eines gemeinsam genutzten Geräts und in Protokollen fremder Server, ein Formular nicht. Das Cookie statt eines Zusatzes an der Rücksprung-Adresse, weil diese im Keycloak des DPV eingetragen ist.
+
+**Grenzen:** Das Token liegt bis zum Abmelden weiter in der Sitzung, nur nicht mehr in der Adresse; der Verweis auf BF-124 und P-19 im Eintrag vom 04.11.2026 (#252), „Grenzen“, ist damit nur noch für die Sitzung offen. Abgelaufene Sitzungen bleiben liegen (BF-125). Die Sicherheitsrichtlinie für Skripte (#278) muss das Formular an Keycloak erlauben. Am Handy ohne Skript den Knopf „Abmelden“ zu erreichen, regelt #281.
+
+**Umsetzung:** `accounts/views.py`, `accounts/session.py`, `accounts/texts.py`, `accounts/templates/accounts/abmelden.html`, `accounts/templates/accounts/login.html`, `core/static/core/app.js`, `docs/entscheidungen.md`, Tests in `tests/test_abmelden.py`, `tests/test_login.py`, `tests/test_keycloak_echt.py` und `rauchtests/test_abmelden.py`.
 
 ---
 

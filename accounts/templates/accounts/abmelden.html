@@ -1,0 +1,13 @@
+{% extends "base_einfach.html" %}
+{% load i18n %}
+{% block title %}{% translate "Abmelden · DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Kurze Seite beim Abmelden (#280): Das Formular bringt das Kennungs-Token per POST zu Keycloak, #}
+  {# damit es in keiner Adresse steht. Mit Skript schickt core/static/core/app.js es sofort ab. #}
+  <h1>{% translate "Abmelden" %}</h1>
+  <p class="a-einfach-text">{% translate "Du wirst jetzt auch bei deinem DPV-Konto abgemeldet." %}</p>
+  <form method="post" action="{{ action }}" data-sofort-absenden>
+    {% for name, value in fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}<button type="submit" class="btn btn-primary btn-lg w-100">{% translate "Abmelden abschließen" %}</button>
+  </form>
+{% endblock %}

@@ -5,7 +5,7 @@
   <h1>{% translate "DPV Anmeldetool" %}</h1>
   <p class="a-einfach-text">{% translate "Melde dich mit deinem DPV-Konto an." %}</p>
   {# Meldungen nach einer Handlung: Vorleseprogramme sagen sie sofort an (#165). #}
-  {% if session_expired_hint %}{% meldung "info" text=session_expired_hint live=True %}{% endif %}
+  {% if info_hint %}{% meldung "info" text=info_hint live=True %}{% endif %}
   {% for message in messages %}{% meldung message.level_tag text=message.message live=True %}{% endfor %}
   <form method="post" action="{{ start }}">
     {% csrf_token %}

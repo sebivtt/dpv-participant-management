@@ -445,6 +445,14 @@
     });
   });
 
+  // Kurze Seite beim Abmelden (#280): Ihr Formular bringt das Kennungs-Token zu Keycloak und
+  // schickt sich sofort selbst ab, damit niemand einen Knopf mehr drücken muss. Ohne Skript
+  // bleibt der Knopf. Es steht hier und nicht in der Seite, weil Skripte nur aus Dateien des
+  // eigenen Servers kommen sollen (#278).
+  document.querySelectorAll("form[data-sofort-absenden]").forEach(function (form) {
+    form.submit();
+  });
+
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {

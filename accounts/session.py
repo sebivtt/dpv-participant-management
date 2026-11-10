@@ -1,4 +1,4 @@
-"""Was sich das Tool zu einer Anmeldung merkt, fürs Abmelden und den Hinweis „Sitzung abgelaufen“ (#5).
+"""Was sich das Tool zu einer Anmeldung merkt, fürs Abmelden und die Hinweise „Sitzung abgelaufen“ (#5) und „abgemeldet“ (#280).
 
 Dazu die Obergrenze der Sitzung (#8): spätestens 12 Stunden nach dem Login ist Schluss.
 """
@@ -20,6 +20,13 @@ LOGIN_TIME_SESSION_KEY = "accounts_login_time"
 # Beim Abmelden und nach dem Hinweis wird es gelöscht.
 LOGGED_IN_BEFORE_COOKIE = "dpv_war_angemeldet"
 LOGGED_IN_BEFORE_DAYS = 30
+
+# Cookie, das nur „hat sich gerade abgemeldet“ bedeutet, ohne Bezug zur Person (#280). Keycloak
+# schickt nach dem Abmelden zur Login-Seite zurück, ohne Angabe, woher man kommt; so zeigt sie
+# trotzdem einmal „Du bist abgemeldet.“, ohne Änderung am Keycloak des DPV. Die Login-Seite
+# löscht es; bleibt man bei Keycloak hängen, verfällt es nach kurzer Zeit von selbst.
+LOGGED_OUT_COOKIE = "dpv_abgemeldet"
+LOGGED_OUT_MINUTES = 15
 
 
 def remember_login(request: HttpRequest, response: HttpResponse, id_token: str) -> None:
@@ -43,6 +50,28 @@ def session_expired(request: HttpRequest) -> bool:
 def forget_login(response: HttpResponse) -> None:
     """Löscht das Cookie „war angemeldet“."""
     response.delete_cookie(LOGGED_IN_BEFORE_COOKIE, samesite="Lax")
+
+
+def remember_logout(request: HttpRequest, response: HttpResponse) -> None:
+    """Setzt beim Abmelden das Cookie „gerade abgemeldet“ für den Hinweis auf der Login-Seite."""
+    response.set_cookie(
+        LOGGED_OUT_COOKIE,
+        "1",
+        max_age=LOGGED_OUT_MINUTES * 60,
+        secure=request.is_secure(),
+        httponly=True,
+        samesite="Lax",
+    )
+
+
+def just_logged_out(request: HttpRequest) -> bool:
+    """Sagt, ob jemand gerade abgemeldet hat und die Login-Seite den Hinweis noch nicht gezeigt hat."""
+    return request.COOKIES.get(LOGGED_OUT_COOKIE) == "1"
+
+
+def forget_logout(response: HttpResponse) -> None:
+    """Löscht das Cookie „gerade abgemeldet“, damit der Hinweis nur einmal erscheint."""
+    response.delete_cookie(LOGGED_OUT_COOKIE, samesite="Lax")
 
 
 def remember_login_time(request: HttpRequest) -> None:
