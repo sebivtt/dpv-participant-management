@@ -1,4 +1,7 @@
-"""Grundbausteine des Tools, die zu keinem Fachbereich gehören."""
+"""Grundbausteine ohne eigenen Fachbereich, die gemeinsame Gestaltung und alle Seiten außer Login und Abmelden.
+
+Was wohin gehört, steht in docs/aufbau.md (#282).
+"""
 
 from django.apps import AppConfig
 
