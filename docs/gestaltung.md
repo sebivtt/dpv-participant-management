@@ -104,7 +104,7 @@ Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10
 
 Zielbild als `docs/zielbilder/personen.html` (aus #65), Abweichungen in `docs/zielbilder/README.md`. Kein neuer Baustein, drei erweitert:
 
-- **Person in einer Liste** (vorher „Leitung in einer Liste“): eine Person hat keine, eine oder mehrere Leitungsrollen als Rollenmarken; rechts ist Platz für mehrere Knöpfe („Austragen“ seit #286, „Verschieben“ mit #287). Leitungen sehen aus wie vorher (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65).
+- **Person in einer Liste** (vorher „Leitung in einer Liste“): eine Person hat keine, eine oder mehrere Leitungsrollen als Rollenmarken; rechts ist Platz für mehrere Knöpfe („Austragen“ seit #286, „Verschieben“ seit #287). Leitungen sehen aus wie vorher (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65).
 - **Überschrift einer Fläche:** hinter dem Titel darf klein und grau eine Zahl stehen, etwa „4 Personen“.
 - **Trefferliste:** im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem Knopf „Aufnehmen“.
 - **Danach** eine kurze Meldung (#186), wie nach dem Benennen.
@@ -117,6 +117,16 @@ Kein eigenes Zielbild; Orientierung sind `docs/zielbilder/personen.html` (Dialog
 - **Dialog:** Der rote Knopf schickt die Wahl mit („Austragen“, „Austreten“).
 - **Knopf „Entfernen“:** auch für „Austragen“ in der Liste „Personen“, dort auch beim eigenen Eintrag, und für „Austreten“ in der Fläche der Mitgliedschaft auf „Mein Profil“.
 - **Danach** eine kurze Meldung (#186): „… ist aus … ausgetragen.“, „Du bist aus … ausgetreten.“
+
+### Verschieben (#287, 10.11.2026)
+
+Kein eigenes Zielbild; Orientierung ist `docs/zielbilder/personen.html` (Dialog „Verschieben“, #65 N4 und N5), Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 10.11.2026 zu #287. Ein neuer Baustein, drei erweitert:
+
+- **Knopf „Verschieben“** (neu): klein, zarte blaue Fläche, blaue Schrift, die Farben der Informationsmeldung; in der Liste „Personen“ vor „Austragen“.
+- **Person in einer Liste:** rechts „Verschieben“ und „Austragen“ nebeneinander, wo die Person beides darf.
+- **Dialog:** Wo nichts weggenommen wird, ist der Knopf zum Bestätigen dunkelblau statt rot.
+- **Auswahl im Dialog:** Die Vorschau ist freiwillig; beim Verschieben fehlt sie. Nach einer Ablehnung bleibt die abgelehnte Möglichkeit gewählt.
+- **Danach** eine kurze Meldung (#186): „… gehört jetzt zu ….“ Passt eine Leitungsrolle nicht zum Ziel, steht die Fehlermeldung fest im Dialog unter der Wahl.
 
 ### Textfelder (#111, 26.10.2026)
 

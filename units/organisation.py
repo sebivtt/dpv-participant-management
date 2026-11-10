@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from django.db.models import Q
 from django.urls import reverse
 
-from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, unit_label
+from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, listed, unit_label
 from accounts.models import display_name
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
@@ -51,6 +51,9 @@ class Lead:
     # Bei Personen im Abschnitt „Personen“ der Knopf „Austragen“, nur wo die Person austragen darf (#286).
     expel_href: str | None = None
     expel_label: str = texts.EXPEL_BUTTON
+    # Davor der Knopf „Verschieben“, nur wo die Person verschieben darf (#287).
+    move_href: str | None = None
+    move_label: str = texts.MOVE_BUTTON
 
     @property
     def shown_roles(self) -> list[str]:
@@ -309,8 +312,8 @@ class Organisation:
         """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1)."""
         if access != MANAGE:
             return {}
-        may_expel = self.rights.may_expel(unit)
-        persons = [self._person(user, unit, may_expel) for user in sorted(self.rights.members(unit), key=_user_by_name)]
+        may = {"expel": self.rights.may_expel(unit), "move": self.rights.may_move(unit)}
+        persons = [self._person(user, unit, **may) for user in sorted(self.rights.members(unit), key=_user_by_name)]
         return {
             "persons": persons,
             "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
@@ -318,10 +321,11 @@ class Organisation:
             "admit_href": reverse("organisation_admit", args=[unit.key]) if self.rights.may_admit(unit) else None,
         }
 
-    def _person(self, user, unit: Unit, may_expel: bool) -> Lead:
+    def _person(self, user, unit: Unit, expel: bool, move: bool) -> Lead:
         """Eine Person im Abschnitt „Personen“ mit ihren Leitungsrollen von der Gruppe bis zum Bund (#65 N1).
 
-        Mit dem Knopf „Austragen“, wo die Person austragen darf, auch beim eigenen Eintrag (#286).
+        Mit den Knöpfen „Verschieben“ und „Austragen“, wo die Person das darf, auch beim eigenen
+        Eintrag (#286, #287).
         """
         full_name = " ".join(part for part in (user.first_name, user.last_name) if part)
         leads = sorted(user.lead_roles, key=lambda role: (LEADS_IN_UNITS.index(role.kind), alphabetical(role.unit.name)))
@@ -333,7 +337,8 @@ class Organisation:
             mail=user.email,
             locked=not user.is_active,
             is_self=user.pk == self.user.pk,
-            expel_href=reverse("organisation_expel", args=[unit.key, user.key]) if may_expel else None,
+            expel_href=reverse("organisation_expel", args=[unit.key, user.key]) if expel else None,
+            move_href=reverse("organisation_move", args=[unit.key, user.key]) if move else None,
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:
@@ -418,18 +423,13 @@ class Organisation:
         )
 
 
-def _listed(parts: list[str]) -> str:
-    """„A“, „A und B“, „A, B und C“."""
-    return parts[0] if len(parts) == 1 else f"{', '.join(parts[:-1])} {texts.AND} {parts[-1]}"
-
-
 def _ending_lines(endings: list[dict], own: bool) -> list[str]:
     """Die Sätze der Vorschau zu den Rollen, die enden, und zur letzten Leitung (#286, wie #191)."""
     if not endings:
         return []
     roles = [str(texts.ROLE_OF % {"role": entry["role"].get_kind_display(), "unit": unit_label(entry["role"].unit)})
              for entry in endings]
-    lines = [str((texts.ENDING_OWN_ROLES if own else texts.ENDING_ROLES) % {"roles": _listed(roles)})]
+    lines = [str((texts.ENDING_OWN_ROLES if own else texts.ENDING_ROLES) % {"roles": listed(roles)})]
     for entry in endings:
         if not entry["last"]:
             continue
@@ -445,10 +445,17 @@ def _ending_lines(endings: list[dict], own: bool) -> list[str]:
     return lines
 
 
-def _choice(name: str, legend: str, options: list[tuple[str, str, list[str]]]) -> dict:
-    """Die Daten für den Baustein „Auswahl im Dialog“ (#286): je Möglichkeit Wert, Beschriftung und Vorschau."""
-    return {"name": name, "legend": legend,
-            "options": [{"value": value, "label": label, "lines": lines} for value, label, lines in options]}
+def _choice(name: str, legend: str, options: list[tuple[str, str, list[str]]], chosen: str = "") -> dict:
+    """Die Daten für den Baustein „Auswahl im Dialog“ (#286): je Möglichkeit Wert, Beschriftung und Vorschau.
+
+    `chosen` ist der Wert, der gewählt bleiben soll, etwa nach einer Ablehnung (#287); ohne ihn oder
+    mit einem Wert, den es nicht gibt, ist die erste Möglichkeit gewählt.
+    """
+    values = [value for value, _label, _lines in options]
+    chosen = chosen if chosen in values else ""
+    return {"name": name, "legend": legend, "chosen": chosen,
+            "options": [{"value": value, "label": label, "lines": lines, "checked": value == chosen}
+                        for value, label, lines in options]}
 
 
 def expulsion_dialog(unit: Unit, shown: dict, action: str) -> dict:
@@ -475,6 +482,30 @@ def expulsion_dialog(unit: Unit, shown: dict, action: str) -> dict:
         "confirm_label": texts.EXPEL_BUTTON,
         "form_id": "f-dialog",
         "choice": _choice("wahl", str(texts.EXPEL_LEGEND % {"person": person}), options),
+    }
+
+
+def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: str = "") -> dict:
+    """Der Dialog „Verschieben“ aus dem, was `Rights.moving()` liefert (PK-19, Zielbild aus #285).
+
+    Titel „Verschieben“, darunter wer aus welcher Organisation; die Wahl der Organisationen direkt
+    darunter ist der Baustein „Auswahl im Dialog“ ohne Vorschau, der Knopf „Verschieben“ ist blau
+    (Sebastian bei der Umsetzung, 10.11.2026: „1a und 2a“). `notice` ist eine Ablehnung, die im
+    Dialog an der Stelle der Handlung steht (PK-25, #186); dann bleibt das abgelehnte Ziel `chosen`
+    gewählt (Sebastian, 10.11.2026: „Ja, gewählt lassen“).
+    """
+    options = [(target.key, unit_label(target), []) for target in shown["targets"]]
+    return {
+        "title": texts.MOVE_TITLE,
+        "subtitle": texts.MOVE_FROM % {"person": shown["person"], "unit": unit_label(unit)},
+        "lines": [texts.MOVE_QUESTION],
+        "close_href": reverse("organisation_unit", args=[unit.key]),
+        "confirm_action": action,
+        "confirm_label": texts.MOVE_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "choice": _choice("ziel", str(texts.MOVE_QUESTION), options, chosen=chosen),
+        "notice": notice,
     }
 
 

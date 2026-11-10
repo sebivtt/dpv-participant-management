@@ -31,6 +31,7 @@ from units.organisation import (
     admission,
     exit_dialog,
     expulsion_dialog,
+    move_dialog,
     federation_done,
     hits,
 )
@@ -496,6 +497,39 @@ def organisation_expel(request: HttpRequest, unit: str, person: str) -> HttpResp
                                                        "start": False, "removal": removal})
 
 
+# Verschieben (#287, Teil 3 von #65). Wie beim Austragen hat der Dialog eine eigene Adresse unter der
+# Seite der Organisation, damit er auch ohne Skript geht. Die Organisation der Person kommt immer aus
+# der Adresse, die Person über ihre Kennung, das Ziel nur aus den Organisationen direkt darunter.
+MOVE_ROWS = ("PK-19", "PK-20", "PK-23", "PK-25", "EP-10", "EH-18", "EH-19")
+
+
+@checks_rights(*MOVE_ROWS)
+def organisation_move(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „Verschieben“ zeigen und die Person in eine Organisation direkt darunter verschieben (PK-19).
+
+    Lesend zeigt die Adresse die Seite der Organisation mit offenem Dialog; „Abbrechen“ ändert nichts.
+    Das Formular verschiebt und führt zurück zur Seite der Organisation mit der kurzen Meldung (#186);
+    die eigenen Rechte ändern sich dabei nie, weil Leitungsrollen beim Verschieben bleiben. Passt
+    eine Leitungsrolle nicht zum Ziel, bleibt der Dialog offen, nennt sie und lässt das Ziel gewählt (PK-25).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_move)
+    notice, chosen = "", ""
+    if request.method == "POST":
+        chosen = request.POST.get("ziel", "")
+        done, text = rights.move(found, person, chosen)
+        if done:
+            messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        notice = text
+    elif request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    removal = move_dialog(found, rights.moving(found, person), action=request.path, notice=notice, chosen=chosen)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
+                                                       "start": False, "removal": removal})
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
@@ -739,13 +773,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286],
+        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287],
         "purpose": _("Eine Leitung oder Person mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, "
                      "darunter links die Rollen und rechts die Mail, wo die Seite sie zeigen darf. Eine Leitung hat "
                      "genau eine Rolle, eine Person im Abschnitt „Personen“ keine, eine oder mehrere "
                      "Leitungsrollen. Ganz rechts ist Platz für Knöpfe; wo man Leitungen entfernen darf, steht dort "
-                     "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“, wo man Personen austragen darf, "
-                     "„Austragen“."),
+                     "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“; wo man Personen verschieben oder "
+                     "austragen darf, „Verschieben“ und „Austragen“."),
         "pages": [_("Organisation")],
     },
     "knopfentfernen": {
@@ -755,6 +789,13 @@ BUILDING_BLOCKS = {
                      "Er führt zur Bestätigung, nie gleich zur Handlung."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
+    "knopfverschieben": {
+        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287],
+        "purpose": _("Für Handlungen, die etwas umstellen, ohne etwas wegzunehmen, etwa „Verschieben“ bei einer "
+                     "Person: kleiner Knopf mit zarter blauer Fläche und blauer Schrift, die Farben der "
+                     "Informationsmeldung. Er führt zum Dialog, nie gleich zur Handlung."),
+        "pages": [_("Organisation")],
+    },
     "orgakopf": {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
@@ -763,18 +804,21 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
-                     "„Entfernen“; er schickt eine Wahl aus der „Auswahl im Dialog“ mit."),
+                     "„Entfernen“, oder, wo nichts weggenommen wird, ein dunkelblauer, etwa „Verschieben“; er "
+                     "schickt eine Wahl aus der „Auswahl im Dialog“ mit."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
-        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286],
+        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287],
         "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt; darunter "
-                     "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Der rote "
-                     "Knopf des Dialogs schickt die Wahl mit, etwa beim Austragen und beim Austreten."),
+                     "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Die "
+                     "Vorschau ist freiwillig, beim Verschieben gibt es keine. Nach einer Ablehnung bleibt die "
+                     "abgelehnte Möglichkeit gewählt. Der Knopf des Dialogs schickt die Wahl mit, etwa beim "
+                     "Austragen, beim Austreten und beim Verschieben."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
@@ -888,12 +932,24 @@ def _organisation_examples() -> dict:
              is_self=True, role_names=["Stammesleitung Stamm Walhall", "Gruppenleitung Sippe Falken"]),
         Lead(name="Wolke", extra="Wim Muster", role="", mail="wim.muster@example.org", locked=False, is_self=False,
              role_names=["Gruppenleitung Meute Wölfe"]),
-        Lead(name="Wilma Muster", extra="", role="", mail="wilma.muster@example.org", locked=False, is_self=False),
+        Lead(name="Wilma Muster", extra="", role="", mail="wilma.muster@example.org", locked=False, is_self=False,
+             move_href="#h-leitung", expel_href="#h-leitung"),
     ]
+    # Verschieben mit Wahl ohne Vorschau und blauem Knopf (#287), erfunden wie im Beispiel des Issues.
+    moving = {
+        "title": texts.MOVE_TITLE, "subtitle": texts.MOVE_FROM % {"person": "Flink (Finn Muster)", "unit": "Stamm Walhall"},
+        "lines": [texts.MOVE_QUESTION], "close_href": "#h-auswahl", "confirm_action": "#h-auswahl",
+        "confirm_label": texts.MOVE_BUTTON, "confirm_primary": True, "form_id": "katalog-verschieben",
+        "preview_id": "h-dialog-verschieben",
+        "choice": {"name": "katalog-ziel", "legend": texts.MOVE_QUESTION, "options": [
+            {"value": "woelfe", "label": "Meute Wölfe", "lines": []},
+            {"value": "falken", "label": "Sippe Falken", "lines": []},
+        ]},
+    }
     admit_hits = [Hit(key="", name="Otter", extra="Otto Ohne", place="", note="", warning="", hint="")]
     return {"persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
