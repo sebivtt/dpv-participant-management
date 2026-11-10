@@ -1,4 +1,4 @@
-"""Grundbausteine ohne eigenen Fachbereich, die gemeinsame Gestaltung und alle Seiten außer Login und Abmelden.
+"""Grundbausteine ohne eigenen Fachbereich, gemeinsame Gestaltung und alle Seiten außer Login und Abmelden.
 
 Was wohin gehört, steht in docs/aufbau.md (#282).
 """

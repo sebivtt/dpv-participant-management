@@ -4,7 +4,7 @@ Wie der Code des Tools aufgebaut ist und wo man was baut (#282). Regeln für jed
 
 ## Die Apps
 
-Django teilt das Tool in Apps, also Ordner mit je einem Fachbereich.
+Django teilt das Tool in Apps, also Ordner mit je einem Fachbereich; `access` und `config` sind Ordner ohne eigene Anmeldung als App bei Django, stehen hier aber mit.
 
 | App | Aufgabe |
 | --- | --- |
@@ -29,13 +29,15 @@ Jede Datei des Tools gehört zu genau einer Schicht. Sie bindet nur Dateien aus 
 | 4 | Aufbereitung | ordnet Daten für Seiten und Befehle, Formulare, Navigation, Bausteine für Vorlagen | `units/organisation.py`, `units/management/common.py`, `accounts/forms.py`, `core/forms.py`, `core/navigation.py`, `core/templatetags/layout.py` |
 | 5 | Seiten, Befehle und Adressen | was von außen aufgerufen wird: Seiten, Befehle auf dem Server, Login über allauth, Start von Django und Webserver | `core/views.py`, `accounts/views.py`, `accounts/adapter.py`, `accounts/signals.py`, `accounts/apps.py`, `core/apps.py`, `roles/apps.py`, `units/apps.py`, `roles/management/commands/`, `units/management/commands/`, `config/settings.py`, `config/urls.py`, `config/wsgi.py`, `manage.py`, `docker/gunicorn.conf.py` |
 
-**Nicht Teil der Schichten:** `tests/`, `rauchtests/`, `containertests/`, `.github/`, `.claude/`, jeder Ordner `migrations` und jede Datei `__init__.py`. Eine `__init__.py` bindet nichts aus dem Tool ein.
+**Nicht Teil der Schichten:** `tests/`, `rauchtests/`, `containertests/`, `.github/`, `.claude/` und jeder Ordner `migrations`.
+
+Eine Datei `__init__.py` gehört zu keiner Schicht; sie bindet nichts aus dem Tool ein, auch das prüft der Test. Nicht erkennen kann er Verweise ohne `import`, etwa Namen als Text in `config/settings.py`; solche Verweise stehen nur in der Schicht „Seiten, Befehle und Adressen“.
 
 Eine neue Datei bekommt im selben Pull Request ihre Zeile in dieser Tabelle; sonst wird der Test rot. Braucht eine Datei etwas aus einer höheren Schicht, gehört entweder das Gebrauchte nach unten oder die Datei nach oben; das klärt der Pull Request, statt die Tabelle still anzupassen.
 
 ## Weg einer Anfrage
 
-Jede Anfrage läuft durch die Bausteine in `MIDDLEWARE` (`config/settings.py`), in dieser Reihenfolge:
+Jede Anfrage läuft durch die Bausteine in `MIDDLEWARE` (`config/settings.py`). Für eine Seite des Tools zählen diese Schritte, in dieser Reihenfolge:
 
 1. **Login-Pflicht:** Jede Adresse verlangt einen Login. Ausnahmen sind nur die Login-Seiten in `accounts/views.py`, markiert mit `@login_not_required`; der Rundumtest `tests/test_rundumtest.py` kennt jede Ausnahme. Wessen Login zu lange her ist, gilt vorher schon als abgemeldet (`accounts/session.py`).
 2. **Rechte:** Jede Anfrage bekommt ihre eigenen, frisch berechneten Rechte als `request.rights` (`access/rights.py`). Daten anderer Personen holt eine Seite nur darüber (`CONTRIBUTING.md`, Abschnitt 4).
