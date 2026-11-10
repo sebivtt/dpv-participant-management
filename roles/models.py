@@ -71,8 +71,13 @@ class Role(models.Model):
       Bundes ist, auch in allen Einheiten darunter.
     - Wer ohne Mitgliedschaft eine Leitungsrolle in einer Einheit bekommt, wird zugleich Mitglied
       der geleiteten Einheit und bleibt es, wenn die Leitung endet.
-    - Eine Mitgliedschaft wechselt oder endet nur, wenn danach alle Leitungsrollen in Einheiten
-      noch auf dem Pfad liegen; ohne Mitgliedschaft heißt das: keine solchen Leitungsrollen.
+    - Eine Mitgliedschaft wechselt in eine andere Einheit nur, wenn danach alle Leitungsrollen in
+      Einheiten noch auf dem Pfad liegen (Verschieben, PK-25).
+    - Austreten und Austragen (`leave()`, #286 aus #65, ROL-01, EP-06, PK-21): Wer eine Einheit aus der
+      eigenen Kette verlässt, gehört danach direkt zur Einheit darüber, aus dem Bund oder „ganz“
+      ausgetragen zu keiner. Dabei enden alle Leitungsrollen in der verlassenen Einheit und darunter
+      und alle, die danach nicht mehr auf dem Pfad liegen. Endet die Mitgliedschaft über
+      `delete()`, enden alle Leitungsrollen in Einheiten (bis #286 lehnte das Tool dann ab).
     - Nur die Einheit einer Mitgliedschaft lässt sich ändern; jede andere Rolle wird entfernt und
       neu gegeben, damit jede Änderung als solche im Protokoll steht (#91).
 
@@ -144,9 +149,9 @@ class Role(models.Model):
     def delete(self, *args, by, **kwargs):
         """Entfernt die Rolle und schreibt ins Protokoll.
 
-        Eine Mitgliedschaft endet nur, wenn keine Leitungsrolle in einer Einheit mehr besteht.
-        `by` wie bei `save()`. Regeln und Protokoll richten sich nach dem gespeicherten Stand,
-        nicht nach einem im Programm schon geänderten.
+        Endet eine Mitgliedschaft, enden mit ihr alle Leitungsrollen in Einheiten, jede mit eigenem
+        Eintrag im Protokoll (#286). `by` wie bei `save()`. Regeln und Protokoll richten sich nach dem
+        gespeicherten Stand, nicht nach einem im Programm schon geänderten.
         """
         check_actor(by)
         with transaction.atomic():
@@ -157,13 +162,58 @@ class Role(models.Model):
             if stored is None:
                 return super().delete(*args, **kwargs)
             if stored.kind == RoleKind.MEMBER:
-                blocking = list(stored._leads())
-                if blocking:
-                    raise ValidationError(stored._remove_first(blocking), code="remove_roles_first")
+                # Ohne Mitgliedschaft liegt keine Leitungsrolle in einer Einheit mehr auf dem Pfad (#286).
+                for lead in stored._leads():
+                    lead.delete(by=by)
             deleted = super().delete(*args, **kwargs)
             if deleted[0]:
                 RoleChange.record(by, stored.user, stored.kind, stored.unit, RoleChange.Action.REMOVED)
             return deleted
+
+    def leave(self, left: Unit, *, by, entirely: bool = False) -> bool:
+        """Austreten oder Austragen: Die Mitgliedschaft verlässt `left`, ihre Einheit oder eine darüber (#286).
+
+        Danach gehört die Person direkt zur Einheit über `left`; aus einem Bund oder mit `entirely`
+        zu keiner. Die Leitungsrollen aus `ending_leads()` enden, jede mit Eintrag im Protokoll.
+        Gibt False zurück, wenn diese Mitgliedschaft inzwischen nicht mehr so besteht, etwa weil
+        gleichzeitig jemand anderes sie geändert hat; dann ändert sich nichts. Lehnt mit
+        `ValidationError` ab, wenn die Rolle keine Mitgliedschaft ist oder `left` nicht auf der
+        eigenen Kette liegt (EP-07, PG6). `by` wie bei `save()`.
+        """
+        check_actor(by)
+        with transaction.atomic():
+            stored = self._stored()
+            if stored is not None:
+                stored._lock_person()
+                stored = self._stored()
+            if stored is None or stored.unit_id != self.unit_id:
+                return False
+            if stored.kind != RoleKind.MEMBER:
+                raise ValidationError(texts.ONLY_MEMBERSHIP_LEAVES)
+            if left.kind == UnitKind.FEDERATION or left.pk not in _upwards(stored.unit):
+                raise ValidationError(texts.NOT_IN_CHAIN)
+            for lead in stored.ending_leads(left, entirely):
+                lead.delete(by=by)
+            target = after_leaving(left, entirely)
+            if target is None:
+                super(Role, stored).delete()
+                RoleChange.record(by, stored.user, stored.kind, stored.unit, RoleChange.Action.REMOVED)
+            else:
+                stored.unit = target
+                stored.save(by=by)
+        return True
+
+    def ending_leads(self, left: Unit, entirely: bool = False) -> list["Role"]:
+        """Die Leitungsrollen, die enden, wenn diese Mitgliedschaft `left` verlässt; für Vorschau und `leave()`.
+
+        Das sind alle in `left` und darunter und alle, die danach nicht mehr auf dem Pfad liegen;
+        ohne Mitgliedschaft danach alle (ROL-01, EP-06, PK-21). Ändert nichts.
+        """
+        target = after_leaving(left, entirely)
+        return [
+            lead for lead in self._leads()
+            if target is None or left.pk in _upwards(lead.unit) or not on_path(target, lead.unit)
+        ]
 
     def _stored(self) -> "Role | None":
         """Diese Rolle, wie sie in der Datenbank steht."""
@@ -323,6 +373,13 @@ def on_path(member_unit: Unit, target: Unit) -> bool:
     """
     anchor = member_unit.parent if member_unit.kind == UnitKind.GROUP else member_unit
     return anchor.pk in _upwards(target) or target.pk in _upwards(anchor)
+
+
+def after_leaving(left: Unit, entirely: bool) -> Unit | None:
+    """Wozu eine Person gehört, die `left` verlässt: zur Einheit darüber, aus einem Bund oder ganz zu keiner (#286)."""
+    if entirely or left.kind == UnitKind.ASSOCIATION:
+        return None
+    return left.parent
 
 
 def _upwards(unit: Unit) -> list[int]:

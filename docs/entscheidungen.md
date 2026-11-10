@@ -31,10 +31,31 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wortlaut „E-Mail-Adresse“, „stammen aus“ | 25.10.2026, #161, Nr. 3 | 25.10.2026, #96 |
 | Kennungen in Adressen | 25.10.2026, #64 | 25.10.2026, #90, „Leere Werte ergeben verboten“ (Satz zur Zahl) |
 | „hat Ringe“ ausschalten | 24.10.2026, #136, Nr. 8 | 23.10.2026, Einheiten (#88), Nr. 2 |
-| Wechsel und Ende der Mitgliedschaft | 24.10.2026, #136, Nr. 7 und 11 | 23.10.2026, #89, Nr. 3 und 5 |
+| Wechsel und Ende der Mitgliedschaft | 10.11.2026, #286, Nr. 1; 24.10.2026, #136, Nr. 7 und 11 | 23.10.2026, #89, Nr. 3 und 5; 24.10.2026, #136, Nr. 7 (nur dass eine Person beim Entfernen durch eine Leitung immer Einzelmitglied der Ebene darüber wird) |
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-10 · Austragen und Austreten (#286, Teil 2 von #65)
+
+**Entscheidung** (Sebastian; Klärung von #65 am 22.10. und 28.10.2026, Fragen 10, 11 und 17, Aufteilung am 10.11.2026; Antworten bei der Umsetzung am 10.11.2026, [Kommentar in #286](https://github.com/sebivtt/dpv-participant-management/issues/286#issuecomment-6770423268)):
+
+1. **Ganz austragen** (#65, Frage 17): Beim Austragen wählt die Leitung zwischen „gehört danach direkt zu …“ (eine Ebene nach oben) und „gehört danach keiner Organisation mehr an“; beim Bund gibt es nur das Zweite (PK-21). Ersetzt den Eintrag vom 24.10.2026 (#136), Nr. 7, nur in dem Punkt, dass eine Person beim Entfernen immer Einzelmitglied der Ebene darüber wird; der übrige Eintrag bleibt.
+2. **Auch beim eigenen Eintrag** steht „Austragen“, mit derselben Vorschau wie bei anderen (Antwort „Ja, auch bei sich“).
+3. **Ergänzung von W1:** Auf „Mein Profil“ steht in der Fläche der Mitgliedschaft der Knopf „Austreten“ (EP-06). Damit stehen dort drei Bedienelemente: der Fahrtenname (#111), „Rolle abgeben“ des DPV-Veranstaltungsteams (#94) und „Austreten“, wie in W1 vorgesehen.
+4. **Ganz austragen beendet alle Leitungsrollen**, auch eine über dem Bereich der austragenden Leitung, etwa die Bundesleitung eines Mitglieds der Sippe Falken; die Vorschau nennt sie vorher (Frage der unabhängigen Prüfung, Antwort „So lassen“).
+5. **Neuer Baustein „Auswahl im Dialog“** (Antwort „Neuer Baustein (Empf.)“): Optionsfelder untereinander wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit; der rote Knopf des Dialogs schickt die Wahl mit (`docs/gestaltung.md`).
+
+**Technische Wahl** (KI):
+
+1. **Vorschau ohne Skript:** Die Vorschau jeder Möglichkeit kommt fertig vom Server; welche zu sehen ist, entscheidet allein das Aussehen (`:has()` in `app.css`). Ein Browser ohne diese Möglichkeit zeigt alle Vorschauen untereinander. Vorleseprogramme lesen die Vorschau als Beschreibung des Optionsfelds. Die Optionsfelder gehören über ihr Attribut `form` zum Formular des roten Knopfs; so bleibt der Dialog ein einziges Formular.
+2. **Datenmodell aus dem alten Zweig:** `Role.leave()`, `Role.ending_leads()` und das geänderte `Role.delete()` stammen aus `claude/personen-65` (f0279b1), Zeile für Zeile geprüft. Endet eine Mitgliedschaft, enden alle Leitungsrollen in Einheiten mit, statt dass das Tool ablehnt; jede steht einzeln im Protokoll. Der Wechsel der Organisation einer Mitgliedschaft lehnt weiter ab (PK-25, U3).
+3. **Gleichzeitig:** Wie beim Entfernen werden das eigene Konto und das der Person gesperrt und die Rechte danach frisch geprüft. Austragen prüft unter der Sperre, ob die Mitgliedschaft noch in der Organisation aus der Adresse steht; Austreten schickt die Organisation der Mitgliedschaft mit, wie der Dialog sie gezeigt hat. Hat sich etwas geändert, sieht die zweite Änderung „nicht gefunden“ (PG3).
+4. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): austragen `expel`, austreten `leave`, was nach dem Verlassen übrig bleibt `after_leaving`.
+
+**Umsetzung:** `roles/models.py`, `roles/texts.py`, `access/rights.py`, `units/organisation.py`, `units/texts.py`, `core/views.py`, `config/urls.py`, `core/templates/core/_auswahl.html`, `_dialog_zu.html`, `_leitung.html`, `organisation.html`, `profil.html`, `bausteine.html`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/README.md`; Tests in `tests/test_austragen.py`, `tests/test_rollen.py`, `tests/test_rollen_protokoll.py` und `rauchtests/test_austragen.py`.
 
 ---
 

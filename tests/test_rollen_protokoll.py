@@ -184,7 +184,11 @@ def stored_entry(org) -> RoleChange:
 
 
 def test_abgelehnte_versuche_schreiben_nichts(org):
-    """S6: Pfad, zweite Mitgliedschaft, Wechsel mit Leitungsrollen, falsche Ebene, doppelte Rolle."""
+    """S6: Pfad, zweite Mitgliedschaft, Wechsel mit Leitungsrollen, falsche Ebene, doppelte Rolle.
+
+    Seit #65 beendet das Entfernen der Mitgliedschaft die Leitungsrollen, statt abgelehnt zu werden;
+    abgelehnt wird dafür das Austreten aus einer Organisation außerhalb der eigenen Kette.
+    """
     give(org.max, R.GROUP_LEAD, org.falken, by=org.erika)
     before = entries()
 
@@ -192,7 +196,7 @@ def test_abgelehnte_versuche_schreiben_nichts(org):
         lambda: give(org.max, R.TROOP_LEAD, org.zugvoegel, by=org.erika),
         lambda: give(org.max, R.MEMBER, org.adler, by=org.erika),
         lambda: move(org.max, org.adler, by=org.erika),
-        lambda: membership(org.max).delete(by=org.erika),
+        lambda: membership(org.max).leave(org.adler, by=org.erika),
         lambda: give(org.max, R.TROOP_LEAD, org.falken, by=org.erika),
         lambda: give(org.max, R.GROUP_LEAD, org.falken, by=org.erika),
     ]
@@ -214,17 +218,37 @@ def test_eine_rolle_laesst_sich_nicht_umschreiben_und_das_schreibt_nichts(org):
 
 
 def test_entfernen_richtet_sich_nach_dem_gespeicherten_stand(org):
-    """Befund der unabhängigen Prüfung: Eine im Programm geänderte, nicht gespeicherte Rolle zählt nicht."""
+    """Befund der unabhängigen Prüfung: Eine im Programm geänderte, nicht gespeicherte Rolle zählt nicht.
+
+    Seit #65 beendet das Entfernen einer Mitgliedschaft auch die Leitungsrollen; gelöscht wird die
+    gespeicherte Mitgliedschaft, nicht die im Programm zur Gruppenleitung umgeschriebene.
+    """
     give(org.max, R.TROOP_LEAD, org.walhall, by=org.erika)
     member = membership(org.max)
     before = entries()
 
     member.kind = R.GROUP_LEAD
-    error = refused(lambda: member.delete(by=org.erika))
+    member.delete(by=org.erika)
 
-    assert error.error_list[0].code == "remove_roles_first"
-    assert Role.objects.filter(user=org.max, kind=R.MEMBER).exists()
-    assert entries() == before
+    assert not Role.objects.filter(user=org.max).exists()
+    assert entries()[len(before):] == [
+        ("Erika Testfrau", "Max Testmann", R.TROOP_LEAD, "Walhall", REMOVED),
+        ("Erika Testfrau", "Max Testmann", R.MEMBER, "Walhall", REMOVED),
+    ]
+
+
+def test_austritt_eine_ebene_hoch_schreibt_alle_aenderungen(org):
+    """#65: Leitungen, die enden, und der Wechsel der Mitgliedschaft stehen im Protokoll, mit dem Urheber."""
+    give(org.max, R.GROUP_LEAD, org.falken, by=org.erika)
+    before = entries()
+
+    membership(org.max).leave(org.falken, by=org.max)
+
+    assert entries()[len(before):] == [
+        ("Max Testmann", "Max Testmann", R.GROUP_LEAD, "Sippe Falken (Walhall)", REMOVED),
+        ("Max Testmann", "Max Testmann", R.MEMBER, "Sippe Falken (Walhall)", REMOVED),
+        ("Max Testmann", "Max Testmann", R.MEMBER, "Walhall", GRANTED),
+    ]
 
 
 def test_eintrag_beim_entfernen_nennt_die_gespeicherte_einheit(org):

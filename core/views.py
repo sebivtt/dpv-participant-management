@@ -29,6 +29,8 @@ from units.organisation import (
     Organisation,
     Page,
     admission,
+    exit_dialog,
+    expulsion_dialog,
     federation_done,
     hits,
 )
@@ -145,6 +147,26 @@ def profile_leave_team(request: HttpRequest) -> HttpResponse:
     return _profile_page(request, form, removal=removal)
 
 
+# Ändert nur die eigene Mitgliedschaft: Die Adresse hat keine Kennung einer Person, und die
+# Mitgliedschaft kommt nie aus dem Formular; nur die Ebene der eigenen Kette (EP-07, PG6).
+@checks_rights("EP-06", "EP-07")
+def profile_leave(request: HttpRequest) -> HttpResponse:
+    """„Austreten“ auf „Mein Profil“: Dialog mit den Ebenen der eigenen Kette zeigen und austreten (EP-06).
+
+    Lesend zeigt die Adresse „Mein Profil“ mit offenem Dialog; das Formular tritt aus und führt zurück
+    zu „Mein Profil“ mit der kurzen Meldung. Ohne Mitgliedschaft ist die Adresse „nicht gefunden“.
+    """
+    rights = request.rights
+    if request.method == "POST":
+        messages.success(request, rights.leave_own(request.POST.get("ebene", ""), request.POST.get("von", "")))
+        return redirect("profile")
+    found = rights.exit_options()
+    if request.method not in READING or found is None:
+        raise Http404
+    removal = exit_dialog(*found, action=request.path)
+    return _profile_page(request, ScoutNameForm(initial={"scout_name": request.user.scout_name}), removal=removal)
+
+
 def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False, removal=None) -> HttpResponse:
     """„Mein Profil“ mit dem Formular für den Fahrtennamen, frisch oder mit der letzten Eingabe."""
     roles = request.rights.own_roles()
@@ -153,6 +175,9 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
         **_notices(request),
         "removal": removal,
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
+        # Der Knopf „Austreten“ in der Fläche der Mitgliedschaft (#286, EP-06).
+        "exit_href": reverse("profile_leave") if membership else None,
+        "exit_label": texts.EXIT_BUTTON,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,
         "scout_name_just_saved": _scout_name_just_saved(request),
@@ -442,6 +467,35 @@ def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
     return _admit_page(request, found, form=form, hits_found=hits_found, notice=notice)
 
 
+# Austragen (#286, Teil 2 von #65). Wie beim Entfernen hat der Dialog eine eigene Adresse unter der
+# Seite der Organisation, damit er auch ohne Skript geht: „Austragen“ führt dorthin, der rote Knopf
+# schickt die Wahl dorthin. Die Organisation kommt immer aus der Adresse, die Person über ihre Kennung,
+# nie aus dem Formular. Wer dort nicht austragen darf oder wer kein direktes Mitglied der Organisation
+# ist, ist „nicht gefunden“, auch per Skript (PK-22, PK-23).
+EXPEL_ROWS = ("PK-21", "PK-22", "PK-23", "EH-18", "EH-19")
+
+
+@checks_rights(*EXPEL_ROWS)
+def organisation_expel(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „… austragen?“ mit der Wahl zeigen und die Person austragen (PK-21).
+
+    Lesend zeigt die Adresse die Seite der Organisation mit offenem Dialog; „Abbrechen“ ändert nichts.
+    Das Formular trägt aus; danach steht die kurze Meldung dort, wohin die Person noch darf, wie nach
+    dem Entfernen (auch wer sich selbst austrägt, kann dabei die Seite verlieren).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_expel)
+    if request.method == "POST":
+        messages.success(request, rights.expel(found, person, request.POST.get("wahl", "")))
+        return redirect(_after_removal(request, found))
+    if request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    removal = expulsion_dialog(found, rights.expulsion(found, person), action=request.path)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
+                                                       "start": False, "removal": removal})
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
@@ -685,19 +739,21 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285],
+        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286],
         "purpose": _("Eine Leitung oder Person mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, "
                      "darunter links die Rollen und rechts die Mail, wo die Seite sie zeigen darf. Eine Leitung hat "
                      "genau eine Rolle, eine Person im Abschnitt „Personen“ keine, eine oder mehrere "
                      "Leitungsrollen. Ganz rechts ist Platz für Knöpfe; wo man Leitungen entfernen darf, steht dort "
-                     "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
+                     "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“, wo man Personen austragen darf, "
+                     "„Austragen“."),
         "pages": [_("Organisation")],
     },
     "knopfentfernen": {
-        "name": _("Knopf „Entfernen“"), "template": "core/_knopf_entfernen.html", "issues": [191],
-        "purpose": _("Für Handlungen, die etwas wegnehmen, etwa „Entfernen“ bei einer Leitung: zarte rote Fläche mit "
-                     "roter Schrift, die Farben der Fehlermeldung. Er führt zur Bestätigung, nie gleich zur Handlung."),
-        "pages": [_("Organisation")],
+        "name": _("Knopf „Entfernen“"), "template": "core/_knopf_entfernen.html", "issues": [191, 286],
+        "purpose": _("Für Handlungen, die etwas wegnehmen, etwa „Entfernen“ bei einer Leitung, „Austragen“ bei einer "
+                     "Person oder „Austreten“: zarte rote Fläche mit roter Schrift, die Farben der Fehlermeldung. "
+                     "Er führt zur Bestätigung, nie gleich zur Handlung."),
+        "pages": [_("Mein Profil"), _("Organisation")],
     },
     "orgakopf": {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218],
@@ -707,11 +763,18 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
-                     "„Entfernen“."),
+                     "„Entfernen“; er schickt eine Wahl aus der „Auswahl im Dialog“ mit."),
+        "pages": [_("Mein Profil"), _("Organisation")],
+    },
+    "auswahl": {
+        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286],
+        "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt; darunter "
+                     "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Der rote "
+                     "Knopf des Dialogs schickt die Wahl mit, etwa beim Austragen und beim Austreten."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
@@ -798,6 +861,27 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
+    # Austragen mit Wahl und Vorschau (#286), erfunden wie im Beispiel des Issues.
+    person = "Flink (Finn Muster)"
+    expulsion = {
+        "title": texts.EXPEL_QUESTION % {"person": person, "unit": "Sippe Falken"},
+        "close_href": "#h-auswahl", "confirm_action": "#h-auswahl", "confirm_label": texts.EXPEL_BUTTON,
+        "form_id": "katalog-auswahl", "preview_id": "h-dialog-austragen",
+        "choice": {"name": "katalog-wahl", "legend": texts.EXPEL_LEGEND % {"person": person}, "options": [
+            {"value": "hoch", "label": texts.EXPEL_UP % {"person": person, "target": "Stamm Walhall"},
+             "lines": [texts.EXPEL_PREVIEW_UP % {"person": person, "unit": "Sippe Falken", "target": "Stamm Walhall"},
+                       texts.ENDING_ROLES % {"roles": texts.ROLE_OF % {"role": "Gruppenleitung", "unit": "Sippe Falken"}},
+                       texts.LAST_LEAD_COVERED % {"unit": "Sippe Falken", "role": "Gruppenleitung",
+                                                  "cover": "Stamm Walhall"},
+                       texts.REGISTRATIONS_STAY]},
+            {"value": "ganz", "label": texts.EXPEL_NONE % {"person": person},
+             "lines": [texts.EXPEL_PREVIEW_NONE % {"person": person, "unit": "Sippe Falken"},
+                       texts.ENDING_ROLES % {"roles": texts.ROLE_OF % {"role": "Gruppenleitung", "unit": "Sippe Falken"}},
+                       texts.LAST_LEAD_COVERED % {"unit": "Sippe Falken", "role": "Gruppenleitung",
+                                                  "cover": "Stamm Walhall"},
+                       texts.REGISTRATIONS_STAY]},
+        ]},
+    }
     # Personen im Abschnitt „Personen“ (#285): mit zwei Rollen, mit einer und ohne Rolle.
     persons = [
         Lead(name="Wirbelwind", extra="Wanda Beispiel", role="", mail="wanda.beispiel@example.org", locked=False,
@@ -809,7 +893,7 @@ def _organisation_examples() -> dict:
     admit_hits = [Hit(key="", name="Otter", extra="Otto Ohne", place="", note="", warning="", hint="")]
     return {"persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 

@@ -41,7 +41,8 @@
     {% if membership %}
       <div class="a-mitgliedschaft">
         {% include "core/_rollenkachel.html" with tile=membership %}
-        {# Hier unten kommt mit #65 der Knopf „Austreten“ dazu, an der Stelle von „Organisation öffnen“ im Zielbild. #}
+        {# „Austreten“ (#286) an der Stelle von „Organisation öffnen“ im Zielbild; ein Link zum Dialog mit eigener Adresse. #}
+        {% include "core/_knopf_entfernen.html" with href=exit_href label=exit_label name="" extra_class="a-kachel-knopf" %}
       </div>
     {% endif %}
     {% if tiles %}
@@ -58,9 +59,10 @@
     {% endif %}
   </section>
   {% if removal %}
-    {# Rückfrage „Deine Rolle im DPV-Veranstaltungsteam abgeben?“ (#94, RO-20): eigene Adresse, kommt offen vom Server. #}
+    {# Rückfrage „Deine Rolle im DPV-Veranstaltungsteam abgeben?“ (#94, RO-20) oder „Austreten“ mit Wahl und Vorschau (#286): eigene Adresse, kommt offen vom Server. #}
     {% include "core/_dialog_auf.html" with dialog=removal %}
     {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if removal.choice %}{% include "core/_auswahl.html" with choice=removal.choice form_id=removal.form_id %}{% endif %}
     {% include "core/_dialog_zu.html" with dialog=removal %}
   {% endif %}
 {% endblock %}

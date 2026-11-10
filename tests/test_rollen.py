@@ -453,23 +453,119 @@ def test_wechsel_nach_unten_geht_nur_wenn_die_leitungen_darueber_auf_dem_pfad_bl
     move(org.max, org.adler)
 
 
-def test_mitgliedschaft_endet_nur_ohne_leitungsrollen_in_einheiten(org):
-    """S13 (Frage F1 vom 23.10.2026): Austreten und Austragen nur ohne Leitungsrollen."""
-    member = give(org.erika, R.MEMBER, org.falken)
-    lead = give(org.erika, R.TROOP_LEAD, org.walhall)
+def test_austritt_beendet_alle_leitungsrollen_in_einheiten(org):
+    """S13, geändert mit #65 (ROL-01, EP-06, PK-21): Wer ganz austritt, verliert alle Leitungsrollen in Einheiten.
 
-    error = refused(lambda: member.delete(by=BY))
-    assert error.error_list[0].code == "remove_roles_first"
+    Vor #65 lehnte das Tool den Austritt ab, solange Leitungsrollen bestanden (Frage F1 vom 23.10.2026).
+    """
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
 
-    assert "Erika Testfrau ist noch Stammesleitung in „Walhall“. Diese Rolle muss zuerst entfernt werden." in message(
-        error
-    )
-    assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.TROOP_LEAD, "Walhall")}
-
-    lead.delete(by=BY)
     membership(org.erika).delete(by=BY)
 
     assert not Role.objects.filter(user=org.erika).exists()
+
+
+def test_austritt_eine_ebene_hoch_beendet_die_leitungen_in_der_verlassenen_einheit(org):
+    """#65, P9: Fiete tritt aus den Falken aus, gehört danach direkt zum Stamm und ist keine Gruppenleitung mehr."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.woelfe)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+
+    membership(org.erika).leave(org.falken, by=BY)
+
+    # Die Wölfe und der Stamm liegen danach weiter auf dem Pfad (ROL-01); nur die Falken enden.
+    assert roles_of(org.erika) == {(R.MEMBER, "Walhall"), (R.GROUP_LEAD, "Meute Wölfe"), (R.TROOP_LEAD, "Walhall")}
+
+
+def test_austritt_aus_einer_einheit_darueber_beendet_alles_darunter(org):
+    """#65, Frage 10: Die Ebene kommt aus der eigenen Kette; aus dem Stamm auszutreten beendet auch die Gruppenleitung."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+    give(org.erika, R.ASSOCIATION_LEAD, org.boreas)
+
+    membership(org.erika).leave(org.walhall, by=BY)
+
+    assert roles_of(org.erika) == {(R.MEMBER, "Pfadfinderbund Boreas"), (R.ASSOCIATION_LEAD, "Pfadfinderbund Boreas")}
+
+
+def test_austritt_aus_dem_bund_heisst_keine_zuordnung(org):
+    """#65, P10: aus dem Bund auszutreten beendet die Mitgliedschaft und alle Leitungen in Einheiten."""
+    give(org.erika, R.MEMBER, org.walhall)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+    give(org.erika, R.FEDERATION_LEAD, org.dpv)
+
+    membership(org.erika).leave(org.boreas, by=BY)
+
+    assert roles_of(org.erika) == {(R.FEDERATION_LEAD, "DPV")}
+
+
+def test_ganz_austragen_aus_einer_gruppe(org):
+    """#65, Frage 17: „gehört danach keiner Organisation mehr an“ geht auch aus einer Gruppe."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+
+    membership(org.erika).leave(org.falken, by=BY, entirely=True)
+
+    assert roles_of(org.erika) == set()
+
+
+def test_austritt_endet_auch_leitungen_die_danach_nicht_mehr_auf_dem_pfad_liegen(org):
+    """#65 (ROL-01): Ein direktes Ringmitglied leitet einen Stamm im Ring; tritt es aus dem Ring aus, endet auch das."""
+    give(org.erika, R.MEMBER, org.kueste)
+    give(org.erika, R.TROOP_LEAD, org.leuchtturm)
+    give(org.erika, R.ASSOCIATION_LEAD, org.mosaik)
+
+    assert membership(org.erika).ending_leads(org.kueste) == [Role.objects.get(user=org.erika, kind=R.TROOP_LEAD)]
+    membership(org.erika).leave(org.kueste, by=BY)
+
+    assert roles_of(org.erika) == {(R.MEMBER, "DPBM Mosaik"), (R.ASSOCIATION_LEAD, "DPBM Mosaik")}
+
+
+def test_vorschau_nennt_die_rollen_die_enden_und_aendert_nichts(org):
+    """#65, Fragen 10 und 11: Die Vorschau nennt die Rollen; ausgeführt wird erst danach."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+    member = membership(org.erika)
+
+    assert [(r.kind, r.unit.name) for r in member.ending_leads(org.falken)] == [(R.GROUP_LEAD, "Sippe Falken")]
+    assert [(r.kind, r.unit.name) for r in member.ending_leads(org.walhall)] == [
+        (R.GROUP_LEAD, "Sippe Falken"), (R.TROOP_LEAD, "Walhall")]
+    assert [(r.kind, r.unit.name) for r in member.ending_leads(org.falken, entirely=True)] == [
+        (R.GROUP_LEAD, "Sippe Falken"), (R.TROOP_LEAD, "Walhall")]
+    assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.GROUP_LEAD, "Sippe Falken"), (R.TROOP_LEAD, "Walhall")}
+
+
+@pytest.mark.parametrize("left", ["woelfe", "zugvoegel", "mosaik", "dpv"])
+def test_austritt_nur_aus_der_eigenen_kette(org, left):
+    """#65, PG6: Eine Einheit außerhalb der eigenen Kette und der Verband werden abgelehnt; nichts ändert sich."""
+    give(org.erika, R.MEMBER, org.falken)
+
+    refused(lambda: membership(org.erika).leave(getattr(org, left), by=BY))
+
+    assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken")}
+
+
+def test_austritt_nur_fuer_eine_mitgliedschaft(org):
+    lead = give(org.erika, R.GROUP_LEAD, org.falken)
+
+    refused(lambda: lead.leave(org.falken, by=BY))
+
+    assert roles_of(org.erika) == {(R.MEMBER, "Sippe Falken"), (R.GROUP_LEAD, "Sippe Falken")}
+
+
+def test_austritt_einer_schon_beendeten_mitgliedschaft_aendert_nichts(org):
+    """#65, PG3: Wer schon draußen ist, kann nicht noch einmal austreten; die zweite Änderung sieht „nicht gefunden“."""
+    member = give(org.erika, R.MEMBER, org.falken)
+    stale = Role.objects.get(pk=member.pk)
+    member.leave(org.falken, by=BY)
+
+    assert stale.leave(org.falken, by=BY) is False
+    assert roles_of(org.erika) == {(R.MEMBER, "Walhall")}
 
 
 def test_verbandsrollen_stehen_dem_austritt_nicht_im_weg(org):
@@ -668,7 +764,7 @@ def test_gleichzeitig_zwei_leitungen_ohne_mitgliedschaft_in_verschiedenen_staemm
 
 @pytest.mark.django_db(transaction=True)
 def test_gleichzeitig_leitung_und_austritt():
-    """S14: Die Leitung kommt zuerst; der gleichzeitige Austritt muss abgelehnt werden."""
+    """S14, geändert mit #65: Die Leitung kommt zuerst; der gleichzeitige Austritt beendet sie mit."""
     o = build_org()
     give(o.erika, R.MEMBER, o.falken)
 
@@ -676,6 +772,21 @@ def test_gleichzeitig_leitung_und_austritt():
         lambda: give(o.erika, R.TROOP_LEAD, o.walhall), lambda: membership(o.erika).delete(by=BY)
     )
 
-    assert results["erste"] == "gespeichert"
-    assert "noch Stammesleitung in „Walhall“" in results["zweite"]
+    assert results == {"erste": "gespeichert", "zweite": "gespeichert"}
+    assert roles_of(o.erika) == set()
+    assert _all_leads_on_path(o.erika)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_gleichzeitig_austritt_und_neue_leitung_im_verlassenen_stamm():
+    """#65, S14: Der Austritt aus dem Bund kommt zuerst; die gleichzeitige Leitung braucht eine Mitgliedschaft und legt sie neu an."""
+    o = build_org()
+    give(o.erika, R.MEMBER, o.falken)
+
+    results = _one_after_the_other(
+        lambda: membership(o.erika).leave(o.boreas, by=BY), lambda: give(o.erika, R.GROUP_LEAD, o.adler)
+    )
+
+    assert results == {"erste": "gespeichert", "zweite": "gespeichert"}
+    assert roles_of(o.erika) == {(R.MEMBER, "Sippe Adler"), (R.GROUP_LEAD, "Sippe Adler")}
     assert _all_leads_on_path(o.erika)

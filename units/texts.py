@@ -201,3 +201,33 @@ FEDERATION_GAVE_UP = {
     "event_team": gettext_lazy("Du bist nicht mehr im DPV-Veranstaltungsteam."),
 }
 LAST_FEDERATION_LEAD = gettext_lazy("Danach gibt es keine Verbandsleitung mehr. Eine neue kann nur ein Admin benennen.")
+
+# Austragen und Austreten (#286, Teil 2 von #65), Wortlaut nach dem Issue. Den Satz zur letzten Leitung
+# nimmt die Vorschau aus „Leitung entfernen“ (#191, LAST_LEAD_COVERED und folgende), ohne „Trotzdem …?“.
+EXPEL_BUTTON = gettext_lazy("Austragen")
+EXPEL_QUESTION = gettext_lazy("%(person)s aus %(unit)s austragen?")
+EXPEL_LEGEND = gettext_lazy("Wozu gehört %(person)s danach?")
+EXPEL_UP = gettext_lazy("%(person)s gehört danach direkt zu %(target)s")
+EXPEL_NONE = gettext_lazy("%(person)s gehört danach keiner Organisation mehr an")
+EXPEL_PREVIEW_UP = gettext_lazy("%(person)s aus %(unit)s austragen? Danach gehört %(person)s direkt zu %(target)s.")
+EXPEL_PREVIEW_NONE = gettext_lazy(
+    "%(person)s aus %(unit)s austragen? Danach gehört %(person)s keiner Organisation mehr an."
+)
+ENDING_ROLES = gettext_lazy("Damit enden diese Rollen: %(roles)s.")
+REGISTRATIONS_STAY = gettext_lazy("Bestehende Anmeldungen bleiben.")
+EXPELLED = gettext_lazy("%(person)s ist aus %(unit)s ausgetragen.")
+EXIT_TITLE = gettext_lazy("Austreten")
+EXIT_BUTTON = gettext_lazy("Austreten")
+EXIT_LEGEND = gettext_lazy("Woraus trittst du aus?")
+EXIT_UP = gettext_lazy("aus %(unit)s (danach gehörst du direkt zu %(target)s)")
+EXIT_NONE = gettext_lazy(
+    "aus %(unit)s (danach gehörst du keiner Organisation mehr an, bis dich eine Leitung wieder aufnimmt)"
+)
+EXIT_PREVIEW_UP = gettext_lazy("Du trittst aus %(unit)s aus und gehörst danach direkt zu %(target)s.")
+EXIT_PREVIEW_NONE = gettext_lazy("Du trittst aus %(unit)s aus und gehörst danach keiner Organisation mehr an.")
+ENDING_OWN_ROLES = gettext_lazy("Damit enden deine Rollen: %(roles)s.")
+OWN_REGISTRATIONS_STAY = gettext_lazy("Deine Anmeldungen bleiben bestehen.")
+LEFT = gettext_lazy("Du bist aus %(unit)s ausgetreten.")
+# Eine Rolle, die endet, z. B. „Gruppenleitung von Sippe Falken“; mehrere mit Komma und „und“.
+ROLE_OF = gettext_lazy("%(role)s von %(unit)s")
+AND = gettext_lazy("und")
