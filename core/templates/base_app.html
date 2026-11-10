@@ -8,7 +8,9 @@
     {% include "core/_konto.html" %}
   </aside>
   <header class="a-topbar">
-    <button type="button" class="a-menueknopf" id="menue-auf" aria-haspopup="dialog" aria-controls="menue">{% icon "menue" %}{% translate "Menü" %}</button>
+    {# Ohne Skript, oder solange es nicht geladen ist, springt „Menü“ ans Seitenende zur Liste (#281). Das Skript tauscht den Sprung gegen den Knopf, der das Menü von links öffnet. #}
+    <a class="a-menueknopf" id="menue-sprung" href="#menue-unten">{% icon "menue" %}{% translate "Menü" %}</a>
+    <button type="button" class="a-menueknopf" id="menue-auf" aria-haspopup="dialog" aria-controls="menue" hidden>{% icon "menue" %}{% translate "Menü" %}</button>
     {% include "core/_marke.html" %}
     {% include "core/_profilkreis.html" with label_only=True %}
   </header>
@@ -28,6 +30,12 @@
       {% testumgebung_band %}
       {% block content %}{% endblock %}
     </div>
+    {# Liste am Seitenende (#281): dasselbe wie im Menü, für das Handy ohne Skript. Am PC ausgeblendet; mit Skript entfernt es sie. Grundsatz „ohne Skript bedienbar“: docs/entscheidungen.md. #}
+    <section class="a-menue-unten" id="menue-unten" aria-labelledby="menue-unten-titel">
+      <h2 id="menue-unten-titel">{% translate "Menü" %}</h2>
+      {% include "core/_navigation.html" %}
+      {% include "core/_konto.html" %}
+    </section>
     {# Kurze Meldungen (#186): Das Skript blendet sie hier unten über dem Inhalt ein; Vorleseprogramme sagen jede neue an, ohne den Cursor zu bewegen. In der Reihenfolge nach dem Inhalt, damit das × mit der Tastatur schnell erreichbar ist. #}
     <div class="a-kurz-bereich" id="kurzmeldungen" role="status" aria-live="polite" aria-atomic="false"></div>
     {% fussbereich %}

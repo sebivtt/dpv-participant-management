@@ -37,7 +37,8 @@ def _jump_down(page: Page) -> None:
     """Tippt „Menü“ an; ohne Skript ist das ein Sprung ans Seitenende zur Liste."""
     page.get_by_role("link", name="Menü").tap()
     expect(_bottom(page)).to_be_in_viewport()
-    page.wait_for_url("**#menue-unten")
+    # Nur die Adresse; „load“ kommt erst mit dem Skript, und das hält G1 absichtlich zurück.
+    page.wait_for_url("**#menue-unten", wait_until="commit")
 
 
 def _change_page_and_log_out(page: Page) -> None:
@@ -110,7 +111,7 @@ def test_e3_liste_besteht_die_pruefung_auf_barrierefreiheit(handy):
 def test_g1_skript_kommt_spaet_liste_verschwindet_und_menue_oeffnet(handy):
     login(handy)
     held: list[Route] = []
-    handy.route(SCRIPT, held.append)
+    handy.route(SCRIPT, lambda route: held.append(route))
     handy.goto(f"{BASE}/", wait_until="commit")
     expect(handy.get_by_role("link", name="Menü")).to_be_visible()
     _jump_down(handy)

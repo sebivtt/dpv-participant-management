@@ -1,5 +1,5 @@
-// Kleine Helfer der Grundgestaltung (#7). Ohne Skript bleibt am PC alles bedienbar; am Handy
-// öffnet das Skript das Menü.
+// Kleine Helfer der Grundgestaltung (#7). Ohne Skript bleibt alles bedienbar (#281); am Handy
+// öffnet das Skript das Menü von links, statt ans Seitenende zu springen.
 (function () {
   "use strict";
 
@@ -18,6 +18,21 @@
   var openButton = document.getElementById("menue-auf");
   var closeButton = document.getElementById("menue-zu");
   if (menu && openButton && closeButton && typeof menu.showModal === "function") {
+    // Ohne Skript springt „Menü“ ans Seitenende zur Liste (#281). Mit Skript gibt es Sprung und Liste
+    // nicht mehr, auch wenn das Skript erst nach dem Sprung kommt; der Knopf tritt an die Stelle des Sprungs.
+    var jump = document.getElementById("menue-sprung");
+    var listBelow = document.getElementById("menue-unten");
+    var jumpHadFocus = jump && jump === document.activeElement;
+    if (jump) {
+      jump.remove();
+    }
+    if (listBelow) {
+      listBelow.remove();
+    }
+    openButton.hidden = false;
+    if (jumpHadFocus) {
+      openButton.focus();
+    }
     openButton.addEventListener("click", function () {
       menu.showModal();
     });
