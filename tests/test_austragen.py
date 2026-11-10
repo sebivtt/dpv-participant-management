@@ -144,7 +144,10 @@ def test_die_leitung_der_eigenen_organisation_hat_austragen_bei_jeder_person(org
         "Flink": expel_address(org.falken, org.falke),
     }
     assert set(expel_buttons(org.walhall_leitung, org.walhall)) == {"Wirbelwind", "Wiesel", "Wilma Walhall", "Wim Wolf"}
-    assert expel_buttons(org.bundesleitung, org.boreas) == {"Bea Boreas": expel_address(org.boreas, org.boreas_mitglied)}
+    assert expel_buttons(org.bundesleitung, org.boreas) == {
+        "Bea Boreas": expel_address(org.boreas, org.boreas_mitglied),
+        "Brummbär": expel_address(org.boreas, org.bundesleitung),
+    }
 
 
 @pytest.mark.rechtematrix("PK-22", "EH-19")
@@ -183,12 +186,13 @@ def test_p5_der_dialog_zeigt_zwei_moeglichkeiten_und_die_vorschau_je_wahl(org):
 @pytest.mark.rechtematrix("PK-21")
 def test_p5_fiete_traegt_finn_eine_ebene_nach_oben_aus(org):
     before = RoleChange.objects.count()
+    client = client_for(org.falken_leitung)
 
-    response = expel(org.falken_leitung, org.falken, org.falke, "hoch")
+    response = expel(org.falken_leitung, org.falken, org.falke, "hoch", client=client)
 
     assert response.status_code == 302
     assert response["Location"] == unit_address(org.falken)
-    assert short_notices(client_for(org.falken_leitung).get(response["Location"])) == [
+    assert short_notices(client.get(response["Location"])) == [
         "Flink (Finn Falke) ist aus Sippe Falken ausgetragen."]
     assert membership_of(org.falke) == "Walhall"
     assert log_since(before) == [
@@ -272,9 +276,8 @@ def test_die_vorschau_nennt_die_letzte_leitung_und_wer_einspringt(org):
         "Stamm Walhall ein.",
         STAYS,
     ]
-    # Eine Ebene nach oben, direkt zu Boreas, liegt die Gruppe noch auf seinem Leitungspfad (ROL-01).
-    assert shown["options"][0]["preview"] == [
-        "Wim Wolf aus Stamm Walhall austragen? Danach gehört Wim Wolf direkt zu Pfadfinderbund Boreas.", STAYS]
+    # Auch eine Ebene nach oben endet sie: Die Wölfe liegen unter der verlassenen Organisation (ROL-01).
+    assert shown["options"][0]["preview"][1:3] == shown["options"][1]["preview"][1:3]
 
 
 @pytest.mark.rechtematrix("PK-21")
@@ -289,11 +292,12 @@ def test_fiete_traegt_sich_selbst_aus_und_landet_auf_mein_profil(org):
         STAYS,
     ]
     before = RoleChange.objects.count()
+    client = client_for(org.falken_leitung)
 
-    response = expel(org.falken_leitung, org.falken, org.falken_leitung, "hoch")
+    response = expel(org.falken_leitung, org.falken, org.falken_leitung, "hoch", client=client)
 
     assert response["Location"] == PROFILE
-    assert short_notices(client_for(org.falken_leitung).get(PROFILE)) == [
+    assert short_notices(client.get(PROFILE)) == [
         "Funke (Fiete Falke) ist aus Sippe Falken ausgetragen."]
     assert roles_of(org.falken_leitung) == {(R.MEMBER, "Walhall")}
     assert {entry[0] for entry in log_since(before)} == {"Fiete Falke"}
@@ -421,12 +425,13 @@ def test_der_dialog_bietet_die_ebenen_der_eigenen_kette(org):
 @pytest.mark.rechtematrix("EP-06")
 def test_p8_finn_tritt_aus_den_falken_aus(org):
     before = RoleChange.objects.count()
+    client = client_for(org.falke)
 
-    response = leave(org.falke, org.falken)
+    response = leave(org.falke, org.falken, client=client)
 
     assert response.status_code == 302
     assert response["Location"] == PROFILE
-    assert short_notices(client_for(org.falke).get(PROFILE)) == ["Du bist aus Sippe Falken ausgetreten."]
+    assert short_notices(client.get(PROFILE)) == ["Du bist aus Sippe Falken ausgetreten."]
     assert membership_of(org.falke) == "Walhall"
     assert log_since(before) == [
         ("Finn Falke", "Finn Falke", R.MEMBER, "Sippe Falken (Walhall)", "removed"),
@@ -467,10 +472,11 @@ def test_p10_wanda_tritt_aus_boreas_aus_ohne_satz_zur_letzten_leitung(org):
         YOURS_STAY,
     ]
 
-    leave(org.walhall_leitung, org.boreas)
+    client = client_for(org.walhall_leitung)
+    leave(org.walhall_leitung, org.boreas, client=client)
 
     assert roles_of(org.walhall_leitung) == set()
-    assert short_notices(client_for(org.walhall_leitung).get(PROFILE)) == [
+    assert short_notices(client.get(PROFILE)) == [
         "Du bist aus Pfadfinderbund Boreas ausgetreten."]
 
 

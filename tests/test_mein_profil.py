@@ -539,7 +539,8 @@ def test_nirgends_das_wort_einheit(org):
 
 ONLY_IN_TARGET_IMAGE = (
     "Profil freigeben", "Freigabe", "Geburtsdatum", "Wohnadresse", "Gesundheit", "Allergien",
-    "Unverträglichkeiten", "Medikamente", "Organisation öffnen", "Austritt", "Austreten", "Profilfoto",
+    # „Austreten“ gibt es seit #286 als Knopf in der Fläche der Mitgliedschaft (Abweichung 2 in docs/zielbilder/README.md).
+    "Unverträglichkeiten", "Medikamente", "Organisation öffnen", "Austritt", "Profilfoto",
     "Verantwortung auf Verbandsebene", "Verbandsweite Funktion",  # Nachklärung Kacheln, Szenario 13
 )
 
