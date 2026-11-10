@@ -113,6 +113,27 @@ KIND_AND_NAME = {
     "group": gettext_lazy("Gruppe %(unit)s"),
 }
 
+# Abschnitt „Personen“ und „Person aufnehmen“ (#285, Teil 1 von #65), Wortlaut nach dem Issue und
+# der Nachklärung N1 bis N3. Knopf und Satz bei leerer Liste ersetzt #117 später.
+PERSONS_TITLE = gettext_lazy("Personen")
+PERSONS_COUNT = ngettext_lazy("%(count)s Person", "%(count)s Personen", "count")
+NOBODY_DIRECTLY = gettext_lazy("Zu %(unit)s gehört direkt noch niemand.")
+ADMIT_TITLE = gettext_lazy("Person aufnehmen")
+ADMIT_FOR = gettext_lazy("in %(unit)s")
+ADMIT_HELP = gettext_lazy(
+    "Die Person muss sich schon einmal im Tool angemeldet haben. Gefunden wird sie nur über die genaue Mail oder "
+    "den genauen Benutzernamen."
+)
+ADMIT_BUTTON = gettext_lazy("Aufnehmen")
+ADMITTED = gettext_lazy("%(person)s gehört jetzt zu %(unit)s.")
+ALREADY_MEMBER = gettext_lazy("%(person)s ist schon Mitglied in %(unit)s.")
+OTHER_ORGANISATION = gettext_lazy(
+    "Diese Person gehört schon zu einer anderen Organisation. Sie kann dort selbst austreten oder ihre bisherige "
+    "Leitung bitten, sie auszutragen."
+)
+# Eine Leitungsrolle unter dem Namen einer Person, z. B. „Stammesleitung Stamm Walhall“ (#65 N1).
+ROLE_AT = gettext_lazy("%(role)s %(unit)s")
+
 # Leitung entfernen und Rolle abgeben (#191), Wortlaut nach den Szenarien C1 bis C13 und Sebastians
 # Antworten bei der Umsetzung vom 28.10.2026
 REMOVE_BUTTON = gettext_lazy("Entfernen")
@@ -137,6 +158,10 @@ COVER_NAME = {
     "ring": KIND_AND_NAME["ring"],
     "troop": KIND_AND_NAME["troop"],
 }
+# Eine Organisation im Abschnitt „Personen“ und beim Aufnehmen wie im Beispiel von #285: „Stamm
+# Walhall“, „Ring Küste“, Gruppen und Bünde nur mit ihrem Namen („Sippe Falken“), weil die Art
+# dort meist schon im Namen steht.
+MEMBER_UNIT_NAME = {**COVER_NAME, "group": gettext_lazy("%(unit)s")}
 REMOVED = gettext_lazy("%(person)s ist nicht mehr %(role)s von %(unit)s.")
 GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")
 

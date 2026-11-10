@@ -533,6 +533,20 @@ class Rights:
         users = get_user_model().objects.select_for_update().filter(pk__in={self.user.pk, other}).order_by("pk")
         return {user.pk: user for user in users}.get(self.user.pk)
 
+    # Personen einer Organisation und „Person aufnehmen“ (#285, Teil 1 von #65)
+
+    def members(self, unit: Unit | None) -> list:
+        """Die direkten Mitglieder einer Organisation im eigenen Bereich (Gerüst)."""
+        return []
+
+    def may_admit(self, unit: Unit | None) -> bool:
+        """Darf die Person in diese Organisation Personen mit Konto aufnehmen (Gerüst)?"""
+        return False
+
+    def admit(self, unit: Unit, person_key) -> tuple[bool, str]:
+        """Nimmt eine Person als Mitglied auf (Gerüst)."""
+        raise Http404
+
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
     def may_remove(self, role: Role) -> bool:

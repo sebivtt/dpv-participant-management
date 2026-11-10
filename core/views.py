@@ -354,6 +354,30 @@ def _after_removal(request: HttpRequest, found: Unit) -> str:
     return reverse("profile")
 
 
+# Person aufnehmen (#285, Teil 1 von #65): Gerüst.
+ADMIT_ROWS = ("PK-13", "PK-16", "PK-17", "PK-18", "PK-23", "PK-24", "PK-26", "EP-08", "EH-18")
+
+
+def _admitting(request: HttpRequest, unit: str) -> Unit:
+    """Die Organisation aus der Adresse, wenn die Person dort aufnehmen darf; sonst „nicht gefunden“."""
+    rights = request.rights
+    return rights.entry(Unit.objects.all(), unit, allowed=rights.may_admit)
+
+
+@checks_rights(*ADMIT_ROWS)
+def organisation_admit(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Person aufnehmen“ öffnen und eine Person aufnehmen (Gerüst)."""
+    _admitting(request, unit)
+    raise Http404
+
+
+@checks_rights(*ADMIT_ROWS)
+def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
+    """„Suchen“ im Dialog „Person aufnehmen“ (Gerüst)."""
+    _admitting(request, unit)
+    raise Http404
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
