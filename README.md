@@ -18,6 +18,7 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`docs/rechtematrix.md`](docs/rechtematrix.md) | wer was darf, mit dem Stand je Zeile |
 | [`docs/gestaltung.md`](docs/gestaltung.md) | Leitlinie für die Gestaltung jeder Seite |
 | [`docs/zielbilder/`](docs/zielbilder/) | Sebastians Entwürfe für einzelne Seiten |
+| [`docs/aufbau.md`](docs/aufbau.md) | Aufbau des Codes: Apps, Schichten und ihre Richtung, wo man was baut |
 
 Anforderungen und Fahrplan sind hier im Repo maßgeblich (Entscheidung vom 20.10.2026). Änderungen daran laufen wie alles andere über Pull Requests.
 
@@ -289,6 +290,25 @@ A2. Das Admin-Recht wieder entfernen.
 
 In der Testumgebung im Container steht statt `uv run --env-file .env python manage.py` wieder `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`.
 
+## Verbandsleitung benennen und entfernen
+
+Die erste Verbandsleitung benennt ein Admin per Befehl auf dem Server; weitere benennt die Verbandsleitung selbst im Tool (#94). Der Befehl geht jederzeit, auch wenn es schon Verbandsleitungen gibt. Er braucht den Verband (Schritt V1) und den Benutzernamen aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Die letzte Verbandsleitung zu entfernen geht, weil sich mit Zugang zum Server jederzeit eine neue benennen lässt. Beide Befehle schreiben einen Eintrag ins Protokoll der Rollenänderungen, mit „Befehl auf dem Server“ als Urheber (#91).
+
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
+
+L1. Eine Person als Verbandsleitung benennen, hier das erfundene Konto `erika.testfrau`.
+   ```bash
+   uv run --env-file .env python manage.py federation_lead grant erika.testfrau
+   ```
+   Danach: `erika.testfrau ist jetzt Verbandsleitung.` Ist sie es schon, steht dort `erika.testfrau ist schon Verbandsleitung.` Hat sich das Konto noch nie angemeldet, steht dort `CommandError: Kein Konto mit diesem Benutzernamen. Die Person muss sich zuerst einmal im Tool anmelden.` Gibt es noch keinen Verband, steht dort `CommandError: Es gibt noch keinen Verband. Lege ihn zuerst mit „federation create“ an.`
+L2. Die Verbandsleitung wieder entfernen.
+   ```bash
+   uv run --env-file .env python manage.py federation_lead revoke erika.testfrau
+   ```
+   Danach: `erika.testfrau ist jetzt keine Verbandsleitung mehr.` Ist die Person keine Verbandsleitung, steht dort `CommandError: erika.testfrau ist keine Verbandsleitung.`
+
+In der Testumgebung im Container steht statt `uv run --env-file .env python manage.py` wieder `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`.
+
 ## Test-Realm im Keycloak des DPV
 
 Auf dem Server meldet sich die Testumgebung nicht bei der Keycloak-Testumgebung aus `dev/` an, sondern bei einem eigenen **Test-Realm** im Keycloak des DPV (#38). Ein Realm ist ein abgeschlossener Bereich in Keycloak mit eigenen Konten; der Test-Realm `dpv-test` ist vom Realm der Mitglieder getrennt. Er hat vier erfundene Konten, und niemand kann sich dort selbst registrieren oder ein Passwort per Mail zurücksetzen. Die Importdatei liegt in `testumgebung/keycloak/dpv-test-realm.json`. Sie enthält kein Passwort und kein Client-Secret, damit niemand, der das Repo sieht, in die Testumgebung kommt.
@@ -322,7 +342,7 @@ Wer sich nach zehn falschen Passwörtern nicht mehr anmelden kann, wartet einige
 
 ## Technik
 
-Django mit serverseitig erzeugten Seiten und einem eigenen kleinen Skript, PostgreSQL, Login per OIDC über den Keycloak des DPV. Begründung im Fahrplan, Abschnitte 1 und 3.
+Django mit serverseitig erzeugten Seiten und einem eigenen kleinen Skript, PostgreSQL, Login per OIDC über den Keycloak des DPV. Begründung im Fahrplan, Abschnitte 1 und 3. Wie der Code aufgebaut ist und wo man was baut, steht in `docs/aufbau.md`; `tests/test_aufbau.py` prüft, dass er dieser Beschreibung folgt.
 
 ## Vorgänger
 
