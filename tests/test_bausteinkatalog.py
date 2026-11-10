@@ -212,8 +212,9 @@ def test_die_alte_adresse_der_musterseite_gibt_es_nicht(settings, visible):
 
 # ---------- Szenario 7: Eingabefelder nur aus Bausteinen ----------
 
-# Bausteine, aus denen ein Eingabefeld kommen darf: Textfeld (#111) und Feld zum Antippen (#180).
-FIELD_BLOCKS = ("a-textfeld", "a-antippfeld")
+# Bausteine, aus denen ein Eingabefeld kommen darf: Textfeld (#111), Feld zum Antippen (#180) und
+# Auswahl im Dialog (#286, Antwort von Sebastian bei der Umsetzung am 10.11.2026).
+FIELD_BLOCKS = ("a-textfeld", "a-antippfeld", "a-auswahl")
 
 
 def self_built_fields(html: str) -> list[str]:
