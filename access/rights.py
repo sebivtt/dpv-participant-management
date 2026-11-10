@@ -614,6 +614,16 @@ class Rights:
             Role(user=target, kind=R.MEMBER, unit=unit).save(by=me)
         return True, str(unit_texts.ADMITTED % {"person": name, "unit": unit_label(unit)})
 
+    # Austragen und Austreten (#286, Teil 2 von #65); Gerüst, die Regeln kommen mit dem Code.
+
+    def expel(self, unit: Unit, person_key, choice: str) -> str:
+        """Gerüst für „Austragen“ (#286)."""
+        raise Http404
+
+    def leave_own(self, level_key, from_key) -> str:
+        """Gerüst für „Austreten“ (#286)."""
+        raise Http404
+
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
     def may_remove(self, role: Role) -> bool:

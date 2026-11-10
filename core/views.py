@@ -145,6 +145,13 @@ def profile_leave_team(request: HttpRequest) -> HttpResponse:
     return _profile_page(request, form, removal=removal)
 
 
+# Austreten (#286); Gerüst, die Regeln kommen mit dem Code.
+@checks_rights("EP-06", "EP-07")
+def profile_leave(request: HttpRequest) -> HttpResponse:
+    """Gerüst für „Austreten“ auf „Mein Profil“ (#286)."""
+    raise Http404
+
+
 def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool = False, removal=None) -> HttpResponse:
     """„Mein Profil“ mit dem Formular für den Fahrtennamen, frisch oder mit der letzten Eingabe."""
     roles = request.rights.own_roles()
@@ -440,6 +447,16 @@ def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
         return _admit_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
     hits_found, notice = admission(entries, found)
     return _admit_page(request, found, form=form, hits_found=hits_found, notice=notice)
+
+
+# Austragen (#286, Teil 2 von #65); Gerüst, die Regeln kommen mit dem Code.
+EXPEL_ROWS = ("PK-21", "PK-22", "PK-23", "EH-18", "EH-19")
+
+
+@checks_rights(*EXPEL_ROWS)
+def organisation_expel(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Gerüst für „Austragen“ (#286)."""
+    raise Http404
 
 
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer

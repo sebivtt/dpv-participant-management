@@ -165,6 +165,14 @@ class Role(models.Model):
                 RoleChange.record(by, stored.user, stored.kind, stored.unit, RoleChange.Action.REMOVED)
             return deleted
 
+    def leave(self, left: Unit, *, by, entirely: bool = False) -> bool:
+        """Gerüst für Austreten und Austragen (#286)."""
+        raise NotImplementedError
+
+    def ending_leads(self, left: Unit, entirely: bool = False) -> list["Role"]:
+        """Gerüst für die Vorschau beim Austreten und Austragen (#286)."""
+        raise NotImplementedError
+
     def _stored(self) -> "Role | None":
         """Diese Rolle, wie sie in der Datenbank steht."""
         return Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
