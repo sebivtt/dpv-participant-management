@@ -17,7 +17,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 ### Abweichungen der Seite vom Zielbild
 
 1. **Fehlt, weil das Tool die Daten nicht hat:** „Profil freigeben“ und die Freigaben je Feld (#137), Geburtsdatum (#143), Adresse und Gesundheitsangaben (FRM-02 bis FRM-04). Sie kommen mit ihren Issues und folgen dann dem Zielbild. Den Fahrtennamen gibt es seit #111 (Punkt 10).
-2. **„Mitgliedschaft und Austritt verwaltest du in deiner Organisation.“ mit „Organisation öffnen“ fehlt.** Es widerspricht der Entscheidung zu #65: „Austreten“ kommt als Knopf direkt in die Fläche der Mitgliedschaft, an diese Stelle.
+2. **„Mitgliedschaft und Austritt verwaltest du in deiner Organisation.“ mit „Organisation öffnen“ fehlt.** Es widerspricht der Entscheidung zu #65: An dieser Stelle steht seit #286 der Knopf „Austreten“ in der Fläche der Mitgliedschaft, zart rot wie „Entfernen“ (Baustein „Knopf „Entfernen““), ohne den Satz davor.
 3. **Reihenfolge der Rollen von klein nach groß** (Gruppenleitung zuerst, Admin zuletzt), nicht wie im Zielbild von groß nach klein; so in den Szenarien zu #96 entschieden und in #161 bestätigt.
 4. **Feste Sätze statt der Beschreibungen** unter Rollen im DPV ([Nachklärung Kacheln](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403407168)): Verbandsleitung „Leitung des Verbands“ statt „Verantwortung auf Verbandsebene“, DPV-Veranstaltungsteam „Veranstaltungen des Verbands“ statt „Verbandsweite Funktion“. Admin hängt an keiner Organisation und fehlt im Zielbild; die Kachel zeigt klein „Admin“, groß „DPV Anmeldetool“, darunter „Verwaltung des ganzen Tools“. Es sind feste Texte, keine gespeicherten Daten.
 5. **Farben in „Organisation und Rollen“** (Sebastian bei der Klärung von #161): Mitgliedschaft zart blau `#e9eff6` wie im Zielbild; die Rollen-Kacheln weiß mit feinem Rand `#dbe2ea` und oben einem schmalen blauen Streifen (3 Pixel, `#1a4b7e`) statt grauer Fläche. Der Rand ist eine bewusste Ausnahme von „Flächen statt Rahmen“ (`docs/gestaltung.md`). Die kleine Rollenmarke ist in den Kacheln zart blau statt weiß, weil sie auf weißer Kachel sonst verschwände (von Sebastian bestätigt, [Nachtrag](https://github.com/sebivtt/dpv-participant-management/issues/161#issuecomment-6403556335)).
@@ -103,13 +103,20 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 - **Stand:** 28.10.2026, Fassung 2: der grobe Entwurf der Klärungs-Session zu #65 mit Sebastians Änderung, dass „Austragen“ wie „Verschieben“ eine zarte Fläche bekommt, rot in den Farben der Fehlermeldung. Übernommen in #285 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981320)), eingespielt mit #285 aus dem Zweig `claude/personen-65` (`f0279b1`).
 - **Prüfsumme (SHA-256):** `93e97f1d2ec233ebe02c029e7da3f1c61aa5da9e0cc617b9b8aa726c50f9c79a`
 - **Inhalt der Datei:** nur erfundene Personen und Organisationen (Pfadfinderbund Boreas, Wanda, Finn …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen Personen und Fällen um; ins Tool ist davon nichts übernommen.
-- **Orientierung, keine Anforderung.** Geklärt in #65 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981714), N1 bis N5), umgesetzt in #285 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766975648)); „Austragen“ und „Verschieben“ kommen mit #286 und #287.
+- **Orientierung, keine Anforderung.** Geklärt in #65 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981714), N1 bis N5), umgesetzt in #285 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766975648)); „Austragen“ umgesetzt in #286 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/286#issuecomment-6766976020)), „Verschieben“ kommt mit #287.
 
 ### Abweichungen des Abschnitts „Personen“ und des Dialogs „Person aufnehmen“ vom Zielbild (#285)
 
-1. **Noch ohne „Verschieben“ und „Austragen“:** Sie kommen mit #287 und #286 in dieselbe Liste; der Baustein hat dafür rechts Platz für mehrere Knöpfe.
+1. **Noch ohne „Verschieben“:** Es kommt mit #287 in dieselbe Liste; der Baustein hat dafür rechts Platz für mehrere Knöpfe. „Austragen“ steht seit #286 dort (Abweichungen unten).
 2. **Person als Baustein „Person in einer Liste“:** wie die Leitungen darüber (#189), die Rollen als Rollenmarken statt runder Pillen, die Mail in der zweiten Zeile rechts statt neben dem Namen.
 3. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „… benennen“ (#190); „Abbrechen“ und × führen zur Seite der Organisation zurück.
 4. **„Aufnehmen“ als weißer Knopf mit feinem Rand** wie „Benennen“ in der Trefferliste (#190) statt dunkelblau.
 5. **„Kein Konto gefunden …“ als Warnung** wie im Dialog „… benennen“ (#190) statt als Information, damit dieselbe Meldung überall gleich aussieht.
 6. **Kein Kasten „Zum Ausprobieren“** und kein Zähler der Suchen: Sie gehören wie das Steuerband nicht zur Seite.
+
+### Abweichungen von „Austragen“ vom Zielbild (#286)
+
+1. **„Austragen“ auch beim eigenen Eintrag** (Sebastian bei der Umsetzung, 10.11.2026); im Zielbild fehlt der Knopf dort.
+2. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „Person aufnehmen“ (oben, Punkt 3).
+3. **Vorschau je Möglichkeit:** Sie kommt fertig vom Server und wechselt mit der Wahl allein über das Aussehen, auch ohne Skript (Baustein „Auswahl im Dialog“); die Wahl ist nicht in ein umrandetes Feld mit Text gefasst, sondern Optionsfeld und Beschriftung stehen nebeneinander in einer umrandeten Zeile.
+4. **Satz zur letzten Leitung** wie beim Entfernen (#191), nicht wie im Zielbild: beim Bund „… und niemand springt ein. Eine neue Bundesleitung kann nur die Verbandsleitung benennen.“, ohne „Trotzdem …?“.

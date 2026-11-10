@@ -473,6 +473,8 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-auswahl-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
 .a-auswahl-liste li:hover { border-color: var(--dpv); }
 .a-auswahl-liste .form-check-input { flex: none; margin-top: .2em; }
+/* Bootstraps Fokus der Optionsfelder (nur ein Schatten) ersetzt der gemeinsame Fokusrahmen oben, wie bei Knöpfen. */
+.a-auswahl-liste .form-check-input:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
 .a-auswahl-liste label { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
 .a-auswahl-liste input:checked + label { font-weight: 700; color: var(--dpv); }
 .a-auswahl-folge { margin: 4px 0 0; padding: 12px 14px; border-radius: var(--radius-klein); background: var(--grund); overflow-wrap: anywhere; }

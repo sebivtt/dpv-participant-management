@@ -103,7 +103,8 @@ def test_ohne_skript_wechselt_die_vorschau_mit_der_wahl(pc_ohne_skript):
     page.locator("dialog .btn-gefahr").click()
 
     page.wait_for_url(f"{BASE}/organisation/{units['falken'].key}/")
-    expect(page.locator(".a-kurz")).to_contain_text("Flink (Finn Falke) ist aus Sippe Falken ausgetragen.")
+    # Ohne Skript steht die kurze Meldung fest oben auf der Seite (docs/gestaltung.md, „Kurze Meldung“).
+    expect(page.locator("[data-kurz]")).to_contain_text("Flink (Finn Falke) ist aus Sippe Falken ausgetragen.")
     assert not Role.objects.filter(user=units["finn"]).exists()
 
 

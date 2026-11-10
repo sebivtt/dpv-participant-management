@@ -303,7 +303,7 @@ def test_fiete_traegt_sich_selbst_aus_und_landet_auf_mein_profil(org):
     assert {entry[0] for entry in log_since(before)} == {"Fiete Falke"}
 
 
-@pytest.mark.rechtematrix("EH-18", "PK-21")
+@pytest.mark.rechtematrix("EH-18", "PK-21", "PK-22")
 def test_p12_ohne_gruppenleitung_traegt_wanda_finn_aus(org):
     remove_by_command(org.falken_leitung, R.GROUP_LEAD, org.falken)
 
@@ -422,7 +422,7 @@ def test_der_dialog_bietet_die_ebenen_der_eigenen_kette(org):
     assert membership_of(org.falke) == "Sippe Falken"
 
 
-@pytest.mark.rechtematrix("EP-06")
+@pytest.mark.rechtematrix("EP-06", "EP-07")
 def test_p8_finn_tritt_aus_den_falken_aus(org):
     before = RoleChange.objects.count()
     client = client_for(org.falke)
