@@ -192,7 +192,7 @@ def test_v1_bis_v3_startseite_und_profil_zeigen_nichts_fremdes_auch_mit_fremden_
 
 @pytest.mark.rechtematrix("EH-07", "RO-08")
 def test_g1_mit_mitgliedschaft_ist_der_hinweis_weg_und_otto_sieht_fiete(org):
-    """Gegenprobe zu EH-07 und RO-08; das Aufnehmen selbst baut #65, hier wird die Mitgliedschaft direkt angelegt."""
+    """Gegenprobe zu EH-07 und RO-08; das Aufnehmen selbst baut #285, hier wird die Mitgliedschaft direkt angelegt."""
     client = client_for(org.ohne)
     assert has_hint(client, "/")
 

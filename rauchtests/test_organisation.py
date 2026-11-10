@@ -130,7 +130,8 @@ def test_am_handy_zuerst_die_gliederung_dann_die_seite_auch_nur_mit_der_tastatur
     handy.wait_for_url(f"{BASE}/organisation/{units['woelfe'].key}/")
     expect(handy.get_by_role("navigation", name="Gliederung")).to_be_hidden()
     expect(handy.get_by_role("heading", level=1)).to_have_text("Meute Wölfe")
-    expect(handy.locator(".a-leitung")).to_contain_text("wim.wolf.mit.einer.sehr.langen.adresse")
+    # Seit #285 steht Wim auch unter „Personen“; gemeint ist der Eintrag unter „Leitungen“.
+    expect(handy.locator('[aria-labelledby="h-leitungen"] .a-leitung')).to_contain_text("wim.wolf.mit.einer.sehr.langen.adresse")
     _no_side_scroll(handy)
     assert run_axe(handy) == []
 

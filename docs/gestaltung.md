@@ -100,6 +100,15 @@ Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10
 - **Dialog zum Bestätigen:** Titel ist die Frage, darunter die Folgen; unten neben „Abbrechen“ ein roter Knopf mit der Handlung („Entfernen“, „Rolle abgeben“). Rot nur für Handlungen, die etwas wegnehmen.
 - **Danach** eine kurze Meldung (#186), wie nach dem Benennen.
 
+### Personen und „Person aufnehmen“ (#285, 10.11.2026)
+
+Zielbild als `docs/zielbilder/personen.html` (aus #65), Abweichungen in `docs/zielbilder/README.md`. Kein neuer Baustein, drei erweitert:
+
+- **Person in einer Liste** (vorher „Leitung in einer Liste“): eine Person hat keine, eine oder mehrere Leitungsrollen als Rollenmarken; rechts ist Platz für mehrere Knöpfe („Verschieben“, „Austragen“ mit #287 und #286). Leitungen sehen aus wie vorher (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65).
+- **Überschrift einer Fläche:** hinter dem Titel darf klein und grau eine Zahl stehen, etwa „4 Personen“.
+- **Trefferliste:** im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem Knopf „Aufnehmen“.
+- **Danach** eine kurze Meldung (#186), wie nach dem Benennen.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

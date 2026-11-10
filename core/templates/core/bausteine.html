@@ -78,6 +78,8 @@
       {% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Überschrift einer Fläche mit Symbol") level=3 %}
       {% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") level=3 action_href="#h-flaechenkopf" action_label=_("Gruppenleitung benennen") %}
       {% include "core/_flaechenkopf.html" with symbol="organisation" title="Pfadfinderbund Boreas" title_href="#h-flaechenkopf" level=3 action_href="#h-flaechenkopf" action_label=_("Bundesleitung benennen") %}
+      {# Mit Zahl hinter dem Titel, wie der Abschnitt „Personen“ (#285). #}
+      {% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") level=3 count=examples.persons_count action_href="#h-flaechenkopf" action_label=_("Person aufnehmen") %}
     </div>
   </section>
 
@@ -117,6 +119,10 @@
     <div class="a-flaeche">
       <ul class="a-leitungen">{% for lead in examples.org_leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>
     </div>
+    {# Als Person im Abschnitt „Personen“ (#285): keine, eine oder mehrere Leitungsrollen. #}
+    <div class="a-flaeche">
+      <ul class="a-leitungen">{% for lead in examples.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>
+    </div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfentfernen">
@@ -150,6 +156,8 @@
     {% include "core/_katalogeintrag.html" with block=blocks.trefferliste %}
     <div class="a-flaeche">
       {% include "core/_treffer.html" with hits=examples.hits hits_title=_("Treffer") appoint_action="#h-trefferliste" notice=None preview=True %}
+      {# Im Dialog „Person aufnehmen“ (#285): ohne Organisation darunter, Knopf „Aufnehmen“. #}
+      {% include "core/_treffer.html" with hits=examples.admit_hits hits_title=_("Treffer") appoint_action="#h-trefferliste" action_label=_("Aufnehmen") notice=None preview=True %}
       {% include "core/_treffer.html" with hits=None empty=_("Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen.") notice=examples.no_account %}
     </div>
   </section>

@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from django.db.models import Q
 from django.urls import reverse
 
-from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical
+from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, unit_label
+from accounts.models import display_name
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
 from units.models import Kind, Unit
@@ -31,7 +32,11 @@ class Mark:
 
 @dataclass
 class Lead:
-    """Eine Leitung auf der Seite einer Organisation: Name, Fahrtenname und Rolle, die Mail nur, wo erlaubt."""
+    """Eine Leitung oder Person in einer Liste: Name, Fahrtenname, Rollen, die Mail nur, wo erlaubt.
+
+    Leitungen haben genau eine Rolle (`role`). Personen im Abschnitt „Personen“ (#285) haben
+    keine, eine oder mehrere Leitungsrollen (`role_names`), z. B. „Stammesleitung Stamm Walhall“.
+    """
 
     name: str
     extra: str
@@ -42,6 +47,12 @@ class Lead:
     # Der Knopf rechts, nur wo die Person Leitungen entfernen darf: „Entfernen“ oder beim eigenen Eintrag „Rolle abgeben“ (#191).
     remove_href: str | None = None
     remove_label: str = ""
+    role_names: list[str] = field(default_factory=list)
+
+    @property
+    def shown_roles(self) -> list[str]:
+        """Die Rollenmarken unter dem Namen: bei Personen ihre Leitungsrollen, bei Leitungen die eine Rolle."""
+        return self.role_names or ([self.role] if self.role else [])
 
     @property
     def locked_mark(self) -> Mark | None:
@@ -101,6 +112,13 @@ class Page:
     appoint_label: str = ""
     # Der Knopf oben am Handy, immer zu „Organisation“ (#218).
     back_label: str = texts.BACK_TO_OUTLINE
+    # Der Abschnitt „Personen“ (#285): None auf der Leseseite, sonst die direkten Mitglieder.
+    persons: list[Lead] | None = None
+    persons_count: str = ""
+    persons_empty: str = ""
+    # Der Knopf „Person aufnehmen“, nur wo die Person aufnehmen darf (PK-17, PK-26, EH-18).
+    admit_href: str | None = None
+    admit_label: str = texts.ADMIT_TITLE
 
 
 @dataclass
@@ -134,6 +152,11 @@ def _by_name(entry: dict) -> tuple:
     """Leitungen nach Nachnamen, dann Vornamen; ohne Namen am Ende, nach dem Benutzernamen."""
     return (not entry["last_name"], alphabetical(entry["last_name"]), alphabetical(entry["first_name"]),
             entry["username"])
+
+
+def _user_by_name(user) -> tuple:
+    """Personen wie Leitungen nach Nachnamen, dann Vornamen; ohne Namen am Ende, nach dem Benutzernamen."""
+    return (not user.last_name, alphabetical(user.last_name), alphabetical(user.first_name), user.username)
 
 
 def _full_name(entry: dict) -> str:
@@ -276,6 +299,33 @@ class Organisation:
             appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
             appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
             back_label=back_label,
+            **self._persons_section(unit, access),
+        )
+
+    def _persons_section(self, unit: Unit, access: str) -> dict:
+        """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1)."""
+        if access != MANAGE:
+            return {}
+        persons = [self._person(user) for user in sorted(self.rights.members(unit), key=_user_by_name)]
+        return {
+            "persons": persons,
+            "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
+            "persons_empty": texts.NOBODY_DIRECTLY % {"unit": unit_label(unit)},
+            "admit_href": reverse("organisation_admit", args=[unit.key]) if self.rights.may_admit(unit) else None,
+        }
+
+    def _person(self, user) -> Lead:
+        """Eine Person im Abschnitt „Personen“ mit ihren Leitungsrollen von der Gruppe bis zum Bund (#65 N1)."""
+        full_name = " ".join(part for part in (user.first_name, user.last_name) if part)
+        leads = sorted(user.lead_roles, key=lambda role: (LEADS_IN_UNITS.index(role.kind), alphabetical(role.unit.name)))
+        return Lead(
+            name=user.scout_name or full_name or user.username,
+            extra=full_name if user.scout_name else "",
+            role="",
+            role_names=[str(texts.ROLE_AT % {"role": role.get_kind_display(), "unit": unit_label(role.unit)}) for role in leads],
+            mail=user.email,
+            locked=not user.is_active,
+            is_self=user.pk == self.user.pk,
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:
@@ -396,6 +446,29 @@ def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:
             hint=hint,
         ))
     return found
+
+
+def admission(entries: list[dict], unit: Unit) -> tuple[list[Hit], tuple[str, str] | None]:
+    """Treffer und Meldung im Dialog „Person aufnehmen“ aus den Treffern der Rechteprüfung (#285).
+
+    Aufnehmen lässt sich nur, wer noch nirgends Mitglied ist; nur sie stehen mit dem Knopf
+    „Aufnehmen“ in der Liste, ohne Organisation darunter. Wer im eigenen Bereich oder als die
+    Person selbst schon Mitglied ist, bekommt „… ist schon Mitglied in …“ (PG5); wer außerhalb
+    Mitglied ist, den Satz ohne die Organisation (PK-18, PK-16). Ob es klappt, entscheidet erst
+    `Rights.admit()`.
+    """
+    found, notice = [], None
+    for entry in entries:
+        name = display_name(entry["first_name"], entry["last_name"], entry["scout_name"]) or entry["username"]
+        if entry["unit_label"]:
+            notice = notice or ("info", str(texts.ALREADY_MEMBER % {"person": name, "unit": entry["unit_label"]}))
+        elif entry["elsewhere"]:
+            notice = notice or ("warning", str(texts.OTHER_ORGANISATION))
+        else:
+            full_name = _full_name(entry)
+            found.append(Hit(key=entry["key"], name=entry["scout_name"] or full_name or entry["username"],
+                             extra=full_name if entry["scout_name"] else "", place="", note="", warning="", hint=""))
+    return found, notice
 
 
 @dataclass

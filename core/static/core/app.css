@@ -139,6 +139,7 @@ body:has(> .a-main) { display: flex; flex-direction: column; min-height: 100vh; 
 .a-profilflaeche { margin: 0 0 18px; }
 .a-flaeche-kopf { display: flex; align-items: center; gap: 12px; margin: 0 0 17px; }
 .a-flaeche-kopf h2, .a-flaeche-kopf h3 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+.a-flaeche-zahl { color: var(--text-leise); font-size: .8rem; font-weight: 600; }
 .a-flaeche-ic { width: 36px; height: 36px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); }
 /* Kopfzeile: Profilkreis wie in der Seitenleiste, daneben groß der Name */
 .a-identitaet { display: flex; align-items: center; gap: 14px; margin: 0 0 18px; }
@@ -248,6 +249,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-leitung-mail:hover { background: var(--dpv-hauch); }
 /* „Entfernen“ und „Rolle abgeben“ rechts bei einer Leitung (#191); Rot nur für das Entfernen. */
 .a-leitung-knopf { flex-shrink: 0; align-self: center; }
+.a-leitung-knoepfe { display: flex; flex-wrap: wrap; flex-shrink: 0; align-self: center; gap: 6px; }
 /* Knopf „Entfernen“ (core/_knopf_entfernen.html): zarte rote Fläche, rote Schrift, die Farben der Fehlermeldung. */
 .btn-entfernen { --bs-btn-color: var(--ab-text); --bs-btn-bg: var(--ab-grund); --bs-btn-border-color: var(--ab-grund); --bs-btn-hover-color: var(--ab-text); --bs-btn-hover-bg: var(--ab-grund); --bs-btn-hover-border-color: var(--ab-text); --bs-btn-active-color: var(--ab-text); --bs-btn-active-bg: var(--ab-grund); --bs-btn-active-border-color: var(--ab-text); }
 .btn-gefahr { --bs-btn-color: #fff; --bs-btn-bg: var(--ab-text); --bs-btn-border-color: var(--ab-text); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #6e2222; --bs-btn-hover-border-color: #6e2222; --bs-btn-active-color: #fff; --bs-btn-active-bg: #6e2222; --bs-btn-active-border-color: #6e2222; }

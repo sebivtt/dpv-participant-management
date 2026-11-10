@@ -38,6 +38,21 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-10 · Abschnitt „Personen“ und „Person aufnehmen“ (#285, Teil 1 von #65)
+
+**Entscheidung:** Fachlich nichts Neues; es gelten die Klärungen von #65 (22.10. und 28.10.2026, Nachklärung N1 bis N3), die Aufteilung vom 10.11.2026 und die Szenarien im Issue. Bausteine (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65 und Sebastians Antwort bei der Umsetzung am 10.11.2026, [Kommentar in #285](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6767759579)): „Leitung in einer Liste“ heißt jetzt „Person in einer Liste“ und zeigt keine, eine oder mehrere Rollen, mit Platz für mehrere Knöpfe; die Überschrift einer Fläche darf eine Zahl tragen, die Trefferliste den Knopf „Aufnehmen“ ohne Organisation darunter (`docs/gestaltung.md`).
+
+**Technische Wahl** (KI):
+
+1. **Wer aufnimmt:** genau, wer die Organisation leitet oder für sie einspringt (`Rights.leads_unit()`, PK-17, PK-26, EH-18). Die Organisation kommt aus der Adresse; ohne Recht sind Dialog und Suche „nicht gefunden“, wie beim Benennen.
+2. **Gleichzeitig:** Wie beim Benennen werden das eigene Konto und das der Person gesperrt und die Rechte danach frisch geprüft; die zweite von zwei gleichzeitigen Aufnahmen sieht die erste Mitgliedschaft (PG4). Die Datenbank lässt ohnehin höchstens eine Mitgliedschaft zu (#89).
+3. **Liste ohne Wachstum:** Die direkten Mitglieder kommen aus `Rights.members()`, ihre Leitungsrollen vorab geladen; `leads_unit_of()` fragt die Liste nicht je Person (PG8).
+4. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): aufnehmen `admit`, die direkten Mitglieder einer Organisation `members`, eine Organisation mit ihrer Art in Meldungen („Stamm Walhall“, „Sippe Falken“) `unit_label`.
+
+**Umsetzung:** `access/rights.py`, `units/organisation.py`, `units/texts.py`, `core/views.py`, `config/urls.py`, `core/templates/core/organisation.html`, `_leitung.html`, `_flaechenkopf.html`, `_treffer.html`, `_symbole.svg`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`, Zielbild `docs/zielbilder/personen.html`; Tests in `tests/test_personen.py` und `rauchtests/test_aufnehmen.py`.
+
+---
+
 ## 2026-11-10 · Ohne Skript bedienbar; am Handy springt „Menü“ ans Seitenende (#281)
 
 **Entscheidung** (Sebastian, Projektprüfung am 06.11.2026 und Klärung von #281 am 06.11.2026, Protokoll im Issue; Paket P-17, Befund BF-138):

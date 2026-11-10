@@ -32,7 +32,19 @@ from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import BooleanField, CharField, Exists, ExpressionWrapper, F, Model, OuterRef, Q, QuerySet, Value
+from django.db.models import (
+    BooleanField,
+    CharField,
+    Exists,
+    ExpressionWrapper,
+    F,
+    Model,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Value,
+)
 from django.db.models.functions import Concat
 from django.http import Http404
 from django.utils import timezone
@@ -422,14 +434,14 @@ class Rights:
     def _hits(self, users: list) -> list[dict]:
         """Was Vorschläge und Treffer zeigen dürfen: Kennung, Namen und wo die Person Mitglied ist (PK-16).
 
-        `unit_name` steht nur bei Mitgliedern des eigenen Bereichs und bei der Person selbst;
+        `unit_name` und `unit_label` stehen nur bei Mitgliedern des eigenen Bereichs und bei der Person selbst;
         sonst sagt `elsewhere` nur, dass sie schon woanders Mitglied ist. Interne Nummern gibt die
         Liste nicht heraus (#156).
         """
         memberships = dict(
             Role.objects.filter(kind=R.MEMBER, user_id__in=[user.pk for user in users]).values_list("user_id", "unit_id")
         )
-        names = dict(Unit.objects.filter(pk__in=memberships.values()).values_list("pk", "name"))
+        units = {entry.pk: entry for entry in Unit.objects.filter(pk__in=memberships.values())}
         found = []
         for user in users:
             unit = memberships.get(user.pk)
@@ -441,7 +453,9 @@ class Rights:
                 "last_name": user.last_name,
                 "scout_name": user.scout_name,
                 "username": user.username,
-                "unit_name": names[unit] if shown else "",
+                "unit_name": units[unit].name if shown else "",
+                # Mit der Art davor wie beim Aufnehmen, z. B. „Stamm Walhall“ (#285); nur, wo auch der Name steht.
+                "unit_label": unit_label(units[unit]) if shown else "",
                 "elsewhere": unit is not None and not shown,
                 "is_self": is_self,
             })
@@ -532,6 +546,73 @@ class Rights:
         """
         users = get_user_model().objects.select_for_update().filter(pk__in={self.user.pk, other}).order_by("pk")
         return {user.pk: user for user in users}.get(self.user.pk)
+
+    # Personen einer Organisation und „Person aufnehmen“ (#285, Teil 1 von #65)
+
+    def members(self, unit: Unit | None) -> list:
+        """Die direkten Mitglieder einer Organisation im eigenen Bereich, mit ihren Leitungsrollen (#65, Frage 8).
+
+        Nur Personen, deren Daten die Person ohnehin sieht (`persons()`, BER-01, Grund 2); außerhalb
+        des eigenen Bereichs, auch auf der Kette nach oben, ist die Liste leer. Mitglieder der
+        Organisationen darunter stehen auf deren Seite. Die Leitungsrollen jeder Person stehen in
+        `lead_roles`, mit ihren Organisationen vorab geladen, damit die Liste nicht je Person die
+        Datenbank fragt (PG8). Gesperrte Konten stehen dabei, wie gesperrte Leitungen (#189, Frage B).
+        """
+        if unit is None or not self.sees_organisation() or unit.pk not in self.area:
+            return []
+        direct = Role.objects.filter(kind=R.MEMBER, unit_id=unit.pk).values("user_id")
+        leads = Prefetch("roles", queryset=Role.objects.filter(kind__in=LEADS_IN_UNITS).select_related("unit"),
+                         to_attr="lead_roles")
+        return list(self.persons().filter(pk__in=direct).prefetch_related(leads))
+
+    def may_admit(self, unit: Unit | None) -> bool:
+        """Darf die Person in diese Organisation Personen mit Konto aufnehmen (PK-17, PK-26, EH-18)?
+
+        Nur die Leitung der Organisation selbst und, solange dort keine Leitung mit Konto ist, die
+        einspringende Leitung darüber (`leads_unit()`); in Organisationen darunter nicht. Die
+        Verbandsleitung, das DPV-Veranstaltungsteam, Mitglieder und Admins leiten keine
+        Organisation und nehmen niemanden auf (PK-23). Die automatische Mitgliedschaft beim
+        Benennen als Leitung (#89) läuft über `appoint()`, nicht hier.
+        """
+        return unit is not None and self.leads_unit(unit)
+
+    def admit(self, unit: Unit, person_key) -> tuple[bool, str]:
+        """Nimmt eine Person mit Konto als Mitglied der Organisation auf; gibt zurück, ob es geklappt hat, und die Meldung.
+
+        Ohne Recht in dieser Organisation oder mit einer Kennung, die keine erreichbare Person nennt
+        (gesperrt, nie angemeldet und nicht im eigenen Bereich), ist das Ergebnis „nicht gefunden“.
+        Wer schon Mitglied ist, bekommt im eigenen Bereich „… ist schon Mitglied in …“ (PG5),
+        außerhalb einen Satz ohne die Organisation (PK-18, PK-16). Die Person muss nicht zustimmen;
+        die Mitgliedschaft gilt sofort und steht im Protokoll (#91). Niemand nimmt sich selbst auf
+        (EP-08); eine Leitung ist ohnehin schon Mitglied. Gleichzeitige Aufnahmen derselben Person
+        laufen nacheinander, weil ihr Konto bis zum Ende gesperrt ist: Die zweite sieht die erste
+        Mitgliedschaft (PG4). Das Recht wird unter der Sperre noch einmal geprüft, wie bei `appoint()`.
+        """
+        if not self.may_admit(unit) or not is_key(person_key):
+            raise Http404
+        users = get_user_model().objects
+        with transaction.atomic():
+            found = users.filter(key=person_key).values_list("pk", flat=True).first()
+            if found is None:
+                raise Http404
+            me = self._lock_with(found)
+            fresh = Rights(me)
+            if not fresh.may_admit(unit):
+                raise Http404
+            reachable = Q(last_login__isnull=False) | Q(pk__in=fresh.persons().values("pk"))
+            target = users.filter(reachable, pk=found, is_active=True).first()
+            if target is None:
+                raise Http404
+            name = display_name(target.first_name, target.last_name, target.scout_name) or target.username
+            membership = Role.objects.filter(user_id=target.pk, kind=R.MEMBER).select_related("unit").first()
+            if membership is not None:
+                if membership.unit_id in fresh.area or target.pk == me.pk:
+                    return False, str(unit_texts.ALREADY_MEMBER % {"person": name, "unit": unit_label(membership.unit)})
+                return False, str(unit_texts.OTHER_ORGANISATION)
+            if target.pk == me.pk:
+                raise Http404
+            Role(user=target, kind=R.MEMBER, unit=unit).save(by=me)
+        return True, str(unit_texts.ADMITTED % {"person": name, "unit": unit_label(unit)})
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
@@ -747,6 +828,11 @@ class Rights:
             return False
         membership = Role.objects.filter(user_id=person.pk, kind=R.MEMBER).select_related("unit").first()
         return membership is not None and self.leads_unit(membership.unit)
+
+
+def unit_label(unit: Unit) -> str:
+    """Wie eine Organisation im Abschnitt „Personen“ und beim Aufnehmen heißt: „Stamm Walhall“, „Sippe Falken“ (#285)."""
+    return str(unit_texts.MEMBER_UNIT_NAME[unit.kind] % {"unit": unit.name})
 
 
 def alphabetical(name: str) -> str:

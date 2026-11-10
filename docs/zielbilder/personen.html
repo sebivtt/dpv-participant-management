@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personen · Zielbild zu #65</title>
+<!--
+  Zielbild zu #65 (Abschnitt „Personen“ auf der Seite einer Organisation), Fassung 2 vom 28.10.2026:
+  grober Entwurf vom selben Tag, „Austragen“ mit zart roter Fläche wie „Verschieben“ mit zart blauer (Sebastian).
+  Grundlage: Zielbild zu #93 (Gestaltung, Bausteine, Personen) und die Szenarien zu #65 vom 28.10.2026.
+  Nur erfundene Daten. Eine Datei, lädt nichts von fremden Servern.
+  Oben im dunklen Band umschalten. Band und Hinweiskasten gehören nicht zur Seite.
+-->
+<style>
+:root{
+  --dpv:#1a4b7e;--dpv-tief:#12385f;--dpv-hauch:#e9eff6;--akzent:#f0ad2c;
+  --grund:#f4f6f9;--flaeche:#fff;--linie:#dbe2ea;--text:#1b2532;--text-leise:#566375;
+  --ok-text:#245c3d;--ok-grund:#e1f0e6;--warte-text:#74500c;--warte-grund:#fbefd5;
+  --ab-text:#8a2c2c;--ab-grund:#f7e2e2;--zu-text:#3f4a58;--zu-grund:#e6e9ee;
+  --radius:14px;--radius-klein:9px;--leiste:236px;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--text);background:var(--grund);line-height:1.45}
+.a-symbole{display:none}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic-klein{width:16px;height:16px}
+.lilie{width:34px;height:34px;color:var(--dpv);flex:none}
+h1{font-size:1.45rem;margin:0;line-height:1.2}
+h2{font-size:1.06rem;margin:0}
+h3{font-size:.96rem;margin:0}
+a{color:var(--dpv)}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--dpv);outline-offset:2px}
+[hidden]{display:none!important}
+.sr-nur{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Entwurfs-Steuerung (gehört nicht zur Seite) */
+.e-band{background:#1b2532;color:#fff;font-size:.84rem;position:sticky;top:0;z-index:40;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.e-band>summary{padding:9px 16px;cursor:pointer;font-weight:700;color:var(--akzent);list-style:none}
+.e-band>summary::-webkit-details-marker{display:none}
+.e-band>summary::after{content:" ▾";color:#a3b1c2}
+.e-band[open]>summary::after{content:" ▴"}
+.e-band-rumpf{padding:0 16px 10px;display:grid;gap:7px}
+.e-zeile{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.e-zeile .label{color:#a3b1c2;font-weight:600;min-width:86px}
+.e-band button{background:#2e3a4a;color:#fff;border:1px solid transparent;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:.82rem}
+.e-band button:hover{background:#3e4d61}
+.e-band button[aria-pressed="true"]{background:var(--akzent);color:#1b2532;font-weight:700}
+.e-band button:disabled{opacity:.4;cursor:not-allowed}
+.e-notiz{background:#fff8e6;border-left:4px solid var(--akzent);padding:10px 14px;border-radius:var(--radius-klein);font-size:.86rem;color:#4a3a10;margin:0 0 16px}
+.e-notiz summary{cursor:pointer;font-weight:700}
+.e-notiz ul{margin:8px 0 0;padding-left:20px}
+.e-notiz li{margin:3px 0}
+.e-notiz h4{margin:10px 0 2px;font-size:.86rem}
+
+/* App-Rahmen */
+.a-app{display:flex;min-height:calc(100vh - 40px)}
+.a-leiste{width:var(--leiste);background:var(--flaeche);padding:20px 16px;display:flex;flex-direction:column;gap:18px;position:sticky;top:40px;height:calc(100vh - 40px);border-right:1px solid var(--linie);flex:none}
+.a-marke{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--dpv);font-size:1.02rem}
+.a-nav ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.a-navlink{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-klein);color:var(--text);text-decoration:none;font-weight:600}
+.a-navlink:hover{background:var(--grund)}
+.a-navlink[aria-current="page"]{background:var(--dpv-hauch);color:var(--dpv);font-weight:800}
+.a-navlink[aria-current="page"]::after{content:"";margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--akzent)}
+.a-konto{margin-top:auto;display:flex;align-items:center;gap:10px;font-weight:600;padding-top:12px;border-top:1px solid var(--linie);min-width:0}
+.a-kreis{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.a-inhalt{flex:1;padding:22px 26px;max-width:1380px;width:100%;min-width:0}
+
+/* Bausteine */
+.a-flaeche{background:var(--flaeche);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;border:1px solid var(--linie);min-width:0}
+.a-flaeche-kopf{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.a-flaeche-ic{width:34px;height:34px;border-radius:10px;background:var(--dpv-hauch);color:var(--dpv);display:grid;place-items:center;flex:none}
+.a-rechts{margin-left:auto;display:flex;gap:8px;align-items:center}
+.k{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-klein);padding:7px 14px;font-weight:600;font-size:.9rem;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.k-haupt{background:var(--dpv);color:#fff}
+.k-haupt:hover{background:var(--dpv-tief)}
+.k-zweit{background:var(--dpv-hauch);color:var(--dpv)}
+.k-zweit:hover{background:#dce6f2}
+.k-neutral{background:var(--flaeche);color:var(--text);border-color:var(--linie)}
+.k-neutral:hover{background:var(--grund)}
+.k-leise{background:transparent;color:var(--ab-text);padding:6px 10px}
+.k-leise:hover{background:var(--ab-grund)}
+.k-gefahr{background:var(--ab-text);color:#fff}
+.k-klein{padding:4px 10px;font-size:.82rem}
+.marke{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.m-rolle{background:var(--dpv-hauch);color:var(--dpv)}
+.m-ein{background:var(--warte-grund);color:var(--warte-text)}
+.m-lesen{background:var(--zu-grund);color:var(--zu-text)}
+.m-gesperrt{background:var(--ab-grund);color:var(--ab-text)}
+.m-spaeter{background:#efe7fb;color:#5a3d8a}
+.meldung{display:flex;gap:12px;border-radius:var(--radius-klein);padding:12px 14px;margin:0 0 14px;align-items:flex-start}
+.meldung .ic-kasten{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.75);display:grid;place-items:center;flex:none;font-weight:800}
+.meldung p{margin:0;font-size:.9rem;flex:1;min-width:0}
+.meldung b{display:block;margin-bottom:2px}
+.mel-info{background:var(--dpv-hauch)}
+.mel-info .ic-kasten{color:var(--dpv)}
+.mel-warn{background:var(--warte-grund);color:var(--warte-text)}
+.mel-fehler{background:var(--ab-grund);color:var(--ab-text)}
+.mel-ok{background:var(--ok-grund);color:var(--ok-text)}
+
+.leute{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.person{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-radius:var(--radius-klein);background:var(--grund)}
+.av{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none;font-size:.9rem}
+.person.gesperrt .av{background:var(--zu-grund);color:var(--zu-text)}
+.wer{flex:1;min-width:160px}
+.fahrt{font-weight:700}
+.zusatz{color:var(--text-leise);font-size:.86rem}
+.mail{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--dpv);text-decoration:none;padding:4px 8px;border-radius:6px;overflow-wrap:anywhere;min-width:0}
+.mail:hover{background:var(--dpv-hauch)}
+.aktion{margin-left:auto;display:flex;gap:6px}
+
+.kacheln{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.kachel{display:block;width:100%;text-align:left;border-radius:var(--radius-klein);padding:12px 14px;background:var(--flaeche);border:1px solid var(--linie);border-top:3px solid var(--dpv);color:var(--text);cursor:pointer}
+.kachel:hover{border-color:var(--dpv);background:var(--dpv-hauch)}
+.kachel.nur{border-top-color:var(--linie);background:var(--grund);color:var(--text-leise);cursor:default}
+.kachel .klein{font-size:.72rem;color:var(--text-leise);text-transform:uppercase;letter-spacing:.04em;display:block;font-weight:700}
+.kachel .gross{display:block;font-weight:800;font-size:1rem;margin:2px 0 4px}
+.kachel .zeile{font-size:.84rem;color:var(--text-leise);display:block}
+
+.a-pfad{font-size:.84rem;color:var(--text-leise);margin:0 0 6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.a-pfad button{background:none;border:0;padding:0;color:var(--dpv);cursor:pointer;font-size:inherit;font-weight:600}
+.a-pfad button:hover{text-decoration:underline}
+.a-unterzeile{color:var(--text-leise);margin:4px 0 0;font-size:.9rem}
+.seitenkopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.spaeter-tabelle{width:100%;border-collapse:collapse;font-size:.88rem}
+.spaeter-tabelle th{text-align:left;font-size:.74rem;text-transform:uppercase;color:var(--text-leise);padding:6px 8px;border-bottom:2px solid var(--linie)}
+.spaeter-tabelle td{padding:8px;border-bottom:1px solid var(--linie)}
+.flaeche-spaeter{border-style:dashed}
+
+/* VARIANTE 1: Gliederung links, Seite rechts */
+.v1{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:stretch}
+/* Die Seite rechts bestimmt die Höhe; die Gliederung passt sich an und rollt innen (mindestens 360px hoch) */
+.v1-baum{background:var(--flaeche);border-radius:var(--radius);padding:16px;border:1px solid var(--linie);contain:size;min-height:360px;margin-bottom:16px;display:flex;flex-direction:column}
+.v1-baum-rolle{flex:1;min-height:0;overflow:auto;margin:0 -6px;padding:0 6px}
+.v1-baum-kopf{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--linie)}
+.baum,.baum ul{list-style:none;margin:0;padding:0}
+.baum ul{margin-left:12px;padding-left:10px;border-left:2px solid var(--linie)}
+.knoten{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:var(--radius-klein);background:var(--grund);margin:5px 0;width:100%;text-align:left;border:1px solid transparent;color:var(--text)}
+button.knoten{cursor:pointer}
+button.knoten:hover{border-color:var(--dpv)}
+.knoten.verwalten{background:var(--flaeche);border-color:var(--linie)}
+.knoten.einspringen{border-left:4px solid var(--akzent)}
+.knoten.aktiv{background:var(--dpv-hauch);border-color:var(--dpv)}
+.knoten .kopfzeile{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.knoten .art{font-size:.68rem;color:var(--text-leise);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.knoten .name{font-weight:700;font-size:.94rem}
+.knoten.aktiv .name{color:var(--dpv)}
+.knoten .kurz{font-size:.78rem;color:var(--text-leise);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.knoten.nurname{background:transparent;padding:4px 11px;margin:2px 0}
+.knoten.nurname .name{font-weight:600;color:var(--text-leise);font-size:.88rem}
+.weitere summary{cursor:pointer;padding:7px 11px;border-radius:var(--radius-klein);background:var(--grund);color:var(--text-leise);font-size:.82rem;font-weight:600;margin:5px 0}
+.v1-zurueck{display:none}
+
+/* Dialoge */
+.dlg-hg{position:fixed;inset:0;background:rgba(27,37,50,.55);display:none;place-items:center;padding:16px;z-index:100;overflow-y:auto}
+.dlg-hg.offen{display:grid}
+.dlg{background:var(--flaeche);border-radius:var(--radius);max-width:580px;width:100%;box-shadow:0 20px 45px rgba(18,56,95,.22);border:1px solid var(--linie);overflow:hidden}
+.dlg-kopf{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--linie)}
+.dlg-x{background:transparent;border:0;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--text-leise);flex:none}
+.dlg-x:hover{background:var(--grund)}
+.dlg-inhalt{padding:18px 20px}
+.dlg-inhalt p{margin:0 0 10px}
+.dlg-fuss{padding:12px 20px;background:var(--grund);border-top:1px solid var(--linie);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.feld label{display:block;font-weight:600;margin-bottom:6px;font-size:.9rem}
+.feld .zeile{display:flex;gap:8px}
+.feld input{flex:1;min-width:0;font:inherit;padding:9px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein)}
+.feld input:focus{border-color:var(--dpv);outline:none;box-shadow:0 0 0 3px var(--dpv-hauch)}
+.hilfe{font-size:.82rem;color:var(--text-leise);margin:6px 0 0}
+.treffer{list-style:none;margin:12px 0 0;padding:6px;border:1px solid var(--linie);border-radius:var(--radius-klein)}
+.treffer-titel{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-leise);padding:4px 8px;font-weight:700}
+.treffer li.t{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:8px}
+.treffer li.t:hover{background:var(--dpv-hauch)}
+.treffer .k{margin-left:auto}
+.probe{margin-top:16px;padding-top:12px;border-top:1px dashed var(--linie);font-size:.82rem;color:var(--text-leise)}
+.probe code{background:var(--grund);padding:1px 5px;border-radius:5px;cursor:pointer}
+
+@media (max-width:991px){
+  .a-app{display:block}
+  .a-leiste{width:auto;height:auto;position:static;flex-direction:row;align-items:center;padding:8px 12px;border-right:0;border-bottom:1px solid var(--linie);gap:8px}
+  .a-marke span{display:none}
+  .a-nav ul{display:flex;gap:4px}
+  .a-navlink{padding:6px 8px;font-size:.86rem;gap:6px}
+  .a-konto{margin:0 0 0 auto;padding-top:0;border-top:0}
+  .a-konto span:not(.a-kreis){display:none}
+  .a-inhalt{padding:14px 12px}
+  .a-flaeche{padding:16px}
+  .e-band{position:static}
+  .v1{display:block}
+  .v1-baum{contain:none;min-height:0}
+  .v1-baum-rolle{overflow:visible}
+  .v1:not(.zeigt-seite) .v1-seite{display:none}
+  .v1.zeigt-seite .v1-baum{display:none}
+  .v1-zurueck{display:inline-flex;margin-bottom:12px}
+}
+/* Ergänzungen für den Entwurf zu #65 */
+.zahl{font-size:.8rem;color:var(--text-leise);font-weight:600}
+.k-rot{background:var(--ab-grund);color:var(--ab-text)}
+.k-rot:hover{background:#f0d2d2}
+.wahl{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.wahl label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein);cursor:pointer;background:var(--flaeche)}
+.wahl label:hover{border-color:var(--dpv)}
+.wahl input{margin-top:3px}
+.wahl input:checked + span{font-weight:700;color:var(--dpv)}
+.vorschau{background:var(--grund);border-radius:var(--radius-klein);padding:12px 14px;margin:4px 0 0}
+.vorschau p{margin:0 0 6px}
+.vorschau p:last-child{margin:0}
+.vorschau .frage{font-weight:700}
+.fehler-stelle{color:var(--ab-text);font-size:.88rem;margin:8px 0 0;display:flex;gap:8px;align-items:flex-start}
+.kurz-stapel{position:fixed;left:calc(var(--leiste) + (100vw - var(--leiste))/2);transform:translateX(-50%);bottom:18px;width:min(560px,calc(100vw - var(--leiste) - 32px));display:grid;gap:8px;z-index:90}
+.kurz{display:flex;gap:12px;align-items:flex-start;border-radius:var(--radius-klein);padding:12px 14px;background:var(--ok-grund);color:var(--ok-text);box-shadow:0 10px 28px rgba(18,56,95,.28)}
+.kurz p{margin:0;flex:1}
+@media (max-width:991px){ .kurz-stapel{left:12px;right:12px;transform:none;width:auto} }
+</style>
+</head>
+<body>
+<svg class="a-symbole" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4 0 4 1.6 4.5 4.5"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-schliessen" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-haken" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></symbol>
+  <symbol id="i-schloss" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-links" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+</svg>
+
+<details class="e-band" open>
+  <summary>Zielbild #65 · Steuerung (gehört nicht zur Seite)</summary>
+  <div class="e-band-rumpf">
+    <div class="e-zeile"><span class="label">Wer schaut</span>
+      <button type="button" data-ansicht="wanda-walhall" aria-pressed="true">Wanda · Seite Walhall</button>
+      <button type="button" data-ansicht="wanda-falken" aria-pressed="false">Wanda · Seite Sippe Falken</button>
+      <button type="button" data-ansicht="fiete-falken" aria-pressed="false">Fiete · Seite Sippe Falken</button>
+      <button type="button" data-ansicht="bruno-boreas" aria-pressed="false">Bruno · Seite Boreas</button>
+    </div>
+    <div class="e-zeile"><span class="label">Fälle</span>
+      <button type="button" data-fall="ohneleitung" aria-pressed="false">Falken ohne Gruppenleitung (P12)</button>
+      <button type="button" id="zuruecksetzen">Zurücksetzen</button>
+    </div>
+  </div>
+</details>
+
+<div class="a-app">
+  <aside class="a-leiste">
+    <div class="a-marke">
+      <svg class="lilie" viewBox="0 0 283.46 283.46" fill="currentColor" aria-hidden="true" focusable="false"><path d="M141.73,21.53h-.00c-66.27,0-120.19,53.92-120.19,120.19,0,66.27,53.92,120.19,120.19,120.19h.00c66.27,0,120.19-53.91,120.19-120.19,0-66.27-53.92-120.19-120.19-120.19Zm0,232.81h-.00c-62.09,0-112.61-50.52-112.61-112.61,0-62.09,50.51-112.61,112.61-112.61h.00c62.09,0,112.61,50.52,112.61,112.61,0,62.09-50.51,112.61-112.61,112.61Z"/><path d="M155.61,190.46l-9.06,.03c-2.62,10.00-3.43,20.39-4.81,30.61-1.37-10.21-2.18-20.60-4.81-30.61l-9.06-.03c-2.32,9.61-6.11,18.33-11.29,26.71-.44,.71-.90,1.45-.51,2.30,1.51,3.31,19.84,24.08,25.29,26.91,.12,.06,.25,.09,.40,.11,.14-.02,.28-.05,.40-.11,5.44-2.83,23.78-23.60,25.29-26.91,.38-.84-.07-1.59-.51-2.30-5.17-8.37-8.97-17.09-11.29-26.71Z"/><path d="M242.38,128.52c-8.97-33.53-51.14-31.04-67.80-4.92-8.89,13.93-12.39,29.08-15.36,45.14,4.56,.61,9.00,1.82,13.48,2.84,3.49-5.92,5.98-12.74,11.33-17.33,8.29-7.10,22.97-4.39,25.72,6.94,.96,3.98,.62,8.09,.39,12.13,7.45-.66,15.51-3.35,21.31-8.20,10.24-8.57,14.32-23.89,10.92-36.60Z"/><path d="M172.96,187.85c-4.50,.62-8.95,1.56-13.42,2.36,1.23,10.70,6.87,27.99,19.30,29.97,7.27,1.15,12.91-.59,16.85-7.10,1.95-3.22,1.96-6.53,2.41-10.15-15.26,4.50-20.02-1.50-25.15-15.07Z"/><path d="M128.29,168.94c3.48-.13,6.96-.36,10.45-.45-.08-12.40,.80-25.09,1.29-37.50,.74-18.86,.57-37.80,.57-56.67,0-1.86,.13-3.75,1.11-5.35,.98,1.59,1.11,3.49,1.11,5.35,0,18.87-.16,37.81,.57,56.67,.49,12.41,1.37,25.10,1.29,37.50,3.48,.09,6.96,.32,10.45,.45,1.39-9.73,3.13-19.14,6.36-28.46,8.44-24.34,24.06-46.15,9.07-72.06-6.81-11.78-19.25-21.52-28.88-31.13-9.63,9.60-22.06,19.34-28.88,31.13-14.98,25.90,.63,47.72,9.07,72.06,3.23,9.31,4.97,18.72,6.36,28.46Z"/><path d="M99.43,154.25c5.35,4.58,7.84,11.41,11.33,17.33,4.48-1.01,8.92-2.22,13.48-2.84-2.97-16.06-6.47-31.20-15.36-45.14-16.65-26.11-58.83-28.60-67.80,4.92-3.40,12.71,.68,28.02,10.92,36.60,5.80,4.85,13.86,7.54,21.31,8.20-.23-4.04-.57-8.15,.39-12.13,2.74-11.34,17.42-14.04,25.72-6.94Z"/><path d="M110.49,187.85c-5.13,13.57-9.88,19.57-25.15,15.07,.44,3.61,.46,6.92,2.41,10.15,3.94,6.51,9.58,8.26,16.85,7.10,12.43-1.98,18.06-19.26,19.30-29.97-4.46-.80-8.92-1.74-13.42-2.36Z"/><path d="M141.73,170.10c-15.85,.20-43.93,2.04-39.60,11.01,2.17,4.49,13.09,5.75,17.48,6.28,5.54,.67,13.61,1.30,22.12,1.43,8.50-.12,16.58-.75,22.12-1.43,4.38-.53,15.30-1.79,17.48-6.28,4.33-8.96-23.74-10.81-39.60-11.01Zm0,13.07c-15.24,0-27.61-1.68-27.61-3.77,0-2.08,12.36-3.77,27.61-3.77,15.24,0,27.61,1.68,27.61,3.77,0,2.08-12.36,3.77-27.61,3.77Z"/></svg>
+      <span>DPV Anmeldetool</span>
+    </div>
+    <nav class="a-nav" aria-label="Hauptnavigation">
+      <ul>
+        <li><a class="a-navlink" href="#" onclick="return false"><svg class="ic"><use href="#i-home"/></svg><span>Startseite</span></a></li>
+        <li><a class="a-navlink" href="#" onclick="return false" aria-current="page"><svg class="ic"><use href="#i-organisation"/></svg><span>Organisation</span></a></li>
+      </ul>
+    </nav>
+    <div class="a-konto"><span class="a-kreis" id="konto-kreis">W</span><span id="konto-name"></span></div>
+  </aside>
+
+  <main class="a-inhalt">
+    <details class="e-notiz">
+      <summary>Was in diesem Entwurf gilt (aufklappen)</summary>
+      <h4>Grundlage</h4>
+      <ul>
+        <li>Seite einer Organisation wie im Zielbild zu #93 (#189). Gezeigt wird nur der neue Abschnitt „Personen“ mit seinen Dialogen; Gliederung, Leitungen und „Organisationen darunter“ sind hier nur angedeutet.</li>
+        <li>Szenarien zu #65 vom 28.10.2026 (P1 bis P12, PV1 bis PV10, PG1 bis PG9). Nur erfundene Personen.</li>
+      </ul>
+      <h4>Abschnitt „Personen“</h4>
+      <ul>
+        <li>Nur die direkten Mitglieder dieser Organisation, mit Name, Fahrtenname und Mail (Frage 8).</li>
+        <li>„Person aufnehmen“, „Verschieben“ und „Austragen“ nur, wo erlaubt: Aufnehmen und Austragen in der eigenen Organisation (oder beim Einspringen), Verschieben nur von Stamm, Ring oder Bund in eine Organisation direkt darunter. Auf der Seite einer Gruppe, die eine eigene Leitung hat, sieht die Stammesleitung die Personen ohne Knöpfe (P2).</li>
+        <li>Austragen hat zwei Wahlmöglichkeiten, beim Bund nur „keiner Organisation mehr“ (Frage 17), und eine Vorschau vor der Bestätigung (Frage 11).</li>
+        <li>Nach einer Handlung erscheint unten eine kurze Meldung (#186).</li>
+      </ul>
+      <h4>Nicht in diesem Entwurf</h4>
+      <ul>
+        <li>„Austreten“ auf „Mein Profil“ folgt dem vorhandenen Zielbild von „Mein Profil“.</li>
+        <li>Verwaltete Personen kommen später mit #117 in denselben Abschnitt.</li>
+      </ul>
+    </details>
+    <div id="inhalt"></div>
+  </main>
+</div>
+<div class="kurz-stapel" id="kurz-stapel" aria-live="polite"></div>
+
+<!-- Dialog: Person aufnehmen -->
+<div class="dlg-hg" id="dlg-auf" role="dialog" aria-modal="true" aria-labelledby="auf-titel">
+  <div class="dlg">
+    <div class="dlg-kopf">
+      <div><h2 id="auf-titel">Person aufnehmen</h2><p class="a-unterzeile" id="auf-unter"></p></div>
+      <button type="button" class="dlg-x" data-zu="dlg-auf" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <form class="feld" id="auf-form" autocomplete="off">
+        <label for="auf-eingabe">Mail oder Benutzername</label>
+        <div class="zeile">
+          <input id="auf-eingabe" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button class="k k-haupt" type="submit">Suchen</button>
+        </div>
+        <p class="hilfe">Die Person muss sich schon einmal im Tool angemeldet haben. Gefunden wird sie nur über die genaue Mail oder den genauen Benutzernamen.</p>
+      </form>
+      <div id="auf-ergebnis"></div>
+      <div class="probe">Zum Ausprobieren (gehört nicht zur Seite):
+        <code data-probe="otto.ohne@example.org">otto.ohne@example.org</code> (noch nirgends Mitglied),
+        <code data-probe="finn.muster@example.org">finn.muster@example.org</code> (schon im eigenen Bereich),
+        <code data-probe="anton.muster@example.org">anton.muster@example.org</code> (außerhalb),
+        <code data-probe="niemand@example.org">niemand@example.org</code>.
+        Gesucht: <span id="auf-zaehler">0</span> von 20 ·
+        <button type="button" class="k k-neutral k-klein" id="auf-limit">Suchlimit zeigen</button>
+      </div>
+    </div>
+    <div class="dlg-fuss"><button type="button" class="k k-neutral" data-zu="dlg-auf">Abbrechen</button></div>
+  </div>
+</div>
+
+<!-- Dialog: Verschieben -->
+<div class="dlg-hg" id="dlg-ver" role="dialog" aria-modal="true" aria-labelledby="ver-titel">
+  <div class="dlg" style="max-width:500px">
+    <div class="dlg-kopf">
+      <div><h2 id="ver-titel">Verschieben</h2><p class="a-unterzeile" id="ver-unter"></p></div>
+      <button type="button" class="dlg-x" data-zu="dlg-ver" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <p>Wohin soll die Person?</p>
+      <ul class="wahl" id="ver-wahl"></ul>
+      <div id="ver-fehler"></div>
+    </div>
+    <div class="dlg-fuss">
+      <button type="button" class="k k-neutral" data-zu="dlg-ver">Abbrechen</button>
+      <button type="button" class="k k-haupt" id="ver-ok">Verschieben</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog: Austragen -->
+<div class="dlg-hg" id="dlg-aus" role="dialog" aria-modal="true" aria-labelledby="aus-titel">
+  <div class="dlg" style="max-width:540px">
+    <div class="dlg-kopf">
+      <h2 id="aus-titel">Austragen</h2>
+      <button type="button" class="dlg-x" data-zu="dlg-aus" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <ul class="wahl" id="aus-wahl"></ul>
+      <div class="vorschau" id="aus-vorschau" aria-live="polite"></div>
+    </div>
+    <div class="dlg-fuss">
+      <button type="button" class="k k-neutral" data-zu="dlg-aus">Abbrechen</button>
+      <button type="button" class="k k-gefahr" id="aus-ok">Austragen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- Erfundene Daten (Szenarien zu #65 vom 28.10.2026) ----------
+  var GRUND_E = {
+    boreas:{art:"Bund",name:"Pfadfinderbund Boreas",ober:null},
+    walhall:{art:"Stamm",name:"Stamm Walhall",ober:"boreas"},
+    falken:{art:"Gruppe",name:"Sippe Falken",ober:"walhall"},
+    woelfe:{art:"Gruppe",name:"Meute Wölfe",ober:"walhall"},
+    zugvoegel:{art:"Stamm",name:"Stamm Zugvögel",ober:"boreas"},
+    adler:{art:"Gruppe",name:"Sippe Adler",ober:"zugvoegel"}
+  };
+  var GRUND_P = {
+    bruno:{vor:"Bruno",nach:"Beispiel",fahrt:"Brummbär",mit:"boreas"},
+    bea:{vor:"Bea",nach:"Beispiel",fahrt:"Biene",mit:"boreas"},
+    wanda:{vor:"Wanda",nach:"Beispiel",fahrt:"Wirbelwind",mit:"walhall"},
+    willi:{vor:"Willi",nach:"Muster",fahrt:"Wiesel",mit:"walhall"},
+    wilma:{vor:"Wilma",nach:"Muster",fahrt:"Waldkauz",mit:"walhall"},
+    wim:{vor:"Wim",nach:"Muster",fahrt:"Wolke",mit:"walhall"},
+    fiete:{vor:"Fiete",nach:"Muster",fahrt:"Funke",mit:"falken"},
+    finn:{vor:"Finn",nach:"Muster",fahrt:"Flink",mit:"falken"},
+    wiebke:{vor:"Wiebke",nach:"Beispiel",fahrt:"Wichtel",mit:"woelfe"},
+    zora:{vor:"Zora",nach:"Beispiel",fahrt:"Zaunkönig",mit:"zugvoegel"},
+    ada:{vor:"Ada",nach:"Muster",fahrt:"Amsel",mit:"adler"},
+    anton:{vor:"Anton",nach:"Muster",fahrt:"Ameise",mit:"adler"},
+    otto:{vor:"Otto",nach:"Ohne",fahrt:"Otter",mit:null}
+  };
+  var GRUND_L = [["boreas","bruno"],["walhall","wanda"],["walhall","willi"],["falken","fiete"],["woelfe","wim"],["zugvoegel","zora"],["zugvoegel","bea"],["adler","ada"]];
+  var ANSICHT = {"wanda-walhall":["wanda","walhall"],"wanda-falken":["wanda","falken"],"fiete-falken":["fiete","falken"],"bruno-boreas":["bruno","boreas"]};
+  var ROLLE = {Bund:"Bundesleitung",Ring:"Ringleitung",Stamm:"Stammesleitung",Gruppe:"Gruppenleitung"};
+
+  var E, P, L, z;
+  function neu(){
+    E = JSON.parse(JSON.stringify(GRUND_E));
+    P = JSON.parse(JSON.stringify(GRUND_P));
+    Object.keys(P).forEach(function(id){ P[id].mail = id + "." + P[id].nach.toLowerCase() + "@example.org"; });
+    L = GRUND_L.map(function(x){ return {e:x[0], p:x[1]}; });
+    if (z && z.ohneleitung) L = L.filter(function(l){ return l.e!=="falken"; });
+  }
+  z = {ansicht:"wanda-walhall", ohneleitung:false, suchen:0, offen:null};
+  neu();
+
+  // ---------- Regeln ----------
+  function kinder(id){ return Object.keys(E).filter(function(k){ return E[k].ober === id; }); }
+  function ober(id){ var r=[], o=E[id].ober; while(o){ r.push(o); o=E[o].ober; } return r; }
+  function unter(id){ var r=[id]; kinder(id).forEach(function(k){ r=r.concat(unter(k)); }); return r; }
+  function leitungen(e){ return L.filter(function(l){ return l.e===e; }); }
+  function rollen(p){ return L.filter(function(l){ return l.p===p; }); }
+  function einspringer(e){ var a=ober(e); for (var i=0;i<a.length;i++){ if (leitungen(a[i]).length) return a[i]; } return null; }
+  function leitetSelbst(v,e){ return leitungen(e).some(function(l){ return l.p===v; }); }
+  function springtEin(v,e){ return !leitungen(e).length && einspringer(e) && leitetSelbst(v, einspringer(e)); }
+  function bereich(v){ var r={}; rollen(v).forEach(function(l){ unter(l.e).forEach(function(u){ r[u]=1; }); }); return r; }
+  // Rechte der Leitung dieser Organisation selbst: aufnehmen, verschieben, austragen (PK-17, PK-19, PK-21, EH-18, EH-19)
+  function eigeneLeitung(v,e){ return leitetSelbst(v,e) || springtEin(v,e); }
+  function pfadOk(m, e){ if (!m) return false; var basis = E[m].art==="Gruppe" ? E[m].ober : m;
+    return unter(basis).indexOf(e)>=0 || ober(basis).indexOf(e)>=0; }
+  function name(p){ return P[p].fahrt + " (" + P[p].vor + " " + P[p].nach + ")"; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function endendeRollen(p, verlassen, neuM){
+    return rollen(p).filter(function(l){ return unter(verlassen).indexOf(l.e)>=0 || !pfadOk(neuM, l.e); });
+  }
+
+  // ---------- Seite ----------
+  function personenHtml(v,e){
+    var darf = eigeneLeitung(v,e), d = E[e];
+    var leute = Object.keys(P).filter(function(p){ return P[p].mit===e; });
+    var knopf = darf ? '<span class="a-rechts"><button class="k k-haupt" type="button" onclick="aufnehmenAuf()"><svg class="ic"><use href="#i-plus"/></svg>Person aufnehmen</button></span>' : "";
+    var h = '<div class="a-flaeche"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-personen"/></svg></span><h2>Personen</h2><span class="zahl">'+leute.length+(leute.length===1?" Person":" Personen")+'</span>'+knopf+'</div>';
+    if (!leute.length) return h + '<p class="zusatz" style="margin:0">Zu '+esc(d.name)+' gehört direkt noch niemand.</p></div>';
+    h += '<ul class="leute">' + leute.map(function(p){
+      var q = P[p], rs = rollen(p).map(function(l){ return '<span class="marke m-rolle">'+ROLLE[E[l.e].art]+' '+esc(E[l.e].name)+'</span>'; }).join(" ");
+      var aktionen = "";
+      if (darf){
+        if (d.art!=="Gruppe" && kinder(e).length) aktionen += '<button class="k k-zweit k-klein" type="button" onclick="verschiebenAuf(\''+p+'\')">Verschieben</button>';
+        aktionen += '<button class="k k-rot k-klein" type="button" onclick="austragenAuf(\''+p+'\')">Austragen</button>';
+      }
+      return '<li class="person"><span class="av">'+esc(q.fahrt.charAt(0))+'</span>'+
+        '<span class="wer"><span class="fahrt">'+esc(q.fahrt)+'</span> <span class="zusatz">('+esc(q.vor+" "+q.nach)+')</span>'+(p===z.wer?' <span class="zusatz">· das bist du</span>':'')+(rs?'<br>'+rs:'')+'</span>'+
+        '<a class="mail" href="#" onclick="return false"><svg class="ic ic-klein"><use href="#i-mail"/></svg>'+esc(q.mail)+'</a>'+
+        (aktionen?'<span class="aktion">'+aktionen+'</span>':'')+'</li>';
+    }).join("") + '</ul>';
+    return h + '</div>';
+  }
+  function seiteHtml(v,e){
+    var d=E[e];
+    var pfad = ober(e).reverse().map(function(o){ return '<span>›</span> <button type="button">'+esc(E[o].name)+'</button>'; }).join(" ");
+    var marke = springtEin(v,e) ? '<span class="marke m-ein">Du springst ein</span>' : leitetSelbst(v,e) ? '<span class="marke m-rolle">Deine Rolle: '+ROLLE[d.art]+'</span>' : '';
+    var h = '<div class="a-flaeche"><p class="a-pfad"><span>Organisation</span> '+pfad+'</p><div class="seitenkopf"><div><h1>'+esc(d.name)+'</h1><p class="a-unterzeile">'+d.art+(d.ober?' in '+esc(E[d.ober].name):'')+'</p></div><div>'+marke+'</div></div></div>';
+    var ls = leitungen(e);
+    h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-person"/></svg></span><h2>Leitungen</h2><span class="marke m-spaeter">aus #189 bis #191, hier nur angedeutet</span></div>'+
+      (ls.length ? '<p class="zusatz" style="margin:0">'+ls.map(function(l){ return esc(name(l.p)); }).join(", ")+'</p>'
+        : '<p class="zusatz" style="margin:0">'+esc(d.name)+' hat keine '+ROLLE[d.art]+'. Bis eine benannt ist, springt die Leitung von '+esc(E[einspringer(e)].name)+' ein.</p>')+'</div>';
+    if (d.art!=="Gruppe") h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-organisation"/></svg></span><h2>Organisationen darunter</h2><span class="marke m-spaeter">aus #189, hier nur angedeutet</span></div><p class="zusatz" style="margin:0">'+kinder(e).map(function(k){ return esc(E[k].name); }).join(", ")+'</p></div>';
+    return h + personenHtml(v,e);
+  }
+  function zeichne(){
+    var a = ANSICHT[z.ansicht]; z.wer = a[0]; z.seite = a[1];
+    document.getElementById("konto-kreis").textContent = P[z.wer].fahrt.charAt(0);
+    document.getElementById("konto-name").textContent = name(z.wer);
+    var ziel = document.getElementById("inhalt");
+    if (!bereich(z.wer)[z.seite]){ ziel.innerHTML = '<div class="meldung mel-fehler"><span class="ic-kasten">!</span><p><b>Nicht gefunden</b>Diese Ansicht ist nach der letzten Änderung nicht mehr erreichbar. Oben „Zurücksetzen“ stellt den Anfang wieder her.</p></div>'; return; }
+    ziel.innerHTML = seiteHtml(z.wer, z.seite);
+  }
+
+  // ---------- Kurze Meldung (#186) ----------
+  function kurz(t){
+    var st = document.getElementById("kurz-stapel");
+    var el = document.createElement("div"); el.className = "kurz";
+    el.innerHTML = '<span class="ic-kasten"><svg class="ic"><use href="#i-haken"/></svg></span><p><span class="sr-nur">Erfolg: </span>'+esc(t)+'</p><button type="button" class="dlg-x" aria-label="Meldung schließen"><svg class="ic ic-klein"><use href="#i-schliessen"/></svg></button>';
+    el.querySelector("button").onclick = function(){ el.remove(); };
+    st.appendChild(el); while (st.children.length > 3) st.firstChild.remove();
+    setTimeout(function(){ el.remove(); }, 6000);
+  }
+
+  // ---------- Dialoge ----------
+  function auf(id){ z.offen=id; document.getElementById(id).classList.add("offen"); var f=document.getElementById(id).querySelector("input,button.k-haupt,button.k-gefahr"); if(f) f.focus(); }
+  function zu(id){ document.getElementById(id).classList.remove("offen"); z.offen=null; }
+  document.querySelectorAll("[data-zu]").forEach(function(b){ b.onclick = function(){ zu(b.dataset.zu); }; });
+  document.addEventListener("keydown", function(ev){ if (ev.key==="Escape" && z.offen) zu(z.offen); });
+
+  // Aufnehmen (PK-17, PK-18, PK-24, Frage 12)
+  window.aufnehmenAuf = function(){
+    document.getElementById("auf-unter").textContent = "in " + E[z.seite].name;
+    document.getElementById("auf-eingabe").value = ""; document.getElementById("auf-ergebnis").innerHTML = "";
+    auf("dlg-auf");
+  };
+  function meldungIn(box, art, t){ box.innerHTML = '<div class="meldung '+art+'" style="margin:12px 0 0"><span class="ic-kasten">'+(art==="mel-warn"?"!":'<svg class="ic"><use href="#i-info"/></svg>')+'</span><p>'+esc(t)+'</p></div>'; }
+  document.getElementById("auf-form").onsubmit = function(ev){
+    ev.preventDefault();
+    var box = document.getElementById("auf-ergebnis"), q = document.getElementById("auf-eingabe").value.trim().toLowerCase();
+    if (!q) return;
+    if (z.suchen >= 20){ meldungIn(box,"mel-warn","Du hast in kurzer Zeit sehr oft gesucht. Bitte versuche es in 23 Minuten noch einmal."); return; }
+    z.suchen++; document.getElementById("auf-zaehler").textContent = z.suchen;
+    var p = Object.keys(P).filter(function(k){ return P[k].mail===q || k===q; })[0];
+    if (!p){ meldungIn(box,"mel-info","Kein Konto gefunden. Die Person muss sich zuerst einmal im Tool anmelden."); return; }
+    var m = P[p].mit;
+    if (m && bereich(z.wer)[m]){ meldungIn(box,"mel-info", name(p)+" ist schon Mitglied in "+E[m].name+"."); return; }
+    if (m){ meldungIn(box,"mel-warn","Diese Person gehört schon zu einer anderen Organisation. Sie kann dort selbst austreten oder ihre bisherige Leitung bitten, sie auszutragen."); return; }
+    box.innerHTML = '<ul class="treffer"><li class="treffer-titel">Treffer</li><li class="t"><span class="av">'+esc(P[p].fahrt.charAt(0))+'</span><span><span class="fahrt">'+esc(P[p].fahrt)+'</span> <span class="zusatz">('+esc(P[p].vor+" "+P[p].nach)+')</span></span><button class="k k-haupt k-klein" type="button" id="auf-ok">Aufnehmen</button></li></ul>';
+    document.getElementById("auf-ok").onclick = function(){ P[p].mit = z.seite; zu("dlg-auf"); zeichne(); kurz(name(p)+" gehört jetzt zu "+E[z.seite].name+"."); };
+  };
+  document.getElementById("auf-limit").onclick = function(){ z.suchen = 20; document.getElementById("auf-zaehler").textContent = 20; };
+  document.querySelectorAll("[data-probe]").forEach(function(c){ c.onclick = function(){ document.getElementById("auf-eingabe").value = c.dataset.probe; }; });
+
+  // Verschieben (PK-19, PK-25, Frage 6 und 12)
+  window.verschiebenAuf = function(p){
+    document.getElementById("ver-unter").textContent = name(p) + " aus " + E[z.seite].name;
+    document.getElementById("ver-wahl").innerHTML = kinder(z.seite).map(function(k,i){
+      return '<li><label><input type="radio" name="ver-ziel" value="'+k+'"'+(i===0?' checked':'')+'><span>'+esc(E[k].name)+'</span></label></li>'; }).join("");
+    document.getElementById("ver-fehler").innerHTML = "";
+    document.getElementById("ver-ok").onclick = function(){
+      var ziel = document.querySelector('input[name="ver-ziel"]:checked').value;
+      var weg = rollen(p).filter(function(l){ return !pfadOk(ziel, l.e); });
+      if (weg.length){
+        document.getElementById("ver-fehler").innerHTML = '<p class="fehler-stelle" role="alert"><svg class="ic ic-klein"><use href="#i-schliessen"/></svg><span>'+esc(name(p))+' ist '+weg.map(function(l){ return ROLLE[E[l.e].art]+" von "+E[l.e].name; }).join(", ")+'. Diese Rolle passt nicht zu '+esc(E[ziel].name)+'. Sie kann zuerst beendet werden.</span></p>';
+        return;
+      }
+      P[p].mit = ziel; zu("dlg-ver"); zeichne(); kurz(name(p)+" gehört jetzt zu "+E[ziel].name+".");
+    };
+    auf("dlg-ver");
+  };
+
+  // Austragen (PK-21, Frage 11 und 17)
+  window.austragenAuf = function(p){
+    var e = z.seite, d = E[e], darueber = d.ober;
+    var wahl = darueber ? [["ober", name(p)+" gehört danach direkt zu "+E[darueber].name], ["keine", name(p)+" gehört danach keiner Organisation mehr an"]]
+      : [["keine", name(p)+" gehört danach keiner Organisation mehr an"]];
+    document.getElementById("aus-titel").textContent = name(p) + " aus " + d.name + " austragen?";
+    document.getElementById("aus-wahl").innerHTML = wahl.map(function(w,i){
+      return '<li><label><input type="radio" name="aus-ziel" value="'+w[0]+'"'+(i===0?' checked':'')+'><span>'+esc(w[1])+'</span></label></li>'; }).join("");
+    function vorschau(){
+      var w = document.querySelector('input[name="aus-ziel"]:checked').value, neuM = w==="ober" ? darueber : null;
+      var enden = endendeRollen(p, e, neuM), h = '<p class="frage">'+esc(name(p))+' aus '+esc(d.name)+' austragen? '+(neuM ? 'Danach gehört '+esc(name(p))+' direkt zu '+esc(E[neuM].name)+'.' : 'Danach gehört '+esc(name(p))+' keiner Organisation mehr an.')+'</p>';
+      if (enden.length) h += '<p>Damit enden diese Rollen: '+enden.map(function(l){ return esc(ROLLE[E[l.e].art]+" von "+E[l.e].name); }).join(", ")+'.</p>';
+      enden.forEach(function(l){ if (leitungen(l.e).length===1){
+        var s = einspringer(l.e);
+        h += '<p>'+(E[l.e].art==="Bund" || !s ? 'Danach hat '+esc(E[l.e].name)+' keine Bundesleitung mehr, und niemand springt ein.'
+          : 'Danach hat '+esc(E[l.e].name)+' keine '+ROLLE[E[l.e].art]+' mehr. Bis eine neue benannt ist, springt die Leitung von '+esc(E[s].name)+' ein.')+'</p>'; } });
+      h += '<p>Bestehende Anmeldungen bleiben.</p>';
+      document.getElementById("aus-vorschau").innerHTML = h;
+    }
+    document.querySelectorAll('input[name="aus-ziel"]').forEach(function(r){ r.onchange = vorschau; });
+    vorschau();
+    document.getElementById("aus-ok").onclick = function(){
+      var w = document.querySelector('input[name="aus-ziel"]:checked').value, neuM = w==="ober" ? darueber : null;
+      var enden = endendeRollen(p, e, neuM);
+      L = L.filter(function(l){ return enden.indexOf(l)<0; });
+      P[p].mit = neuM; zu("dlg-aus"); zeichne(); kurz(name(p)+" ist aus "+d.name+" ausgetragen.");
+    };
+    auf("dlg-aus");
+  };
+
+  // ---------- Steuerung ----------
+  function druecke(sel, wert, attr){ document.querySelectorAll(sel).forEach(function(b){ b.setAttribute("aria-pressed", b.dataset[attr]===wert ? "true":"false"); }); }
+  document.querySelectorAll("[data-ansicht]").forEach(function(b){ b.onclick = function(){ z.ansicht = b.dataset.ansicht; druecke("[data-ansicht]", z.ansicht, "ansicht"); zeichne(); }; });
+  document.querySelector('[data-fall="ohneleitung"]').onclick = function(){
+    z.ohneleitung = !z.ohneleitung; this.setAttribute("aria-pressed", z.ohneleitung ? "true":"false");
+    if (z.ohneleitung && z.ansicht==="fiete-falken"){ z.ansicht="wanda-falken"; druecke("[data-ansicht]", z.ansicht, "ansicht"); }
+    neu(); zeichne(); };
+  document.getElementById("zuruecksetzen").onclick = function(){ document.querySelectorAll(".dlg-hg.offen").forEach(function(d){ d.classList.remove("offen"); }); z.offen=null; z.ohneleitung=false; z.suchen=0; document.getElementById("auf-zaehler").textContent=0;
+    document.querySelector('[data-fall="ohneleitung"]').setAttribute("aria-pressed","false"); neu(); zeichne(); };
+  zeichne();
+})();
+</script>
+</body>
+</html>

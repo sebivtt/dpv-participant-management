@@ -22,6 +22,8 @@ from units.models import Unit
 
 R = Role.Kind
 U = Unit.Kind
+# Der Knopf „… benennen“; seit #285 hat auch der Abschnitt „Personen“ einen Knopf in seiner Überschrift.
+APPOINT_BUTTON = '[aria-labelledby="h-leitungen"] .a-flaeche-aktion'
 
 
 def _walhall_for_erika() -> dict:
@@ -62,9 +64,9 @@ def test_am_pc_nur_mit_der_tastatur_benennen(pc):
     pc.goto(f"{BASE}/organisation/{units['falken'].key}/")
     assert run_axe(pc) == []
 
-    stations = _stations_to_element(pc, ".a-flaeche-aktion", steps=40)
+    stations = _stations_to_element(pc, APPOINT_BUTTON, steps=40)
     _all_visible(stations)
-    expect(pc.locator(".a-flaeche-aktion")).to_have_text("Gruppenleitung benennen")
+    expect(pc.locator(APPOINT_BUTTON)).to_have_text("Gruppenleitung benennen")
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{BASE}/organisation/{units['falken'].key}/benennen/")
@@ -86,7 +88,7 @@ def test_am_pc_nur_mit_der_tastatur_benennen(pc):
 
     pc.wait_for_url(f"{BASE}/organisation/{units['falken'].key}/")
     expect(pc.locator(".a-kurz")).to_contain_text("Flink (Finn Falke) ist jetzt Gruppenleitung von Sippe Falken.")
-    expect(pc.locator(".a-leitung")).to_contain_text("Flink")
+    expect(pc.locator('[aria-labelledby="h-leitungen"] .a-leitung')).to_contain_text("Flink")
     expect(pc.locator(".a-orga-kopf")).not_to_contain_text("Du springst ein")
     # Erst prüfen, wenn die kurze Meldung fertig eingeblendet ist; mitten im Einblenden ist sie halb durchsichtig.
     pc.wait_for_function("() => document.getAnimations().every(animation => animation.playState !== 'running')")
@@ -138,9 +140,9 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     units = _walhall_for_erika()
     handy.goto(f"{BASE}/organisation/{units['falken'].key}/")
     _no_side_scroll(handy)
-    expect(handy.locator(".a-flaeche-aktion")).to_be_visible()
+    expect(handy.locator(APPOINT_BUTTON)).to_be_visible()
 
-    stations = _stations_to_element(handy, ".a-flaeche-aktion", steps=40)
+    stations = _stations_to_element(handy, APPOINT_BUTTON, steps=40)
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{BASE}/organisation/{units['falken'].key}/benennen/")

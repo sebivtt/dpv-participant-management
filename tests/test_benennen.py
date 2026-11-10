@@ -115,7 +115,8 @@ def short_notices(response) -> list[str]:
 
 def appoint_button(user, unit) -> str | None:
     """Die Beschriftung des Knopfs „… benennen“ auf der Seite der Organisation, oder None."""
-    root = page_tree(user, unit_address(unit))
+    # Seit #285 hat auch der Abschnitt „Personen“ einen Knopf; gemeint ist der unter „Leitungen“.
+    root = _one(_by_tag(page_tree(user, unit_address(unit)), "section", aria_labelledby="h-leitungen"))
     links = _all(root, lambda e: "a-flaeche-aktion" in _classes(e))
     if not links:
         return None
@@ -152,7 +153,8 @@ def test_auf_der_leseseite_und_ausserhalb_gibt_es_keinen_knopf(org):
 
 
 def test_der_knopf_steht_auch_auf_der_uebersicht_bei_der_eigenen_organisation(org):
-    root = page_tree(org.walhall_leitung)
+    # Seit #285 hat auch der Abschnitt „Personen“ einen Knopf; gemeint ist der unter „Leitungen“.
+    root = _one(_by_tag(page_tree(org.walhall_leitung), "section", aria_labelledby="h-leitungen"))
 
     link = _one(_all(root, lambda e: "a-flaeche-aktion" in _classes(e)))
     assert _visible_text(link) == "Stammesleitung benennen"

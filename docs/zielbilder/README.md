@@ -80,7 +80,7 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 
 1. **Immer zugeklappt:** Organisationen ohne Zugriff stehen immer unter „… weitere ohne Zugriff“, auch eine einzelne; das Zielbild klappt erst ab drei zu (Nachklärung, N5).
 2. **Nur Anzeige in #189:** Der Knopf „… benennen“ mit seinem Dialog kam mit #190 (Abweichungen unten); „Entfernen“ und „Rolle abgeben“ kamen mit #191.
-3. **Nicht Teil von #93, nur Ausblick im Zielbild:** der Abschnitt „Personen“ (#117, #65), die Sicht der Verbandsleitung (#94), das dunkle Steuerband und der gelbe Hinweiskasten.
+3. **Nicht Teil von #93, nur Ausblick im Zielbild:** der Abschnitt „Personen“ (seit #285 nach seinem eigenen Zielbild, unten), die Sicht der Verbandsleitung (#94), das dunkle Steuerband und der gelbe Hinweiskasten.
 4. **Rolle als Rollenmarke:** Hinter jeder Leitung steht die Rolle als Rollenmarke wie auf „Mein Profil“, nicht als runde Pille (Sebastian, 28.10.2026, bei der Umsetzung von #189).
 5. **„Organisationen darunter“ als Rollenkachel:** wie die Kacheln auf „Mein Profil“, klein die Art als Rollenmarke, groß der Name, darunter die Leitung; ohne Zugriff grau, ohne blauen Streifen und nicht anklickbar (Sebastian, 28.10.2026, bei der Umsetzung von #189). Im Zielbild steht die Art in Großbuchstaben.
 6. **Übersicht:** Am PC steht neben der Gliederung die oberste Organisation, die man selbst leitet; am Handy nur die Gliederung. Für Vorleseprogramme heißt die Seite „Organisation“.
@@ -96,3 +96,20 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 4. **Ohne Skript keine Vorschläge beim Tippen;** „Suchen“ geht.
 5. **Kein Kasten „Zum Ausprobieren“** und kein Zähler der Suchen: Sie gehören wie das Steuerband nicht zur Seite.
 6. **„Benennen“ als weißer Knopf mit feinem Rand** (wie „Verwerfen“ auf „Mein Profil“) statt hellblau; ein hellblauer Knopf ist kein entschiedener Baustein.
+
+## Personen
+
+- **Datei:** [`personen.html`](personen.html)
+- **Stand:** 28.10.2026, Fassung 2: der grobe Entwurf der Klärungs-Session zu #65 mit Sebastians Änderung, dass „Austragen“ wie „Verschieben“ eine zarte Fläche bekommt, rot in den Farben der Fehlermeldung. Übernommen in #285 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981320)), eingespielt mit #285 aus dem Zweig `claude/personen-65` (`f0279b1`).
+- **Prüfsumme (SHA-256):** `93e97f1d2ec233ebe02c029e7da3f1c61aa5da9e0cc617b9b8aa726c50f9c79a`
+- **Inhalt der Datei:** nur erfundene Personen und Organisationen (Pfadfinderbund Boreas, Wanda, Finn …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen Personen und Fällen um; ins Tool ist davon nichts übernommen.
+- **Orientierung, keine Anforderung.** Geklärt in #65 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981714), N1 bis N5), umgesetzt in #285 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766975648)); „Austragen“ und „Verschieben“ kommen mit #286 und #287.
+
+### Abweichungen des Abschnitts „Personen“ und des Dialogs „Person aufnehmen“ vom Zielbild (#285)
+
+1. **Noch ohne „Verschieben“ und „Austragen“:** Sie kommen mit #287 und #286 in dieselbe Liste; der Baustein hat dafür rechts Platz für mehrere Knöpfe.
+2. **Person als Baustein „Person in einer Liste“:** wie die Leitungen darüber (#189), die Rollen als Rollenmarken statt runder Pillen, die Mail in der zweiten Zeile rechts statt neben dem Namen.
+3. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „… benennen“ (#190); „Abbrechen“ und × führen zur Seite der Organisation zurück.
+4. **„Aufnehmen“ als weißer Knopf mit feinem Rand** wie „Benennen“ in der Trefferliste (#190) statt dunkelblau.
+5. **„Kein Konto gefunden …“ als Warnung** wie im Dialog „… benennen“ (#190) statt als Information, damit dieselbe Meldung überall gleich aussieht.
+6. **Kein Kasten „Zum Ausprobieren“** und kein Zähler der Suchen: Sie gehören wie das Steuerband nicht zur Seite.

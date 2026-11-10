@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from access.addresses import checks_rights, without_personal_data
-from access.rights import SUGGESTION_MIN, WILDCARDS, Rights
+from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from core.forms import AccountSearchForm, FederationSearchForm, PatternForm
@@ -28,6 +28,7 @@ from units.organisation import (
     Node,
     Organisation,
     Page,
+    admission,
     federation_done,
     hits,
 )
@@ -236,6 +237,7 @@ def _appoint_page(request: HttpRequest, found: Unit, form: AccountSearchForm | N
         "form": form or AccountSearchForm(),
         "search_action": reverse("organisation_search", args=[found.key]),
         "suggestions_href": reverse("organisation_suggestions", args=[found.key]),
+        "help_text": texts.APPOINT_HELP,
         "appoint_action": reverse("organisation_appoint", args=[found.key]),
         "hits": hits or [],
         "hits_title": hits_title,
@@ -352,6 +354,92 @@ def _after_removal(request: HttpRequest, found: Unit) -> str:
     if rights.sees_organisation():
         return reverse("organisation")
     return reverse("profile")
+
+
+# Person aufnehmen (#285, Teil 1 von #65). Wie beim Benennen hat der Dialog eine eigene Adresse unter
+# der Seite der Organisation, damit er auch ohne Skript geht: „Person aufnehmen“ führt dorthin,
+# „Suchen“ und „Aufnehmen“ schicken Formulare dorthin. Vorschläge beim Tippen gibt es nicht (#65 N3).
+# Die Organisation kommt immer aus der Adresse, nie aus dem Formular. Wer dort nicht aufnehmen darf,
+# bekommt auf beiden Adressen „nicht gefunden“, auch per Skript (PK-23, PK-26, EP-08).
+ADMIT_ROWS = ("PK-13", "PK-16", "PK-17", "PK-18", "PK-23", "PK-24", "PK-26", "EP-08", "EH-18")
+
+
+def _admitting(request: HttpRequest, unit: str) -> Unit:
+    """Die Organisation aus der Adresse, wenn die Person dort aufnehmen darf; sonst „nicht gefunden“."""
+    rights = request.rights
+    return rights.entry(Unit.objects.all(), unit, allowed=rights.may_admit)
+
+
+def _admit_page(request: HttpRequest, found: Unit, form: FederationSearchForm | None = None, hits_found=None,
+                notice=None) -> HttpResponse:
+    """Die Seite der Organisation mit offenem Dialog „Person aufnehmen“; `notice` ist (Art, Text) einer Meldung."""
+    shown = Organisation(request.rights, request.user)
+    page = shown.page(found)
+    dialog = {
+        "title": texts.ADMIT_TITLE,
+        "subtitle": texts.ADMIT_FOR % {"unit": unit_label(found)},
+        "close_href": reverse("organisation_unit", args=[found.key]),
+        "form": form or FederationSearchForm(),
+        "help_text": texts.ADMIT_HELP,
+        "search_action": reverse("organisation_admit_search", args=[found.key]),
+        "appoint_action": reverse("organisation_admit", args=[found.key]),
+        "action_label": texts.ADMIT_BUTTON,
+        "hits": hits_found or [],
+        "hits_title": texts.HITS_TITLE if hits_found else "",
+        "notice": notice,
+    }
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": page,
+                                                       "start": False, "dialog": dialog})
+
+
+@checks_rights(*ADMIT_ROWS)
+def organisation_admit(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Person aufnehmen“ öffnen und eine Person mit Konto als Mitglied aufnehmen (PK-17).
+
+    Lesend zeigt die Adresse den leeren Dialog. Ein Formular mit der Kennung einer Person nimmt sie
+    auf; die Mitgliedschaft gilt sofort, ohne Zustimmung und ohne Nachricht. Danach geht es zurück
+    zur Seite der Organisation mit einer kurzen Meldung (#186). Lehnt die Rechteprüfung ab, bleibt
+    der Dialog offen und nennt den Grund an der Stelle der Handlung.
+    """
+    found = _admitting(request, unit)
+    if request.method == "POST":
+        done, text = request.rights.admit(found, request.POST.get("person"))
+        if done:
+            messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        return _admit_page(request, found, notice=("warning", text))
+    if request.method not in READING:
+        raise Http404
+    return _admit_page(request, found)
+
+
+@checks_rights(*ADMIT_ROWS)
+def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
+    """„Suchen“ im Dialog „Person aufnehmen“: über die genaue bestätigte Mail oder den genauen Benutzernamen (PK-13).
+
+    Zählt zum selben Suchlimit wie das Benennen (PK-24, PG7); leer und nur Platzhalter zeigen
+    nichts und zählen nicht (PK-15). Lesend führt die Adresse zum leeren Dialog.
+    """
+    found = _admitting(request, unit)
+    if request.method != "POST":
+        if request.method not in READING:
+            raise Http404
+        return redirect("organisation_admit", unit=found.key)
+    form = FederationSearchForm(request.POST)
+    if not form.is_valid():
+        return _admit_page(request, found, form=form)
+    text = form.cleaned_data["suche"].strip()
+    if not text or set(text) <= WILDCARDS:
+        return _admit_page(request, found, form=form)
+    rights = request.rights
+    wait = rights.count_search()
+    if wait:
+        return _admit_page(request, found, form=form, notice=("error", texts.SEARCH_LIMIT % {"minutes": wait}))
+    entries = rights.find_accounts(text)
+    if not entries:
+        return _admit_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
+    hits_found, notice = admission(entries, found)
+    return _admit_page(request, found, form=form, hits_found=hits_found, notice=notice)
 
 
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
@@ -569,10 +657,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "flaechenkopf": {
-        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190, 94, 218],
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190, 94, 218, 285],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
                      "stehen, etwa „Gruppenleitung benennen“. Der Titel darf ein Link sein, etwa der eigene Bund "
-                     "auf der Seite „Verband“."),
+                     "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
+                     "„4 Personen“."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "rollenkachel": {
@@ -596,10 +685,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Leitung in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191],
-        "purpose": _("Eine Leitung mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, darunter "
-                     "links die Rolle und rechts die Mail, wo die Seite sie zeigen darf. Wo man Leitungen entfernen "
-                     "darf, steht ganz rechts der Knopf „Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
+        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285],
+        "purpose": _("Eine Leitung oder Person mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, "
+                     "darunter links die Rollen und rechts die Mail, wo die Seite sie zeigen darf. Eine Leitung hat "
+                     "genau eine Rolle, eine Person im Abschnitt „Personen“ keine, eine oder mehrere "
+                     "Leitungsrollen. Ganz rechts ist Platz für Knöpfe; wo man Leitungen entfernen darf, steht dort "
+                     "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“."),
         "pages": [_("Organisation")],
     },
     "knopfentfernen": {
@@ -624,10 +715,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
-        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190],
+        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190, 285],
         "purpose": _("Vorschläge oder Treffer einer Suche: Kreis, Fahrtenname und Name, darunter die Organisation, "
                      "rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders "
-                     "Mitglied ist, eine Warnung."),
+                     "Mitglied ist, eine Warnung. Im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem "
+                     "Knopf „Aufnehmen“."),
         "pages": [_("Organisation")],
     },
     "profilkreis": {
@@ -706,7 +798,17 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
-    return {"outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
+    # Personen im Abschnitt „Personen“ (#285): mit zwei Rollen, mit einer und ohne Rolle.
+    persons = [
+        Lead(name="Wirbelwind", extra="Wanda Beispiel", role="", mail="wanda.beispiel@example.org", locked=False,
+             is_self=True, role_names=["Stammesleitung Stamm Walhall", "Gruppenleitung Sippe Falken"]),
+        Lead(name="Wolke", extra="Wim Muster", role="", mail="wim.muster@example.org", locked=False, is_self=False,
+             role_names=["Gruppenleitung Meute Wölfe"]),
+        Lead(name="Wilma Muster", extra="", role="", mail="wilma.muster@example.org", locked=False, is_self=False),
+    ]
+    admit_hits = [Hit(key="", name="Otter", extra="Otto Ohne", place="", note="", warning="", hint="")]
+    return {"persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
+            "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
             "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
