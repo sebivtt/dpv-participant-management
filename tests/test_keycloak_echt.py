@@ -112,21 +112,40 @@ def test_konto_ohne_mail_wird_wirklich_abgelehnt(client, browser):
     assert not User.objects.exists()
 
 
+def _send_logout_form(client, browser):
+    """Meldet im Tool ab und schickt das Formular der kurzen Seite an Keycloak, wie der Browser (#280)."""
+    page = client.post("/abmelden/").content.decode()
+    action = html.unescape(re.search(r'<form[^>]*action="([^"]*openid-connect[^"]*)"', page).group(1))
+    fields = {html.unescape(name): html.unescape(value)
+              for name, value in re.findall(r'<input type="hidden" name="([^"]+)" value="([^"]*)"', page)}
+    return browser.post(action, data=fields, allow_redirects=False)
+
+
 def test_nach_dem_abmelden_fragt_keycloak_wieder_nach_dem_passwort(client, browser):
     _sign_in(client, browser, "erika.testfrau", "testpasswort-erika")
     # Gegenprobe: Ohne Abmelden bei Keycloak käme Erika jetzt ohne Passwort durch, denn
     # Keycloak leitet sofort zurück, statt das Formular zu zeigen.
     assert _open_keycloak(client, browser).status_code == 302
 
-    response = client.post("/abmelden/")
-    keycloak_logout = browser.get(response["Location"], allow_redirects=False)
+    keycloak_logout = _send_logout_form(client, browser)
 
-    # Keycloak meldet ohne Rückfrage ab und schickt zurück zur Login-Seite des Tools.
+    # Keycloak nimmt das Formular an (#280), meldet ohne Rückfrage ab und schickt zurück zur Login-Seite des Tools.
     assert keycloak_logout.status_code == 302, keycloak_logout.text[:2000]
     assert keycloak_logout.headers["Location"] == f"http://{TOOL_HOST}/anmelden/"
     page = _open_keycloak(client, browser)
     assert page.status_code == 200
     assert 'name="password"' in page.text
+
+
+def test_nach_abgelaufener_sitzung_fragt_keycloak_beim_abmelden_einmal_nach(client, browser):
+    # #280, G1: Ohne Token nimmt Keycloak das Formular an und fragt nach, statt abzulehnen.
+    _sign_in(client, browser, "erika.testfrau", "testpasswort-erika")
+    client.cookies.pop(settings.SESSION_COOKIE_NAME)
+
+    keycloak_logout = _send_logout_form(client, browser)
+
+    assert keycloak_logout.status_code == 200, keycloak_logout.status_code
+    assert 'name="confirmLogout"' in keycloak_logout.text, keycloak_logout.text[:2000]
 
 
 def test_registrierung_bei_keycloak_und_danach_sofort_angemeldet(client, browser):

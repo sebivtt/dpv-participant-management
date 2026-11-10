@@ -23,7 +23,7 @@ from django.conf import settings as django_settings
 
 from tests.keycloak_fake import RETURN, start_login
 from tests.localhost_browser import BrowserOnLocalhost
-from tests.test_keycloak_echt import TOOL_HOST, _back_to_tool, _form_action, _open_keycloak
+from tests.test_keycloak_echt import TOOL_HOST, _back_to_tool, _form_action, _open_keycloak, _send_logout_form
 from tests.test_testrealm_datei import PLACEHOLDER, TEST_REALM_FILE
 
 pytestmark = pytest.mark.django_db
@@ -260,8 +260,7 @@ def test_abmelden_fuehrt_zurueck_zur_login_seite_des_tools(client, browser, admi
     admin.set_password("ohne.nachname", password)
     _sign_in(client, browser, "ohne.nachname", password)
 
-    response = client.post("/abmelden/")
-    keycloak_logout = browser.get(response["Location"], allow_redirects=False)
+    keycloak_logout = _send_logout_form(client, browser)  # seit #280 per Formular statt Adresse
 
     assert keycloak_logout.status_code == 302, keycloak_logout.text[:2000]
     assert keycloak_logout.headers["Location"] == f"{TOOL}/anmelden/"

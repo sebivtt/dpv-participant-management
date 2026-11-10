@@ -10,7 +10,6 @@ import sys
 import threading
 from datetime import timedelta
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 import pytest
 from allauth.core.exceptions import ImmediateHttpResponse
@@ -204,13 +203,13 @@ def test_abmelden_beendet_die_sitzung_und_meldet_bei_keycloak_ab(client, keycloa
 
     response = client.post("/abmelden/")
 
-    assert response.status_code == 302
-    target = urlparse(response["Location"])
-    assert f"{target.scheme}://{target.netloc}{target.path}" == keycloak.endpoints["end_session_endpoint"]
-    query = {key: values[0] for key, values in parse_qs(target.query).items()}
+    # Seit #280 per Formular statt über eine Adresse; den Aufbau prüft tests/test_abmelden.py.
     # Mit dem Kennungs-Token fragt Keycloak nicht nach, ob man sich wirklich abmelden will.
-    assert query["id_token_hint"] == id_token
-    assert query["post_logout_redirect_uri"] == "http://testserver/anmelden/"
+    assert response.status_code == 200
+    page = response.content.decode()
+    assert f'action="{keycloak.endpoints["end_session_endpoint"]}"' in page
+    assert f'name="id_token_hint" value="{id_token}"' in page
+    assert 'name="post_logout_redirect_uri" value="http://testserver/anmelden/"' in page
     assert not Session.objects.exists()
     assert client.get("/").status_code == 302
     assert HINT_EXPIRED not in _login_page(client)

@@ -15,16 +15,24 @@ from django.contrib import messages
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.decorators import login_not_required
 from django.db import IntegrityError, transaction
-from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.cache import add_never_cache_headers
 from django.views.decorators.http import require_POST
 from requests import RequestException
 
 from access.addresses import checks_rights, without_personal_data
 from accounts import texts
 from accounts.adapter import logger
-from accounts.session import LOGOUT_HINT_SESSION_KEY, forget_login, session_expired
+from accounts.session import (
+    LOGOUT_HINT_SESSION_KEY,
+    forget_login,
+    forget_logout,
+    just_logged_out,
+    remember_logout,
+    session_expired,
+)
 
 PROVIDER_ID = "keycloak"
 
@@ -36,9 +44,12 @@ def login_page(request: HttpRequest) -> HttpResponse:
 
     Wer schon angemeldet ist, kommt zur Startseite. Ist der Registrierungslink ausgeblendet
     (REGISTRATION_LINK_ENABLED), steht dort stattdessen, an wen man sich für ein Konto wendet.
+    Gleich nach dem Abmelden steht dort einmal „Du bist abgemeldet.“ (#280), sonst nach
+    abgelaufener Sitzung einmal „Sitzung abgelaufen“.
     """
     if request.user.is_authenticated:
         return redirect(settings.LOGIN_REDIRECT_URL)
+    logged_out = just_logged_out(request)
     expired = session_expired(request)
     start = reverse("openid_connect_login", kwargs={"provider_id": PROVIDER_ID})
     context = {
@@ -48,11 +59,13 @@ def login_page(request: HttpRequest) -> HttpResponse:
         "registration_link_enabled": settings.REGISTRATION_LINK_ENABLED,
         "help_email": settings.ACCOUNT_HELP_EMAIL,
         "next": request.GET.get("next", ""),
-        "session_expired_hint": texts.SESSION_EXPIRED if expired else "",
+        "info_hint": texts.LOGGED_OUT if logged_out else texts.SESSION_EXPIRED if expired else "",
     }
     response = render(request, "accounts/login.html", context)
     if expired:
         forget_login(response)
+    if logged_out:
+        forget_logout(response)
     return response
 
 
@@ -135,7 +148,10 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
         return _keycloak_unreachable(request, error)
 
 
-@without_personal_data("Beendet nur die Sitzung und leitet zu Keycloak weiter.")
+@without_personal_data(
+    "Beendet die Sitzung. Die kurze Seite enthält nur das eigene Kennungs-Token der Person, die sich "
+    "gerade abmeldet, verdeckt im Formular an Keycloak und vom Browser nicht gespeichert (#280)."
+)
 @login_not_required
 @require_POST
 def logout(request: HttpRequest) -> HttpResponse:
@@ -144,18 +160,23 @@ def logout(request: HttpRequest) -> HttpResponse:
     Nur per Formular (POST) mit Formularschutz, damit keine fremde Seite jemanden abmelden
     kann. Ohne Login erreichbar, damit auch nach abgelaufener Sitzung die Abmeldung bei
     Keycloak gelingt; dann fragt Keycloak einmal nach, weil das Kennungs-Token fehlt.
-    Keycloak schickt danach zurück zur Login-Seite.
+
+    Das Token geht in einem Formular an Keycloak, das sich mit Skript selbst abschickt, und
+    nicht in einer Adresse (#280): In der Grundeinstellung von Keycloak stehen darin Name und
+    Mail, und eine Adresse landet im Browserverlauf und in fremden Protokollen. Die kurze Seite
+    speichert der Browser nicht. Keycloak schickt danach zurück zur Login-Seite.
     """
     id_token = request.session.get(LOGOUT_HINT_SESSION_KEY, "")
     django_logout(request)
-    parameters = {
+    fields = {
         "client_id": settings.KEYCLOAK_CLIENT_ID,
         "post_logout_redirect_uri": request.build_absolute_uri(reverse("account_login")),
     }
     if id_token:
-        parameters["id_token_hint"] = id_token
-    response = HttpResponseRedirect(
-        f"{settings.KEYCLOAK_REALM_URL}/protocol/openid-connect/logout?{urlencode(parameters)}"
-    )
+        fields["id_token_hint"] = id_token
+    context = {"action": f"{settings.KEYCLOAK_REALM_URL}/protocol/openid-connect/logout", "fields": fields}
+    response = render(request, "accounts/abmelden.html", context)
+    add_never_cache_headers(response)
     forget_login(response)
+    remember_logout(request, response)
     return response

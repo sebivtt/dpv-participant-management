@@ -183,5 +183,6 @@ def test_abmelden_nach_ablauf_fuehrt_weiter_zu_keycloak(client, keycloak, settin
 
     response = client.post("/abmelden/")
 
-    assert response.status_code == 302
-    assert response["Location"].startswith(f"{settings.KEYCLOAK_REALM_URL}/protocol/openid-connect/logout?")
+    # Seit #280 per Formular an Keycloak statt über eine Weiterleitung.
+    assert response.status_code == 200
+    assert f'action="{settings.KEYCLOAK_REALM_URL}/protocol/openid-connect/logout"' in response.content.decode()

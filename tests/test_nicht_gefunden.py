@@ -403,7 +403,7 @@ def test_erster_login_legt_das_konto_mit_kennung_an(client, keycloak):
     created = get_user_model().objects.get(username="erika.testfrau")
     assert is_key(created.key)
     assert client.get("/").status_code == 200
-    assert client.post("/abmelden/").status_code == 302
+    assert client.post("/abmelden/").status_code == 200  # seit #280 die kurze Seite mit Formular an Keycloak
 
 
 @pytest.mark.django_db(transaction=True)
