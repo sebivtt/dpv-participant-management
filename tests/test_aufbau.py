@@ -129,6 +129,7 @@ def test_jede_datei_des_tools_hat_genau_eine_schicht():
             ohne.append(f"{path}:1")
         elif len(treffer) > 1:
             doppelt.append(f"{path}:1 (Schichten {treffer})")
+    assert len(_tool_files()) > 30, f"Nur {len(_tool_files())} Dateien des Tools gefunden. {HINWEIS}"
     assert not ohne, "Diese Dateien haben keine Schicht:\n" + "\n".join(ohne) + f"\n{HINWEIS}"
     assert not doppelt, "Diese Dateien stehen in mehr als einer Schicht:\n" + "\n".join(doppelt) + f"\n{HINWEIS}"
 
@@ -141,15 +142,19 @@ def test_jeder_pfad_in_aufbau_md_existiert():
     tracked = _tracked()
     vorhanden = set(tracked) | {"/".join(p.split("/")[: i + 1]) + "/" for p in tracked for i in range(p.count("/"))}
     namen = {teil for p in tracked for teil in p.split("/")}
-    fehlt = []
+    ausgenommen = _layers()[1]
+    geprueft, fehlt = 0, []
     for nummer, zeile in enumerate(AUFBAU.read_text(encoding="utf-8").splitlines(), start=1):
         for angabe in _backticks(zeile):
             if re.search(r"[\s<*…]", angabe) or angabe.startswith(("/", "http", "@")):
                 continue
             if "/" in angabe.rstrip("/"):
+                geprueft += 1
                 if angabe not in vorhanden:
                     fehlt.append(f"docs/aufbau.md:{nummer}: `{angabe}`")
-            elif angabe.endswith("/") or Path(angabe).suffix in DATEIENDUNGEN or angabe in _layers()[1]:
+            elif angabe.endswith("/") or Path(angabe).suffix in DATEIENDUNGEN or angabe in ausgenommen:
+                geprueft += 1
                 if angabe.rstrip("/") not in namen:
                     fehlt.append(f"docs/aufbau.md:{nummer}: `{angabe}`")
+    assert geprueft > 30, f"Nur {geprueft} Pfade in docs/aufbau.md gelesen."
     assert not fehlt, "Diese Pfade in docs/aufbau.md gibt es nicht:\n" + "\n".join(fehlt)
