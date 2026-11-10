@@ -480,6 +480,40 @@ def test_p10_wanda_tritt_aus_boreas_aus_ohne_satz_zur_letzten_leitung(org):
         "Du bist aus Pfadfinderbund Boreas ausgetreten."]
 
 
+@pytest.mark.rechtematrix("EP-06")
+def test_wer_einspringt_zaehlt_organisationen_nicht_die_gerade_ihre_letzte_leitung_verlieren(org):
+    """Befund der unabhängigen Prüfung: Ada leitet Adler und Zugvögel allein und tritt aus Zugvögel aus."""
+    remove_by_command(org.zugvoegel_leitung, R.TROOP_LEAD, org.zugvoegel)
+    give(org.adler_leitung, R.TROOP_LEAD, org.zugvoegel)
+
+    shown = exit_dialog(org.adler_leitung)
+
+    assert shown["options"][1]["preview"] == [
+        "Du trittst aus Stamm Zugvögel aus und gehörst danach direkt zu Pfadfinderbund Boreas.",
+        "Damit enden deine Rollen: Gruppenleitung von Sippe Adler und Stammesleitung von Stamm Zugvögel.",
+        "Danach hat Sippe Adler keine Gruppenleitung mehr. Bis eine neue benannt ist, springt die Leitung von "
+        "Pfadfinderbund Boreas ein.",
+        "Danach hat Zugvögel keine Stammesleitung mehr. Bis eine neue benannt ist, springt die Leitung von "
+        "Pfadfinderbund Boreas ein.",
+        YOURS_STAY,
+    ]
+
+
+@pytest.mark.rechtematrix("PK-21")
+def test_die_letzte_bundesleitung_traegt_sich_selbst_aus_und_niemand_springt_ein(org):
+    """Befund der unabhängigen Prüfung: der Satz zur letzten Bundesleitung wie beim Entfernen (#191)."""
+    shown = expel_dialog(org.bundesleitung, org.boreas, org.bundesleitung)
+
+    assert shown["options"][0]["preview"] == [
+        "Brummbär (Bruno Bund) aus Pfadfinderbund Boreas austragen? Danach gehört Brummbär (Bruno Bund) keiner "
+        "Organisation mehr an.",
+        "Damit enden diese Rollen: Bundesleitung von Pfadfinderbund Boreas.",
+        "Danach hat Pfadfinderbund Boreas keine Bundesleitung mehr, und niemand springt ein. Eine neue Bundesleitung "
+        "kann nur die Verbandsleitung benennen.",
+        STAYS,
+    ]
+
+
 @pytest.mark.rechtematrix("EP-06", "PK-17")
 def test_p11_anton_tritt_aus_boreas_aus_und_wanda_nimmt_ihn_auf(org):
     leave(org.adler_kind, org.boreas)

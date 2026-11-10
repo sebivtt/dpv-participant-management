@@ -42,7 +42,7 @@
       <div class="a-mitgliedschaft">
         {% include "core/_rollenkachel.html" with tile=membership %}
         {# „Austreten“ (#286) an der Stelle von „Organisation öffnen“ im Zielbild; ein Link zum Dialog mit eigener Adresse. #}
-        {% include "core/_knopf_entfernen.html" with href=exit_href label=_("Austreten") name="" extra_class="a-kachel-knopf" %}
+        {% include "core/_knopf_entfernen.html" with href=exit_href label=exit_label name="" extra_class="a-kachel-knopf" %}
       </div>
     {% endif %}
     {% if tiles %}

@@ -177,6 +177,7 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         # Der Knopf „Austreten“ in der Fläche der Mitgliedschaft (#286, EP-06).
         "exit_href": reverse("profile_leave") if membership else None,
+        "exit_label": texts.EXIT_BUTTON,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,
         "scout_name_just_saved": _scout_name_just_saved(request),

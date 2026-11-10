@@ -44,7 +44,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 1. **Ganz austragen** (#65, Frage 17): Beim Austragen wählt die Leitung zwischen „gehört danach direkt zu …“ (eine Ebene nach oben) und „gehört danach keiner Organisation mehr an“; beim Bund gibt es nur das Zweite (PK-21). Ersetzt den Eintrag vom 24.10.2026 (#136), Nr. 7, nur in dem Punkt, dass eine Person beim Entfernen immer Einzelmitglied der Ebene darüber wird; der übrige Eintrag bleibt.
 2. **Auch beim eigenen Eintrag** steht „Austragen“, mit derselben Vorschau wie bei anderen (Antwort „Ja, auch bei sich“).
-3. **Ergänzung von W1:** Auf „Mein Profil“ steht in der Fläche der Mitgliedschaft der Knopf „Austreten“ (EP-06). Das ist nach dem Fahrtennamen (#111) und „Rolle abgeben“ des DPV-Veranstaltungsteams (#94) das dritte Bedienelement dort.
+3. **Ergänzung von W1:** Auf „Mein Profil“ steht in der Fläche der Mitgliedschaft der Knopf „Austreten“ (EP-06). Damit stehen dort drei Bedienelemente: der Fahrtenname (#111), „Rolle abgeben“ des DPV-Veranstaltungsteams (#94) und „Austreten“, wie in W1 vorgesehen.
 4. **Neuer Baustein „Auswahl im Dialog“** (Antwort „Neuer Baustein (Empf.)“): Optionsfelder untereinander wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit; der rote Knopf des Dialogs schickt die Wahl mit (`docs/gestaltung.md`).
 
 **Technische Wahl** (KI):

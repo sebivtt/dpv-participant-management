@@ -104,7 +104,7 @@ Zielbild wie oben, Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 28.10
 
 Zielbild als `docs/zielbilder/personen.html` (aus #65), Abweichungen in `docs/zielbilder/README.md`. Kein neuer Baustein, drei erweitert:
 
-- **Person in einer Liste** (vorher „Leitung in einer Liste“): eine Person hat keine, eine oder mehrere Leitungsrollen als Rollenmarken; rechts ist Platz für mehrere Knöpfe („Verschieben“, „Austragen“ mit #287 und #286). Leitungen sehen aus wie vorher (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65).
+- **Person in einer Liste** (vorher „Leitung in einer Liste“): eine Person hat keine, eine oder mehrere Leitungsrollen als Rollenmarken; rechts ist Platz für mehrere Knöpfe („Austragen“ seit #286, „Verschieben“ mit #287). Leitungen sehen aus wie vorher (Entscheidung „A: Baustein erweitern“ vom 01.11.2026 in #65).
 - **Überschrift einer Fläche:** hinter dem Titel darf klein und grau eine Zahl stehen, etwa „4 Personen“.
 - **Trefferliste:** im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem Knopf „Aufnehmen“.
 - **Danach** eine kurze Meldung (#186), wie nach dem Benennen.

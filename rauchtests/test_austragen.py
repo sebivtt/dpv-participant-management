@@ -136,3 +136,34 @@ def test_am_handy_nur_mit_der_tastatur_austreten(handy):
     handy.wait_for_url(f"{BASE}/profil/")
     expect(handy.locator(".a-kurz")).to_contain_text("Du bist aus Stamm Walhall ausgetreten.")
     _no_side_scroll(handy)
+
+
+def test_am_handy_steht_austragen_in_der_liste_ohne_seitliches_ueberstehen(handy):
+    login(handy)
+    units = _walhall_for_erika()
+    handy.goto(f"{BASE}/organisation/{units['falken'].key}/")
+    expect(handy.locator(EXPEL_BUTTON)).to_be_visible()
+    _no_side_scroll(handy)
+
+    handy.locator(EXPEL_BUTTON).click()
+    handy.wait_for_url(_expel_dialog(handy, units))
+    expect(_dialog(handy)).to_be_visible()
+    _no_side_scroll(handy)
+    assert run_axe(handy) == []
+
+
+def test_am_pc_austreten_mit_der_maus(pc):
+    login(pc)
+    _walhall_for_erika()
+    pc.goto(f"{BASE}/profil/")
+    pc.locator(EXIT_BUTTON).click()
+
+    pc.wait_for_url(f"{BASE}/profil/austreten/")
+    assert run_axe(pc) == []
+    pc.locator(".a-auswahl input").last.check()
+    assert "keiner Organisation mehr an" in _shown_previews(pc)[0]
+    pc.locator("dialog .btn-gefahr").click()
+
+    pc.wait_for_url(f"{BASE}/profil/")
+    expect(pc.locator(".a-kurz")).to_contain_text("Du bist aus Pfadfinderbund Boreas ausgetreten.")
+    assert not Role.objects.filter(user__username="erika.testfrau").exists()
