@@ -294,6 +294,7 @@ def test_p12_ohne_gruppenleitung_nimmt_wanda_otto_in_die_falken_auf(org):
     assert membership_of(org.ohne) == "Sippe Falken"
 
 
+@pytest.mark.rechtematrix("EH-18", "EH-19")
 def test_pg9_mit_neuer_gruppenleitung_endet_das_einspringen_beim_naechsten_klick(org):
     remove(org.falken_leitung, R.GROUP_LEAD, org.falken)
     client = client_for(org.walhall_leitung)
@@ -314,8 +315,11 @@ def test_pv1_zora_findet_wilma_und_liest_den_satz_ohne_walhall(org):
 
     assert hits(found) == {}
     assert OTHER_ORGANISATION in notices(found)[-1]
-    # Walhall steht für Zora nur als Name in der Gliederung ihres Bundes (EH-01), nie im Dialog.
+    # Walhall steht für Zora nur als Name in der Gliederung ihres Bundes (EH-01), nie im Dialog,
+    # auch nicht unsichtbar: genauso oft wie auf der Seite ohne Dialog.
     assert "Walhall" not in _visible_text(found)
+    without_dialog = client_for(org.zugvoegel_leitung).get(unit_address(org.zugvoegel)).content.decode()
+    assert response.content.decode().count("Walhall") == without_dialog.count("Walhall")
 
 
 @pytest.mark.rechtematrix("PK-18", "PK-16")
@@ -351,6 +355,16 @@ def test_schon_mitglied_im_stamm_nennt_die_art(org):
     assert "Wilma Walhall ist schon Mitglied in Stamm Walhall." in notices(found)[-1]
 
 
+@pytest.mark.rechtematrix("PK-16", "PK-18")
+def test_fiete_sieht_wilma_auf_seiner_kette_nur_als_andere_organisation(org):
+    """Walhall liegt auf Fietes Kette nach oben, nicht in seinem Bereich: kein „Stamm Walhall“ (unabhängige Prüfung)."""
+    found = find(org.falken_leitung, org.falken, "wilma.walhall@example.org")
+
+    assert hits(found) == {}
+    assert OTHER_ORGANISATION in notices(found)[-1]
+    assert "Walhall" not in _visible_text(found)
+
+
 @pytest.mark.rechtematrix("EP-08")
 def test_wer_sich_selbst_sucht_ist_schon_mitglied(org):
     found = find(org.walhall_leitung, org.walhall, "wanda.walhall@example.org")
@@ -364,7 +378,7 @@ def test_wer_sich_selbst_sucht_ist_schon_mitglied(org):
 # ---------- Verboten ----------
 
 
-@pytest.mark.rechtematrix("PK-26")
+@pytest.mark.rechtematrix("PK-26", "EH-19")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/aufnehmen/")
 def test_pv2_wanda_nimmt_otto_nicht_direkt_in_die_falken_auf(org):
     assert_like_missing(org.walhall_leitung, admit_address(org.falken))

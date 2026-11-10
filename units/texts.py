@@ -119,7 +119,6 @@ KIND_AND_NAME = {
 
 # Abschnitt „Personen“ und „Person aufnehmen“ (#285, Teil 1 von #65), Wortlaut nach dem Issue und
 # der Nachklärung N1 bis N3. Knopf und Satz bei leerer Liste ersetzt #117 später.
-PERSONS_TITLE = gettext_lazy("Personen")
 PERSONS_COUNT = ngettext_lazy("%(count)s Person", "%(count)s Personen", "count")
 NOBODY_DIRECTLY = gettext_lazy("Zu %(unit)s gehört direkt noch niemand.")
 ADMIT_TITLE = gettext_lazy("Person aufnehmen")

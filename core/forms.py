@@ -1,4 +1,4 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176) und die Suche beim Benennen (#190)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176) und die Suche beim Benennen (#190) und Aufnehmen (#285)."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -51,7 +51,7 @@ class AccountSearchForm(forms.Form):
 
 
 class FederationSearchForm(AccountSearchForm):
-    """Das Suchfeld im Dialog der Verbandsleitung (#94, Frage 4): nur Mail oder Benutzername, keine Namen (PK-12)."""
+    """Das Suchfeld nur über Mail oder Benutzername, ohne Namen: im Dialog der Verbandsleitung (#94, Frage 4, PK-12) und in „Person aufnehmen“ (#285)."""
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
