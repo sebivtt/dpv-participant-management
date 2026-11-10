@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
+from django.test.html import Element
 
 from roles.models import Role
 from tests.keycloak_fake import login
@@ -67,7 +68,16 @@ def page(user, **kwargs):
 
 
 def main(root):
-    return _one(_by_tag(root, "main"))
+    """Der Inhalt der Seite in `<main>`, ohne die Liste am Seitenende für das Handy ohne Skript (#281).
+
+    Die Liste wiederholt Navigation, Profilkreis und „Abmelden“; sie gehört nicht zum Inhalt der Seite.
+    """
+    found = _one(_by_tag(root, "main"))
+    content = Element(found.name, found.attributes)
+    content.children = [
+        child for child in found.children if not (isinstance(child, Element) and _attr(child, "id") == "menue-unten")
+    ]
+    return content
 
 
 def with_class(root, name: str) -> list:

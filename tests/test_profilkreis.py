@@ -122,7 +122,8 @@ def test_kein_eigener_punkt_mein_profil_in_der_navigation(address):
     root = _tree(client.get(address))
 
     navs = _by_tag(root, "nav", aria_label="Hauptnavigation")
-    assert len(navs) == 2, "Navigation in der Seitenleiste und im Menü am Handy erwartet"
+    assert len(navs) == 3, "Navigation in der Seitenleiste, im Menü am Handy und in der Liste am Seitenende (#281) erwartet"
+    assert _by_tag(_one(_by_tag(root, "section", id="menue-unten")), "nav", aria_label="Hauptnavigation")
     for nav in navs:
         assert "Mein Profil" not in _text(nav)
         assert PROFILE not in [_attr(link, "href") for link in _by_tag(nav, "a")]
