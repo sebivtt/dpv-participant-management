@@ -215,6 +215,14 @@ class Role(models.Model):
             if target is None or left.pk in _upwards(lead.unit) or not on_path(target, lead.unit)
         ]
 
+    def leads_outside(self, target: Unit) -> list["Role"]:
+        """Die Leitungsrollen der Person, die nicht mehr auf dem Pfad lägen, wäre sie Mitglied in `target` (PK-25).
+
+        Beim Verschieben (#287) nennt der Dialog sie, bevor etwas gespeichert wird; `save()` lehnt
+        mit denselben Rollen ab (#89). Ändert nichts.
+        """
+        return [lead for lead in self._leads() if not on_path(target, lead.unit)]
+
     def _stored(self) -> "Role | None":
         """Diese Rolle, wie sie in der Datenbank steht."""
         return Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
@@ -244,7 +252,7 @@ class Role(models.Model):
             if membership and not on_path(membership.unit, self.unit):
                 return [ValidationError(self._outside_path(membership.unit), code="outside_path")]
         if self.kind == RoleKind.MEMBER and stored and stored["unit_id"] != self.unit_id:
-            blocking = [lead for lead in self._leads() if not on_path(self.unit, lead.unit)]
+            blocking = self.leads_outside(self.unit)
             if blocking:
                 return [ValidationError(self._remove_first(blocking), code="remove_roles_first")]
         return []

@@ -698,16 +698,78 @@ class Rights:
     # Verschieben (#287, Teil 3 von #65)
 
     def may_move(self, unit: Unit | None) -> bool:
-        """Darf die Person Mitglieder dieser Organisation in eine Organisation direkt darunter verschieben (PK-19)?"""
-        return False
+        """Darf die Person Mitglieder dieser Organisation in eine Organisation direkt darunter verschieben (PK-19)?
+
+        Wie beim Austragen nur die Leitung der Organisation selbst und, solange dort keine Leitung mit
+        Konto ist, die einspringende Leitung darüber (PK-20, EH-18, EH-19); nur dort, wo es eine
+        Organisation darunter gibt, also nie bei einer Gruppe (PV5). Auch sich selbst darf die Leitung
+        so verschieben (EP-10, #65 Frage 6). Alle ohne Leitungsrolle verschieben niemanden (PK-23).
+        """
+        return unit is not None and self.leads_unit(unit) and bool(self._children.get(unit.pk))
+
+    def _movable(self, unit: Unit, person_key) -> Role:
+        """Die Mitgliedschaft der Person mit dieser Kennung direkt in `unit`, wenn die Person dort verschieben darf.
+
+        Sonst „nicht gefunden“, auch für ein Mitglied einer Organisation darunter oder darüber und für
+        eine Person, die gerade verschoben oder ausgetragen wurde.
+        """
+        if not self.may_move(unit) or not is_key(person_key):
+            raise Http404
+        found = self.person(person_key)
+        membership = Role.objects.filter(user_id=found.pk, kind=R.MEMBER, unit_id=unit.pk).select_related(
+            "user", "unit__parent").first()
+        if membership is None:
+            raise Http404
+        return membership
+
+    @staticmethod
+    def move_targets(unit: Unit) -> list[Unit]:
+        """Die Organisationen direkt unter `unit`, nach dem Alphabet: die einzigen Ziele beim Verschieben (PK-20)."""
+        return sorted(Unit.objects.filter(parent_id=unit.pk).select_related("parent"),
+                      key=lambda entry: alphabetical(unit_label(entry)))
 
     def moving(self, unit: Unit, person_key) -> dict:
-        """Was der Dialog „Verschieben“ zeigt; ohne Recht „nicht gefunden“ (PK-19, PK-20)."""
-        raise Http404
+        """Was der Dialog „Verschieben“ zeigt; ohne Recht „nicht gefunden“ (PK-19, PK-20).
+
+        `person` ist der Name wie in der Liste, `targets` die Organisationen direkt darunter. Ändert nichts.
+        """
+        user = self._movable(unit, person_key).user
+        return {"person": display_name(user.first_name, user.last_name, user.scout_name) or user.username,
+                "targets": self.move_targets(unit)}
 
     def move(self, unit: Unit, person_key, target_key) -> tuple[bool, str]:
-        """Verschiebt ein Mitglied der Organisation in eine Organisation direkt darunter (PK-19, PK-25)."""
-        raise Http404
+        """Verschiebt ein Mitglied von `unit` in eine Organisation direkt darunter; gibt zurück, ob es geklappt hat, und die Meldung.
+
+        Das Ziel kommt nur aus den Organisationen direkt unter `unit` (PK-20, PV9); jedes andere Ziel,
+        ohne Recht, mit einer fremden Kennung oder wenn die Mitgliedschaft schon nicht mehr in `unit`
+        besteht, ist „nicht gefunden“, und nichts ändert sich. Läge danach eine Leitungsrolle der
+        Person nicht mehr auf ihrem Pfad, lehnt das Tool ab und nennt die Rollen (PK-25, #65 N4);
+        Leitungsrollen enden beim Verschieben nie. Der Wechsel steht im Protokoll (#91). Gesperrt sind
+        das eigene Konto und das der Person, dann wird das Recht unter der Sperre noch einmal geprüft:
+        Von gleichzeitigen Änderungen an derselben Mitgliedschaft gelingt genau eine.
+        """
+        if self.user is None or not is_key(person_key) or not is_key(target_key):
+            raise Http404
+        with transaction.atomic():
+            owner = get_user_model().objects.filter(key=person_key).values_list("pk", flat=True).first()
+            if owner is None:
+                raise Http404
+            me = self._lock_with(owner)
+            membership = Rights(me)._movable(unit, person_key)
+            target = next((entry for entry in self.move_targets(unit) if entry.key == target_key), None)
+            if target is None:
+                raise Http404
+            user = membership.user
+            name = display_name(user.first_name, user.last_name, user.scout_name) or user.username
+            blocking = membership.leads_outside(target)
+            if blocking:
+                roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)})
+                         for lead in blocking]
+                text = unit_texts.MOVE_ROLE_DOES_NOT_FIT if len(roles) == 1 else unit_texts.MOVE_ROLES_DO_NOT_FIT
+                return False, str(text % {"person": name, "roles": listed(roles), "target": unit_label(target)})
+            membership.unit = target
+            membership.save(by=me)
+        return True, str(unit_texts.MOVED % {"person": name, "unit": unit_label(target)})
 
     def own_membership(self) -> Role | None:
         """Die eigene Mitgliedschaft, frisch gelesen, mit den Organisationen darüber; sonst None (EP-06)."""
@@ -998,6 +1060,11 @@ def _chain_of(membership: Role) -> list[Unit]:
         found.append(unit)
         unit = unit.parent
     return found
+
+
+def listed(parts: list[str]) -> str:
+    """„A“, „A und B“, „A, B und C“; für Meldungen, die mehrere Rollen nennen (#286, #287)."""
+    return parts[0] if len(parts) == 1 else f"{', '.join(parts[:-1])} {unit_texts.AND} {parts[-1]}"
 
 
 def alphabetical(name: str) -> str:

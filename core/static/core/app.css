@@ -232,9 +232,11 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
    „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */
 .a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.a-leitung { display: flex; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
+.a-leitung { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
 .a-leitung.ist-gesperrt .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
-.a-leitung-wer { flex: 1; min-width: 0; }
+/* Name und Rollen behalten mindestens 12rem; reicht der Platz daneben nicht für die Knöpfe, rutschen sie
+   rechtsbündig in die nächste Zeile, statt Wörter zu zerreißen (#287: „Verschieben“ und „Austragen“ nebeneinander). */
+.a-leitung-wer { flex: 1 1 12rem; min-width: 0; }
 .a-leitung-wer p { margin: 0; }
 .a-leitung-zeile { overflow-wrap: anywhere; }
 .a-leitung-name { font-weight: 800; }
@@ -249,9 +251,11 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-leitung-mail:hover { background: var(--dpv-hauch); }
 /* „Entfernen“ und „Rolle abgeben“ rechts bei einer Leitung (#191); Rot nur für das Entfernen. */
 .a-leitung-knopf { flex-shrink: 0; align-self: center; }
-.a-leitung-knoepfe { display: flex; flex-wrap: wrap; flex-shrink: 0; align-self: center; gap: 6px; }
+.a-leitung-knoepfe { display: flex; flex-wrap: wrap; flex-shrink: 0; align-self: center; gap: 6px; margin-left: auto; }
 /* Knopf „Entfernen“ (core/_knopf_entfernen.html): zarte rote Fläche, rote Schrift, die Farben der Fehlermeldung. */
 .btn-entfernen { --bs-btn-color: var(--ab-text); --bs-btn-bg: var(--ab-grund); --bs-btn-border-color: var(--ab-grund); --bs-btn-hover-color: var(--ab-text); --bs-btn-hover-bg: var(--ab-grund); --bs-btn-hover-border-color: var(--ab-text); --bs-btn-active-color: var(--ab-text); --bs-btn-active-bg: var(--ab-grund); --bs-btn-active-border-color: var(--ab-text); }
+/* Knopf „Verschieben“ (core/_knopf_verschieben.html, #287): zarte blaue Fläche, blaue Schrift, die Farben der Informationsmeldung. */
+.btn-verschieben { --bs-btn-color: var(--dpv); --bs-btn-bg: var(--dpv-hauch); --bs-btn-border-color: var(--dpv-hauch); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
 .btn-gefahr { --bs-btn-color: #fff; --bs-btn-bg: var(--ab-text); --bs-btn-border-color: var(--ab-text); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #6e2222; --bs-btn-hover-border-color: #6e2222; --bs-btn-active-color: #fff; --bs-btn-active-bg: #6e2222; --bs-btn-active-border-color: #6e2222; }
 .a-dialog-inhalt p:last-child { margin-bottom: 0; }
 .a-leer-satz { margin: 0; color: var(--text-leise); }

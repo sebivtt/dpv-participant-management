@@ -130,6 +130,11 @@
     <div class="a-flaeche">{% translate "Entfernen" as remove_label %}{% include "core/_knopf_entfernen.html" with href="#h-knopfentfernen" label=remove_label name="Funke" %}</div>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfverschieben">
+    {% include "core/_katalogeintrag.html" with block=blocks.knopfverschieben %}
+    <div class="a-flaeche">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}</div>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}
@@ -158,6 +163,11 @@
     {% include "core/_dialog_auf.html" with dialog=examples.expulsion preview=True %}
     {% include "core/_auswahl.html" with choice=examples.expulsion.choice form_id=examples.expulsion.form_id %}
     {% include "core/_dialog_zu.html" with dialog=examples.expulsion preview=True %}
+    {# Ohne Vorschau und mit blauem Knopf im Dialog „Verschieben“ (#287); der Knopf schickt nichts ab. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.moving preview=True %}
+    {% for line in examples.moving.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_auswahl.html" with choice=examples.moving.choice form_id=examples.moving.form_id %}
+    {% include "core/_dialog_zu.html" with dialog=examples.moving preview=True %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-trefferliste">

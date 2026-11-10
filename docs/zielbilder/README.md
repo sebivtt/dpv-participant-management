@@ -103,11 +103,11 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 - **Stand:** 28.10.2026, Fassung 2: der grobe Entwurf der Klärungs-Session zu #65 mit Sebastians Änderung, dass „Austragen“ wie „Verschieben“ eine zarte Fläche bekommt, rot in den Farben der Fehlermeldung. Übernommen in #285 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981320)), eingespielt mit #285 aus dem Zweig `claude/personen-65` (`f0279b1`).
 - **Prüfsumme (SHA-256):** `93e97f1d2ec233ebe02c029e7da3f1c61aa5da9e0cc617b9b8aa726c50f9c79a`
 - **Inhalt der Datei:** nur erfundene Personen und Organisationen (Pfadfinderbund Boreas, Wanda, Finn …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen Personen und Fällen um; ins Tool ist davon nichts übernommen.
-- **Orientierung, keine Anforderung.** Geklärt in #65 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981714), N1 bis N5), umgesetzt in #285 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766975648)); „Austragen“ umgesetzt in #286 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/286#issuecomment-6766976020)), „Verschieben“ kommt mit #287.
+- **Orientierung, keine Anforderung.** Geklärt in #65 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766981714), N1 bis N5), umgesetzt in #285 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/285#issuecomment-6766975648)); „Austragen“ umgesetzt in #286 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/286#issuecomment-6766976020)), „Verschieben“ umgesetzt in #287 ([Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/287#issuecomment-6766976342)).
 
 ### Abweichungen des Abschnitts „Personen“ und des Dialogs „Person aufnehmen“ vom Zielbild (#285)
 
-1. **Noch ohne „Verschieben“:** Es kommt mit #287 in dieselbe Liste; der Baustein hat dafür rechts Platz für mehrere Knöpfe. „Austragen“ steht seit #286 dort (Abweichungen unten).
+1. **„Verschieben“ und „Austragen“ kamen später:** „Austragen“ mit #286, „Verschieben“ mit #287, beide rechts im Baustein (Abweichungen unten).
 2. **Person als Baustein „Person in einer Liste“:** wie die Leitungen darüber (#189), die Rollen als Rollenmarken statt runder Pillen, die Mail in der zweiten Zeile rechts statt neben dem Namen.
 3. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „… benennen“ (#190); „Abbrechen“ und × führen zur Seite der Organisation zurück.
 4. **„Aufnehmen“ als weißer Knopf mit feinem Rand** wie „Benennen“ in der Trefferliste (#190) statt dunkelblau.
@@ -120,3 +120,9 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 2. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „Person aufnehmen“ (oben, Punkt 3).
 3. **Vorschau je Möglichkeit:** Sie kommt fertig vom Server und wechselt mit der Wahl allein über das Aussehen, auch ohne Skript (Baustein „Auswahl im Dialog“); die Wahl ist nicht in ein umrandetes Feld mit Text gefasst, sondern Optionsfeld und Beschriftung stehen nebeneinander in einer umrandeten Zeile.
 4. **Satz zur letzten Leitung** wie beim Entfernen (#191), nicht wie im Zielbild: beim Bund „… und niemand springt ein. Eine neue Bundesleitung kann nur die Verbandsleitung benennen.“, ohne „Trotzdem …?“.
+
+### Abweichungen von „Verschieben“ vom Zielbild (#287)
+
+1. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „Austragen“ (oben, Punkt 2).
+2. **Wahl als Baustein „Auswahl im Dialog“ ohne Vorschau** (Sebastian bei der Umsetzung, 10.11.2026, „2a“): Optionsfeld und Beschriftung nebeneinander in einer umrandeten Zeile, wie beim Austragen.
+3. **Fehlermeldung als Baustein „Meldungen“** (Art Fehler) unter der Wahl statt einer roten Zeile mit ×, damit sie aussieht wie jede Fehlermeldung an der Stelle der Handlung (#186). Die abgelehnte Organisation bleibt gewählt, wie im Zielbild (Sebastian: „Ja, gewählt lassen“).

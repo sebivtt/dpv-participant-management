@@ -38,6 +38,27 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-10 · Personen verschieben (#287, Teil 3 von #65)
+
+**Entscheidung** (Sebastian; Klärung von #65 am 22.10. und 28.10.2026, Fragen 6, 7 und 12, Nachklärung N4 und N5, Aufteilung am 10.11.2026; Antwort bei der Umsetzung am 10.11.2026, „1a und 2a“, [Kommentar in #287](https://github.com/sebivtt/dpv-participant-management/issues/287#issuecomment-6774992064)):
+
+1. **Neuer Baustein „Knopf Verschieben“** (#65 N5): kleiner Knopf mit zart blauer Fläche und blauer Schrift in den Farben der Informationsmeldung, vor „Austragen“ in der Liste „Personen“.
+2. **Dialog erweitert** (Antwort 1a): Wo der Dialog nichts wegnimmt, etwa beim Verschieben, ist der Knopf zum Bestätigen dunkelblau wie im Zielbild aus #285; Rot bleibt für Entfernen, Austragen und Austreten. Ergänzt den Eintrag zu #286, Nr. 5, ohne ihn zu ersetzen.
+3. **Auswahl im Dialog erweitert** (Antwort 2a): Die Vorschau unter der Wahl ist freiwillig; beim Verschieben stehen nur die Organisationen direkt darunter zur Wahl, ohne Vorschau. Ergänzt den Eintrag zu #286, Nr. 5, ohne ihn zu ersetzen.
+4. **Neue Zeile EP-10** in `docs/rechtematrix.md` (Akzeptanzkriterium aus #287, #65 Frage 6): Eine Leitung verschiebt auch sich selbst, nach denselben Regeln wie andere Mitglieder.
+5. **Nach einer Ablehnung bleibt das Ziel gewählt** (Frage aus der unabhängigen Prüfung, Antwort „Ja, gewählt lassen“, [Kommentar in #287](https://github.com/sebivtt/dpv-participant-management/issues/287#issuecomment-6776012382)): Die „Auswahl im Dialog“ kann eine Möglichkeit vorgewählt zeigen; sonst ist wie bisher die erste gewählt.
+
+**Technische Wahl** (KI):
+
+1. **Ziele nur von unten:** Das Formular schickt nur die Kennung des Ziels; gültig ist sie nur, wenn sie eine Organisation direkt unter der Organisation aus der Adresse nennt (PK-20, PV9). Jedes andere Ziel ist „nicht gefunden“, wie eine fremde Person.
+2. **Leitungsrollen enden beim Verschieben nie** (PK-25): Läge eine danach nicht mehr auf dem Pfad, nennt der Dialog sie, bevor etwas gespeichert wird (`Role.leads_outside()`); `Role.save()` lehnt mit denselben Rollen ab, wie seit #89 (U1).
+3. **Gleichzeitig:** wie beim Austragen; das eigene Konto und das der Person werden gesperrt, die Rechte und die Mitgliedschaft danach frisch geprüft. Die zweite von zwei gleichzeitigen Änderungen sieht „nicht gefunden“; im Protokoll steht ein Wechsel als „entfernt“ und „vergeben“ (#91).
+4. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): verschieben `move`, die möglichen Ziele `move_targets`.
+
+**Umsetzung:** `roles/models.py`, `access/rights.py`, `units/organisation.py`, `units/texts.py`, `core/views.py`, `config/urls.py`, `core/templates/core/_knopf_verschieben.html`, `_auswahl.html`, `_dialog_zu.html`, `_leitung.html`, `organisation.html`, `bausteine.html`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/README.md`; Tests in `tests/test_verschieben.py` und `rauchtests/test_verschieben.py`.
+
+---
+
 ## 2026-11-10 · Austragen und Austreten (#286, Teil 2 von #65)
 
 **Entscheidung** (Sebastian; Klärung von #65 am 22.10. und 28.10.2026, Fragen 10, 11 und 17, Aufteilung am 10.11.2026; Antworten bei der Umsetzung am 10.11.2026, [Kommentar in #286](https://github.com/sebivtt/dpv-participant-management/issues/286#issuecomment-6770423268)):
