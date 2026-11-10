@@ -87,6 +87,10 @@ SUGGESTIONS_TITLE = gettext_lazy("Vorschläge aus deinem Bereich")
 NO_SUGGESTIONS = gettext_lazy(
     "Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen."
 )
+APPOINT_HELP = gettext_lazy(
+    "Ab drei Zeichen schlägt das Tool Personen aus deinem Bereich vor. Alle anderen findest du mit „Suchen“ über "
+    "die genaue Mail oder den Benutzernamen."
+)
 HITS_TITLE = gettext_lazy("Treffer")
 ELSEWHERE = gettext_lazy("schon woanders Mitglied")
 NOWHERE = gettext_lazy("noch nirgends Mitglied")

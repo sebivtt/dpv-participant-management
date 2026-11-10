@@ -69,7 +69,8 @@ def test_am_pc_nur_mit_der_tastatur_entfernen(pc):
 
     pc.wait_for_url(page_address)
     expect(pc.locator(".a-kurz")).to_contain_text("Funke (Fiete Falke) ist nicht mehr Gruppenleitung von Sippe Falken.")
-    expect(pc.locator(".a-leitungen")).to_have_count(0)
+    # Seit #285 nutzt auch der Abschnitt „Personen“ die Liste; gemeint ist die unter „Leitungen“.
+    expect(pc.locator('[aria-labelledby="h-leitungen"] .a-leitungen')).to_have_count(0)
     expect(pc.locator(".a-orga-kopf")).to_contain_text("Du springst ein")
     pc.wait_for_function("() => document.getAnimations().every(animation => animation.playState !== 'running')")
     assert run_axe(pc) == []
@@ -87,7 +88,7 @@ def test_am_pc_escape_aendert_nichts(pc):
 
     pc.wait_for_url(page_address)
     expect(_dialog(pc)).to_have_count(0)
-    expect(pc.locator(".a-leitung")).to_contain_text("Funke")
+    expect(pc.locator('[aria-labelledby="h-leitungen"] .a-leitung')).to_contain_text("Funke")
 
 
 def test_am_handy_gibt_erika_ihre_rolle_ab(handy):

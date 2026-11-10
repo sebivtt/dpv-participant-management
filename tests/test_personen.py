@@ -9,6 +9,10 @@ Fahrtennamen und Mails sind erfunden. Geprüft wird, was beim Browser ankommt, u
 Datenbank steht.
 """
 
+import hashlib
+import re
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, connection, transaction
@@ -248,14 +252,15 @@ def test_p1_fiete_findet_otto_und_nimmt_ihn_ohne_zustimmung_in_die_falken_auf(or
     assert "Aufnehmen" in found["Otto Ohne"]["text"]
     assert found["Otto Ohne"]["key"] == org.ohne.key
 
-    response = admit(org.falken_leitung, org.falken, org.ohne)
+    client = client_for(org.falken_leitung)
+    response = admit(org.falken_leitung, org.falken, org.ohne, client=client)
 
     assert response.status_code == 302
     assert response.url == unit_address(org.falken)
     assert membership_of(org.ohne) == "Sippe Falken"
     assert roles_of(org.ohne) == {(R.MEMBER, "Sippe Falken")}
-    page = client_for(org.falken_leitung).get(response.url)
-    assert short_notices(page) == ["Erfolg: Otto Ohne gehört jetzt zu Sippe Falken."]
+    page = client.get(response.url)
+    assert short_notices(page) == ["Otto Ohne gehört jetzt zu Sippe Falken."]
     assert "Otto Ohne" in persons_on_page(_tree(page))
 
 
@@ -279,7 +284,7 @@ def test_den_benutzernamen_findet_der_dialog_auch(org):
     assert list(hits(find(org.falken_leitung, org.falken, "OTTO.OHNE"))) == ["Otto Ohne"]
 
 
-@pytest.mark.rechtematrix("EH-18", "PK-17")
+@pytest.mark.rechtematrix("EH-18", "PK-17", "PK-26")
 def test_p12_ohne_gruppenleitung_nimmt_wanda_otto_in_die_falken_auf(org):
     remove(org.falken_leitung, R.GROUP_LEAD, org.falken)
 
@@ -309,7 +314,8 @@ def test_pv1_zora_findet_wilma_und_liest_den_satz_ohne_walhall(org):
 
     assert hits(found) == {}
     assert OTHER_ORGANISATION in notices(found)[-1]
-    assert "Walhall" not in response.content.decode()
+    # Walhall steht für Zora nur als Name in der Gliederung ihres Bundes (EH-01), nie im Dialog.
+    assert "Walhall" not in _visible_text(found)
 
 
 @pytest.mark.rechtematrix("PK-18", "PK-16")
@@ -317,8 +323,9 @@ def test_pv1_auch_ein_manipuliertes_formular_nimmt_wilma_nicht_auf_und_nennt_wal
     response = admit(org.zugvoegel_leitung, org.zugvoegel, org.walhall_mitglied)
 
     assert response.status_code == 200
-    assert OTHER_ORGANISATION in notices(dialog_of(_tree(response)))[-1]
-    assert "Walhall" not in response.content.decode()
+    found = dialog_of(_tree(response))
+    assert OTHER_ORGANISATION in notices(found)[-1]
+    assert "Walhall" not in _visible_text(found)
     assert roles_of(org.walhall_mitglied) == {(R.MEMBER, "Walhall")}
 
 
@@ -328,6 +335,7 @@ def test_gegenprobe_wer_nirgends_mitglied_ist_nimmt_zora_auf(org):
     assert membership_of(org.ohne) == "Zugvögel"
 
 
+@pytest.mark.rechtematrix("PK-16")
 def test_pg5_wanda_sucht_finn_und_liest_schon_mitglied_in_sippe_falken(org):
     found = find(org.walhall_leitung, org.walhall, "finn.falke@example.org")
 
@@ -338,7 +346,7 @@ def test_pg5_wanda_sucht_finn_und_liest_schon_mitglied_in_sippe_falken(org):
 
 
 def test_schon_mitglied_im_stamm_nennt_die_art(org):
-    found = find(org.falken_leitung, org.falken, "wilma.walhall@example.org")
+    found = find(org.walhall_leitung, org.walhall, "wilma.walhall@example.org")
 
     assert "Wilma Walhall ist schon Mitglied in Stamm Walhall." in notices(found)[-1]
 
@@ -401,6 +409,7 @@ def test_die_organisation_kommt_aus_der_adresse_nicht_aus_dem_formular(org):
     assert membership_of(org.ohne) == "Walhall"
 
 
+@pytest.mark.rechtematrix("PK-17")
 def test_leitungen_ausserhalb_nehmen_nicht_in_fremde_oder_hoehere_organisationen_auf(org):
     """Direkte Adressen außerhalb des eigenen Bereichs und auf der Kette nach oben (Fiete bei Walhall, Zora bei Walhall)."""
     for user, where in ((org.falken_leitung, org.walhall), (org.zugvoegel_leitung, org.walhall),
@@ -500,3 +509,28 @@ def test_pg8_die_liste_personen_waechst_nicht_mit_den_abfragen(org):
 
     assert_queries_do_not_grow(create_entry, load_list)
     assert len(persons_on_page(page_tree(org.walhall_leitung, unit_address(org.walhall)))) == 14
+
+
+# ---------- Zielbild ----------
+
+ROOT = Path(__file__).resolve().parent.parent
+TARGET = ROOT / "docs" / "zielbilder" / "personen.html"
+CHECKSUM = "93e97f1d2ec233ebe02c029e7da3f1c61aa5da9e0cc617b9b8aa726c50f9c79a"
+
+
+def test_zielbild_liegt_unveraendert_mit_eintrag_im_repo():
+    readme = (ROOT / "docs" / "zielbilder" / "README.md").read_text()
+
+    assert hashlib.sha256(TARGET.read_bytes()).hexdigest() == CHECKSUM
+    section = readme.split("## Personen", 1)
+    assert len(section) == 2
+    for must in (CHECKSUM, "28.10.2026", "Orientierung, keine Anforderung", "Abweichungen", "#285"):
+        assert must in section[1], must
+
+
+def test_zielbild_laedt_nichts_von_fremden_servern():
+    content = TARGET.read_text()
+
+    assert not re.findall(r"""(?:src|href)\s*=\s*["']?(?:https?:)?//""", content, flags=re.I)
+    assert not re.findall(r"""(?:url\(|@import)\s*["']?(?:https?:)?//""", content, flags=re.I)
+    assert all(mail.endswith("@example.org") for mail in re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", content))

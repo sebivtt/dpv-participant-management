@@ -27,17 +27,24 @@
           {% endif %}
         </section>
       {% endif %}
+      {% if page.persons is not None %}
+        {# Abschnitt „Personen“ (#285): die direkten Mitglieder, nur im eigenen Bereich; „Person aufnehmen“ nur, wo die Person aufnehmen darf. #}
+        <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-personen">
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.admit_href action_label=page.admit_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.admit_href action_label=page.admit_label %}{% endif %}
+          {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
+        </section>
+      {% endif %}
     </div>
   </div>
   {% if dialog %}
-    {# Dialog „… benennen“ (#190): eigene Adresse, kommt offen vom Server. Das Skript holt beim Tippen die Vorschläge in die Trefferliste; „Suchen“ und Enter schicken das Formular ab. #}
+    {# Dialog „… benennen“ (#190) oder „Person aufnehmen“ (#285): eigene Adresse, kommt offen vom Server. Beim Benennen holt das Skript beim Tippen die Vorschläge in die Trefferliste, beim Aufnehmen gibt es keine (#65 N3); „Suchen“ und Enter schicken das Formular ab. #}
     {% include "core/_dialog_auf.html" %}
-    <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate data-vorschlaege="{{ dialog.suggestions_href }}">
+    <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate{% if dialog.suggestions_href %} data-vorschlaege="{{ dialog.suggestions_href }}"{% endif %}>
       {% csrf_token %}
-      {% translate "Suchen" as search_button %}{% translate "Ab drei Zeichen schlägt das Tool Personen aus deinem Bereich vor. Alle anderen findest du mit „Suchen“ über die genaue Mail oder den Benutzernamen." as search_help %}
-      {% textfeld dialog.form.suche button=search_button help_text=search_help %}
+      {% translate "Suchen" as search_button %}
+      {% textfeld dialog.form.suche button=search_button help_text=dialog.help_text %}
     </form>
-    <div class="a-treffer-bereich" data-treffer>{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action notice=dialog.notice %}</div>
+    <div class="a-treffer-bereich" data-treffer>{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action action_label=dialog.action_label notice=dialog.notice %}</div>
     {% include "core/_dialog_zu.html" %}
   {% endif %}
   {% if removal %}

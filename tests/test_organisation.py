@@ -848,10 +848,10 @@ def test_av6_erfundene_verstuemmelte_oder_fremde_kennung_zeigt_nicht_gefunden(or
 
 
 def test_av7_mitglieder_ohne_leitungsrolle_stehen_nie_unter_leitungen(org):
+    """Seit #285 steht Wilma im Abschnitt „Personen“; unter „Leitungen“ steht sie weiter nie."""
     root = page_tree(org.walhall_leitung, unit_address(org.walhall))
 
-    assert "Wilma" not in _text(unit_page(root))
-    assert "Personen" not in [_text(h) for h in _by_tag(unit_page(root), "h2")]
+    assert "Wilma" not in _text(_one(_by_tag(unit_page(root), "section", aria_labelledby="h-leitungen")))
 
 
 def test_av8_die_gliederung_zeigt_nie_mails(org):
