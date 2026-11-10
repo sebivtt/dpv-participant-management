@@ -496,6 +496,20 @@ def organisation_expel(request: HttpRequest, unit: str, person: str) -> HttpResp
                                                        "start": False, "removal": removal})
 
 
+# Verschieben (#287, Teil 3 von #65). Wie beim Austragen hat der Dialog eine eigene Adresse unter der
+# Seite der Organisation, damit er auch ohne Skript geht. Die Organisation der Person kommt immer aus
+# der Adresse, die Person über ihre Kennung, das Ziel nur aus den Organisationen direkt darunter.
+MOVE_ROWS = ("PK-19", "PK-20", "PK-23", "PK-25", "EP-10", "EH-18", "EH-19")
+
+
+@checks_rights(*MOVE_ROWS)
+def organisation_move(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „Verschieben“ zeigen und die Person in eine Organisation direkt darunter verschieben (PK-19)."""
+    rights = request.rights
+    rights.entry(Unit.objects.all(), unit, allowed=rights.may_move)
+    raise Http404
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).

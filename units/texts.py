@@ -231,3 +231,17 @@ LEFT = gettext_lazy("Du bist aus %(unit)s ausgetreten.")
 # Eine Rolle, die endet, z. B. „Gruppenleitung von Sippe Falken“; mehrere mit Komma und „und“.
 ROLE_OF = gettext_lazy("%(role)s von %(unit)s")
 AND = gettext_lazy("und")
+
+# Verschieben (#287, Teil 3 von #65), Wortlaut nach dem Issue und dem Zielbild aus #285 (#65 N4).
+MOVE_BUTTON = gettext_lazy("Verschieben")
+MOVE_TITLE = gettext_lazy("Verschieben")
+MOVE_FROM = gettext_lazy("%(person)s aus %(unit)s")
+MOVE_QUESTION = gettext_lazy("Wohin soll die Person?")
+MOVED = gettext_lazy("%(person)s gehört jetzt zu %(unit)s.")
+# Läge eine Leitungsrolle danach nicht mehr auf dem Pfad (PK-25); die Rollen wie „Stammesleitung von Stamm Zugvögel“.
+MOVE_ROLE_DOES_NOT_FIT = gettext_lazy(
+    "%(person)s ist %(roles)s. Diese Rolle passt nicht zu %(target)s. Sie kann zuerst beendet werden."
+)
+MOVE_ROLES_DO_NOT_FIT = gettext_lazy(
+    "%(person)s ist %(roles)s. Diese Rollen passen nicht zu %(target)s. Sie können zuerst beendet werden."
+)

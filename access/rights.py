@@ -695,6 +695,20 @@ class Rights:
                 raise Http404
         return str(unit_texts.EXPELLED % {"person": name, "unit": unit_label(unit)})
 
+    # Verschieben (#287, Teil 3 von #65)
+
+    def may_move(self, unit: Unit | None) -> bool:
+        """Darf die Person Mitglieder dieser Organisation in eine Organisation direkt darunter verschieben (PK-19)?"""
+        return False
+
+    def moving(self, unit: Unit, person_key) -> dict:
+        """Was der Dialog „Verschieben“ zeigt; ohne Recht „nicht gefunden“ (PK-19, PK-20)."""
+        raise Http404
+
+    def move(self, unit: Unit, person_key, target_key) -> tuple[bool, str]:
+        """Verschiebt ein Mitglied der Organisation in eine Organisation direkt darunter (PK-19, PK-25)."""
+        raise Http404
+
     def own_membership(self) -> Role | None:
         """Die eigene Mitgliedschaft, frisch gelesen, mit den Organisationen darüber; sonst None (EP-06)."""
         if self.user is None:
