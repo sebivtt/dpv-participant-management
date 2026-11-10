@@ -116,11 +116,14 @@ def test_g1_skript_kommt_spaet_liste_verschwindet_und_menue_oeffnet(handy):
     expect(handy.get_by_role("link", name="Menü")).to_be_visible()
     _jump_down(handy)
     assert held, "das Skript wurde nicht angefragt"
+    # Wer mit der Tastatur auf „Menü“ steht, bleibt dort, wenn der Sprung dem Knopf weicht.
+    handy.get_by_role("link", name="Menü").focus()
 
     held[0].continue_()
 
     expect(_bottom(handy)).to_have_count(0)
     expect(handy.get_by_role("link", name="Menü")).to_have_count(0)
+    expect(handy.get_by_role("button", name="Menü")).to_be_focused()
     handy.get_by_role("button", name="Menü").tap()
     expect(handy.get_by_role("dialog", name="Menü")).to_be_visible()
 
