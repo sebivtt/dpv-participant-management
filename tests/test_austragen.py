@@ -500,6 +500,27 @@ def test_wer_einspringt_zaehlt_organisationen_nicht_die_gerade_ihre_letzte_leitu
 
 
 @pytest.mark.rechtematrix("PK-21")
+def test_ganz_austragen_beendet_auch_eine_leitungsrolle_ueber_der_eigenen_organisation(org):
+    """Antwort von Sebastian bei der Umsetzung („So lassen“): Bruno ist Bundesleitung und direkt Mitglied der
+    Falken; trägt Fiete ihn ganz aus, endet auch die Bundesleitung, und die Vorschau nennt das vorher."""
+    membership = Role.objects.get(user=org.bundesleitung, kind=R.MEMBER)
+    membership.unit = org.falken
+    membership.save(by=org.bundesleitung)
+
+    shown = expel_dialog(org.falken_leitung, org.falken, org.bundesleitung)
+    assert shown["options"][0]["preview"][1:] == [STAYS]
+    assert shown["options"][1]["preview"][1:3] == [
+        "Damit enden diese Rollen: Bundesleitung von Pfadfinderbund Boreas.",
+        "Danach hat Pfadfinderbund Boreas keine Bundesleitung mehr, und niemand springt ein. Eine neue Bundesleitung "
+        "kann nur die Verbandsleitung benennen.",
+    ]
+
+    expel(org.falken_leitung, org.falken, org.bundesleitung, "ganz")
+
+    assert roles_of(org.bundesleitung) == set()
+
+
+@pytest.mark.rechtematrix("PK-21")
 def test_die_letzte_bundesleitung_traegt_sich_selbst_aus_und_niemand_springt_ein(org):
     """Befund der unabhängigen Prüfung: der Satz zur letzten Bundesleitung wie beim Entfernen (#191)."""
     shown = expel_dialog(org.bundesleitung, org.boreas, org.bundesleitung)
