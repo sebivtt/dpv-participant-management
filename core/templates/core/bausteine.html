@@ -152,6 +152,14 @@
     {% include "core/_dialog_zu.html" with dialog=examples.removal preview=True %}
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-auswahl">
+    {% include "core/_katalogeintrag.html" with block=blocks.auswahl %}
+    {# Im Dialog „… austragen?“ wie auf der Seite „Organisation“ (#286); die Vorschau wechselt mit der Wahl, der rote Knopf schickt nichts ab. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.expulsion preview=True %}
+    {% include "core/_auswahl.html" with choice=examples.expulsion.choice form_id=examples.expulsion.form_id %}
+    {% include "core/_dialog_zu.html" with dialog=examples.expulsion preview=True %}
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-trefferliste">
     {% include "core/_katalogeintrag.html" with block=blocks.trefferliste %}
     <div class="a-flaeche">

@@ -48,9 +48,10 @@
     {% include "core/_dialog_zu.html" %}
   {% endif %}
   {% if removal %}
-    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191): eigene Adresse, kommt offen vom Server. #}
+    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286): eigene Adresse, kommt offen vom Server. #}
     {% include "core/_dialog_auf.html" with dialog=removal %}
     {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if removal.choice %}{% include "core/_auswahl.html" with choice=removal.choice form_id=removal.form_id %}{% endif %}
     {% include "core/_dialog_zu.html" with dialog=removal %}
   {% endif %}
 {% endblock %}

@@ -48,6 +48,9 @@ class Lead:
     remove_href: str | None = None
     remove_label: str = ""
     role_names: list[str] = field(default_factory=list)
+    # Bei Personen im Abschnitt „Personen“ der Knopf „Austragen“, nur wo die Person austragen darf (#286).
+    expel_href: str | None = None
+    expel_label: str = texts.EXPEL_BUTTON
 
     @property
     def shown_roles(self) -> list[str]:
@@ -306,7 +309,8 @@ class Organisation:
         """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1)."""
         if access != MANAGE:
             return {}
-        persons = [self._person(user) for user in sorted(self.rights.members(unit), key=_user_by_name)]
+        may_expel = self.rights.may_expel(unit)
+        persons = [self._person(user, unit, may_expel) for user in sorted(self.rights.members(unit), key=_user_by_name)]
         return {
             "persons": persons,
             "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
@@ -314,8 +318,11 @@ class Organisation:
             "admit_href": reverse("organisation_admit", args=[unit.key]) if self.rights.may_admit(unit) else None,
         }
 
-    def _person(self, user) -> Lead:
-        """Eine Person im Abschnitt „Personen“ mit ihren Leitungsrollen von der Gruppe bis zum Bund (#65 N1)."""
+    def _person(self, user, unit: Unit, may_expel: bool) -> Lead:
+        """Eine Person im Abschnitt „Personen“ mit ihren Leitungsrollen von der Gruppe bis zum Bund (#65 N1).
+
+        Mit dem Knopf „Austragen“, wo die Person austragen darf, auch beim eigenen Eintrag (#286).
+        """
         full_name = " ".join(part for part in (user.first_name, user.last_name) if part)
         leads = sorted(user.lead_roles, key=lambda role: (LEADS_IN_UNITS.index(role.kind), alphabetical(role.unit.name)))
         return Lead(
@@ -326,6 +333,7 @@ class Organisation:
             mail=user.email,
             locked=not user.is_active,
             is_self=user.pk == self.user.pk,
+            expel_href=reverse("organisation_expel", args=[unit.key, user.key]) if may_expel else None,
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:
@@ -408,6 +416,93 @@ class Organisation:
             way="" if covers else self.leads_line(unit, without_locked),
             mark=mark if covers else None,
         )
+
+
+def _listed(parts: list[str]) -> str:
+    """„A“, „A und B“, „A, B und C“."""
+    return parts[0] if len(parts) == 1 else f"{', '.join(parts[:-1])} {texts.AND} {parts[-1]}"
+
+
+def _ending_lines(endings: list[dict], own: bool) -> list[str]:
+    """Die Sätze der Vorschau zu den Rollen, die enden, und zur letzten Leitung (#286, wie #191)."""
+    if not endings:
+        return []
+    roles = [str(texts.ROLE_OF % {"role": entry["role"].get_kind_display(), "unit": unit_label(entry["role"].unit)})
+             for entry in endings]
+    lines = [str((texts.ENDING_OWN_ROLES if own else texts.ENDING_ROLES) % {"roles": _listed(roles)})]
+    for entry in endings:
+        if not entry["last"]:
+            continue
+        unit = entry["role"].unit
+        values = {"unit": unit.name, "role": entry["role"].get_kind_display()}
+        if unit.kind == Kind.ASSOCIATION:
+            lines.append(str(texts.LAST_ASSOCIATION_LEAD % values))
+        elif entry["cover"] is None:
+            lines.append(str(texts.LAST_LEAD_NOBODY % values))
+        else:
+            cover = entry["cover"]
+            lines.append(str(texts.LAST_LEAD_COVERED % {**values, "cover": texts.COVER_NAME[cover.kind] % {"unit": cover.name}}))
+    return lines
+
+
+def _choice(name: str, legend: str, options: list[tuple[str, str, list[str]]]) -> dict:
+    """Die Daten für den Baustein „Auswahl im Dialog“ (#286): je Möglichkeit Wert, Beschriftung und Vorschau."""
+    return {"name": name, "legend": legend,
+            "options": [{"value": value, "label": label, "lines": lines} for value, label, lines in options]}
+
+
+def expulsion_dialog(unit: Unit, shown: dict, action: str) -> dict:
+    """Der Dialog „… austragen?“ aus dem, was `Rights.expulsion()` liefert (PK-21, #65 Frage 11 und 17).
+
+    Titel ist die Frage; darunter die Wahl mit ihrer Vorschau (Baustein „Auswahl im Dialog“); der rote
+    Knopf „Austragen“ schickt die Wahl mit.
+    """
+    person, place = shown["person"], unit_label(unit)
+    options = []
+    for option in shown["options"]:
+        values = {"person": person, "unit": place}
+        if option["target"] is None:
+            label, first = texts.EXPEL_NONE % values, texts.EXPEL_PREVIEW_NONE % values
+        else:
+            values["target"] = unit_label(option["target"])
+            label, first = texts.EXPEL_UP % values, texts.EXPEL_PREVIEW_UP % values
+        lines = [str(first), *_ending_lines(option["endings"], own=False), str(texts.REGISTRATIONS_STAY)]
+        options.append((option["value"], str(label), lines))
+    return {
+        "title": texts.EXPEL_QUESTION % {"person": person, "unit": place},
+        "close_href": reverse("organisation_unit", args=[unit.key]),
+        "confirm_action": action,
+        "confirm_label": texts.EXPEL_BUTTON,
+        "form_id": "f-dialog",
+        "choice": _choice("wahl", str(texts.EXPEL_LEGEND % {"person": person}), options),
+    }
+
+
+def exit_dialog(membership, options: list[dict], action: str) -> dict:
+    """Der Dialog „Austreten“ auf „Mein Profil“ aus dem, was `Rights.exit_options()` liefert (EP-06).
+
+    Die Wahl nennt die Ebenen der eigenen Kette; die Organisation der Mitgliedschaft geht als
+    verstecktes Feld mit, damit eine inzwischen geänderte Mitgliedschaft „nicht gefunden“ ist (PG3).
+    """
+    found = []
+    for option in options:
+        values = {"unit": unit_label(option["level"])}
+        if option["target"] is None:
+            label, first = texts.EXIT_NONE % values, texts.EXIT_PREVIEW_NONE % values
+        else:
+            values["target"] = unit_label(option["target"])
+            label, first = texts.EXIT_UP % values, texts.EXIT_PREVIEW_UP % values
+        lines = [str(first), *_ending_lines(option["endings"], own=True), str(texts.OWN_REGISTRATIONS_STAY)]
+        found.append((option["level"].key, str(label), lines))
+    return {
+        "title": texts.EXIT_TITLE,
+        "close_href": reverse("profile"),
+        "confirm_action": action,
+        "confirm_label": texts.EXIT_BUTTON,
+        "form_id": "f-dialog",
+        "hidden": [("von", membership.unit.key)],
+        "choice": _choice("ebene", str(texts.EXIT_LEGEND), found),
+    }
 
 
 def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:

@@ -466,6 +466,27 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-dialog-kopf .a-schliessen { flex: none; padding: 6px; text-decoration: none; }
 .a-dialog-inhalt { padding: 18px 20px; }
 .a-dialog-fuss { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
+/* Auswahl im Dialog (#286): Optionsfelder wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit.
+   Die Vorschau wechselt ohne Skript über :has(); ein Browser ohne :has() zeigt alle Vorschauen untereinander. */
+.a-auswahl fieldset { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }
+.a-auswahl-liste { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.a-auswahl-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
+.a-auswahl-liste li:hover { border-color: var(--dpv); }
+.a-auswahl-liste .form-check-input { flex: none; margin-top: .2em; }
+.a-auswahl-liste label { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: pointer; }
+.a-auswahl-liste input:checked + label { font-weight: 700; color: var(--dpv); }
+.a-auswahl-folge { margin: 4px 0 0; padding: 12px 14px; border-radius: var(--radius-klein); background: var(--grund); overflow-wrap: anywhere; }
+.a-auswahl-folge p { margin: 0 0 6px; }
+.a-auswahl-folge p:first-child { font-weight: 700; }
+.a-dialog-inhalt .a-auswahl-folge p:last-child { margin-bottom: 0; }
+@supports selector(:has(*)) {
+  .a-auswahl-folge { display: none; }
+  .a-auswahl:has(li:nth-child(1) > input:checked) .a-auswahl-folge:nth-child(1),
+  .a-auswahl:has(li:nth-child(2) > input:checked) .a-auswahl-folge:nth-child(2),
+  .a-auswahl:has(li:nth-child(3) > input:checked) .a-auswahl-folge:nth-child(3),
+  .a-auswahl:has(li:nth-child(4) > input:checked) .a-auswahl-folge:nth-child(4),
+  .a-auswahl:has(li:nth-child(5) > input:checked) .a-auswahl-folge:nth-child(5) { display: block; }
+}
 /* Trefferliste: Kreis, Name, Organisation, rechts „Benennen“ */
 .a-treffer-bereich:not(:empty) { margin-top: 14px; }
 .a-treffer-titel { margin: 0 0 6px; color: var(--text-leise); font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }

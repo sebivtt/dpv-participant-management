@@ -31,7 +31,7 @@ SECOND_MEMBERSHIP = gettext_lazy(
 OUTSIDE_PATH = gettext_lazy("%(person)s ist Mitglied in %(unit)s und kann deshalb keine Leitung in %(target)s sein.")
 REMOVE_ROLE_FIRST = gettext_lazy("%(person)s ist noch %(roles)s. Diese Rolle muss zuerst entfernt werden.")
 REMOVE_ROLES_FIRST = gettext_lazy("%(person)s ist noch %(roles)s. Diese Rollen müssen zuerst entfernt werden.")
-# Austreten und Austragen (#65); Seiten prüfen vorher, die Meldungen sind die letzte Sicherung.
+# Austreten und Austragen (#286); Seiten prüfen vorher, die Meldungen sind die letzte Sicherung.
 ONLY_MEMBERSHIP_LEAVES = gettext_lazy("Austreten geht nur aus einer Mitgliedschaft.")
 NOT_IN_CHAIN = gettext_lazy("Austreten geht nur aus der eigenen Organisation oder einer darüber.")
 ROLE_IN_UNIT = gettext_lazy("%(role)s in %(unit)s")

@@ -1,0 +1,12 @@
+{# Auswahl im Dialog (#286; Sebastian bei der Umsetzung, 10.11.2026: „Neuer Baustein“): Optionsfelder untereinander wie im Zielbild aus #285, die erste gewählt; darunter die Vorschau der gewählten Möglichkeit. Die Vorschau wechselt mit der Wahl allein über das Aussehen (app.css), also auch ohne Skript; ein Browser ohne diese Möglichkeit zeigt alle Vorschauen untereinander. Vorleseprogramme lesen die Vorschau als Beschreibung des Optionsfelds. Die Felder gehören über ihr Attribut „form“ zum Formular des roten Knopfs im Dialog (form_id, „core/_dialog_zu.html“). choice: name, legend (nur für Vorleseprogramme) und options mit value, label und lines. #}
+<div class="a-auswahl">
+  <fieldset>
+    <legend class="sr-nur">{{ choice.legend }}</legend>
+    <ul class="a-auswahl-liste">
+      {% for option in choice.options %}<li><input type="radio" class="form-check-input" id="{{ choice.name }}-{{ forloop.counter }}" name="{{ choice.name }}" value="{{ option.value }}" form="{{ form_id }}" aria-describedby="{{ choice.name }}-folge-{{ forloop.counter }}"{% if forloop.first %} checked{% endif %}><label for="{{ choice.name }}-{{ forloop.counter }}">{{ option.label }}</label></li>{% endfor %}
+    </ul>
+  </fieldset>
+  <div class="a-auswahl-folgen">
+    {% for option in choice.options %}<div class="a-auswahl-folge" id="{{ choice.name }}-folge-{{ forloop.counter }}">{% for line in option.lines %}<p>{{ line }}</p>{% endfor %}</div>{% endfor %}
+  </div>
+</div>

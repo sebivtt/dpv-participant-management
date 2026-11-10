@@ -52,7 +52,7 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, on_path
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, on_path
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
 from units.models import Unit
@@ -92,6 +92,9 @@ SEARCH_WINDOW = timedelta(minutes=60)
 MANAGE = "manage"  # im eigenen Bereich: Seite mit Mails, wo sie die Person sieht
 READ = "read"  # auf der Kette nach oben: Seite nur lesen
 NAME_ONLY = "name"  # sonst im eigenen Bund: nur der Name in der Gliederung
+# Die Wahl beim Austragen (#286, #65 Frage 17): „hoch“ heißt danach direkt zur Organisation darüber,
+# „ganz“ heißt danach keiner Organisation mehr; der Wert sagt, ob die Person ganz ausgetragen wird.
+EXPEL_CHOICES = {"hoch": False, "ganz": True}
 
 
 class Rights:
@@ -320,11 +323,14 @@ class Rights:
             return None
         return self._lead_above(unit.pk)
 
-    def _lead_above(self, unit: int) -> int | None:
-        """Die nächste Einheit über `unit` mit Leitung mit Konto, ohne den Verband; sonst None."""
+    def _lead_above(self, unit: int, without: frozenset[int] = frozenset()) -> int | None:
+        """Die nächste Einheit über `unit` mit Leitung mit Konto, ohne den Verband; sonst None.
+
+        Einheiten in `without` zählen als ohne Leitung, etwa weil ihre letzte Leitung gerade endet (#286).
+        """
         parent = self._tree[unit][0]
         while parent is not None and self._tree[parent][1] != UnitKind.FEDERATION:
-            if parent in self._units_with_lead:
+            if parent in self._units_with_lead and parent not in without:
                 return parent
             parent = self._tree[parent][0]
         return None
@@ -614,15 +620,140 @@ class Rights:
             Role(user=target, kind=R.MEMBER, unit=unit).save(by=me)
         return True, str(unit_texts.ADMITTED % {"person": name, "unit": unit_label(unit)})
 
-    # Austragen und Austreten (#286, Teil 2 von #65); Gerüst, die Regeln kommen mit dem Code.
+    # Austragen und Austreten (#286, Teil 2 von #65)
+
+    def may_expel(self, unit: Unit | None) -> bool:
+        """Darf die Person Mitglieder dieser Organisation austragen (PK-21, PK-22, EH-18, EH-19)?
+
+        Wie beim Aufnehmen nur die Leitung der Organisation selbst und, solange dort keine Leitung
+        mit Konto ist, die einspringende Leitung darüber; in Organisationen darunter mit eigener
+        Leitung nicht. Verbandsleitung, DPV-Veranstaltungsteam, Mitglieder und Admins leiten keine
+        Organisation und tragen niemanden aus (PK-23). Auch sich selbst darf die Leitung austragen
+        (Sebastian bei der Umsetzung von #286, 10.11.2026).
+        """
+        return unit is not None and self.leads_unit(unit)
+
+    def _expellable(self, unit: Unit, person_key) -> Role:
+        """Die Mitgliedschaft der Person mit dieser Kennung direkt in `unit`, wenn die Person dort austragen darf.
+
+        Sonst „nicht gefunden“, auch für ein Mitglied einer Organisation darunter und für eine Person,
+        die gerade ausgetragen wurde oder ausgetreten ist (PG3).
+        """
+        if not self.may_expel(unit) or not is_key(person_key):
+            raise Http404
+        found = self.person(person_key)
+        membership = Role.objects.filter(user_id=found.pk, kind=R.MEMBER, unit_id=unit.pk).select_related(
+            "user", "unit__parent").first()
+        if membership is None:
+            raise Http404
+        return membership
+
+    def expulsion(self, unit: Unit, person_key) -> dict:
+        """Was der Dialog „Austragen“ zeigt; ohne Recht „nicht gefunden“ (PK-21, #65 Frage 11 und 17).
+
+        `person` ist der Name wie in der Liste, `options` die Wahlmöglichkeiten in der Reihenfolge des
+        Dialogs: „hoch“ (direkt zur Organisation darüber, nicht beim Bund) und „ganz“ (keiner
+        Organisation mehr). Je Möglichkeit `target`, die Organisation danach oder None, und `endings`,
+        die Leitungsrollen, die dabei enden (`_endings()`). Ändert nichts.
+        """
+        membership = self._expellable(unit, person_key)
+        user = membership.user
+        options = []
+        for choice, entirely in EXPEL_CHOICES.items():
+            if not entirely and unit.kind == UnitKind.ASSOCIATION:
+                continue
+            options.append({"value": choice, "target": after_leaving(unit, entirely),
+                            "endings": self._endings(membership, unit, entirely)})
+        return {"person": display_name(user.first_name, user.last_name, user.scout_name) or user.username,
+                "options": options}
 
     def expel(self, unit: Unit, person_key, choice: str) -> str:
-        """Gerüst für „Austragen“ (#286)."""
-        raise Http404
+        """Trägt ein Mitglied der Organisation aus; gibt die kurze Meldung zurück (PK-21).
+
+        `choice` ist „hoch“ oder „ganz“ aus `EXPEL_CHOICES`; beim Bund gibt es nur „ganz“. Jede andere
+        Wahl, ohne Recht, mit einer fremden Kennung oder wenn die Mitgliedschaft schon nicht mehr in
+        dieser Organisation besteht, ist das Ergebnis „nicht gefunden“, und nichts ändert sich. Es enden
+        die Leitungsrollen aus `Role.ending_leads()`, jede mit Eintrag im Protokoll (#91); eine Nachricht
+        gibt es nicht. Gesperrt sind das eigene Konto und das der Person, dann wird das Recht unter der
+        Sperre noch einmal geprüft: Von gleichzeitigen Änderungen an derselben Mitgliedschaft gelingt
+        genau eine, die zweite sieht „nicht gefunden“ (PG3).
+        """
+        if self.user is None or choice not in EXPEL_CHOICES or not is_key(person_key):
+            raise Http404
+        entirely = EXPEL_CHOICES[choice]
+        if not entirely and unit.kind == UnitKind.ASSOCIATION:
+            raise Http404
+        with transaction.atomic():
+            owner = get_user_model().objects.filter(key=person_key).values_list("pk", flat=True).first()
+            if owner is None:
+                raise Http404
+            me = self._lock_with(owner)
+            membership = Rights(me)._expellable(unit, person_key)
+            user = membership.user
+            name = display_name(user.first_name, user.last_name, user.scout_name) or user.username
+            if not membership.leave(unit, by=me, entirely=entirely):
+                raise Http404
+        return str(unit_texts.EXPELLED % {"person": name, "unit": unit_label(unit)})
+
+    def own_membership(self) -> Role | None:
+        """Die eigene Mitgliedschaft, frisch gelesen, mit den Organisationen darüber; sonst None (EP-06)."""
+        if self.user is None:
+            return None
+        return Role.objects.filter(user_id=self.user.pk, kind=R.MEMBER).select_related(
+            "unit__parent__parent__parent__parent").first()
+
+    def exit_options(self) -> tuple[Role, list[dict]] | None:
+        """Was der Dialog „Austreten“ zeigt: die eigene Mitgliedschaft und die Ebenen der eigenen Kette (EP-06).
+
+        Von der eigenen Organisation bis zum Bund, je mit `level`, `target` (die Organisation danach
+        oder None) und `endings` wie beim Austragen. Ohne Mitgliedschaft None. Ändert nichts.
+        """
+        membership = self.own_membership()
+        if membership is None:
+            return None
+        return membership, [{"level": level, "target": after_leaving(level, False),
+                             "endings": self._endings(membership, level, False)} for level in _chain_of(membership)]
 
     def leave_own(self, level_key, from_key) -> str:
-        """Gerüst für „Austreten“ (#286)."""
-        raise Http404
+        """Tritt aus `level_key` aus, einer Organisation der eigenen Kette; gibt die kurze Meldung zurück (EP-06).
+
+        Austreten gilt nur für die angemeldete Person: Die Mitgliedschaft kommt nie aus der Anfrage
+        (EP-07). `from_key` ist die Organisation der Mitgliedschaft, wie der Dialog sie gezeigt hat;
+        hat sie sich inzwischen geändert, etwa weil eine Leitung die Person gerade ausgetragen hat, ist
+        das Ergebnis „nicht gefunden“, und nichts ändert sich (PG3). Eine Ebene außerhalb der eigenen
+        Kette, auch eine manipulierte, ist ebenso „nicht gefunden“ (PG6). Urheber im Protokoll ist die
+        Person selbst.
+        """
+        if self.user is None or not is_key(level_key) or not is_key(from_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            membership = Rights(me).own_membership()
+            if membership is None or membership.unit.key != from_key:
+                raise Http404
+            level = next((entry for entry in _chain_of(membership) if entry.key == level_key), None)
+            if level is None or not membership.leave(level, by=me):
+                raise Http404
+        return str(unit_texts.LEFT % {"unit": unit_label(level)})
+
+    def _endings(self, membership: Role, left: Unit, entirely: bool) -> list[dict]:
+        """Die Leitungsrollen, die enden, wenn `membership` `left` verlässt, für die Vorschau (ROL-01, #191).
+
+        Je Rolle `role` (die Rolle selbst) und `last`: Danach hat ihre Organisation keine Leitung mit
+        Konto mehr; gesperrte Leitungen zählen dabei nicht, wie beim Entfernen (C12). Dann nennt
+        `cover` die Organisation, deren Leitung einspringt, oder None (EH-18, EH-27); Organisationen,
+        die durch dieselbe Änderung ihre letzte Leitung verlieren, springen dabei nicht ein.
+        """
+        ending = membership.ending_leads(left, entirely)
+        found = []
+        for role in ending:
+            others = Role.objects.filter(unit_id=role.unit_id, kind=role.kind, user__is_active=True)
+            found.append({"role": role, "last": not others.exclude(pk=role.pk).exists()})
+        emptied = frozenset(entry["role"].unit_id for entry in found if entry["last"])
+        for entry in found:
+            cover = self._lead_above(entry["role"].unit_id, without=emptied) if entry["last"] else None
+            entry["cover"] = Unit.objects.get(pk=cover) if cover is not None else None
+        return found
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
@@ -843,6 +974,16 @@ class Rights:
 def unit_label(unit: Unit) -> str:
     """Wie eine Organisation im Abschnitt „Personen“ und beim Aufnehmen heißt: „Stamm Walhall“, „Sippe Falken“ (#285)."""
     return str(unit_texts.MEMBER_UNIT_NAME[unit.kind] % {"unit": unit.name})
+
+
+def _chain_of(membership: Role) -> list[Unit]:
+    """Die Organisationen, aus denen eine Mitgliedschaft austreten kann: ihre eigene und die darüber bis zum Bund (EP-06)."""
+    found = []
+    unit = membership.unit
+    while unit is not None and unit.kind != UnitKind.FEDERATION:
+        found.append(unit)
+        unit = unit.parent
+    return found
 
 
 def alphabetical(name: str) -> str:
