@@ -91,7 +91,8 @@ def test_am_handy_ohne_skript_kurze_seite_mit_knopf(handy_ohne_skript):
     _password_requested_again(page)
 
 
-# G2: „Zurück“ nach dem Abmelden meldet nicht wieder an
+# G2: „Zurück“ nach dem Abmelden meldet nicht wieder an. Dass die kurze Seite nicht aus dem Speicher
+# kommt (no-store) und erneutes Senden unschädlich ist, prüft tests/test_abmelden.py.
 def test_zurueck_nach_dem_abmelden_meldet_nicht_wieder_an(pc):
     login(pc)
     pc.get_by_role("complementary", name="Seitenleiste").get_by_role("button", name="Abmelden").click()

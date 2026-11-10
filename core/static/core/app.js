@@ -3,6 +3,15 @@
 (function () {
   "use strict";
 
+  // Kurze Seite beim Abmelden (#280): Ihr Formular bringt das Kennungs-Token zu Keycloak und
+  // schickt sich sofort selbst ab, damit niemand einen Knopf mehr drücken muss. Ohne Skript
+  // bleibt der Knopf. Es steht hier und nicht in der Seite, weil Skripte nur aus Dateien des
+  // eigenen Servers kommen sollen (#278). Es steht am Anfang, damit kein
+  // Fehler in einem späteren Teil das Abmelden aufhält.
+  document.querySelectorAll("form[data-sofort-absenden]").forEach(function (form) {
+    form.submit();
+  });
+
   // Handy-Menü: Der Browser hält den Fokus im geöffneten Dialog und schließt ihn mit Escape.
   // Dazu kommen: Schließen-Knopf, Antippen daneben und Rückkehr des Fokus auf „Menü“.
   var menu = document.getElementById("menue");
@@ -443,14 +452,6 @@
           });
       }, 200);
     });
-  });
-
-  // Kurze Seite beim Abmelden (#280): Ihr Formular bringt das Kennungs-Token zu Keycloak und
-  // schickt sich sofort selbst ab, damit niemand einen Knopf mehr drücken muss. Ohne Skript
-  // bleibt der Knopf. Es steht hier und nicht in der Seite, weil Skripte nur aus Dateien des
-  // eigenen Servers kommen sollen (#278).
-  document.querySelectorAll("form[data-sofort-absenden]").forEach(function (form) {
-    form.submit();
   });
 
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.

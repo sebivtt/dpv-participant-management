@@ -148,7 +148,10 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
         return _keycloak_unreachable(request, error)
 
 
-@without_personal_data("Beendet die Sitzung; die kurze Seite enthält nur das Kennungs-Token für Keycloak (#280).")
+@without_personal_data(
+    "Beendet die Sitzung. Die kurze Seite enthält nur das eigene Kennungs-Token der Person, die sich "
+    "gerade abmeldet, verdeckt im Formular an Keycloak und vom Browser nicht gespeichert (#280)."
+)
 @login_not_required
 @require_POST
 def logout(request: HttpRequest) -> HttpResponse:

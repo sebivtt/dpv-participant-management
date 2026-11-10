@@ -10,7 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
-| Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht); 04.11.2026, #252, „Grenzen“ (nur der Verweis auf BF-124, P-19) |
+| Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht) |
 | Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
 | Prüfwege für Anfragen aus dem Skript | 05.11.2026, #264, Nr. 4 | 28.10.2026, #190; 25.10.2026, #96, #8, #64, #90; 23.10.2026, #87 (je nur die Nennung von htmx) |
 | Prüfung der Kernregeln durch Tests | 05.11.2026, #262, Nr. 1 und 2 | 26.10.2026, #169, „Technische Wahl“ (nur der Satzteil „die Kernregeln in `CLAUDE.md`“) |
