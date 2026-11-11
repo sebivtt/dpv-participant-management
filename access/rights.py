@@ -893,6 +893,20 @@ class Rights:
         values = {**shown, "unit": unit.name}
         return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
 
+    # Organisationen anlegen und bearbeiten (#95, ORG-06). Gerüst; die Regeln kommen mit den Tests.
+
+    def create(self, parent: Unit, name: str) -> tuple[bool, str]:
+        """Legt eine Organisation unter `parent` an (Gerüst)."""
+        raise Http404
+
+    def rename(self, unit: Unit, name: str) -> tuple[bool, str]:
+        """Benennt eine Organisation um (Gerüst)."""
+        raise Http404
+
+    def change_ring(self, troop: Unit, ring_key) -> tuple[bool, str]:
+        """Ordnet einen Stamm einem Ring zu oder wechselt ihn (Gerüst)."""
+        raise Http404
+
     # Seite „Verband“ der Verbandsleitung (#94)
 
     def appoint_in_federation(self, kind: str, unit: Unit, person_key) -> tuple[bool, str, dict]:

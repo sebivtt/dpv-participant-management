@@ -530,6 +530,35 @@ def organisation_move(request: HttpRequest, unit: str, person: str) -> HttpRespo
                                                        "start": False, "removal": removal})
 
 
+# Organisationen anlegen und bearbeiten (#95, ORG-06). Gerüst; die Regeln kommen mit den Tests.
+STRUCTURE_ROWS = ("EH-10", "EH-11", "EH-12", "EH-13", "EH-14", "EH-15", "EH-16", "EH-17", "EH-18", "EH-19",
+                  "EH-20", "EH-21", "EH-23", "EH-24", "EH-25", "EH-26", "EH-27")
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_create(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „… anlegen“ (Gerüst)."""
+    raise Http404
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_rename(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Umbenennen“ (Gerüst)."""
+    raise Http404
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_change_ring(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Ring wechseln“ (Gerüst)."""
+    raise Http404
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_introduce_rings(request: HttpRequest, unit: str) -> HttpResponse:
+    """Rückfrage „Ringe einführen“ (Gerüst)."""
+    raise Http404
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
