@@ -137,6 +137,17 @@ def textfeld(field, button: str = "", help_text: str = "") -> dict:
     return context
 
 
+@register.inclusion_tag("core/_datumsfeld.html")
+def datumsfeld(field) -> dict:
+    """Baustein „Datumsfeld“ (#117, N3): das Datumsfeld des Browsers mit Beschriftung und Fehler am Feld.
+
+    Wie das Textfeld, nur ohne Zahl der Zeichen; das Formular legt das Feld als Datum fest
+    (`type="date"`) und mit `max` den letzten wählbaren Tag. Der Browser schickt das Datum immer als
+    JJJJ-MM-TT, egal wie er es anzeigt; ein Datum, das er nicht versteht, kommt leer an.
+    """
+    return _textfeld(field)
+
+
 @register.inclusion_tag("core/_antippfeld.html")
 def antippfeld(field, saved: str, icon: str, failure: str = "", focus: bool = False) -> dict:
     """Feld zum Antippen (#180, Zielbild „Mein Profil“): in Ruhe wie eine Angabe, angetippt eine Eingabe.

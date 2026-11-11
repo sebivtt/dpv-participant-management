@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verwaltete Personen · Zielbild zu #117</title>
+<!--
+  Zielbild zu #117 (verwaltete Personen anlegen, sehen, bearbeiten), Fassung 2 vom 28.10.2026:
+  Sebastians Fassung 1 (entwurf-117-v3.html), von der KI an die Nachklärung N1 bis N7 angepasst
+  (Geburtsdatum Pflicht mit Grenze 120 Jahre, ohne Dublettenwarnung und ohne Löschen).
+  Grundlage: Zielbild zu #65, Fassung 2, und Klärung und Szenarien zu #117 vom 28.10.2026.
+  Nur erfundene Daten. Eine Datei, lädt nichts von fremden Servern.
+  Oben im dunklen Band umschalten. Band und Hinweiskasten gehören nicht zur Seite.
+  Hinweis für die Umsetzung: Strukturen für einfache Überführung nach Bootstrap 5 vorbereitet
+  (z. B. Modal-Header/Body/Footer-Aufteilung, me-auto für destruktive Aktionen, aria-invalid/aria-describedby analog .is-invalid/.invalid-feedback).
+-->
+<style>
+:root{
+  --dpv:#1a4b7e;--dpv-tief:#12385f;--dpv-hauch:#e9eff6;--akzent:#f0ad2c;
+  --grund:#f4f6f9;--flaeche:#fff;--linie:#dbe2ea;--text:#1b2532;--text-leise:#566375;
+  --ok-text:#245c3d;--ok-grund:#e1f0e6;--warte-text:#74500c;--warte-grund:#fbefd5;
+  --ab-text:#8a2c2c;--ab-grund:#f7e2e2;--zu-text:#3f4a58;--zu-grund:#e6e9ee;
+  --radius:14px;--radius-klein:9px;--leiste:236px;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--text);background:var(--grund);line-height:1.45}
+.a-symbole{display:none}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic-klein{width:16px;height:16px}
+.lilie{width:34px;height:34px;color:var(--dpv);flex:none}
+h1{font-size:1.45rem;margin:0;line-height:1.2}
+h2{font-size:1.06rem;margin:0}
+h3{font-size:.96rem;margin:0}
+a{color:var(--dpv)}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--dpv);outline-offset:2px}
+[hidden]{display:none!important}
+.sr-nur{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Entwurfs-Steuerung (gehört nicht zur Seite) */
+.e-band{background:#1b2532;color:#fff;font-size:.84rem;position:sticky;top:0;z-index:40;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.e-band>summary{padding:9px 16px;cursor:pointer;font-weight:700;color:var(--akzent);list-style:none}
+.e-band>summary::-webkit-details-marker{display:none}
+.e-band>summary::after{content:" ▾";color:#a3b1c2}
+.e-band[open]>summary::after{content:" ▴"}
+.e-band-rumpf{padding:0 16px 10px;display:grid;gap:7px}
+.e-zeile{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.e-zeile .label{color:#a3b1c2;font-weight:600;min-width:86px}
+.e-band button{background:#2e3a4a;color:#fff;border:1px solid transparent;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:.82rem}
+.e-band button:hover{background:#3e4d61}
+.e-band button[aria-pressed="true"]{background:var(--akzent);color:#1b2532;font-weight:700}
+.e-band button:disabled{opacity:.4;cursor:not-allowed}
+.e-notiz{background:#fff8e6;border-left:4px solid var(--akzent);padding:10px 14px;border-radius:var(--radius-klein);font-size:.86rem;color:#4a3a10;margin:0 0 16px}
+.e-notiz summary{cursor:pointer;font-weight:700}
+.e-notiz ul{margin:8px 0 0;padding-left:20px}
+.e-notiz li{margin:3px 0}
+.e-notiz h4{margin:10px 0 2px;font-size:.86rem}
+
+/* App-Rahmen */
+.a-app{display:flex;min-height:calc(100vh - 40px)}
+.a-leiste{width:var(--leiste);background:var(--flaeche);padding:20px 16px;display:flex;flex-direction:column;gap:18px;position:sticky;top:40px;height:calc(100vh - 40px);border-right:1px solid var(--linie);flex:none}
+.a-marke{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--dpv);font-size:1.02rem}
+.a-nav ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.a-navlink{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-klein);color:var(--text);text-decoration:none;font-weight:600}
+.a-navlink:hover{background:var(--grund)}
+.a-navlink[aria-current="page"]{background:var(--dpv-hauch);color:var(--dpv);font-weight:800}
+.a-navlink[aria-current="page"]::after{content:"";margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--akzent)}
+.a-konto{margin-top:auto;display:flex;align-items:center;gap:10px;font-weight:600;padding-top:12px;border-top:1px solid var(--linie);min-width:0}
+.a-kreis{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.a-inhalt{flex:1;padding:22px 26px;max-width:1380px;width:100%;min-width:0}
+
+/* Bausteine (analog Bootstrap .card, .btn, .badge, .alert) */
+.a-flaeche{background:var(--flaeche);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;border:1px solid var(--linie);min-width:0}
+.a-flaeche-kopf{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.a-flaeche-ic{width:34px;height:34px;border-radius:10px;background:var(--dpv-hauch);color:var(--dpv);display:grid;place-items:center;flex:none}
+.a-rechts{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.k{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-klein);padding:7px 14px;font-weight:600;font-size:.9rem;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.k-haupt{background:var(--dpv);color:#fff}
+.k-haupt:hover{background:var(--dpv-tief)}
+.k-zweit{background:var(--dpv-hauch);color:var(--dpv)}
+.k-zweit:hover{background:#dce6f2}
+.k-neutral{background:var(--flaeche);color:var(--text);border-color:var(--linie)}
+.k-neutral:hover{background:var(--grund)}
+.k-leise{background:transparent;color:var(--ab-text);padding:6px 10px}
+.k-leise:hover{background:var(--ab-grund)}
+.k-gefahr{background:var(--ab-text);color:#fff}
+.k-gefahr:hover{background:#702222}
+.k-rot{background:var(--ab-grund);color:var(--ab-text)}
+.k-rot:hover{background:#f0d2d2}
+.k-klein{padding:4px 10px;font-size:.82rem}
+.k-links{margin-right:auto} /* analog Bootstrap .me-auto im Modal-Footer */
+
+.marke{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.m-rolle{background:var(--dpv-hauch);color:var(--dpv)}
+.m-ein{background:var(--warte-grund);color:var(--warte-text)}
+.m-lesen{background:var(--zu-grund);color:var(--zu-text)}
+.m-gesperrt{background:var(--ab-grund);color:var(--ab-text)}
+.m-spaeter{background:#efe7fb;color:#5a3d8a}
+.m-verwaltet{background:var(--zu-grund);color:var(--zu-text)}
+
+.meldung{display:flex;gap:12px;border-radius:var(--radius-klein);padding:12px 14px;margin:0 0 14px;align-items:flex-start}
+.meldung .ic-kasten{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.75);display:grid;place-items:center;flex:none;font-weight:800}
+.meldung-inhalt,.meldung p{margin:0;font-size:.9rem;flex:1;min-width:0}
+.meldung b{display:block;margin-bottom:2px}
+.meldung .meldung-aktionen{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.mel-info{background:var(--dpv-hauch)}
+.mel-info .ic-kasten{color:var(--dpv)}
+.mel-warn{background:var(--warte-grund);color:var(--warte-text)}
+.mel-fehler{background:var(--ab-grund);color:var(--ab-text)}
+.mel-ok{background:var(--ok-grund);color:var(--ok-text)}
+
+/* Personenliste (analog Bootstrap .list-group) */
+.leute{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.person{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-radius:var(--radius-klein);background:var(--grund)}
+.av{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none;font-size:.9rem}
+.person.gesperrt .av,.person.verwaltet .av{background:var(--zu-grund);color:var(--zu-text)}
+.wer{flex:1;min-width:160px}
+.fahrt{font-weight:700}
+.zusatz{color:var(--text-leise);font-size:.86rem}
+.zahl{font-size:.8rem;color:var(--text-leise);font-weight:600}
+.mail{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--dpv);text-decoration:none;padding:4px 8px;border-radius:6px;overflow-wrap:anywhere;min-width:0}
+.mail:hover{background:var(--dpv-hauch)}
+.aktion{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+
+.a-pfad{font-size:.84rem;color:var(--text-leise);margin:0 0 6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.a-pfad button{background:none;border:0;padding:0;color:var(--dpv);cursor:pointer;font-size:inherit;font-weight:600}
+.a-pfad button:hover{text-decoration:underline}
+.a-unterzeile{color:var(--text-leise);margin:4px 0 0;font-size:.9rem}
+.seitenkopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.flaeche-spaeter{border-style:dashed}
+
+/* Dialoge (analog Bootstrap .modal, .modal-dialog, .modal-content, .modal-header, .modal-body, .modal-footer) */
+.dlg-hg{position:fixed;inset:0;background:rgba(27,37,50,.55);display:none;place-items:center;padding:16px;z-index:100;overflow-y:auto}
+.dlg-hg.offen{display:grid}
+.dlg{background:var(--flaeche);border-radius:var(--radius);max-width:580px;width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-shadow:0 20px 45px rgba(18,56,95,.22);border:1px solid var(--linie);overflow:hidden}
+.dlg-kopf{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--linie)}
+.dlg-x{background:transparent;border:0;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--text-leise);flex:none}
+.dlg-x:hover{background:var(--grund)}
+.dlg-inhalt{padding:18px 20px;overflow-y:auto}
+.dlg-inhalt p{margin:0 0 10px}
+.dlg-fuss{padding:12px 20px;background:var(--grund);border-top:1px solid var(--linie);display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* Formulare (analog Bootstrap .form-label, .form-control, .form-text, .is-invalid, .invalid-feedback) */
+.formular{display:grid;gap:14px}
+.formular .zwei{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.feld label{display:block;font-weight:600;margin-bottom:6px;font-size:.9rem}
+.feld .zeile{display:flex;gap:8px}
+.feld input{flex:1;width:100%;min-width:0;font:inherit;padding:9px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein);background:var(--flaeche);color:var(--text)}
+.feld input:focus{border-color:var(--dpv);outline:none;box-shadow:0 0 0 3px var(--dpv-hauch)}
+.pflicht{color:var(--ab-text);font-weight:700}
+.feld.hat-fehler input,.feld input[aria-invalid="true"]{border-color:var(--ab-text)}
+.feld.hat-fehler input:focus,.feld input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px var(--ab-grund)}
+.hilfe{font-size:.82rem;color:var(--text-leise);margin:6px 0 0}
+.fehler-stelle{color:var(--ab-text);font-size:.88rem;margin:6px 0 0;display:flex;gap:8px;align-items:flex-start}
+
+.treffer{list-style:none;margin:12px 0 0;padding:6px;border:1px solid var(--linie);border-radius:var(--radius-klein)}
+.treffer-titel{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-leise);padding:4px 8px;font-weight:700}
+.treffer li.t{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:8px}
+.treffer li.t:hover{background:var(--dpv-hauch)}
+.treffer .k{margin-left:auto}
+.probe{margin-top:16px;padding-top:12px;border-top:1px dashed var(--linie);font-size:.82rem;color:var(--text-leise)}
+.probe code{background:var(--grund);padding:1px 5px;border-radius:5px;cursor:pointer}
+
+.wahl{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.wahl label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein);cursor:pointer;background:var(--flaeche)}
+.wahl label:hover{border-color:var(--dpv)}
+.wahl input{margin-top:3px}
+.wahl input:checked + span{font-weight:700;color:var(--dpv)}
+.vorschau{background:var(--grund);border-radius:var(--radius-klein);padding:12px 14px;margin:4px 0 0}
+.vorschau p{margin:0 0 6px}
+.vorschau p:last-child{margin:0}
+.vorschau .frage{font-weight:700}
+
+/* Toasts / Kurzmeldungen (analog Bootstrap .toast-container, .toast) */
+.kurz-stapel{position:fixed;left:calc(var(--leiste) + (100vw - var(--leiste))/2);transform:translateX(-50%);bottom:18px;width:min(560px,calc(100vw - var(--leiste) - 32px));display:grid;gap:8px;z-index:90}
+.kurz{display:flex;gap:12px;align-items:flex-start;border-radius:var(--radius-klein);padding:12px 14px;background:var(--ok-grund);color:var(--ok-text);box-shadow:0 10px 28px rgba(18,56,95,.28)}
+.kurz p{margin:0;flex:1}
+
+@media (max-width:991px){
+  .a-app{display:block}
+  .a-leiste{width:auto;height:auto;position:static;flex-direction:row;align-items:center;padding:8px 12px;border-right:0;border-bottom:1px solid var(--linie);gap:8px}
+  .a-marke span{display:none}
+  .a-nav ul{display:flex;gap:4px}
+  .a-navlink{padding:6px 8px;font-size:.86rem;gap:6px}
+  .a-konto{margin:0 0 0 auto;padding-top:0;border-top:0}
+  .a-konto span:not(.a-kreis){display:none}
+  .a-inhalt{padding:14px 12px}
+  .a-flaeche{padding:16px}
+  .e-band{position:static}
+  .kurz-stapel{left:12px;right:12px;transform:none;width:auto}
+}
+@media (max-width:575px){
+  .formular .zwei{grid-template-columns:1fr}
+  .dlg-kopf,.dlg-inhalt{padding-left:14px;padding-right:14px}
+  .dlg-fuss{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+<svg class="a-symbole" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4 0 4 1.6 4.5 4.5"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-schliessen" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-haken" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></symbol>
+  <symbol id="i-schloss" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-links" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-stift" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+  <symbol id="i-kalender" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+</svg>
+
+<details class="e-band" open>
+  <summary>Zielbild #117 · Steuerung (gehört nicht zur Seite)</summary>
+  <div class="e-band-rumpf">
+    <div class="e-zeile"><span class="label">Wer schaut</span>
+      <button type="button" data-ansicht="fiete-falken" aria-pressed="true">Fiete · Seite Sippe Falken</button>
+      <button type="button" data-ansicht="wanda-falken" aria-pressed="false">Wanda · Seite Sippe Falken</button>
+      <button type="button" data-ansicht="wanda-walhall" aria-pressed="false">Wanda · Seite Walhall</button>
+      <button type="button" data-ansicht="bruno-boreas" aria-pressed="false">Bruno · Seite Boreas</button>
+    </div>
+    <div class="e-zeile"><span class="label">Fälle</span>
+      <button type="button" data-fall="ohneleitung" aria-pressed="false">Falken ohne Gruppenleitung (M3)</button>
+      <button type="button" data-fall="gleichzeitig" aria-pressed="false">Beim Speichern gleichzeitig geändert (MG6)</button>
+      <button type="button" id="zuruecksetzen">Zurücksetzen</button>
+    </div>
+  </div>
+</details>
+
+<div class="a-app">
+  <aside class="a-leiste">
+    <div class="a-marke">
+      <svg class="lilie" viewBox="0 0 283.46 283.46" fill="currentColor" aria-hidden="true" focusable="false"><path d="M141.73,21.53h-.00c-66.27,0-120.19,53.92-120.19,120.19,0,66.27,53.92,120.19,120.19,120.19h.00c66.27,0,120.19-53.91,120.19-120.19,0-66.27-53.92-120.19-120.19-120.19Zm0,232.81h-.00c-62.09,0-112.61-50.52-112.61-112.61,0-62.09,50.51-112.61,112.61-112.61h.00c62.09,0,112.61,50.52,112.61,112.61,0,62.09-50.51,112.61-112.61,112.61Z"/><path d="M155.61,190.46l-9.06,.03c-2.62,10.00-3.43,20.39-4.81,30.61-1.37-10.21-2.18-20.60-4.81-30.61l-9.06-.03c-2.32,9.61-6.11,18.33-11.29,26.71-.44,.71-.90,1.45-.51,2.30,1.51,3.31,19.84,24.08,25.29,26.91,.12,.06,.25,.09,.40,.11,.14-.02,.28-.05,.40-.11,5.44-2.83,23.78-23.60,25.29-26.91,.38-.84-.07-1.59-.51-2.30-5.17-8.37-8.97-17.09-11.29-26.71Z"/><path d="M242.38,128.52c-8.97-33.53-51.14-31.04-67.80-4.92-8.89,13.93-12.39,29.08-15.36,45.14,4.56,.61,9.00,1.82,13.48,2.84,3.49-5.92,5.98-12.74,11.33-17.33,8.29-7.10,22.97-4.39,25.72,6.94,.96,3.98,.62,8.09,.39,12.13,7.45-.66,15.51-3.35,21.31-8.20,10.24-8.57,14.32-23.89,10.92-36.60Z"/><path d="M172.96,187.85c-4.50,.62-8.95,1.56-13.42,2.36,1.23,10.70,6.87,27.99,19.30,29.97,7.27,1.15,12.91-.59,16.85-7.10,1.95-3.22,1.96-6.53,2.41-10.15-15.26,4.50-20.02-1.50-25.15-15.07Z"/><path d="M128.29,168.94c3.48-.13,6.96-.36,10.45-.45-.08-12.40,.80-25.09,1.29-37.50,.74-18.86,.57-37.80,.57-56.67,0-1.86,.13-3.75,1.11-5.35,.98,1.59,1.11,3.49,1.11,5.35,0,18.87-.16,37.81,.57,56.67,.49,12.41,1.37,25.10,1.29,37.50,3.48,.09,6.96,.32,10.45,.45,1.39-9.73,3.13-19.14,6.36-28.46,8.44-24.34,24.06-46.15,9.07-72.06-6.81-11.78-19.25-21.52-28.88-31.13-9.63,9.60-22.06,19.34-28.88,31.13-14.98,25.90,.63,47.72,9.07,72.06,3.23,9.31,4.97,18.72,6.36,28.46Z"/><path d="M99.43,154.25c5.35,4.58,7.84,11.41,11.33,17.33,4.48-1.01,8.92-2.22,13.48-2.84-2.97-16.06-6.47-31.20-15.36-45.14-16.65-26.11-58.83-28.60-67.80,4.92-3.40,12.71,.68,28.02,10.92,36.60,5.80,4.85,13.86,7.54,21.31,8.20-.23-4.04-.57-8.15,.39-12.13,2.74-11.34,17.42-14.04,25.72-6.94Z"/><path d="M110.49,187.85c-5.13,13.57-9.88,19.57-25.15,15.07,.44,3.61,.46,6.92,2.41,10.15,3.94,6.51,9.58,8.26,16.85,7.10,12.43-1.98,18.06-19.26,19.30-29.97-4.46-.80-8.92-1.74-13.42-2.36Z"/><path d="M141.73,170.10c-15.85,.20-43.93,2.04-39.60,11.01,2.17,4.49,13.09,5.75,17.48,6.28,5.54,.67,13.61,1.30,22.12,1.43,8.50-.12,16.58-.75,22.12-1.43,4.38-.53,15.30-1.79,17.48-6.28,4.33-8.96-23.74-10.81-39.60-11.01Zm0,13.07c-15.24,0-27.61-1.68-27.61-3.77,0-2.08,12.36-3.77,27.61-3.77,15.24,0,27.61,1.68,27.61,3.77,0,2.08-12.36,3.77-27.61,3.77Z"/></svg>
+      <span>DPV Anmeldetool</span>
+    </div>
+    <nav class="a-nav" aria-label="Hauptnavigation">
+      <ul>
+        <li><a class="a-navlink" href="#" onclick="return false"><svg class="ic"><use href="#i-home"/></svg><span>Startseite</span></a></li>
+        <li><a class="a-navlink" href="#" onclick="return false" aria-current="page"><svg class="ic"><use href="#i-organisation"/></svg><span>Organisation</span></a></li>
+      </ul>
+    </nav>
+    <div class="a-konto"><span class="a-kreis" id="konto-kreis">F</span><span id="konto-name"></span></div>
+  </aside>
+
+  <main class="a-inhalt">
+    <details class="e-notiz">
+      <summary>Was in diesem Entwurf gilt (aufklappen)</summary>
+      <h4>Grundlage</h4>
+      <ul>
+        <li>Zielbild zu #65, Fassung 2 (Abschnitt „Personen“ mit Aufnehmen, Verschieben, Austragen), unverändert übernommen. Neu ist nur, was zu verwalteten Personen gehört.</li>
+        <li>Klärung und Szenarien zu #117 vom 28.10.2026 (M1 bis M6, MW1 bis MW3, MV1 bis MV6, MG1 bis MG10). Nur erfundene Personen.</li>
+      </ul>
+      <h4>Verwaltete Personen im Abschnitt „Personen“</h4>
+      <ul>
+        <li>Gemischt mit den Mitgliedern, nach Nachname sortiert, mit Marke „verwaltet“. Mail und Geburtsdatum werden nicht in der Liste angezeigt; das Geburtsdatum ist Pflicht. Die Zahl im Kopf zählt alle.</li>
+        <li>„Verwaltete Person anlegen“ nur in der eigenen Organisation oder beim Einspringen (VP-01, VP-17): Fiete auf der Seite der Falken, Wanda auf der Seite von Walhall, Wanda auf der Seite der Falken nur im Fall „Falken ohne Gruppenleitung“.</li>
+        <li>„Bearbeiten“ bei jeder verwalteten Person für alle Leitungen des Bereichs (VP-02): auch Wanda auf der Seite der Falken.</li>
+        <li>Anlegen und Bearbeiten im selben Dialog; Feldfehler erscheinen direkt am Feld (inkl. <code>aria-invalid</code> und <code>aria-describedby</code>), Erfolg als kurze Meldung unten.</li>
+      </ul>
+      <h4>Geburtsdatum</h4>
+      <ul>
+        <li>Das Geburtsdatum ist Pflicht und wird nicht in der Personenliste angezeigt. Das Datumsfeld des Browsers verhindert Eingaben in der Zukunft; das Datum liegt höchstens 120 Jahre zurück (N1 bis N3).</li>
+        <li>Eine spätere Verknüpfung mit einem eigenen Konto ist fachlich vorgesehen, aber noch nicht Teil dieses Prototyps.</li>
+      </ul>
+      <h4>Nicht in diesem Entwurf</h4>
+      <ul>
+        <li>Verwaltete Personen verschieben und löschen (#118; das Aussehen des Löschens aus Fassung 1 ist dort Vorlage), Haken für die Einwilligung (#98), angezeigte Leitungsrolle (#99), Hinweis auf mögliche Dubletten (PER-06, vorgemerkt; Fassung 1 ist dort Vorlage).</li>
+      </ul>
+    </details>
+    <div id="inhalt"></div>
+  </main>
+</div>
+<div class="kurz-stapel" id="kurz-stapel" aria-live="polite"></div>
+
+<!-- Dialog: Person anlegen / bearbeiten (#117) -->
+<div class="dlg-hg" id="dlg-vp" role="dialog" aria-modal="true" aria-labelledby="vp-titel">
+  <div class="dlg" style="max-width:560px">
+    <div class="dlg-kopf">
+      <div><h2 id="vp-titel">Person anlegen</h2><p class="a-unterzeile" id="vp-unter"></p></div>
+      <button type="button" class="dlg-x" data-zu="dlg-vp" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <form class="dlg-inhalt" id="vp-form" novalidate autocomplete="off">
+      <div id="vp-oben"></div>
+      <div class="formular" id="vp-felder">
+        <div class="zwei">
+          <div class="feld" id="f-vor"><label for="vp-vor">Vorname <span class="pflicht" aria-hidden="true">*</span></label>
+            <input id="vp-vor" type="text" maxlength="100" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required></div>
+          <div class="feld" id="f-nach"><label for="vp-nach">Nachname <span class="pflicht" aria-hidden="true">*</span></label>
+            <input id="vp-nach" type="text" maxlength="100" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" required></div>
+        </div>
+        <div class="feld" id="f-geb"><label for="vp-geb">Geburtsdatum <span class="pflicht" aria-hidden="true">*</span></label>
+          <div id="vp-geb-feld"></div></div>
+        <div class="feld" id="f-fahrt"><label for="vp-fahrt">Fahrtenname <span class="zusatz">(freiwillig)</span></label>
+          <input id="vp-fahrt" type="text" maxlength="50" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false"></div>
+        <p class="hilfe" id="vp-pflicht-hinweis" style="margin:0"><span class="pflicht" aria-hidden="true">*</span> Pflichtangabe</p>
+      </div>
+      <div class="probe" id="vp-probe">Zum Ausprobieren (gehört nicht zur Seite):
+        <button type="button" class="k k-neutral k-klein" data-probe-vp="leer">alles leer</button>
+        <button type="button" class="k k-neutral k-klein" data-probe-vp="lang">Vorname 101 Zeichen</button>
+        <button type="button" class="k k-neutral k-klein" data-probe-vp="zukunft">Geburtsdatum morgen</button>
+        <button type="button" class="k k-neutral k-klein" data-probe-vp="alt">Geburtsdatum 1900</button>
+      </div>
+    </form>
+    <div class="dlg-fuss">
+      <!-- Fußzeile beim Anlegen / Bearbeiten (analog Bootstrap .modal-footer); Löschen kommt mit #118 -->
+      <button type="button" class="k k-neutral" id="vp-abbrechen" data-zu="dlg-vp">Abbrechen</button>
+      <button type="submit" form="vp-form" class="k k-haupt" id="vp-ok">Anlegen</button>
+
+    </div>
+  </div>
+</div>
+
+<!-- Dialog: Person aufnehmen -->
+<div class="dlg-hg" id="dlg-auf" role="dialog" aria-modal="true" aria-labelledby="auf-titel">
+  <div class="dlg">
+    <div class="dlg-kopf">
+      <div><h2 id="auf-titel">Person aufnehmen</h2><p class="a-unterzeile" id="auf-unter"></p></div>
+      <button type="button" class="dlg-x" data-zu="dlg-auf" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <form class="feld" id="auf-form" autocomplete="off">
+        <label for="auf-eingabe">Mail oder Benutzername</label>
+        <div class="zeile">
+          <input id="auf-eingabe" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button class="k k-haupt" type="submit">Suchen</button>
+        </div>
+        <p class="hilfe">Die Person muss sich schon einmal im Tool angemeldet haben. Gefunden wird sie nur über die genaue Mail oder den genauen Benutzernamen.</p>
+      </form>
+      <div id="auf-ergebnis"></div>
+      <div class="probe">Zum Ausprobieren (gehört nicht zur Seite):
+        <code data-probe="otto.ohne@example.org">otto.ohne@example.org</code> (noch nirgends Mitglied),
+        <code data-probe="finn.muster@example.org">finn.muster@example.org</code> (schon im eigenen Bereich),
+        <code data-probe="anton.muster@example.org">anton.muster@example.org</code> (außerhalb),
+        <code data-probe="niemand@example.org">niemand@example.org</code>.
+        Gesucht: <span id="auf-zaehler">0</span> von 20 ·
+        <button type="button" class="k k-neutral k-klein" id="auf-limit">Suchlimit zeigen</button>
+      </div>
+    </div>
+    <div class="dlg-fuss"><button type="button" class="k k-neutral" data-zu="dlg-auf">Abbrechen</button></div>
+  </div>
+</div>
+
+<!-- Dialog: Verschieben -->
+<div class="dlg-hg" id="dlg-ver" role="dialog" aria-modal="true" aria-labelledby="ver-titel">
+  <div class="dlg" style="max-width:500px">
+    <div class="dlg-kopf">
+      <div><h2 id="ver-titel">Verschieben</h2><p class="a-unterzeile" id="ver-unter"></p></div>
+      <button type="button" class="dlg-x" data-zu="dlg-ver" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <p>Wohin soll die Person?</p>
+      <ul class="wahl" id="ver-wahl"></ul>
+      <div id="ver-fehler"></div>
+    </div>
+    <div class="dlg-fuss">
+      <button type="button" class="k k-neutral" data-zu="dlg-ver">Abbrechen</button>
+      <button type="button" class="k k-haupt" id="ver-ok">Verschieben</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog: Austragen -->
+<div class="dlg-hg" id="dlg-aus" role="dialog" aria-modal="true" aria-labelledby="aus-titel">
+  <div class="dlg" style="max-width:540px">
+    <div class="dlg-kopf">
+      <h2 id="aus-titel">Austragen</h2>
+      <button type="button" class="dlg-x" data-zu="dlg-aus" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <ul class="wahl" id="aus-wahl"></ul>
+      <div class="vorschau" id="aus-vorschau" aria-live="polite"></div>
+    </div>
+    <div class="dlg-fuss">
+      <button type="button" class="k k-neutral" data-zu="dlg-aus">Abbrechen</button>
+      <button type="button" class="k k-gefahr" id="aus-ok">Austragen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- Erfundene Daten (Szenarien zu #65 und #117 vom 28.10.2026) ----------
+  var GRUND_E = {
+    boreas:{art:"Bund",name:"Pfadfinderbund Boreas",ober:null},
+    walhall:{art:"Stamm",name:"Stamm Walhall",ober:"boreas"},
+    falken:{art:"Gruppe",name:"Sippe Falken",ober:"walhall"},
+    woelfe:{art:"Gruppe",name:"Meute Wölfe",ober:"walhall"},
+    zugvoegel:{art:"Stamm",name:"Stamm Zugvögel",ober:"boreas"},
+    adler:{art:"Gruppe",name:"Sippe Adler",ober:"zugvoegel"}
+  };
+  var GRUND_P = {
+    bruno:{vor:"Bruno",nach:"Beispiel",fahrt:"Brummbär",mit:"boreas"},
+    bea:{vor:"Bea",nach:"Beispiel",fahrt:"Biene",mit:"boreas"},
+    wanda:{vor:"Wanda",nach:"Beispiel",fahrt:"Wirbelwind",mit:"walhall"},
+    willi:{vor:"Willi",nach:"Muster",fahrt:"Wiesel",mit:"walhall"},
+    wilma:{vor:"Wilma",nach:"Muster",fahrt:"Waldkauz",mit:"walhall"},
+    wim:{vor:"Wim",nach:"Muster",fahrt:"Wolke",mit:"walhall"},
+    fiete:{vor:"Fiete",nach:"Muster",fahrt:"Funke",mit:"falken"},
+    finn:{vor:"Finn",nach:"Muster",fahrt:"Flink",mit:"falken"},
+    wiebke:{vor:"Wiebke",nach:"Beispiel",fahrt:"Wichtel",mit:"woelfe"},
+    zora:{vor:"Zora",nach:"Beispiel",fahrt:"Zaunkönig",mit:"zugvoegel"},
+    ada:{vor:"Ada",nach:"Muster",fahrt:"Amsel",mit:"adler"},
+    anton:{vor:"Anton",nach:"Muster",fahrt:"Ameise",mit:"adler"},
+    otto:{vor:"Otto",nach:"Ohne",fahrt:"Otter",mit:null},
+    // verwaltete Personen (#117): ohne Konto, ohne Mail
+    lena:{vor:"Lena",nach:"Probe",fahrt:"Kiwi",mit:"falken",verwaltet:true,geb:"2015-05-14"},
+    paul:{vor:"Paul",nach:"Probe",fahrt:"",mit:"walhall",verwaltet:true,geb:"2012-09-03"},
+    ole:{vor:"Ole",nach:"Probe",fahrt:"Otti",mit:"adler",verwaltet:true,geb:"2016-02-29"}
+  };
+  var GRUND_L = [["boreas","bruno"],["walhall","wanda"],["walhall","willi"],["falken","fiete"],["woelfe","wim"],["zugvoegel","zora"],["zugvoegel","bea"],["adler","ada"]];
+  var ANSICHT = {"wanda-walhall":["wanda","walhall"],"wanda-falken":["wanda","falken"],"fiete-falken":["fiete","falken"],"bruno-boreas":["bruno","boreas"]};
+  var ROLLE = {Bund:"Bundesleitung",Ring:"Ringleitung",Stamm:"Stammesleitung",Gruppe:"Gruppenleitung"};
+
+  var E, P, L, z;
+  function neu(){
+    E = JSON.parse(JSON.stringify(GRUND_E));
+    P = JSON.parse(JSON.stringify(GRUND_P));
+    Object.keys(P).forEach(function(id){ if (!P[id].verwaltet) P[id].mail = id + "." + P[id].nach.toLowerCase() + "@example.org"; });
+    L = GRUND_L.map(function(x){ return {e:x[0], p:x[1]}; });
+    if (z && z.ohneleitung) L = L.filter(function(l){ return l.e!=="falken"; });
+  }
+  z = {ansicht:"fiete-falken", ohneleitung:false, gleichzeitig:false, suchen:0, offen:null, fokusZurueck:null, nr:0};
+  neu();
+
+  // ---------- Regeln ----------
+  function kinder(id){ return Object.keys(E).filter(function(k){ return E[k].ober === id; }); }
+  function ober(id){ var r=[], o=E[id].ober; while(o){ r.push(o); o=E[o].ober; } return r; }
+  function unter(id){ var r=[id]; kinder(id).forEach(function(k){ r=r.concat(unter(k)); }); return r; }
+  function leitungen(e){ return L.filter(function(l){ return l.e===e; }); }
+  function rollen(p){ return L.filter(function(l){ return l.p===p; }); }
+  function einspringer(e){ var a=ober(e); for (var i=0;i<a.length;i++){ if (leitungen(a[i]).length) return a[i]; } return null; }
+  function leitetSelbst(v,e){ return leitungen(e).some(function(l){ return l.p===v; }); }
+  function springtEin(v,e){ return !leitungen(e).length && einspringer(e) && leitetSelbst(v, einspringer(e)); }
+  function bereich(v){ var r={}; rollen(v).forEach(function(l){ unter(l.e).forEach(function(u){ r[u]=1; }); }); return r; }
+  // Rechte der Leitung dieser Organisation selbst: aufnehmen, verschieben, austragen, verwaltete Person anlegen (PK-17, PK-19, PK-21, VP-01, EH-18)
+  function eigeneLeitung(v,e){ return leitetSelbst(v,e) || springtEin(v,e); }
+  function pfadOk(m, e){ if (!m) return false; var basis = E[m].art==="Gruppe" ? E[m].ober : m;
+    return unter(basis).indexOf(e)>=0 || ober(basis).indexOf(e)>=0; }
+  // Anzeige nach #111: „Kiwi (Lena Probe)“, ohne Fahrtenname „Paul Probe“
+  function name(p){ var q=P[p]; return q.fahrt ? q.fahrt + " (" + q.vor + " " + q.nach + ")" : q.vor + " " + q.nach; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function endendeRollen(p, verlassen, neuM){
+    return rollen(p).filter(function(l){ return unter(verlassen).indexOf(l.e)>=0 || !pfadOk(neuM, l.e); });
+  }
+
+  // ---------- Seite ----------
+  function personenHtml(v,e){
+    var darf = eigeneLeitung(v,e), d = E[e];
+    var leute = Object.keys(P).filter(function(p){ return P[p].mit===e; })
+      .sort(function(a,b){ return (P[a].nach+" "+P[a].vor).localeCompare(P[b].nach+" "+P[b].vor, "de"); });
+    var knopf = darf ? '<span class="a-rechts"><button class="k k-zweit" type="button" onclick="anlegenAuf()"><svg class="ic"><use href="#i-plus"/></svg>Verwaltete Person anlegen</button><button class="k k-haupt" type="button" onclick="aufnehmenAuf()"><svg class="ic"><use href="#i-plus"/></svg>Person mit Konto aufnehmen</button></span>' : "";
+    var h = '<div class="a-flaeche"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-personen"/></svg></span><h2>Personen</h2><span class="zahl">'+leute.length+(leute.length===1?" Person":" Personen")+'</span>'+knopf+'</div>';
+    if (!leute.length) return h + '<p class="zusatz" style="margin:0">Dieser Organisation sind noch keine Personen zugeordnet.'+(darf ? ' Du kannst oben eine verwaltete Person anlegen oder eine bereits registrierte Person aufnehmen.' : '')+'</p></div>';
+    h += '<ul class="leute">' + leute.map(function(p){
+      var q = P[p], rs = rollen(p).map(function(l){ return '<span class="marke m-rolle">'+ROLLE[E[l.e].art]+' '+esc(E[l.e].name)+'</span>'; }).join(" ");
+      var aktionen = "";
+      if (q.verwaltet){
+        // Bearbeiten: alle Leitungen des Bereichs (VP-02); Verschieben und Löschen kommen mit #118
+        aktionen += '<button class="k k-zweit k-klein" type="button" onclick="bearbeitenAuf(\''+p+'\')"><svg class="ic ic-klein"><use href="#i-stift"/></svg>Bearbeiten</button>';
+      } else if (darf){
+        if (d.art!=="Gruppe" && kinder(e).length) aktionen += '<button class="k k-zweit k-klein" type="button" onclick="verschiebenAuf(\''+p+'\')">Verschieben</button>';
+        aktionen += '<button class="k k-rot k-klein" type="button" onclick="austragenAuf(\''+p+'\')">Austragen</button>';
+      }
+      var wer = q.fahrt ? '<span class="fahrt">'+esc(q.fahrt)+'</span> <span class="zusatz">('+esc(q.vor+" "+q.nach)+')</span>'
+        : '<span class="fahrt">'+esc(q.vor+" "+q.nach)+'</span>';
+      return '<li class="person'+(q.verwaltet?' verwaltet':'')+'"><span class="av">'+esc((q.fahrt||q.vor).charAt(0))+'</span>'+
+        '<span class="wer">'+wer+(q.verwaltet?' <span class="marke m-verwaltet">verwaltet</span>':'')+(p===z.wer?' <span class="zusatz">· das bist du</span>':'')+(rs?'<br>'+rs:'')+'</span>'+
+        (q.mail ? '<a class="mail" href="#" onclick="return false"><svg class="ic ic-klein"><use href="#i-mail"/></svg>'+esc(q.mail)+'</a>' : '')+
+        (aktionen?'<span class="aktion">'+aktionen+'</span>':'')+'</li>';
+    }).join("") + '</ul>';
+    return h + '</div>';
+  }
+  function seiteHtml(v,e){
+    var d=E[e];
+    var pfad = ober(e).reverse().map(function(o){ return '<span>›</span> <button type="button">'+esc(E[o].name)+'</button>'; }).join(" ");
+    var marke = springtEin(v,e) ? '<span class="marke m-ein">Du springst ein</span>' : leitetSelbst(v,e) ? '<span class="marke m-rolle">Deine Rolle: '+ROLLE[d.art]+'</span>' : '';
+    var h = '<div class="a-flaeche"><p class="a-pfad"><span>Organisation</span> '+pfad+'</p><div class="seitenkopf"><div><h1>'+esc(d.name)+'</h1><p class="a-unterzeile">'+d.art+(d.ober?' in '+esc(E[d.ober].name):'')+'</p></div><div>'+marke+'</div></div></div>';
+    var ls = leitungen(e);
+    h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-person"/></svg></span><h2>Leitungen</h2><span class="marke m-spaeter">aus #189 bis #191, hier nur angedeutet</span></div>'+
+      (ls.length ? '<p class="zusatz" style="margin:0">'+ls.map(function(l){ return esc(name(l.p)); }).join(", ")+'</p>'
+        : '<p class="zusatz" style="margin:0">'+esc(d.name)+' hat keine '+ROLLE[d.art]+'. Bis eine benannt ist, springt die Leitung von '+esc(E[einspringer(e)].name)+' ein.</p>')+'</div>';
+    if (d.art!=="Gruppe") h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-organisation"/></svg></span><h2>Organisationen darunter</h2><span class="marke m-spaeter">aus #189, hier nur angedeutet</span></div><p class="zusatz" style="margin:0">'+kinder(e).map(function(k){ return esc(E[k].name); }).join(", ")+'</p></div>';
+    return h + personenHtml(v,e);
+  }
+  function zeichne(){
+    var a = ANSICHT[z.ansicht]; z.wer = a[0]; z.seite = a[1];
+    document.getElementById("konto-kreis").textContent = P[z.wer].fahrt.charAt(0);
+    document.getElementById("konto-name").textContent = name(z.wer);
+    var ziel = document.getElementById("inhalt");
+    if (!bereich(z.wer)[z.seite]){ ziel.innerHTML = '<div class="meldung mel-fehler"><span class="ic-kasten">!</span><p><b>Nicht gefunden</b>Diese Ansicht ist nach der letzten Änderung nicht mehr erreichbar. Oben „Zurücksetzen“ stellt den Anfang wieder her.</p></div>'; return; }
+    ziel.innerHTML = seiteHtml(z.wer, z.seite);
+  }
+
+  // ---------- Kurze Meldung (#186) ----------
+  function kurz(t){
+    var st = document.getElementById("kurz-stapel");
+    var el = document.createElement("div"); el.className = "kurz";
+    el.innerHTML = '<span class="ic-kasten"><svg class="ic"><use href="#i-haken"/></svg></span><p><span class="sr-nur">Erfolg: </span>'+esc(t)+'</p><button type="button" class="dlg-x" aria-label="Meldung schließen"><svg class="ic ic-klein"><use href="#i-schliessen"/></svg></button>';
+    el.querySelector("button").onclick = function(){ el.remove(); };
+    st.appendChild(el); while (st.children.length > 3) st.firstChild.remove();
+    setTimeout(function(){ el.remove(); }, 6000);
+  }
+
+  // ---------- Dialoge ----------
+  function auf(id){
+    if (!z.offen) z.fokusZurueck = document.activeElement;
+    z.offen=id;
+    var dlg=document.getElementById(id); dlg.classList.add("offen");
+    var f=dlg.querySelector("input:not([disabled]),button.k-haupt:not([disabled]),button.k-gefahr:not([disabled]),button:not([disabled])");
+    if(f) f.focus();
+  }
+  function zu(id, fokusZurueck){
+    document.getElementById(id).classList.remove("offen"); z.offen=null;
+    var r=z.fokusZurueck; z.fokusZurueck=null;
+    if(fokusZurueck!==false && r && typeof r.focus==="function" && document.contains(r)) r.focus();
+  }
+  function fokusNachAenderung(){
+    var ueberschrift=Array.from(document.querySelectorAll("#inhalt .a-flaeche-kopf h2")).find(function(h){return h.textContent.trim()==="Personen";});
+    if(ueberschrift){ ueberschrift.setAttribute("tabindex","-1"); ueberschrift.focus(); }
+  }
+  function dialogSchliessenNachAenderung(id){
+    document.getElementById(id).classList.remove("offen"); z.offen=null; z.fokusZurueck=null;
+    zeichne(); fokusNachAenderung();
+  }
+  document.querySelectorAll("[data-zu]").forEach(function(b){ b.onclick = function(){ zu(b.dataset.zu); }; });
+  document.addEventListener("keydown", function(ev){
+    if (!z.offen) return;
+    var dlg=document.getElementById(z.offen);
+    if(ev.key==="Escape"){ ev.preventDefault(); zu(z.offen); return; }
+    if(ev.key!=="Tab") return;
+    var elems=Array.from(dlg.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+      .filter(function(el){ return !el.hidden && !el.closest("[hidden]") && el.getClientRects().length>0; });
+    if(!elems.length){ ev.preventDefault(); dlg.focus(); return; }
+    var first=elems[0], last=elems[elems.length-1];
+    if(ev.shiftKey && (document.activeElement===first || !dlg.contains(document.activeElement))){ ev.preventDefault(); last.focus(); }
+    else if(!ev.shiftKey && (document.activeElement===last || !dlg.contains(document.activeElement))){ ev.preventDefault(); first.focus(); }
+  });
+
+  // Aufnehmen (PK-17, PK-18, PK-24; aus dem Zielbild zu #65)
+  window.aufnehmenAuf = function(){
+    document.getElementById("auf-unter").textContent = "in " + E[z.seite].name;
+    document.getElementById("auf-eingabe").value = ""; document.getElementById("auf-ergebnis").innerHTML = "";
+    auf("dlg-auf");
+  };
+  function meldungIn(box, art, t){ box.innerHTML = '<div class="meldung '+art+'" style="margin:12px 0 0"><span class="ic-kasten">'+(art==="mel-warn"?"!":'<svg class="ic"><use href="#i-info"/></svg>')+'</span><p>'+esc(t)+'</p></div>'; }
+  document.getElementById("auf-form").onsubmit = function(ev){
+    ev.preventDefault();
+    var box = document.getElementById("auf-ergebnis"), q = document.getElementById("auf-eingabe").value.trim().toLowerCase();
+    if (!q) return;
+    if (z.suchen >= 20){ meldungIn(box,"mel-warn","Du hast in kurzer Zeit sehr oft gesucht. Bitte versuche es in 23 Minuten noch einmal."); return; }
+    z.suchen++; document.getElementById("auf-zaehler").textContent = z.suchen;
+    var p = Object.keys(P).filter(function(k){ return !P[k].verwaltet && (P[k].mail===q || k===q); })[0];
+    if (!p){ meldungIn(box,"mel-info","Kein Konto gefunden. Die Person muss sich zuerst einmal im Tool anmelden."); return; }
+    var m = P[p].mit;
+    if (m && bereich(z.wer)[m]){ meldungIn(box,"mel-info", name(p)+" ist schon Mitglied in "+E[m].name+"."); return; }
+    if (m){ meldungIn(box,"mel-warn","Diese Person gehört schon zu einer anderen Organisation. Sie kann dort selbst austreten oder ihre bisherige Leitung bitten, sie auszutragen."); return; }
+    box.innerHTML = '<ul class="treffer"><li class="treffer-titel">Treffer</li><li class="t"><span class="av">'+esc(P[p].fahrt.charAt(0))+'</span><span><span class="fahrt">'+esc(P[p].fahrt)+'</span> <span class="zusatz">('+esc(P[p].vor+" "+P[p].nach)+')</span></span><button class="k k-haupt k-klein" type="button" id="auf-ok">Aufnehmen</button></li></ul>';
+    document.getElementById("auf-ok").onclick = function(){ P[p].mit = z.seite; zu("dlg-auf"); zeichne(); kurz(name(p)+" gehört jetzt zu "+E[z.seite].name+"."); };
+  };
+  document.getElementById("auf-limit").onclick = function(){ z.suchen = 20; document.getElementById("auf-zaehler").textContent = 20; };
+  document.querySelectorAll("[data-probe]").forEach(function(c){ c.onclick = function(){ document.getElementById("auf-eingabe").value = c.dataset.probe; }; });
+
+  // Verschieben (PK-19, PK-25; aus dem Zielbild zu #65)
+  window.verschiebenAuf = function(p){
+    document.getElementById("ver-unter").textContent = name(p) + " aus " + E[z.seite].name;
+    document.getElementById("ver-wahl").innerHTML = kinder(z.seite).map(function(k,i){
+      return '<li><label><input type="radio" name="ver-ziel" value="'+k+'"'+(i===0?' checked':'')+'><span>'+esc(E[k].name)+'</span></label></li>'; }).join("");
+    document.getElementById("ver-fehler").innerHTML = "";
+    document.getElementById("ver-ok").onclick = function(){
+      var ziel = document.querySelector('input[name="ver-ziel"]:checked').value;
+      var weg = rollen(p).filter(function(l){ return !pfadOk(ziel, l.e); });
+      if (weg.length){
+        document.getElementById("ver-fehler").innerHTML = '<p class="fehler-stelle" role="alert"><svg class="ic ic-klein"><use href="#i-schliessen"/></svg><span>'+esc(name(p))+' ist '+weg.map(function(l){ return ROLLE[E[l.e].art]+" von "+E[l.e].name; }).join(", ")+'. Diese Rolle passt nicht zu '+esc(E[ziel].name)+'. Sie kann zuerst beendet werden.</span></p>';
+        return;
+      }
+      P[p].mit = ziel; zu("dlg-ver"); zeichne(); kurz(name(p)+" gehört jetzt zu "+E[ziel].name+".");
+    };
+    auf("dlg-ver");
+  };
+
+  // Austragen (PK-21; aus dem Zielbild zu #65)
+  window.austragenAuf = function(p){
+    var e = z.seite, d = E[e], darueber = d.ober;
+    var wahl = darueber ? [["ober", name(p)+" gehört danach direkt zu "+E[darueber].name], ["keine", name(p)+" gehört danach keiner Organisation mehr an"]]
+      : [["keine", name(p)+" gehört danach keiner Organisation mehr an"]];
+    document.getElementById("aus-titel").textContent = name(p) + " aus " + d.name + " austragen?";
+    document.getElementById("aus-wahl").innerHTML = wahl.map(function(w,i){
+      return '<li><label><input type="radio" name="aus-ziel" value="'+w[0]+'"'+(i===0?' checked':'')+'><span>'+esc(w[1])+'</span></label></li>'; }).join("");
+    function vorschau(){
+      var w = document.querySelector('input[name="aus-ziel"]:checked').value, neuM = w==="ober" ? darueber : null;
+      var enden = endendeRollen(p, e, neuM), h = '<p class="frage">'+esc(name(p))+' aus '+esc(d.name)+' austragen? '+(neuM ? 'Danach gehört '+esc(name(p))+' direkt zu '+esc(E[neuM].name)+'.' : 'Danach gehört '+esc(name(p))+' keiner Organisation mehr an.')+'</p>';
+      if (enden.length) h += '<p>Damit enden diese Rollen: '+enden.map(function(l){ return esc(ROLLE[E[l.e].art]+" von "+E[l.e].name); }).join(", ")+'.</p>';
+      enden.forEach(function(l){ if (leitungen(l.e).length===1){
+        var s = einspringer(l.e);
+        h += '<p>'+(E[l.e].art==="Bund" || !s ? 'Danach hat '+esc(E[l.e].name)+' keine Bundesleitung mehr, und niemand springt ein.'
+          : 'Danach hat '+esc(E[l.e].name)+' keine '+ROLLE[E[l.e].art]+' mehr. Bis eine neue benannt ist, springt die Leitung von '+esc(E[s].name)+' ein.')+'</p>'; } });
+      h += '<p>Bestehende Anmeldungen bleiben.</p>';
+      document.getElementById("aus-vorschau").innerHTML = h;
+    }
+    document.querySelectorAll('input[name="aus-ziel"]').forEach(function(r){ r.onchange = vorschau; });
+    vorschau();
+    document.getElementById("aus-ok").onclick = function(){
+      var w = document.querySelector('input[name="aus-ziel"]:checked').value, neuM = w==="ober" ? darueber : null;
+      var enden = endendeRollen(p, e, neuM);
+      L = L.filter(function(l){ return enden.indexOf(l)<0; });
+      P[p].mit = neuM; zu("dlg-aus"); zeichne(); kurz(name(p)+" ist aus "+d.name+" ausgetragen.");
+    };
+    auf("dlg-aus");
+  };
+
+  // ---------- Verwaltete Person anlegen und bearbeiten (#117) ----------
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function heuteIso(){ var d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+  function vorIso(jahre){ var d=new Date(); return (d.getFullYear()-jahre)+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+  function morgenIso(){ var d=new Date(); d.setDate(d.getDate()+1); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+  var vp = {p:null, geb:""};
+
+  function datumsfeld(){
+    var box = document.getElementById("vp-geb-feld");
+    box.innerHTML = '<input id="vp-geb" name="geburtsdatum" type="date" max="'+heuteIso()+'" value="'+esc(vp.geb || '')+'" required>';
+    box.querySelector("input").onchange = function(){ vp.geb = this.value; };
+  }
+  function fehlerWeg(){
+    document.querySelectorAll("#vp-form .feld").forEach(function(f){
+      f.classList.remove("hat-fehler");
+      var inp = f.querySelector("input");
+      if (inp){
+        inp.removeAttribute("aria-invalid");
+        var basis = inp.getAttribute("data-basis-describedby");
+        if (basis) inp.setAttribute("aria-describedby", basis);
+        else inp.removeAttribute("aria-describedby");
+      }
+      var x = f.querySelector(".fehler-stelle");
+      if (x) x.remove();
+    });
+    document.getElementById("vp-oben").innerHTML = "";
+  }
+  function fehlerAn(id, text){
+    var f = document.getElementById(id); f.classList.add("hat-fehler");
+    var fehlerId = id + "-fehler";
+    var p = document.createElement("p"); p.className = "fehler-stelle"; p.id = fehlerId; p.setAttribute("role","alert");
+    p.innerHTML = '<svg class="ic ic-klein"><use href="#i-schliessen"/></svg><span>'+esc(text)+'</span>';
+    f.appendChild(p);
+    var inp = f.querySelector("input");
+    if (inp){
+      inp.setAttribute("aria-invalid","true");
+      var basis = inp.getAttribute("data-basis-describedby");
+      inp.setAttribute("aria-describedby", basis ? basis + " " + fehlerId : fehlerId);
+    }
+  }
+  function dialogFuellen(q){
+    document.getElementById("vp-vor").value = q ? q.vor : "";
+    document.getElementById("vp-nach").value = q ? q.nach : "";
+    document.getElementById("vp-fahrt").value = q ? q.fahrt : "";
+    vp.geb = q ? (q.geb || "") : "";
+    fehlerWeg(); datumsfeld();
+  }
+  window.anlegenAuf = function(){
+    vp.p = null;
+    document.getElementById("vp-titel").textContent = "Person anlegen";
+    document.getElementById("vp-unter").textContent = "in " + E[z.seite].name + " · ohne Konto, verwaltet";
+    document.getElementById("vp-ok").textContent = "Anlegen";
+    dialogFuellen(null); auf("dlg-vp");
+  };
+  window.bearbeitenAuf = function(p){
+    vp.p = p;
+    document.getElementById("vp-titel").textContent = name(p) + " bearbeiten";
+    document.getElementById("vp-unter").textContent = "in " + E[P[p].mit].name + " · ohne Konto, verwaltet";
+    document.getElementById("vp-ok").textContent = "Speichern";
+    dialogFuellen(P[p]); auf("dlg-vp");
+  };
+  document.getElementById("vp-form").onsubmit = function(ev){
+    ev.preventDefault(); fehlerWeg();
+    var vor = document.getElementById("vp-vor").value.trim(), nach = document.getElementById("vp-nach").value.trim(), fahrt = document.getElementById("vp-fahrt").value.trim();
+    var gebFeld = document.getElementById("vp-geb"), geb = gebFeld.value || "";
+    var ungueltig = gebFeld.validity && (gebFeld.validity.badInput || gebFeld.validity.typeMismatch);
+    var fehler = false;
+    if (!vor){ fehlerAn("f-vor","Bitte gib den Vornamen ein."); fehler = true; }
+    else if (vor.length > 100){ fehlerAn("f-vor","Der Vorname darf höchstens 100 Zeichen lang sein."); fehler = true; }
+    if (!nach){ fehlerAn("f-nach","Bitte gib den Nachnamen ein."); fehler = true; }
+    else if (nach.length > 100){ fehlerAn("f-nach","Der Nachname darf höchstens 100 Zeichen lang sein."); fehler = true; }
+    if (ungueltig){ fehlerAn("f-geb","Bitte gib ein gültiges Geburtsdatum ein."); fehler = true; }
+    else if (!geb){ fehlerAn("f-geb","Bitte gib das Geburtsdatum ein."); fehler = true; }
+    else if (geb > heuteIso()){ fehlerAn("f-geb","Das Geburtsdatum liegt in der Zukunft."); fehler = true; }
+    else if (geb < vorIso(120)){ fehlerAn("f-geb","Das Geburtsdatum liegt mehr als 120 Jahre zurück."); fehler = true; }
+    if (fahrt.length > 50){ fehlerAn("f-fahrt","Der Fahrtenname darf höchstens 50 Zeichen lang sein."); fehler = true; }
+    if (fehler){ var erst = document.querySelector("#vp-form .hat-fehler input, #vp-form .hat-fehler button"); if (erst) erst.focus(); return; }
+
+    if (vp.p && z.gleichzeitig){
+      // MG6: Demo für parallele Änderung; die Umsetzung erkennt sie über einen Abgleich des Stands beim Speichern.
+      P[vp.p].geb = "2015-05-15"; var alt = vp.p; dialogFuellen(P[alt]);
+      document.getElementById("vp-oben").innerHTML = '<div class="meldung mel-fehler" role="alert"><span class="ic-kasten">!</span><p>'+esc(name(alt))+' wurde inzwischen von jemand anderem geändert. Bitte prüfe die Angaben und speichere erneut.</p></div>';
+      z.gleichzeitig = false; document.querySelector('[data-fall="gleichzeitig"]').setAttribute("aria-pressed","false"); zeichne(); return;
+    }
+    if (vp.p){
+      var idBearbeitet=vp.p, q = P[idBearbeitet]; q.vor = vor; q.nach = nach; q.fahrt = fahrt; q.geb = geb;
+      var gespeicherterName=name(idBearbeitet);
+      dialogSchliessenNachAenderung("dlg-vp"); kurz("Die Angaben zu " + gespeicherterName + " sind gespeichert.");
+    } else {
+      var id = "neu" + (++z.nr); P[id] = {vor:vor, nach:nach, fahrt:fahrt, mit:z.seite, verwaltet:true, geb:geb};
+      var neuName=name(id);
+      dialogSchliessenNachAenderung("dlg-vp"); kurz(neuName + " gehört jetzt zu " + E[z.seite].name + ".");
+    }
+  };
+  document.querySelectorAll("[data-probe-vp]").forEach(function(b){ b.onclick = function(){
+    var art = b.dataset.probeVp;
+    if (art==="leer"){ document.getElementById("vp-vor").value = "  "; document.getElementById("vp-nach").value = ""; vp.geb = ""; }
+    if (art==="lang"){ document.getElementById("vp-vor").value = "L".repeat(101); }
+    if (art==="zukunft"){ vp.geb = morgenIso(); }
+    if (art==="alt"){ vp.geb = "1900-01-01"; }
+    datumsfeld();
+    document.getElementById("vp-ok").click();
+  }; });
+
+  // ---------- Steuerung ----------
+  function druecke(sel, wert, attr){ document.querySelectorAll(sel).forEach(function(b){ b.setAttribute("aria-pressed", b.dataset[attr]===wert ? "true":"false"); }); }
+  document.querySelectorAll("[data-ansicht]").forEach(function(b){ b.onclick = function(){ z.ansicht = b.dataset.ansicht; druecke("[data-ansicht]", z.ansicht, "ansicht"); zeichne(); }; });
+  document.querySelector('[data-fall="ohneleitung"]').onclick = function(){
+    z.ohneleitung = !z.ohneleitung; this.setAttribute("aria-pressed", z.ohneleitung ? "true":"false");
+    if (z.ohneleitung && z.ansicht==="fiete-falken"){ z.ansicht="wanda-falken"; druecke("[data-ansicht]", z.ansicht, "ansicht"); }
+    neu(); zeichne(); };
+  document.querySelector('[data-fall="gleichzeitig"]').onclick = function(){
+    z.gleichzeitig = !z.gleichzeitig; this.setAttribute("aria-pressed", z.gleichzeitig ? "true":"false"); };
+  document.getElementById("zuruecksetzen").onclick = function(){ document.querySelectorAll(".dlg-hg.offen").forEach(function(d){ d.classList.remove("offen"); }); z.offen=null; z.ohneleitung=false; z.gleichzeitig=false; z.suchen=0; document.getElementById("auf-zaehler").textContent=0;
+    document.querySelectorAll('[data-fall]').forEach(function(b){ b.setAttribute("aria-pressed","false"); }); neu(); zeichne(); };
+  datumsfeld();
+  zeichne();
+})();
+</script>
+</body>
+</html>

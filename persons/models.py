@@ -1,15 +1,19 @@
 """Datenmodell der verwalteten Personen (#117, PER-02)."""
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Trim
 
 from access.keys import KEY_LENGTH, key_field, new_key
 from accounts.models import SCOUT_NAME_MAX_LENGTH, display_name
+from persons import texts
 from units.models import Unit
 
 # Höchstens 100 Zeichen für Vor- und Nachname, nach dem Entfernen der Leerzeichen am Rand (#117).
 NAME_MAX_LENGTH = 100
+# Die Angaben, die der Dialog anlegt und ändert; mehr gibt es in P2 nicht (#117), Gesundheitsangaben nie (FRM-04).
+EDITABLE_FIELDS = ("first_name", "last_name", "birth_date", "scout_name")
 
 
 class ManagedPerson(models.Model):
@@ -53,6 +57,16 @@ class ManagedPerson(models.Model):
 
     def __str__(self) -> str:
         return self.display_name
+
+    def save(self, *args, **kwargs) -> None:
+        """Speichert die Person; im Verband lehnt es mit `ValidationError` ab (#88).
+
+        Die Datenbank kann die Ebene der Organisation nicht selbst prüfen, deshalb steht die Regel hier
+        und gilt so auch für Befehle und Testdaten.
+        """
+        if Unit.objects.filter(pk=self.unit_id, kind=Unit.Kind.FEDERATION).exists():
+            raise ValidationError(texts.NOT_IN_FEDERATION, code="federation")
+        super().save(*args, **kwargs)
 
     @property
     def display_name(self) -> str:

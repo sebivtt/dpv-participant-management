@@ -32,6 +32,13 @@
     </form>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-datumsfeld">
+    {% include "core/_katalogeintrag.html" with block=blocks.datumsfeld %}
+    <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
+      {% datumsfeld examples.date_form.birth_date %}
+    </form>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-kurzmeldung">
     {% include "core/_katalogeintrag.html" with block=blocks.kurzmeldung %}
     {# Die Beispiele stehen als Vorlagen bereit; die Knöpfe blenden sie unten ein wie nach einer Handlung. Ohne Skript zeigen sie nichts. #}
@@ -79,7 +86,8 @@
       {% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") level=3 action_href="#h-flaechenkopf" action_label=_("Gruppenleitung benennen") %}
       {% include "core/_flaechenkopf.html" with symbol="organisation" title="Pfadfinderbund Boreas" title_href="#h-flaechenkopf" level=3 action_href="#h-flaechenkopf" action_label=_("Bundesleitung benennen") %}
       {# Mit Zahl hinter dem Titel, wie der Abschnitt „Personen“ (#285). #}
-      {% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") level=3 count=examples.persons_count action_href="#h-flaechenkopf" action_label=_("Person aufnehmen") %}
+      {# Mit zwei Knöpfen, links der zart blaue, wie der Abschnitt „Personen“ seit #117. #}
+      {% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") level=3 count=examples.persons_count action_href="#h-flaechenkopf" action_label=_("Person mit Konto aufnehmen") second_href="#h-flaechenkopf" second_label=_("Verwaltete Person anlegen") %}
     </div>
   </section>
 
@@ -132,7 +140,7 @@
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfverschieben">
     {% include "core/_katalogeintrag.html" with block=blocks.knopfverschieben %}
-    <div class="a-flaeche">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}</div>
+    <div class="a-flaeche a-katalog-knoepfe">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=edit_label name="Kiwi" %}</div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-stift">

@@ -28,16 +28,16 @@
         </section>
       {% endif %}
       {% if page.persons is not None %}
-        {# Abschnitt „Personen“ (#285): die direkten Mitglieder, nur im eigenen Bereich; „Person aufnehmen“ nur, wo die Person aufnehmen darf. #}
+        {# Abschnitt „Personen“ (#285): die direkten Mitglieder und, seit #117, die verwalteten Personen gemischt, nur im eigenen Bereich; „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“ nur, wo die Person das darf. #}
         <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-personen">
-          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.admit_href action_label=page.admit_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.admit_href action_label=page.admit_label %}{% endif %}
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id="verwaltete-person-anlegen" %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id="verwaltete-person-anlegen" %}{% endif %}
           {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
         </section>
       {% endif %}
     </div>
   </div>
   {% if dialog %}
-    {# Dialog „… benennen“ (#190) oder „Person aufnehmen“ (#285): eigene Adresse, kommt offen vom Server. Beim Benennen holt das Skript beim Tippen die Vorschläge in die Trefferliste, beim Aufnehmen gibt es keine (#65 N3); „Suchen“ und Enter schicken das Formular ab. #}
+    {# Dialog „… benennen“ (#190) oder „Person mit Konto aufnehmen“ (#285): eigene Adresse, kommt offen vom Server. Beim Benennen holt das Skript beim Tippen die Vorschläge in die Trefferliste, beim Aufnehmen gibt es keine (#65 N3); „Suchen“ und Enter schicken das Formular ab. #}
     {% include "core/_dialog_auf.html" %}
     <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate{% if dialog.suggestions_href %} data-vorschlaege="{{ dialog.suggestions_href }}"{% endif %}>
       {% csrf_token %}
@@ -48,10 +48,17 @@
     {% include "core/_dialog_zu.html" %}
   {% endif %}
   {% if removal %}
-    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287); „… anlegen“ mit dem Textfeld „Name“, „… bearbeiten“ mit Name, Wahl des Rings und Schalter „Hat Ringe“ und die Rückfrage vor dem Einschalten (#95): eigene Adresse, kommt offen vom Server. #}
+    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287); „… anlegen“ mit dem Textfeld „Name“, „… bearbeiten“ mit Name, Wahl des Rings und Schalter „Hat Ringe“ und die Rückfrage vor dem Einschalten (#95); „Verwaltete Person anlegen“ und „… bearbeiten“ mit vier Feldern (#117): eigene Adresse, kommt offen vom Server. #}
     {% include "core/_dialog_auf.html" with dialog=removal %}
     {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
     {% if removal.form %}{% textfeld removal.form.name %}{% endif %}
+    {% if removal.person_form %}
+      {# „Verwaltete Person anlegen“ und „… bearbeiten“ (#117): oben der Satz, wenn inzwischen jemand anderes gespeichert hat (MG6), dann Vor- und Nachname nebeneinander, Geburtsdatum und Fahrtenname. #}
+      {% if removal.conflict %}{% meldung "error" text=removal.conflict live=True %}{% endif %}
+      <div class="a-felder-nebeneinander">{% textfeld removal.person_form.first_name %}{% textfeld removal.person_form.last_name %}</div>
+      {% datumsfeld removal.person_form.birth_date %}
+      {% textfeld removal.person_form.scout_name %}
+    {% endif %}
     {% if removal.choice %}{% include "core/_auswahl.html" with choice=removal.choice form_id=removal.form_id %}{% endif %}
     {% if removal.switch %}{% include "core/_schalter.html" with switch=removal.switch form_id=removal.form_id %}{% endif %}
     {% if removal.notice %}{% meldung "error" text=removal.notice live=True %}{% endif %}

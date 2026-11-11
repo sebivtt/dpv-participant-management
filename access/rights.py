@@ -31,7 +31,7 @@ from functools import cached_property
 from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import (
     BooleanField,
     CharField,
@@ -52,7 +52,8 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
-from persons.models import ManagedPerson
+from persons import texts as person_texts
+from persons.models import EDITABLE_FIELDS, ManagedPerson
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, leads_off_path, on_path
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
@@ -834,25 +835,100 @@ class Rights:
 
     # Verwaltete Personen (#117, PER-02)
 
+    def _managed_entries(self) -> QuerySet:
+        """Die verwalteten Personen, die die Person sieht und bearbeiten darf: alle im eigenen Bereich (VP-02).
+
+        Wie bei Personen mit Konto (BER-01, Grund 2): die Gruppenleitung in ihrer Gruppe, die
+        Stammesleitung im ganzen Stamm, Ring- und Bundesleitung alles darunter. Ohne Leitungsrolle von
+        Gruppe bis Bund keine, also auch nicht die Verbandsleitung, das DPV-Veranstaltungsteam,
+        Mitglieder, Konten ohne Zuordnung und Admins (VP-06). Wer eine Person angelegt hat, zählt nicht
+        (VP-05, #89). Gefiltert wird in der Datenbank, wie bei `persons()`.
+        """
+        if not self.sees_organisation():
+            return ManagedPerson.objects.none()
+        return ManagedPerson.objects.filter(unit_id__in=self.area)
+
     def managed_persons(self, unit: Unit | None) -> list[ManagedPerson]:
-        """Gerüst: die direkten verwalteten Personen einer Organisation im eigenen Bereich (VP-02)."""
-        return []
+        """Die direkten verwalteten Personen einer Organisation im eigenen Bereich; sonst keine (#117, Frage 1).
+
+        Die einer Organisation darunter stehen auf deren Seite. Eine Abfrage, egal wie viele es sind (MG9).
+        """
+        if unit is None:
+            return []
+        return list(self._managed_entries().filter(unit_id=unit.pk))
 
     def may_add_managed(self, unit: Unit | None) -> bool:
-        """Gerüst: Darf die Person in dieser Organisation eine verwaltete Person anlegen (VP-01, VP-17, EH-18)?"""
-        return False
+        """Darf die Person in dieser Organisation eine verwaltete Person anlegen (VP-01, VP-17, EH-18)?
+
+        Wie beim Aufnehmen nur die Leitung der Organisation selbst und, solange dort keine Leitung mit
+        Konto ist, die einspringende Leitung darüber (`leads_unit()`); in Organisationen darunter nicht.
+        Im Verband nie (#88); dort leitet ohnehin niemand eine Organisation.
+        """
+        return unit is not None and unit.kind != UnitKind.FEDERATION and self.leads_unit(unit)
 
     def managed_person(self, unit: Unit, person_key) -> ManagedPerson:
-        """Gerüst: eine verwaltete Person direkt in `unit` über ihre Kennung; ohne Recht „nicht gefunden“."""
-        raise Http404
+        """Eine verwaltete Person direkt in `unit` über ihre Kennung; ohne Recht „nicht gefunden“ (VP-03).
+
+        Eine Person, die zu einer anderen Organisation gehört, ist hier ebenso „nicht gefunden“, auch
+        im eigenen Bereich: Die Organisation der Adresse muss stimmen (MV4). Kennungen von Personen mit
+        Konto finden hier nie etwas (MV5).
+        """
+        return self.entry(self._managed_entries().filter(unit_id=unit.pk), person_key)
 
     def add_managed(self, unit: Unit, values: dict, creation_key) -> str:
-        """Gerüst: legt eine verwaltete Person in `unit` an; gibt die kurze Meldung zurück (VP-01)."""
-        raise Http404
+        """Legt eine verwaltete Person in `unit` an; gibt die kurze Meldung zurück, leer, wenn es sie schon gibt (VP-01).
+
+        `values` sind die geprüften Angaben aus `ManagedPersonForm`; die Organisation kommt nur aus der
+        Adresse (MV4). `creation_key` ist die Kennung des Dialogs: Schickt jemand denselben Dialog zweimal
+        ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Person, und die zweite
+        Antwort hat keine Meldung (MG7). Ohne Recht oder mit einer Kennung in falscher Form „nicht
+        gefunden“. Gesperrt ist das eigene Konto, und das Recht wird darunter frisch geprüft: Endet das
+        Einspringen, während der Dialog offen ist, wird niemand angelegt (MW3).
+        """
+        if not self.may_add_managed(unit) or not is_key(creation_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            if not Rights(me).may_add_managed(unit):
+                raise Http404
+            if ManagedPerson.objects.filter(creation_key=creation_key).exists():
+                return ""
+            created = ManagedPerson(unit=unit, creation_key=creation_key,
+                                    **{name: values[name] for name in EDITABLE_FIELDS})
+            try:
+                with transaction.atomic():
+                    created.save()
+            except IntegrityError:
+                # Derselbe Dialog wurde gleichzeitig ein zweites Mal abgeschickt (MG7).
+                if ManagedPerson.objects.filter(creation_key=creation_key).exists():
+                    return ""
+                raise
+        return str(person_texts.ADDED % {"person": created.display_name, "unit": unit_label(unit)})
 
     def edit_managed(self, unit: Unit, person_key, values: dict, version) -> tuple[bool, ManagedPerson, str]:
-        """Gerüst: speichert die Angaben einer verwalteten Person (VP-02)."""
-        raise Http404
+        """Speichert die Angaben einer verwalteten Person; gibt zurück, ob es geklappt hat, die Person und die Meldung (VP-02).
+
+        `version` ist der Stand, den der Dialog beim Öffnen gezeigt hat. Hat inzwischen jemand anderes
+        gespeichert, wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Person, wie sie
+        jetzt ist, und dem Satz „… wurde inzwischen von jemand anderem geändert. …“ (MG6). Ohne Recht, mit
+        einer fremden Kennung oder einer Person einer anderen Organisation „nicht gefunden“ (VP-03, MV4,
+        MV5). Gesperrt sind das eigene Konto und die Person, und das Recht wird darunter frisch geprüft:
+        Wer gerade als Leitung entfernt wurde, speichert nichts mehr, auch im schon offenen Dialog (MW1,
+        VP-04); von zwei gleichzeitigen Änderungen gelingt genau eine.
+        """
+        if self.user is None or not is_key(person_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
+            if str(entry.version) != str(version):
+                return False, entry, str(person_texts.CHANGED_MEANWHILE % {"person": entry.display_name})
+            for name in EDITABLE_FIELDS:
+                setattr(entry, name, values[name])
+            entry.version += 1
+            entry.save()
+        return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 

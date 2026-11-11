@@ -1,11 +1,21 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285) und der Name beim Anlegen und Bearbeiten einer Organisation (#95)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95) und die Angaben einer verwalteten Person (#117)."""
+
+from datetime import date
 
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from accounts.keycloak_abgleich import trimmed
+from accounts.models import SCOUT_NAME_MAX_LENGTH
+from persons import texts as person_texts
+from persons.models import NAME_MAX_LENGTH
 from units import texts as unit_texts
+
 # Höchstlänge eines Namens wie im Datenmodell (units/models.py, Feld `name`).
 UNIT_NAME_MAX_LENGTH = 100
+# Wie weit ein Geburtsdatum höchstens zurückliegt (#117, Frage 5); eine Altersgrenze gibt es nicht (PER-02).
+BIRTH_DATE_MAX_YEARS = 120
 
 
 class PatternForm(forms.Form):
@@ -92,4 +102,105 @@ class UnitNameForm(forms.Form):
         value = self.cleaned_data["name"]
         if len(value) > UNIT_NAME_MAX_LENGTH:
             raise forms.ValidationError(unit_texts.NAME_TOO_LONG, code="max_length")
+        return value
+
+
+def _name_field(label, empty) -> forms.CharField:
+    """Vor- oder Nachname im Dialog einer verwalteten Person: Pflicht, die Länge prüft erst `clean_…()`."""
+    return forms.CharField(
+        label=label,
+        strip=False,
+        error_messages={"required": empty},
+        widget=forms.TextInput(
+            attrs={
+                # Ein Name: Großbuchstabe am Wortanfang, keine Korrektur in ein bekanntes Wort.
+                "autocomplete": "off",
+                "autocapitalize": "words",
+                "autocorrect": "off",
+                "spellcheck": "false",
+                "form": "f-dialog",
+                "data-hoechstens": NAME_MAX_LENGTH,
+            }
+        ),
+    )
+
+
+class ManagedPersonForm(forms.Form):
+    """Die vier Angaben im Dialog „Verwaltete Person anlegen“ und „… bearbeiten“ (#117, PER-02).
+
+    Vor- und Nachname sind Pflicht, höchstens 100 Zeichen; das Geburtsdatum ist Pflicht, liegt nicht
+    in der Zukunft und höchstens 120 Jahre zurück; der Fahrtenname ist freiwillig, höchstens 30
+    Zeichen (#214). Leerzeichen am Rand zählen wie beim Fahrtennamen auch in unsichtbarer Form nicht
+    (`trimmed()`, #77); nur Leerzeichen gilt als leer. Die Längen prüft erst der Server, damit beim
+    Einfügen nichts still abgeschnitten wird. Das Formular nimmt nur diese vier Angaben an: In welcher
+    Organisation, kommt aus der Adresse (MV4), und Gesundheitsangaben gibt es nicht (FRM-04, MV6).
+    Alle Felder gehören über ihr Attribut „form“ zum Formular des Knopfs im Dialog.
+    """
+
+    first_name = _name_field(person_texts.FIRST_NAME, person_texts.FIRST_NAME_EMPTY)
+    last_name = _name_field(person_texts.LAST_NAME, person_texts.LAST_NAME_EMPTY)
+    birth_date = forms.DateField(
+        label=person_texts.BIRTH_DATE,
+        # Das Datumsfeld des Browsers schickt immer diese Form, egal wie es das Datum anzeigt (N3).
+        input_formats=["%Y-%m-%d"],
+        error_messages={"required": person_texts.BIRTH_DATE_EMPTY, "invalid": person_texts.BIRTH_DATE_INVALID},
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date", "autocomplete": "off", "form": "f-dialog"}),
+    )
+    scout_name = forms.CharField(
+        label=person_texts.SCOUT_NAME,
+        required=False,
+        strip=False,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "words",
+                "autocorrect": "off",
+                "spellcheck": "false",
+                "form": "f-dialog",
+                "data-hoechstens": SCOUT_NAME_MAX_LENGTH,
+                "data-zu-lang": person_texts.SCOUT_NAME_TOO_LONG,
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["first_name"].widget.attrs.update(autofocus=True, **{"data-zu-lang": person_texts.FIRST_NAME_TOO_LONG})
+        self.fields["last_name"].widget.attrs["data-zu-lang"] = person_texts.LAST_NAME_TOO_LONG
+        # Tage in der Zukunft lässt das Datumsfeld des Browsers gar nicht erst wählen; geprüft wird trotzdem unten.
+        self.fields["birth_date"].widget.attrs["max"] = timezone.localdate().isoformat()
+
+    def _name(self, field: str, too_long) -> str:
+        value = trimmed(self.cleaned_data[field])
+        if not value:
+            raise forms.ValidationError(self.fields[field].error_messages["required"], code="required")
+        if len(value) > NAME_MAX_LENGTH:
+            raise forms.ValidationError(too_long, code="max_length")
+        return value
+
+    def clean_first_name(self) -> str:
+        return self._name("first_name", person_texts.FIRST_NAME_TOO_LONG)
+
+    def clean_last_name(self) -> str:
+        return self._name("last_name", person_texts.LAST_NAME_TOO_LONG)
+
+    def clean_birth_date(self) -> date:
+        """Nicht in der Zukunft, höchstens 120 Jahre zurück: am 28.10.2026 geht der 28.10.1906, der 27.10.1906 nicht (MG4)."""
+        value = self.cleaned_data["birth_date"]
+        today = timezone.localdate()
+        if value > today:
+            raise forms.ValidationError(person_texts.BIRTH_DATE_FUTURE, code="future")
+        try:
+            oldest = today.replace(year=today.year - BIRTH_DATE_MAX_YEARS)
+        except ValueError:
+            # Heute ist der 29. Februar, den es vor 120 Jahren nicht gab: Die Grenze ist dann der 1. März.
+            oldest = date(today.year - BIRTH_DATE_MAX_YEARS, 3, 1)
+        if value < oldest:
+            raise forms.ValidationError(person_texts.BIRTH_DATE_TOO_OLD, code="too_old")
+        return value
+
+    def clean_scout_name(self) -> str:
+        value = trimmed(self.cleaned_data["scout_name"])
+        if len(value) > SCOUT_NAME_MAX_LENGTH:
+            raise forms.ValidationError(person_texts.SCOUT_NAME_TOO_LONG, code="max_length")
         return value

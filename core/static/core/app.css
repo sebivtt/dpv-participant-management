@@ -216,6 +216,8 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-ein { background: var(--warte-grund); color: var(--warte-text); }
 .a-kennmarke.ist-lesen { background: var(--zu-grund); color: var(--zu-text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
+/* Verwaltete Person (#117, Zielbild): grau wie „nur lesen“, ohne Schloss; dazu ein grauer Kreis */
+.a-kennmarke.ist-verwaltet { background: var(--zu-grund); color: var(--zu-text); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
 .a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
@@ -249,7 +251,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
    „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */
 .a-leitungen { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .a-leitung { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
-.a-leitung.ist-gesperrt .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
+.a-leitung.ist-gesperrt .a-avatar, .a-leitung.ist-verwaltet .a-avatar { background: var(--zu-grund); color: var(--zu-text); }
 /* Name und Rollen behalten mindestens 12rem; reicht der Platz daneben nicht für die Knöpfe, rutschen sie
    rechtsbündig in die nächste Zeile, statt Wörter zu zerreißen (#287: „Verschieben“ und „Austragen“ nebeneinander). */
 .a-leitung-wer { flex: 1 1 12rem; min-width: 0; }
@@ -271,7 +273,8 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* Knopf „Entfernen“ (core/_knopf_entfernen.html): zarte rote Fläche, rote Schrift, die Farben der Fehlermeldung. */
 .btn-entfernen { --bs-btn-color: var(--ab-text); --bs-btn-bg: var(--ab-grund); --bs-btn-border-color: var(--ab-grund); --bs-btn-hover-color: var(--ab-text); --bs-btn-hover-bg: var(--ab-grund); --bs-btn-hover-border-color: var(--ab-text); --bs-btn-active-color: var(--ab-text); --bs-btn-active-bg: var(--ab-grund); --bs-btn-active-border-color: var(--ab-text); }
 /* Knopf „Verschieben“ (core/_knopf_verschieben.html, #287): zarte blaue Fläche, blaue Schrift, die Farben der Informationsmeldung. */
-.btn-verschieben { --bs-btn-color: var(--dpv); --bs-btn-bg: var(--dpv-hauch); --bs-btn-border-color: var(--dpv-hauch); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
+/* Seit #117 auch der zweite Knopf in der Überschrift einer Fläche (.btn-zweit), etwa „Verwaltete Person anlegen“ */
+.btn-verschieben, .btn-zweit { --bs-btn-color: var(--dpv); --bs-btn-bg: var(--dpv-hauch); --bs-btn-border-color: var(--dpv-hauch); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
 .btn-gefahr { --bs-btn-color: #fff; --bs-btn-bg: var(--ab-text); --bs-btn-border-color: var(--ab-text); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #6e2222; --bs-btn-hover-border-color: #6e2222; --bs-btn-active-color: #fff; --bs-btn-active-bg: #6e2222; --bs-btn-active-border-color: #6e2222; }
 .a-dialog-inhalt p:last-child { margin-bottom: 0; }
 .a-leer-satz { margin: 0; color: var(--text-leise); }
@@ -460,11 +463,16 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 .a-flaeche-kopf { flex-wrap: wrap; }
 .a-flaeche-aktion { margin-left: auto; padding: .45rem .9rem; font-size: .92rem; }
 .a-flaeche-aktion .ic { width: 18px; height: 18px; }
+/* Seit #117 stehen die Knöpfe in einer Gruppe, links ein zweiter zart blauer, etwa „Verwaltete Person anlegen“ */
+.a-flaeche-aktionen { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.a-flaeche-aktionen .a-flaeche-aktion { margin-left: 0; }
 /* Suchfeld: das Textfeld mit dem Knopf rechts daneben und einem Satz darunter */
 .a-textfeld-zeile { display: flex; gap: 8px; }
 .a-textfeld-zeile .form-control { flex: 1; min-width: 0; }
 .a-textfeld-hilfe { margin: 6px 0 0; color: var(--text-leise); font-size: .85rem; }
 .a-textfeld.ist-suchfeld { margin: 0; }
+/* Vor- und Nachname nebeneinander im Dialog einer verwalteten Person (#117, Zielbild); schmal untereinander */
+.a-felder-nebeneinander { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); column-gap: 14px; }
 /* Dialog: ein Fenster über der Seite mit Kopf, Inhalt und Fuß. Mit Skript modal (showModal), ohne Skript
    liegt es ebenso über der Seite, mit abgedunkeltem Rest. */
 dialog.a-dialog { position: fixed; inset: 0; z-index: 60; width: min(580px, calc(100% - 32px)); max-height: calc(100% - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche); color: var(--text); box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
@@ -529,6 +537,7 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-treffer-leer { margin: 0 0 12px; }
 @media (max-width: 700px) {
   .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
+  .a-flaeche-aktionen { margin-left: 0; flex-basis: 100%; }
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
 .a-kachel-knopf { margin-top: 8px; }
