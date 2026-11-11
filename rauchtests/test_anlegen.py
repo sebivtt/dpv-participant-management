@@ -209,6 +209,9 @@ def test_am_pc_ringe_einfuehren_und_am_handy_mit_der_tastatur_den_ring_wechseln(
     _no_side_scroll(handy)
     expect(dialog.locator("legend")).to_be_visible()
     expect(dialog.locator("legend")).to_have_text("Ring")
+    # Die Überschrift „Ring“ sieht aus wie die Beschriftung „Name“ darüber, nicht wie eine große Überschrift.
+    style = "e => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight]"
+    assert dialog.locator("legend").evaluate(style) == dialog.locator('label[for="id_name"]').evaluate(style)
     expect(handy.get_by_label("ohne Ring (bisher)")).to_be_checked()
     assert run_axe(handy) == []
 
