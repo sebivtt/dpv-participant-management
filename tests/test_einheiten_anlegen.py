@@ -19,6 +19,7 @@ Sebastian im Kommentar „Vorschau (11.11.2026)“ in #95).
 
 import pytest
 from django.core.exceptions import ValidationError
+from django.http import Http404
 from django.urls import get_resolver
 
 from access.rights import Rights
@@ -406,6 +407,99 @@ def test_og4_umbenennen_und_gleichzeitig_ring_zuordnen_beides_bleibt(transaction
 
     assert [done for done, _text in results] == [True, True]
     assert (fresh(org.walhall).name, fresh(org.walhall).parent_id) == ("Walhalla", nord.pk)
+
+
+def sent_by_browser(response, **changes) -> dict:
+    """Was der Browser aus dem offenen Dialog abschickt: Textfelder, versteckte Felder, gewählte Optionsfelder
+    und eingeschaltete Schalter, so wie die Seite sie vorbelegt hat; `changes` sind die Eingaben der Person."""
+    data = {}
+    for field in _by_tag(dialog_of(_tree(response)), "input"):
+        name, kind = _attr(field, "name"), _attr(field, "type") or "text"
+        if not name or _attr(field, "disabled") is not None:
+            continue
+        if kind in ("radio", "checkbox") and _attr(field, "checked") is None:
+            continue
+        data[name] = _attr(field, "value") or ""
+    data.update(changes)
+    return data
+
+
+def test_og4_ueber_die_seite_bruno_ordnet_zu_waehrend_wanda_umbenennt(org):
+    """OG4 über die Seite (unabhängige Prüfung, Befund 1): Das vorbelegte Feld „Name“ geht immer mit; ist es
+    unverändert, darf es Wandas Umbenennung von inzwischen nicht zurückdrehen."""
+    org.boreas.has_rings = True
+    org.boreas.save(by=BY)
+    nord = Unit(kind=U.RING, name="Nord", parent=org.boreas)
+    nord.save(by=BY)
+    bruno, wanda = client_for(org.bundesleitung), client_for(org.walhall_leitung)
+    opened = bruno.get(edit_address(org.walhall))
+
+    wanda_page = wanda.get(edit_address(org.walhall))
+    assert wanda.post(edit_address(org.walhall), sent_by_browser(wanda_page, name="Walhalla")).status_code == 302
+    response = bruno.post(edit_address(org.walhall), sent_by_browser(opened, ring=nord.key))
+
+    assert response.status_code == 302
+    assert short_notices(bruno.get(response["Location"])) == ["Stamm Walhalla gehört jetzt zu Ring Nord."]
+    assert (fresh(org.walhall).name, fresh(org.walhall).parent_id) == ("Walhalla", nord.pk)
+
+
+def test_og4_ueber_die_seite_ein_veralteter_ring_schiebt_nicht_zurueck(org):
+    """Risikovariante zu OG4: Die gewählte Möglichkeit geht immer mit; ist sie unverändert, bleibt der Ring von inzwischen."""
+    mona, second_window = client_for(org.mosaik_leitung), client_for(org.mosaik_leitung)
+    opened = mona.get(edit_address(org.leuchtturm))
+
+    other = second_window.get(edit_address(org.leuchtturm))
+    assert second_window.post(edit_address(org.leuchtturm), sent_by_browser(other, ring=org.nord.key)).status_code == 302
+    response = mona.post(edit_address(org.leuchtturm), sent_by_browser(opened, name="Leuchtfeuer"))
+
+    assert response.status_code == 302
+    assert (fresh(org.leuchtturm).name, fresh(org.leuchtturm).parent_id) == ("Leuchtfeuer", org.nord.pk)
+
+
+def test_og4_die_rueckfrage_ringe_einfuehren_dreht_keinen_namen_zurueck(org):
+    """Risikovariante zu OG4: Die Rückfrage aus O8 trägt weiter, was der Dialog beim Öffnen gezeigt hat."""
+    berta = lead("berta.bund", R.ASSOCIATION_LEAD, org.boreas)
+    bruno, other = client_for(org.bundesleitung), client_for(berta)
+    question = bruno.post(edit_address(org.boreas), sent_by_browser(bruno.get(edit_address(org.boreas)), hat_ringe="an"))
+
+    berta_page = other.get(edit_address(org.boreas))
+    assert other.post(edit_address(org.boreas), sent_by_browser(berta_page, name="Boreas Nord")).status_code == 302
+    response = bruno.post(edit_address(org.boreas), sent_by_browser(question))
+
+    assert response.status_code == 302
+    assert (fresh(org.boreas).name, fresh(org.boreas).has_rings) == ("Boreas Nord", True)
+
+
+def _or_not_found(work):
+    """Eine Anfrage, deren Ergebnis „nicht gefunden“ sein darf, wie die Seite es als 404 zeigt."""
+    def run():
+        try:
+            return work()
+        except Http404:
+            return "nicht gefunden"
+    return run
+
+
+@pytest.mark.django_db(transaction=True)
+def test_kai_benennt_leuchtturm_nicht_um_waehrend_mona_ihn_nach_nord_verschiebt(transactional_db, org):
+    """Befund 2 der unabhängigen Prüfung: Das Recht gilt für den Stand nach der Sperre des Bundes, nicht davor."""
+    results = _one_after_the_other(
+        lambda: Rights(org.mosaik_leitung).change_ring(org.leuchtturm, org.nord.key),
+        _or_not_found(lambda: Rights(org.kueste_leitung).rename(org.leuchtturm, "Gekapert")))
+
+    assert results[1] == "nicht gefunden"
+    assert (fresh(org.leuchtturm).name, fresh(org.leuchtturm).parent_id) == ("Leuchtturm", org.nord.pk)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_kai_legt_in_leuchtturm_nichts_an_waehrend_mona_ihn_nach_nord_verschiebt(transactional_db, org):
+    """Befund 2 der unabhängigen Prüfung, beim Anlegen."""
+    results = _one_after_the_other(
+        lambda: Rights(org.mosaik_leitung).change_ring(org.leuchtturm, org.nord.key),
+        _or_not_found(lambda: Rights(org.kueste_leitung).create(org.leuchtturm, "Sippe Kai")))
+
+    assert results[1] == "nicht gefunden"
+    assert not Unit.objects.filter(name="Sippe Kai").exists()
 
 
 # ---------- Ringe ----------
