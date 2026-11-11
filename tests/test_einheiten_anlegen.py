@@ -10,8 +10,11 @@ Ringen) mit Mona, Kai (Ringleitung Küste), Lars (Stammesleitung Leuchtturm) und
 Nord); Sturmvogel in Ring Nord hat keine Stammesleitung. Vera ist Verbandsleitung, Tom im
 DPV-Veranstaltungsteam. Namen, Fahrtennamen und Mails sind erfunden.
 
-Jede Handlung hat eine eigene Adresse unter der Seite der Organisation; die Organisation darüber
-und die Art der neuen Organisation kommen immer aus der Adresse, nie aus dem Formular.
+Anlegen und Bearbeiten haben je eine eigene Adresse unter der Seite der Organisation; die
+Organisation darüber und die Art der neuen Organisation kommen immer aus der Adresse, nie aus dem
+Formular. Umbenennen, Ring wechseln und „hat Ringe“ einschalten stehen seit der Vorschau vom 11.11.2026
+gemeinsam im Dialog „… bearbeiten“, den ein Stift oben rechts im Kopf der Seite öffnet (Anmerkungen von
+Sebastian im Kommentar „Vorschau (11.11.2026)“ in #95).
 """
 
 import pytest
@@ -23,7 +26,7 @@ from roles.models import Role
 from tests import test_benennen
 from tests.test_benennen import _one_after_the_other, dialog_of, short_notices
 from tests.test_einheiten_befehle import refused, run
-from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _tree, _visible_text
+from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
 from tests.test_nicht_gefunden import assert_like_missing
 from tests.test_organisation import client_for, page_tree, unit_address
 from tests.test_rechtepruefung import lead, remove
@@ -55,16 +58,8 @@ def create_address(where) -> str:
     return f"{unit_address(where)}anlegen/"
 
 
-def rename_address(where) -> str:
-    return f"{unit_address(where)}umbenennen/"
-
-
-def ring_address(where) -> str:
-    return f"{unit_address(where)}ring-wechseln/"
-
-
-def rings_address(where) -> str:
-    return f"{unit_address(where)}ringe-einfuehren/"
+def edit_address(where) -> str:
+    return f"{unit_address(where)}bearbeiten/"
 
 
 def create(user, where, name: str, client=None, **more):
@@ -72,16 +67,23 @@ def create(user, where, name: str, client=None, **more):
     return (client or client_for(user)).post(create_address(where), {"name": name, **more})
 
 
+def edit(user, where, client=None, **fields):
+    """„Speichern“ im Dialog „… bearbeiten“; ohne `name` mit dem jetzigen Namen, wie das Feld ihn vorbelegt."""
+    data = {"name": Unit.objects.get(pk=where.pk).name, **fields}
+    return (client or client_for(user)).post(edit_address(where), data)
+
+
 def rename(user, where, name: str, client=None, **more):
-    return (client or client_for(user)).post(rename_address(where), {"name": name, **more})
+    return edit(user, where, client=client, name=name, **more)
 
 
 def change_ring(user, troop, ring, client=None, **more):
-    return (client or client_for(user)).post(ring_address(troop), {"ring": ring.key, **more})
+    return edit(user, troop, client=client, ring=ring.key, **more)
 
 
 def introduce_rings(user, bund, client=None):
-    return (client or client_for(user)).post(rings_address(bund), {})
+    """Den Schalter „Hat Ringe“ einschalten und die Rückfrage aus O8 bestätigen."""
+    return edit(user, bund, client=client, hat_ringe="an", bestaetigt="ja")
 
 
 def children(where) -> set[tuple[str, str]]:
@@ -363,13 +365,13 @@ def test_umbenennen_nur_in_der_schreibweise_geht(org):
 
 
 @pytest.mark.rechtematrix("EH-15", "EH-14")
-@pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/umbenennen/")
+@pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/bearbeiten/")
 def test_ov5_fiete_benennt_walhall_nicht_um_und_wanda_boreas_nicht(org):
     start = mark()
 
-    assert_like_missing(org.falken_leitung, rename_address(org.walhall))
-    assert_like_missing(org.walhall_leitung, rename_address(org.boreas))
-    assert_like_missing(org.walhall_leitung, rename_address(org.zugvoegel))
+    assert_like_missing(org.falken_leitung, edit_address(org.walhall))
+    assert_like_missing(org.walhall_leitung, edit_address(org.boreas))
+    assert_like_missing(org.walhall_leitung, edit_address(org.zugvoegel))
 
     assert fresh(org.walhall).name == "Walhall"
     assert fresh(org.boreas).name == "Pfadfinderbund Boreas"
@@ -432,7 +434,12 @@ def test_o7_mona_verschiebt_leuchtturm_nach_ring_nord(org):
 def test_o8_bruno_fuehrt_ringe_ein_legt_einen_ring_an_und_ordnet_walhall_zu(org):
     start = mark()
     client = client_for(org.bundesleitung)
-    assert RINGS_QUESTION in " ".join(_visible_text(dialog_of(_tree(client.get(rings_address(org.boreas))))).split())
+    switch = _one(_by_tag(dialog_of(_tree(client.get(edit_address(org.boreas)))), "input", name="hat_ringe"))
+    assert (_attr(switch, "checked"), _attr(switch, "disabled")) == (None, None)
+    # Erst die Rückfrage aus O8; gespeichert wird noch nichts.
+    question = edit(org.bundesleitung, org.boreas, client=client, hat_ringe="an")
+    assert RINGS_QUESTION in " ".join(_visible_text(dialog_of(_tree(question))).split())
+    assert fresh(org.boreas).has_rings is False
 
     response = introduce_rings(org.bundesleitung, org.boreas, client=client)
 
@@ -453,32 +460,43 @@ def test_o8_bruno_fuehrt_ringe_ein_legt_einen_ring_an_und_ordnet_walhall_zu(org)
 
 
 @pytest.mark.rechtematrix("EH-24", "EH-23")
-@pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/ringe-einfuehren/")
 def test_ov8_mona_schaltet_fuer_boreas_keine_ringe_ein(org):
+    """OV8, auch mit manipuliertem Formular: Wer den Schalter nicht hat, bekommt „nicht gefunden“."""
     start = mark()
 
-    assert_like_missing(org.mosaik_leitung, rings_address(org.boreas))
+    assert_like_missing(org.mosaik_leitung, edit_address(org.boreas))
     for user in (org.walhall_leitung, org.verbandsleitung, org.team):
         assert introduce_rings(user, org.boreas).status_code == 404
     assert introduce_rings(org.walhall_leitung, org.walhall).status_code == 404
+    assert introduce_rings(org.kueste_leitung, org.kueste).status_code == 404
+    assert _by_tag(dialog_of(_tree(client_for(org.walhall_leitung).get(edit_address(org.walhall)))), "input",
+                   name="hat_ringe") == []
 
     assert fresh(org.boreas).has_rings is False
     assert entries(start) == []
 
 
-def test_og8_mit_ringen_gibt_es_ringe_einfuehren_nicht(org):
-    assert links_to(org.mosaik_leitung, org.mosaik, rings_address(org.mosaik)) == []
-    assert client_for(org.mosaik_leitung).get(rings_address(org.mosaik)).status_code == 404
-    assert introduce_rings(org.mosaik_leitung, org.mosaik).status_code == 404
+def test_og8_mit_ringen_steht_der_schalter_eingeschaltet_und_gesperrt(org):
+    """OG8 nach der Vorschau: Statt des fehlenden Knopfs steht der Schalter eingeschaltet und gesperrt da."""
+    start = mark()
+    dialog = dialog_of(_tree(client_for(org.mosaik_leitung).get(edit_address(org.mosaik))))
+    switch = _one(_by_tag(dialog, "input", name="hat_ringe"))
+
+    assert _attr(switch, "checked") is not None
+    assert _attr(switch, "disabled") is not None
+    assert introduce_rings(org.mosaik_leitung, org.mosaik).status_code == 302
+    assert entries(start) == []
 
 
 @pytest.mark.rechtematrix("EH-17", "EH-16")
-@pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/ring-wechseln/")
 def test_ov6_kai_und_lars_verschieben_leuchtturm_nicht(org):
+    """OV6: Kai und Lars dürfen Leuchtturm umbenennen, haben im Dialog aber kein Feld „Ring“; ein manipuliertes Formular ist „nicht gefunden“."""
     start = mark()
 
-    assert_like_missing(org.kueste_leitung, ring_address(org.leuchtturm))
-    assert_like_missing(org.leuchtturm_leitung, ring_address(org.leuchtturm))
+    for user in (org.kueste_leitung, org.leuchtturm_leitung):
+        dialog = dialog_of(_tree(client_for(user).get(edit_address(org.leuchtturm))))
+        assert _by_tag(dialog, "input", name="ring") == []
+        assert change_ring(user, org.leuchtturm, org.nord).status_code == 404
     assert change_ring(org.nord_leitung, org.sturmvogel, org.kueste).status_code == 404
     assert change_ring(org.bundesleitung, org.leuchtturm, org.nord).status_code == 404
 
@@ -517,8 +535,9 @@ def test_ov9_keine_adresse_schaltet_hat_ringe_aus(org):
     """OV9: Auch ein manipuliertes Formular an „Ringe einführen“ oder „Umbenennen“ schaltet nichts aus."""
     client = client_for(org.mosaik_leitung)
 
-    client.post(rename_address(org.mosaik), {"name": "DPBM Mosaik", "has_rings": "", "ringe": "aus"})
-    client.post(rings_address(org.mosaik), {"has_rings": "", "ringe": "aus"})
+    client.post(edit_address(org.mosaik), {"name": "DPBM Mosaik", "has_rings": "", "ringe": "aus"})
+    client.post(edit_address(org.mosaik), {"name": "DPBM Mosaik", "hat_ringe": "", "bestaetigt": "ja"})
+    client.post(edit_address(org.mosaik), {"name": "DPBM Mosaik"})
 
     assert fresh(org.mosaik).has_rings is True
     assert not [route for route in _routes() if "ausschalten" in route or "loeschen" in route]
@@ -696,18 +715,19 @@ def test_abgelehnte_versuche_schreiben_nichts_ins_protokoll(org):
     assert entries(start) == []
 
 
-# ---------- Was beim Browser ankommt (Antworten bei der Umsetzung vom 11.11.2026, Kommentar in #95) ----------
+# ---------- Was beim Browser ankommt (Antworten bei der Umsetzung und Vorschau vom 11.11.2026, Kommentare in #95) ----------
 
 
-def head_buttons(user, where) -> dict[str, str]:
-    """Die Knöpfe im Kopf der Seite: Beschriftung und Adresse, im Aussehen des Knopfs „Verschieben“ (Antwort 1)."""
+def pencil(user, where) -> tuple[str, str] | None:
+    """Der Stift oben rechts im Kopf der Seite: Adresse und Text für Vorleseprogramme, oder None."""
     root = page_tree(user, unit_address(where))
     head = _one(_all(root, lambda e: "a-orga-kopf" in _classes(e)))
-    found = {}
-    for link in _all(head, lambda e: e.name == "a" and "btn" in _classes(e)):
-        assert {"btn", "btn-sm", "btn-verschieben"} <= set(_classes(link))
-        found[_visible_text(link)] = _attr(link, "href")
-    return found
+    links = _all(head, lambda e: "a-stift" in _classes(e))
+    if not links:
+        return None
+    link = _one(links)
+    assert _visible_text(link) == ""
+    return _attr(link, "href"), _text(_one(_all(link, lambda e: "sr-nur" in _classes(e)))).strip()
 
 
 def create_button(user, where) -> tuple[str, str] | None:
@@ -729,16 +749,15 @@ def test_der_knopf_anlegen_heisst_nach_der_art(org):
     assert create_button(org.falken_leitung, org.falken) is None
 
 
-def test_im_kopf_stehen_nur_die_knoepfe_die_die_person_darf(org):
-    assert head_buttons(org.walhall_leitung, org.walhall) == {"Umbenennen": rename_address(org.walhall)}
-    assert head_buttons(org.bundesleitung, org.boreas) == {
-        "Umbenennen": rename_address(org.boreas), "Ringe einführen": rings_address(org.boreas)}
-    assert head_buttons(org.mosaik_leitung, org.leuchtturm) == {
-        "Umbenennen": rename_address(org.leuchtturm), "Ring wechseln": ring_address(org.leuchtturm)}
-    assert head_buttons(org.kueste_leitung, org.leuchtturm) == {"Umbenennen": rename_address(org.leuchtturm)}
-    assert head_buttons(org.mosaik_leitung, org.mosaik) == {"Umbenennen": rename_address(org.mosaik)}
-    # Auf der Leseseite gibt es keine Knöpfe (EH-28).
-    assert head_buttons(org.falken_leitung, org.walhall) == {}
+def test_der_stift_steht_nur_wo_die_person_umbenennen_darf(org):
+    assert pencil(org.walhall_leitung, org.walhall) == (edit_address(org.walhall), "Stamm Walhall bearbeiten")
+    assert pencil(org.walhall_leitung, org.falken) == (edit_address(org.falken), "Sippe Falken bearbeiten")
+    assert pencil(org.bundesleitung, org.boreas) == (edit_address(org.boreas), "Pfadfinderbund Boreas bearbeiten")
+    assert pencil(org.kueste_leitung, org.leuchtturm) == (edit_address(org.leuchtturm), "Stamm Leuchtturm bearbeiten")
+    # Auf der Leseseite gibt es keinen Stift (EH-28); die alten Knöpfe im Kopf gibt es nicht mehr.
+    assert pencil(org.falken_leitung, org.walhall) is None
+    head = _one(_all(page_tree(org.bundesleitung, unit_address(org.boreas)), lambda e: "a-orga-kopf" in _classes(e)))
+    assert _all(head, lambda e: "btn" in _classes(e)) == []
 
 
 def _dialog(response) -> dict:
@@ -751,6 +770,7 @@ def _dialog(response) -> dict:
         "dialog": dialog,
         "form": form,
         "button": _one(_by_tag(form, "button", type="submit")),
+        "names": sorted({_attr(entry, "name") for entry in _by_tag(dialog, "input") if _attr(entry, "type") != "hidden"}),
     }
 
 
@@ -768,46 +788,101 @@ def test_dialog_anlegen_mit_dem_feld_name_und_blauem_knopf(org):
     assert _attr(shown["form"], "action") == create_address(org.walhall)
 
 
-def test_dialog_umbenennen_zeigt_den_jetzigen_namen(org):
-    shown = _dialog(client_for(org.walhall_leitung).get(rename_address(org.falken)))
+def test_dialog_bearbeiten_zeigt_je_person_nur_ihre_felder(org):
+    """Name für jede Leitung des Bereichs, Ring und Schalter nur für die Bundesleitung (EH-14, EH-16, EH-23)."""
+    wanda = _dialog(client_for(org.walhall_leitung).get(edit_address(org.falken)))
+    assert (wanda["title"], wanda["names"]) == ("Sippe Falken bearbeiten", ["name"])
+    assert _attr(_one(_by_tag(wanda["dialog"], "input", name="name")), "value") == "Sippe Falken"
+    assert _visible_text(wanda["button"]) == "Speichern"
+    assert "btn-primary" in _classes(wanda["button"])
+    assert _attr(wanda["form"], "action") == edit_address(org.falken)
 
-    assert (shown["title"], shown["subtitle"]) == ("Umbenennen", "Sippe Falken")
-    assert _attr(_one(_by_tag(shown["dialog"], "input", name="name")), "value") == "Sippe Falken"
-    assert _visible_text(shown["button"]) == "Umbenennen"
-
-
-def test_dialog_ring_wechseln_bietet_nur_die_anderen_ringe(org):
-    shown = _dialog(client_for(org.mosaik_leitung).get(ring_address(org.leuchtturm)))
-
-    assert shown["title"] == "Ring wechseln"
-    options = [(_attr(entry, "value"), _attr(entry, "form")) for entry in _by_tag(shown["dialog"], "input", type="radio")]
-    assert options == [(org.nord.key, _attr(shown["form"], "id"))]
-    assert "Zu welchem Ring soll Stamm Leuchtturm gehören?" in _visible_text(shown["dialog"])
-    assert "btn-primary" in _classes(shown["button"])
+    assert _dialog(client_for(org.bundesleitung).get(edit_address(org.boreas)))["names"] == ["hat_ringe", "name"]
+    assert _dialog(client_for(org.bundesleitung).get(edit_address(org.walhall)))["names"] == ["name"]
+    assert _dialog(client_for(org.mosaik_leitung).get(edit_address(org.leuchtturm)))["names"] == ["name", "ring"]
+    assert _dialog(client_for(org.kueste_leitung).get(edit_address(org.leuchtturm)))["names"] == ["name"]
 
 
-def test_nach_einer_ablehnung_bleibt_der_dialog_mit_dem_ring_gewaehlt(org):
-    membership = Role.objects.get(user=org.kueste_leitung, kind=R.MEMBER)
-    membership.unit = org.leuchtturm
-    membership.save(by=BY)
+def test_der_ring_ist_eine_auswahl_mit_dem_jetzigen_ring_gewaehlt(org):
+    shown = _dialog(client_for(org.mosaik_leitung).get(edit_address(org.leuchtturm)))
 
-    shown = _dialog(change_ring(org.mosaik_leitung, org.leuchtturm, org.nord))
-
-    radio = _one(_by_tag(shown["dialog"], "input", type="radio"))
-    assert (_attr(radio, "value"), _attr(radio, "checked") is not None) == (org.nord.key, True)
+    options = [(_attr(entry, "value"), _attr(entry, "checked") is not None, _attr(entry, "form"))
+               for entry in _by_tag(shown["dialog"], "input", type="radio")]
+    form = _attr(shown["form"], "id")
+    assert options == [(org.kueste.key, True, form), (org.nord.key, False, form)]
 
 
-def test_rueckfrage_ringe_einfuehren_mit_blauem_knopf(org):
-    shown = _dialog(client_for(org.bundesleitung).get(rings_address(org.boreas)))
+def test_ein_stamm_ohne_ring_bleibt_ohne_ring_wenn_nichts_gewaehlt_ist(org):
+    """Gemischter Übergang (#88): „ohne Ring“ steht nur, solange der Stamm keinen hat, und ist dann gewählt."""
+    introduce_rings(org.bundesleitung, org.boreas)
+    west = Unit(kind=U.RING, name="Ring West", parent=org.boreas)
+    west.save(by=BY)
+
+    shown = _dialog(client_for(org.bundesleitung).get(edit_address(org.walhall)))
+    options = [(_attr(entry, "value"), _attr(entry, "checked") is not None)
+               for entry in _by_tag(shown["dialog"], "input", type="radio")]
+    assert options == [("", True), (west.key, False)]
+    assert edit(org.bundesleitung, org.walhall, ring="").status_code == 302
+    assert fresh(org.walhall).parent_id == org.boreas.pk
+
+
+def test_der_schalter_hat_ringe_kommt_aus_dem_baustein(org):
+    shown = _dialog(client_for(org.bundesleitung).get(edit_address(org.boreas)))
+
+    switch = _one(_by_tag(shown["dialog"], "input", name="hat_ringe"))
+    assert (_attr(switch, "type"), _attr(switch, "role"), _attr(switch, "value")) == ("checkbox", "switch", "an")
+    assert _attr(switch, "form") == _attr(shown["form"], "id")
+    row = _one(_all(shown["dialog"], lambda e: "a-schalter-zeile" in _classes(e)))
+    assert "Hat Ringe" in _visible_text(row)
+
+
+def test_rueckfrage_ringe_einfuehren_mit_blauem_knopf_und_abbrechen(org):
+    response = edit(org.bundesleitung, org.boreas, name="Bund Boreas", hat_ringe="an")
+    shown = _dialog(response)
 
     assert shown["title"] == "Ringe für Pfadfinderbund Boreas einführen?"
     assert _visible_text(shown["button"]) == "Ringe einführen"
     assert "btn-primary" in _classes(shown["button"])
+    # Die Rückfrage trägt die Eingaben weiter; „Abbrechen“ führt zur Seite und speichert nichts.
+    hidden = {_attr(entry, "name"): _attr(entry, "value") for entry in _by_tag(shown["form"], "input", type="hidden")}
+    assert (hidden["name"], hidden["hat_ringe"], hidden["bestaetigt"]) == ("Bund Boreas", "an", "ja")
+    cancel = _one(_all(shown["dialog"], lambda e: e.name == "a" and _visible_text(e) == "Abbrechen"))
+    assert _attr(cancel, "href") == unit_address(org.boreas)
+    assert (fresh(org.boreas).name, fresh(org.boreas).has_rings) == ("Pfadfinderbund Boreas", False)
+
+
+def test_name_und_ring_zusammen_gespeichert_mit_je_einer_kurzen_meldung(org):
+    client = client_for(org.mosaik_leitung)
+
+    response = edit(org.mosaik_leitung, org.leuchtturm, client=client, name="Leuchtfeuer", ring=org.nord.key)
+
+    assert response["Location"] == unit_address(org.leuchtturm)
+    assert short_notices(client.get(response["Location"])) == [
+        "Stamm Leuchtturm heißt jetzt Stamm Leuchtfeuer.", "Stamm Leuchtfeuer gehört jetzt zu Ring Nord."]
+    assert (fresh(org.leuchtturm).name, fresh(org.leuchtturm).parent_id) == ("Leuchtfeuer", org.nord.pk)
+
+
+def test_wird_der_ring_abgelehnt_bleibt_auch_der_name(org):
+    """Alles zusammen oder nichts: OG5 mit gleichzeitig geändertem Namen; der Ring bleibt gewählt."""
+    membership = Role.objects.get(user=org.kueste_leitung, kind=R.MEMBER)
+    membership.unit = org.leuchtturm
+    membership.save(by=BY)
+    start = mark()
+
+    shown = _dialog(edit(org.mosaik_leitung, org.leuchtturm, name="Leuchtfeuer", ring=org.nord.key))
+
+    assert OG5_MESSAGE in _visible_text(shown["dialog"])
+    assert _attr(_one(_by_tag(shown["dialog"], "input", name="name")), "value") == "Leuchtfeuer"
+    checked = [_attr(entry, "value") for entry in _by_tag(shown["dialog"], "input", type="radio")
+               if _attr(entry, "checked") is not None]
+    assert checked == [org.nord.key]
+    assert (fresh(org.leuchtturm).name, fresh(org.leuchtturm).parent_id) == ("Leuchtturm", org.kueste.pk)
+    assert entries(start) == []
 
 
 @pytest.mark.rechtematrix("EH-18", "EH-11", "EH-14")
 def test_og7_mit_stammesleitung_endet_nur_was_nele_durch_das_einspringen_hatte(org):
-    """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und „Umbenennen“ bleiben (EH-11, EH-14)."""
+    """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und der Stift bleiben (EH-11, EH-14)."""
     client = client_for(org.nord_leitung)
     root = _tree(client.get(unit_address(org.sturmvogel)))
     assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
@@ -817,4 +892,4 @@ def test_og7_mit_stammesleitung_endet_nur_was_nele_durch_das_einspringen_hatte(o
     root = _tree(client.get(unit_address(org.sturmvogel)))
     assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
     assert create_button(org.nord_leitung, org.sturmvogel) == ("Gruppe anlegen", create_address(org.sturmvogel))
-    assert head_buttons(org.nord_leitung, org.sturmvogel) == {"Umbenennen": rename_address(org.sturmvogel)}
+    assert pencil(org.nord_leitung, org.sturmvogel) == (edit_address(org.sturmvogel), "Stamm Sturmvogel bearbeiten")
