@@ -135,6 +135,16 @@
     <div class="a-flaeche">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}</div>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-stift">
+    {% include "core/_katalogeintrag.html" with block=blocks.stift %}
+    <div class="a-flaeche a-orga-kopf hat-stift">{% include "core/_stift.html" with href="#h-stift" label=examples.edit_example.label %}<p>{{ examples.edit_example.name }}</p></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-schalter">
+    {% include "core/_katalogeintrag.html" with block=blocks.schalter %}
+    <div class="a-flaeche">{% for switch in examples.switches %}{% include "core/_schalter.html" %}{% endfor %}</div>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}

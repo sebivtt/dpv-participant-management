@@ -228,6 +228,22 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
+/* Bearbeiten-Symbol (#95): der Stift oben rechts in der Fläche; sein Aussehen teilt er mit dem × eines Dialogs (.a-schliessen unten). */
+.a-orga-kopf { position: relative; }
+.a-orga-kopf.hat-stift { padding-right: 64px; }
+/* Schalter (#95) nach dem Zielbild „Mein Profil“ (Zeile „Profil freigeben“): Titel und Satz links, rechts der runde Schalter. */
+.a-schalter-zeile { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.a-schalter-satz { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; }
+.a-schalter { position: relative; display: inline-flex; flex: none; width: 46px; height: 26px; }
+.a-schalter input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.a-schalter-bahn { position: absolute; inset: 0; border: 1px solid var(--linie); border-radius: 999px; background: var(--grund); transition: background .15s ease; pointer-events: none; }
+.a-schalter-bahn::after { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--flaeche); box-shadow: 0 1px 2px rgba(0, 0, 0, .25); content: ""; transition: transform .15s ease; }
+.a-schalter input:checked + .a-schalter-bahn { border-color: var(--dpv); background: var(--dpv); }
+.a-schalter input:checked + .a-schalter-bahn::after { transform: translateX(20px); }
+.a-schalter input:focus-visible + .a-schalter-bahn { outline: 3px solid var(--dpv); outline-offset: 3px; }
+.a-schalter input:disabled { cursor: default; }
+.a-schalter input:disabled + .a-schalter-bahn { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .a-schalter-bahn, .a-schalter-bahn::after { transition: none; } }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
 /* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
    „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */
@@ -415,9 +431,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
   .a-topbar .a-profil[aria-current="page"] { background: none; }
   .a-topbar .a-avatar { width: 36px; height: 36px; }
 }
-.a-menueknopf, .a-schliessen { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.a-menueknopf, .a-schliessen, .a-stift { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
 /* Beim Darüberfahren und Drücken wie die zarten Knöpfe (.btn-zart), denen sie in Ruhe gleichen (#216) */
-.a-menueknopf:hover, .a-menueknopf:active, .a-schliessen:hover, .a-schliessen:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
+.a-menueknopf:hover, .a-menueknopf:active, .a-schliessen:hover, .a-schliessen:active, .a-stift:hover, .a-stift:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
 /* Ohne Skript ist „Menü“ ein Sprung ans Seitenende (#281) und sieht aus wie der Knopf. */
 a.a-menueknopf { text-decoration: none; }
 /* Liste am Seitenende (#281): Navigation, Profilkreis und „Abmelden“ für das Handy ohne Skript, nach dem
@@ -468,11 +484,14 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-dialog-kopf h2 { margin: 0; font-size: 1.15rem; }
 .a-dialog-kopf .a-unterzeile { margin: 4px 0 0; }
 .a-dialog-kopf .a-schliessen { flex: none; padding: 6px; text-decoration: none; }
+.a-stift { position: absolute; top: 12px; right: 12px; padding: 6px; text-decoration: none; }
 .a-dialog-inhalt { padding: 18px 20px; }
 .a-dialog-fuss { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
 /* Auswahl im Dialog (#286): Optionsfelder wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit.
    Die Vorschau wechselt ohne Skript über :has(); ein Browser ohne :has() zeigt alle Vorschauen untereinander. */
 .a-auswahl fieldset { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }
+/* Sichtbare Überschrift (#95): wie die Beschriftung eines Textfelds, nicht in der großen Standardgröße einer legend. */
+.a-auswahl legend.form-label { margin-bottom: .5rem; font-size: 1rem; line-height: 1.5; }
 .a-auswahl-liste { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .a-auswahl-liste li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
 .a-auswahl-liste li:hover { border-color: var(--dpv); }

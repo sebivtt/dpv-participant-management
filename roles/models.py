@@ -82,7 +82,10 @@ class Role(models.Model):
       neu gegeben, damit jede Änderung als solche im Protokoll steht (#91).
 
     `save()` und `delete()` sperren die Person, bis die Änderung gespeichert ist; so laufen
-    gleichzeitige Änderungen an den Rollen derselben Person nacheinander. Sie lehnen mit
+    gleichzeitige Änderungen an den Rollen derselben Person nacheinander. `save()` sperrt danach
+    außerdem den Bund, wie der Ringwechsel eines Stammes (`Unit.save()`, #95): erst Konten, dann
+    Bund, dann Einheit, immer in dieser Reihenfolge. So sieht die Regel „Leitungsrolle auf dem
+    Pfad“ auch bei gleichzeitigem Benennen und Ringwechsel den Stand der anderen Änderung (OG9). Sie lehnen mit
     `ValidationError` und einer Meldung in Alltagssprache ab und schreiben jede tatsächliche
     Änderung in derselben Transaktion ins Protokoll (`RoleChange`). Wer an ihnen vorbei schreibt
     (`update()`, `bulk_create()`, `QuerySet.delete()`), umgeht die Regeln, die nur das Tool
@@ -124,6 +127,7 @@ class Role(models.Model):
         with transaction.atomic():
             self._lock_person()
             stored = Role.objects.filter(pk=self.pk).values("user_id", "kind", "unit_id").first() if self.pk else None
+            self._lock_associations(stored)
             errors = self._errors(stored)
             if errors:
                 raise ValidationError(errors)
@@ -227,6 +231,27 @@ class Role(models.Model):
         """Diese Rolle, wie sie in der Datenbank steht."""
         return Role.objects.select_related("user", "unit__parent").filter(pk=self.pk).first()
 
+    def _lock_associations(self, stored: dict | None) -> None:
+        """Sperrt die Bünde der Einheiten, um die es geht, nach Nummer geordnet (#95, OG9).
+
+        Das sind die Einheit der Rolle, die gespeicherte Einheit und die Einheit der Mitgliedschaft.
+        Zu welchem Bund eine Einheit gehört, ändert sich nie (#88); deshalb darf der Bund vor der
+        Sperre gelesen werden. Alles, was die Regeln danach lesen, kommt frisch aus der Datenbank.
+        """
+        if self.kind not in (RoleKind.MEMBER, *LEADS_IN_UNITS):
+            return
+        units = [self.unit_id, stored["unit_id"] if stored else None]
+        membership = self._membership()
+        if membership is not None:
+            units.append(membership.unit_id)
+        rows = Unit.objects.filter(pk__in=[unit for unit in units if unit is not None]).values_list(
+            "pk", "kind", "association_id", "parent__association_id")
+        bunds = set()
+        for pk, kind, association, parent_association in rows:
+            bunds.add({UnitKind.ASSOCIATION: pk, UnitKind.GROUP: parent_association}.get(kind, association))
+        bunds.discard(None)
+        list(Unit.objects.select_for_update().filter(pk__in=bunds).order_by("pk").values_list("pk"))
+
     def _lock_person(self) -> None:
         """Sperrt das Konto, damit die Regeln den Stand sehen, den die Änderung tatsächlich trifft."""
         list(get_user_model().objects.select_for_update().filter(pk=self.user_id).values_list("pk"))
@@ -249,13 +274,18 @@ class Role(models.Model):
             return [duplicate]
         if self.kind in LEADS_IN_UNITS:
             membership = self._membership()
-            if membership and not on_path(membership.unit, self.unit):
+            if membership and not on_path(membership.unit, self._fresh_unit()):
                 return [ValidationError(self._outside_path(membership.unit), code="outside_path")]
         if self.kind == RoleKind.MEMBER and stored and stored["unit_id"] != self.unit_id:
-            blocking = self.leads_outside(self.unit)
+            blocking = self.leads_outside(self._fresh_unit())
             if blocking:
                 return [ValidationError(self._remove_first(blocking), code="remove_roles_first")]
         return []
+
+    def _fresh_unit(self) -> Unit:
+        """Die Einheit der Rolle frisch mit allen darüber; im Programm kann ihr Platz veraltet sein,
+        etwa nach einem gleichzeitigen Ringwechsel (#95, OG9)."""
+        return Unit.objects.select_related("parent__parent__parent").get(pk=self.unit_id)
 
     def _duplicate_error(self) -> "str | ValidationError | None":
         """Meldung, wenn die Person diese Rolle dort schon hat; sonst None."""
@@ -381,6 +411,48 @@ def on_path(member_unit: Unit, target: Unit) -> bool:
     """
     anchor = member_unit.parent if member_unit.kind == UnitKind.GROUP else member_unit
     return anchor.pk in _upwards(target) or target.pk in _upwards(anchor)
+
+
+def leads_off_path(troop: Unit, new_parent: Unit) -> list[tuple[Role, list[Role]]]:
+    """Wessen Leitungsrollen nach einem Ringwechsel von `troop` nicht mehr auf dem Pfad lägen (#89, #95).
+
+    Gibt je betroffener Person ihre Mitgliedschaft und diese Rollen zurück, nach Namen geordnet.
+    Betroffen sind Mitglieder des Stammes und seiner Gruppen und alle, die dort eine Leitungsrolle
+    haben, etwa als direktes Mitglied des alten Rings. Gezählt werden nur Rollen, die heute auf dem
+    Pfad liegen und es danach nicht mehr täten. Ändert nichts; nur innerhalb der Transaktion mit
+    gesperrtem Bund verlässlich.
+    """
+    bund = troop.association_id
+    rows = Unit.objects.filter(Q(pk=bund) | Q(association_id=bund) | Q(parent__association_id=bund)).values_list(
+        "pk", "parent_id", "kind")
+    before = {pk: parent for pk, parent, _kind in rows}
+    kinds = {pk: kind for pk, _parent, kind in rows}
+    after = {**before, troop.pk: new_parent.pk}
+    below = {troop.pk} | {pk for pk, parent in before.items() if parent == troop.pk}
+    involved = Role.objects.filter(Q(kind__in=LEADS_IN_UNITS, unit_id__in=below) | Q(kind=RoleKind.MEMBER, unit_id__in=below))
+    memberships = Role.objects.filter(kind=RoleKind.MEMBER, user_id__in=involved.values("user_id")).select_related(
+        "user", "unit")
+    found = []
+    for membership in sorted(memberships, key=lambda role: (role.user.last_name, role.user.first_name, role.user.username)):
+        anchor = before.get(membership.unit_id) if kinds.get(membership.unit_id) == UnitKind.GROUP else membership.unit_id
+        leads = [lead for lead in membership._leads()
+                 if _on_path_in(before, anchor, lead.unit_id) and not _on_path_in(after, anchor, lead.unit_id)]
+        if leads:
+            found.append((membership, leads))
+    return found
+
+
+def _on_path_in(tree: dict[int, int | None], anchor: int | None, target: int) -> bool:
+    """Wie `on_path()`, aber über Nummern in `tree` (Einheit → Einheit darüber), etwa für einen Stand nach einer Änderung."""
+
+    def upwards(unit):
+        found = []
+        while unit is not None and unit in tree:
+            found.append(unit)
+            unit = tree[unit]
+        return found
+
+    return anchor is not None and (anchor in upwards(target) or target in upwards(anchor))
 
 
 def after_leaving(left: Unit, entirely: bool) -> Unit | None:

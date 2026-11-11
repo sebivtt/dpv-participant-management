@@ -1,4 +1,7 @@
-"""Befehl für Admins: Bünde anlegen, umbenennen, „hat Ringe“ setzen und auflisten (#88).
+"""Befehl für Admins: Bünde anlegen, umbenennen, „hat Ringe“ einschalten und auflisten (#88).
+
+„Hat Ringe“ ausschalten gibt es nicht, weder hier noch im Tool (#95, Frage 16 vom 28.10.2026); das
+baut #204 mit der Seite für Bünde (#107).
 
 Beispiele:
     python manage.py association create "Pfadfinderbund Boreas"
@@ -20,7 +23,7 @@ from units.models import Kind, Unit
 class Command(BaseCommand):
     """Pflegt die Bünde unter dem Verband; eine Seite dafür gibt es in P2 nicht (#107)."""
 
-    help = "Bünde anlegen (create), umbenennen (rename), „hat Ringe“ setzen (rings) und auflisten (list)."
+    help = "Bünde anlegen (create), umbenennen (rename), „hat Ringe“ einschalten (rings) und auflisten (list)."
 
     def add_arguments(self, parser):
         actions = parser.add_subparsers(dest="action", required=True)
@@ -30,9 +33,9 @@ class Command(BaseCommand):
         rename = actions.add_parser("rename", help="Bund umbenennen")
         rename.add_argument("name")
         rename.add_argument("new_name")
-        rings = actions.add_parser("rings", help="„hat Ringe“ ein- oder ausschalten")
+        rings = actions.add_parser("rings", help="„hat Ringe“ einschalten")
         rings.add_argument("name")
-        rings.add_argument("switch", choices=["on", "off"])
+        rings.add_argument("switch", choices=["on"])
         actions.add_parser("list", help="Verband und Bünde anzeigen")
 
     def handle(self, *args, action: str, **options):
@@ -59,9 +62,9 @@ class Command(BaseCommand):
 
     def _rings(self, name: str, switch: str, **options):
         unit = association(name)
-        unit.has_rings = switch == "on"
+        unit.has_rings = True
         unit.save(update_fields=["has_rings"], by=SERVER_COMMAND)
-        self.stdout.write((texts.RINGS_NOW_ON if unit.has_rings else texts.RINGS_NOW_OFF) % {"name": unit.name})
+        self.stdout.write(texts.RINGS_NOW_ON % {"name": unit.name})
 
     def _list(self, **options):
         parent = federation()

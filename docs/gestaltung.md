@@ -128,6 +128,18 @@ Kein eigenes Zielbild; Orientierung ist `docs/zielbilder/personen.html` (Dialog 
 - **Auswahl im Dialog:** Die Vorschau ist freiwillig; beim Verschieben fehlt sie. Nach einer Ablehnung bleibt die abgelehnte Möglichkeit gewählt.
 - **Danach** eine kurze Meldung (#186): „… gehört jetzt zu ….“ Passt eine Leitungsrolle nicht zum Ziel, steht die Fehlermeldung fest im Dialog unter der Wahl.
 
+### Organisationen anlegen und bearbeiten (#95, 11.11.2026)
+
+Kein Zielbild (Frage 14 in #95); Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 11.11.2026 zu #95, Nr. 4. Zwei Bausteine neu, zwei erweitert:
+
+- **Bearbeiten-Symbol** (neu; Sebastian bei der Vorschau, 11.11.2026): ein Stift oben rechts in einer Fläche, wo ein Dialog sein × hat. Er öffnet den Dialog „… bearbeiten“ mit allen Einstellungen dieser Sache, nie gleich eine Handlung. Bearbeitbare Werte einer Sache bekommen so einen festen Ort, statt dass überall eigene Knöpfe stehen.
+- **Kopf einer Organisationsseite** (erweitert): oben rechts der Stift, nur wo man die Organisation umbenennen darf; auf der Leseseite keiner.
+- **Schalter** (neu, nach dem Zielbild „Mein Profil“, Zeile „Profil freigeben“): fetter Titel und ein Satz links, rechts der runde Schalter, eingeschaltet blau; gesperrt grau, wenn sich etwas nicht zurücknehmen lässt, wie „Hat Ringe“. Gespeichert wird erst mit dem Knopf des Dialogs.
+- **Auswahl im Dialog** (erweitert): Die Überschrift darf sichtbar sein wie die Beschriftung eines Textfelds, etwa „Ring“ unter dem Feld „Name“.
+- **„… anlegen“** steht als Knopf mit Plus in der Überschrift von „Organisationen darunter“ und heißt nach der Art („Gruppe anlegen“, „Stamm anlegen“, „Ring anlegen“); der Dialog hat das Textfeld „Name“ (Pflicht, Zahl der Zeichen bis 100).
+- **„… bearbeiten“:** Textfeld „Name“; beim Stamm für die Bundesleitung „Ring“ als „Auswahl im Dialog“ ohne Vorschau, bei einem Stamm ohne Ring zuerst „ohne Ring (bisher)“; beim Bund für die Bundesleitung der Schalter „Hat Ringe“. Wird er eingeschaltet, kommt vor dem Speichern die Rückfrage „Ringe für … einführen?“. Der Knopf zum Bestätigen ist überall dunkelblau. Ein doppelter oder leerer Name steht als Fehler am Feld, eine Ablehnung beim Ringwechsel fest im Dialog unter der Wahl.
+- **Danach** je Änderung eine kurze Meldung (#186), etwa „Sippe Kraniche ist angelegt.“
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

@@ -1,7 +1,11 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176) und die Suche beim Benennen (#190) und Aufnehmen (#285)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285) und der Name beim Anlegen und Bearbeiten einer Organisation (#95)."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+
+from units import texts as unit_texts
+# Höchstlänge eines Namens wie im Datenmodell (units/models.py, Feld `name`).
+UNIT_NAME_MAX_LENGTH = 100
 
 
 class PatternForm(forms.Form):
@@ -56,3 +60,36 @@ class FederationSearchForm(AccountSearchForm):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.fields["suche"].label = _("Mail oder Benutzername")
+
+
+class UnitNameForm(forms.Form):
+    """Der Name im Dialog „… anlegen“ und „… bearbeiten“ (#95): Pflicht, höchstens 100 Zeichen, ohne Leerzeichen am Rand.
+
+    Nimmt nur den Namen an; welche Organisation und welche Art, kommt aus der Adresse (OV1, OV4).
+    Die Länge prüft erst der Server, wie beim Fahrtennamen: Ein `maxlength` schnitte beim Einfügen
+    still ab. Das Feld gehört über sein Attribut „form“ zum Formular des Knopfs im Dialog, damit
+    Enter und der Knopf denselben Namen schicken. Am Handy Großbuchstabe am Wortanfang, ohne Korrektur.
+    """
+
+    name = forms.CharField(
+        label=unit_texts.NAME_LABEL,
+        error_messages={"required": unit_texts.NAME_EMPTY},
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "words",
+                "autocorrect": "off",
+                "spellcheck": "false",
+                "autofocus": True,
+                "form": "f-dialog",
+                "data-hoechstens": UNIT_NAME_MAX_LENGTH,
+                "data-zu-lang": unit_texts.NAME_TOO_LONG,
+            }
+        ),
+    )
+
+    def clean_name(self) -> str:
+        value = self.cleaned_data["name"]
+        if len(value) > UNIT_NAME_MAX_LENGTH:
+            raise forms.ValidationError(unit_texts.NAME_TOO_LONG, code="max_length")
+        return value

@@ -14,7 +14,7 @@ from access.addresses import checks_rights, without_personal_data
 from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import AccountSearchForm, FederationSearchForm, PatternForm
+from core.forms import AccountSearchForm, FederationSearchForm, PatternForm, UnitNameForm
 from roles.models import Role
 from units.models import Unit
 from units import texts
@@ -29,11 +29,14 @@ from units.organisation import (
     Organisation,
     Page,
     admission,
+    create_dialog,
+    edit_dialog,
     exit_dialog,
     expulsion_dialog,
     move_dialog,
     federation_done,
     hits,
+    rings_question,
 )
 
 logger = logging.getLogger(__name__)
@@ -530,6 +533,95 @@ def organisation_move(request: HttpRequest, unit: str, person: str) -> HttpRespo
                                                        "start": False, "removal": removal})
 
 
+# Organisationen anlegen und bearbeiten (#95, ORG-06). Wie beim Verschieben hat jeder Dialog eine eigene
+# Adresse unter der Seite der Organisation, damit er auch ohne Skript geht. Die Organisation darüber und die
+# Art der neuen Organisation kommen immer aus der Adresse, nie aus dem Formular (OV1, OV4); das Formular
+# bringt nur den Namen oder den gewählten Ring. Wer dort nicht darf, bekommt „nicht gefunden“, auch per
+# Skript. Einen Löschknopf gibt es nicht (EH-21), ebenso kein Ausschalten von „hat Ringe“ (EH-25).
+STRUCTURE_ROWS = ("EH-10", "EH-11", "EH-12", "EH-13", "EH-14", "EH-15", "EH-16", "EH-17", "EH-18", "EH-19",
+                  "EH-20", "EH-21", "EH-23", "EH-24", "EH-25", "EH-26", "EH-27")
+
+
+def _with_dialog(request: HttpRequest, found: Unit, dialog: dict) -> HttpResponse:
+    """Die Seite der Organisation mit offenem Dialog, der kommt offen vom Server."""
+    shown = Organisation(request.rights, request.user)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
+                                                       "start": False, "removal": dialog})
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_create(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Gruppe anlegen“, „Stamm anlegen“ oder „Ring anlegen“ zeigen und anlegen (EH-10 bis EH-12).
+
+    Danach steht die neue Organisation unter „Organisationen darunter“ der Seite, von der aus sie
+    angelegt wurde, mit der kurzen Meldung (#186); sonst bleibt der Dialog offen, mit dem Grund als
+    Fehler am Feld und der Eingabe darin.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_create)
+    if request.method == "POST":
+        form = UnitNameForm(request.POST)
+        if form.is_valid():
+            done, text = rights.create(found, form.cleaned_data["name"])
+            if done:
+                messages.success(request, text)
+                return redirect("organisation_unit", unit=found.key)
+            form.add_error("name", text)
+    elif request.method in READING:
+        form = UnitNameForm()
+    else:
+        raise Http404
+    return _with_dialog(request, found, create_dialog(found, form, action=request.path))
+
+
+@checks_rights(*STRUCTURE_ROWS)
+def organisation_edit(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „… bearbeiten“ zeigen und speichern: Name, Ring und „hat Ringe“ (EH-14, EH-16, EH-23).
+
+    Den Stift und die Adresse hat, wer die Organisation umbenennen darf; Ring und Schalter zeigt
+    der Dialog nur der Bundesleitung. Wird „hat Ringe“ neu eingeschaltet, kommt vor dem Speichern
+    die Rückfrage aus O8. Gespeichert wird alles zusammen oder nichts; danach je Änderung eine kurze
+    Meldung (#186). Bei einer Ablehnung bleibt der Dialog mit der Eingabe offen.
+
+    Der Dialog schickt mit, was er beim Öffnen gezeigt hat (`name_vorher`, `ring_vorher`). Was die
+    Person nicht geändert hat, gilt als „bleibt“, auch wenn inzwischen jemand anderes es geändert hat;
+    so dreht ein veralteter Stand keine gleichzeitige Änderung zurück (OG4, unabhängige Prüfung, Befund 1).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.select_related("parent"), unit, allowed=rights.may_rename)
+    ring_key = request.POST.get("ring") if request.method == "POST" else None
+    rings_on = request.method == "POST" and request.POST.get("hat_ringe") == "an"
+    shown_name = request.POST.get("name_vorher") if request.method == "POST" else None
+    shown_ring = request.POST.get("ring_vorher") if request.method == "POST" else None
+    notice = ""
+    if request.method == "POST":
+        form = UnitNameForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data["name"]
+            if rings_on and request.POST.get("bestaetigt") != "ja" and rights.may_introduce_rings(found):
+                return _with_dialog(request, found, rings_question(found, action=request.path, name=name,
+                                                                   shown_name=shown_name))
+            result = rights.edit(found, name=None if name == shown_name else name,
+                                 ring_key=None if ring_key == shown_ring else ring_key, rings_on=rings_on)
+            if not result["errors"]:
+                for text in result["messages"]:
+                    messages.success(request, text)
+                return redirect("organisation_unit", unit=found.key)
+            if "name" in result["errors"]:
+                form.add_error("name", result["errors"]["name"])
+            notice = result["errors"].get("ring", "")
+    elif request.method in READING:
+        form = UnitNameForm(initial={"name": found.name})
+    else:
+        raise Http404
+    rings = rights.rings_of(found) if rights.may_change_ring(found) else None
+    # Den Schalter sieht nur die Bundesleitung des Bundes selbst, eingeschaltet gesperrt (EH-23, EH-24, EH-25).
+    switch = found.kind == Unit.Kind.ASSOCIATION and rights.leads_itself(found)
+    dialog = edit_dialog(found, form, action=request.path, rings=rings, rings_switch=switch, ring_key=ring_key or "",
+                         rings_on=rings_on, ring_notice=notice, shown_name=shown_name, shown_ring=shown_ring)
+    return _with_dialog(request, found, dialog)
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
@@ -796,27 +888,44 @@ BUILDING_BLOCKS = {
                      "Informationsmeldung. Er führt zum Dialog, nie gleich zur Handlung."),
         "pages": [_("Organisation")],
     },
+    "stift": {
+        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95],
+        "purpose": _("Ein Stift oben rechts in einer Fläche, dort, wo ein Dialog sein × hat. Er öffnet den Dialog "
+                     "„… bearbeiten“, in dem alle Einstellungen dieser Sache an einem Ort stehen, etwa Name und "
+                     "Ring einer Organisation. Er steht nur, wo man bearbeiten darf."),
+        "pages": [_("Organisation")],
+    },
+    "schalter": {
+        "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95],
+        "purpose": _("Schaltet etwas ein oder aus, nach dem Zielbild „Mein Profil“: links ein fetter Titel und ein "
+                     "Satz, rechts der runde Schalter, eingeschaltet blau. Gesperrt steht er grau da, etwa wenn "
+                     "sich etwas nicht zurücknehmen lässt (zweites Beispiel). Gespeichert wird erst mit dem Knopf "
+                     "des Dialogs."),
+        "pages": [_("Organisation")],
+    },
     "orgakopf": {
-        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218],
+        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
-                     "Art und Organisation darüber, rechts die Marke. Für die Verbandsleitung steht der Verband "
-                     "als erste Ebene im Pfad und führt zur Seite „Verband“ (zweites Beispiel)."),
+                     "Art und Organisation darüber, rechts die Marke. Wo man die Organisation bearbeiten darf, "
+                     "steht oben rechts der Stift. Für die Verbandsleitung steht der Verband als erste Ebene im "
+                     "Pfad und führt zur Seite „Verband“ (zweites Beispiel)."),
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
                      "„Entfernen“, oder, wo nichts weggenommen wird, ein dunkelblauer, etwa „Verschieben“; er "
-                     "schickt eine Wahl aus der „Auswahl im Dialog“ mit."),
+                     "schickt eine Wahl aus der „Auswahl im Dialog“ oder ein Textfeld mit, etwa den Namen beim Anlegen."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
-        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287],
+        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95],
         "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt; darunter "
                      "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Die "
-                     "Vorschau ist freiwillig, beim Verschieben gibt es keine. Nach einer Ablehnung bleibt die "
+                     "Vorschau ist freiwillig, beim Verschieben gibt es keine. Die Überschrift darf sichtbar sein, etwa "
+                     "„Ring“ im Dialog „… bearbeiten“. Nach einer Ablehnung bleibt die "
                      "abgelehnte Möglichkeit gewählt. Der Knopf des Dialogs schickt die Wahl mit, etwa beim "
                      "Austragen, beim Austreten und beim Verschieben."),
         "pages": [_("Mein Profil"), _("Organisation")],
@@ -877,7 +986,8 @@ def _organisation_examples() -> dict:
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
-                kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="")
+                kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="",
+                edit_href="#h-orgakopf", edit_label="Stamm Walhall bearbeiten")
     # Wie die Verbandsleitung den Kopf sieht, wenn sie zugleich Leitung in Boreas ist (#218).
     federation_page = Page(unit=Unit(kind=kind.TROOP, name="Zugvögel"), access="manage",
                            path=[("DPV", "#h-orgakopf"), ("Pfadfinderbund Boreas", "#h-orgakopf")],
@@ -947,7 +1057,15 @@ def _organisation_examples() -> dict:
         ]},
     }
     admit_hits = [Hit(key="", name="Otter", extra="Otto Ohne", place="", note="", warning="", hint="")]
-    return {"persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
+    # Schalter (#95): wie beim Bund Boreas vor dem Einschalten und wie bei Mosaik, wo er gesperrt ist.
+    switches = [
+        {"name": "katalog-ringe", "value": "an", "title": texts.HAS_RINGS_TITLE, "text": texts.HAS_RINGS_OFF,
+         "checked": False, "locked": False},
+        {"name": "katalog-ringe-an", "value": "an", "title": texts.HAS_RINGS_TITLE, "text": texts.HAS_RINGS_LOCKED,
+         "checked": True, "locked": True},
+    ]
+    edit_example = {"name": "Sippe Falken", "label": texts.EDIT_TITLE % {"unit": "Sippe Falken"}}
+    return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
             "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}

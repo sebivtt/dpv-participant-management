@@ -116,15 +116,14 @@ def test_alter_stamm_ohne_ring_wird_einem_ring_zugeordnet(org):
     assert (entry.old_parent_id, entry.new_parent_id) == (org.boreas.pk, sued.pk)
 
 
-def test_gruppe_wechselt_den_stamm(org):
-    """F3: nicht neu verboten, aber im Protokoll."""
+def test_gruppe_wechselt_den_stamm_nicht(org):
+    """F3 galt bis #95; seitdem lehnt das Datenmodell den Wechsel ab, und nichts kommt ins Protokoll (Frage 13 in #95)."""
     start = mark()
 
-    place(org.falken, org.zugvoegel, by=org.erika)
+    with pytest.raises(ValidationError):
+        place(org.falken, org.zugvoegel, by=org.erika)
 
-    assert entries(start) == [("Erika Testfrau", "Sippe Falken (Walhall)", A.TROOP_CHANGED, "Walhall", "Zugvögel")]
-    entry = last_entry()
-    assert (entry.old_parent_id, entry.new_parent_id) == (org.walhall.pk, org.zugvoegel.pk)
+    assert entries(start) == []
 
 
 def test_umbenennen_per_befehl_auch_nur_in_der_schreibweise(db):
@@ -183,14 +182,16 @@ def test_anlegen_nennt_wo_die_organisation_haengt(org, kind, name, parent, logge
     assert (entry.unit_id, entry.unit_kind, entry.new_parent_id) == (created.pk, kind, getattr(org, parent).pk)
 
 
-def test_hat_ringe_ein_und_ausschalten_per_befehl(db):
-    """S7."""
+def test_hat_ringe_einschalten_per_befehl_und_ausschalten_im_datenmodell(db):
+    """S7; einen Befehl zum Ausschalten gibt es seit #95 nicht mehr (Frage 16), das Datenmodell protokolliert es weiter (#204)."""
     run("federation", "create", "DPV")
     run("association", "create", "Pfadfinderbund Boreas")
     start = mark()
 
     run("association", "rings", "Pfadfinderbund Boreas", "on")
-    run("association", "rings", "Pfadfinderbund Boreas", "off")
+    boreas = Unit.objects.get(name="Pfadfinderbund Boreas")
+    boreas.has_rings = False
+    boreas.save(by=SERVER_COMMAND)
 
     assert entries(start) == [
         ("Befehl auf dem Server", "Pfadfinderbund Boreas", A.HAS_RINGS, "aus", "ein"),
