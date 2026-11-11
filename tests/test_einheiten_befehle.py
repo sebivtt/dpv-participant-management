@@ -8,6 +8,7 @@ Issue #88. Erfolg und Ablehnung melden die Befehle in Alltagssprache.
 import io
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
@@ -161,15 +162,14 @@ def test_unbekannten_bund_umbenennen(dpv):
 # Schalter „hat Ringe“
 
 
-def test_ringe_einschalten_und_ausschalten(dpv):
+def test_ringe_einschalten(dpv):
+    """Ausschalten gibt es seit #95 nicht mehr als Befehl (Frage 16 vom 28.10.2026; #204)."""
     run("association", "create", "DPBM Mosaik")
 
     assert "Im Bund „DPBM Mosaik“ ist „hat Ringe“ jetzt eingeschaltet." in run(
         "association", "rings", "dpbm mosaik", "on"
     )
     assert association("DPBM Mosaik").has_rings is True
-    assert "Im Bund „DPBM Mosaik“ ist „hat Ringe“ jetzt ausgeschaltet." in run("association", "rings", "DPBM Mosaik", "off")
-    assert association("DPBM Mosaik").has_rings is False
 
 
 def test_ringe_einschalten_obwohl_es_schon_staemme_gibt(dpv):
@@ -190,7 +190,12 @@ def test_ringe_ausschalten_mit_ring_nennt_den_grund(dpv):
     run("association", "create", "DPBM Mosaik", "--rings")
     Unit(kind=Kind.RING, name="Küste", parent=association("DPBM Mosaik")).save(by=SERVER_COMMAND)
 
-    message = refused("association", "rings", "DPBM Mosaik", "off")
+    # Seit #95 gibt es dafür keinen Befehl mehr; die Regel gilt weiter im Datenmodell (#204 baut das Ausschalten).
+    mosaik = association("DPBM Mosaik")
+    mosaik.has_rings = False
+    with pytest.raises(ValidationError) as error:
+        mosaik.save(by=SERVER_COMMAND)
+    message = " ".join(error.value.messages)
 
     assert message == (
         "Der Bund „DPBM Mosaik“ hat noch Ringe. „Hat Ringe“ lässt sich erst ausschalten, "
@@ -214,7 +219,7 @@ def test_gleichzeitiges_umbenennen_und_umschalten_verlieren_nichts(dpv, monkeypa
     assert (boreas.name, boreas.has_rings) == ("Bund Boreas", True)
 
 
-def test_schalter_nur_mit_on_oder_off(dpv):
+def test_schalter_nur_mit_on(dpv):
     run("association", "create", "DPBM Mosaik")
 
     with pytest.raises(CommandError):
