@@ -15,6 +15,10 @@ TROOP_PARENT = gettext_lazy("Ein Stamm hängt an einem Ring oder direkt an einem
 GROUP_PARENT = gettext_lazy("Eine Gruppe hängt an einem Stamm.")
 KIND_FIXED = gettext_lazy("Die Ebene lässt sich nachträglich nicht ändern.")
 STAYS_IN_ASSOCIATION = gettext_lazy("Ein Ring oder Stamm bleibt in seinem Bund.")
+# Seit #95 (Frage 13 vom 28.10.2026); #127 kann das später gezielt öffnen.
+GROUP_STAYS_IN_TROOP = gettext_lazy("Eine Gruppe bleibt in ihrem Stamm.")
+# Ringwechsel, nach dem eine Leitungsrolle nicht mehr auf dem Pfad ihrer Mitgliedschaft läge (#89, #95).
+LEADS_OFF_PATH = gettext_lazy("Nach dem Wechsel läge diese Leitungsrolle nicht mehr auf dem Pfad ihrer Mitgliedschaft: %(roles)s.")
 ONLY_ASSOCIATION_HAS_RINGS = gettext_lazy("Nur ein Bund hat Ringe.")
 RINGS_SWITCHED_OFF = gettext_lazy(
     "Im Bund „%(association)s“ ist „hat Ringe“ ausgeschaltet. Ringe gibt es nur in einem Bund mit Ringen."
@@ -46,7 +50,6 @@ RINGS_ON_AT_CREATION = gettext_lazy("„Hat Ringe“ ist eingeschaltet.")
 ASSOCIATION_RENAMED = gettext_lazy("Der Bund „%(old)s“ heißt jetzt „%(new)s“.")
 ASSOCIATION_UNKNOWN = gettext_lazy("Den Bund „%(name)s“ gibt es nicht.")
 RINGS_NOW_ON = gettext_lazy("Im Bund „%(name)s“ ist „hat Ringe“ jetzt eingeschaltet.")
-RINGS_NOW_OFF = gettext_lazy("Im Bund „%(name)s“ ist „hat Ringe“ jetzt ausgeschaltet.")
 LIST_FEDERATION = gettext_lazy("Verband: %(name)s")
 LIST_ASSOCIATIONS = gettext_lazy("Bünde:")
 LIST_NO_ASSOCIATIONS = gettext_lazy("Bünde: noch keine")
@@ -245,3 +248,44 @@ MOVE_ROLE_DOES_NOT_FIT = gettext_lazy(
 MOVE_ROLES_DO_NOT_FIT = gettext_lazy(
     "%(person)s ist %(roles)s. Diese Rollen passen nicht zu %(target)s. Sie können zuerst beendet werden."
 )
+
+# Organisationen anlegen und bearbeiten (#95), Wortlaut nach dem Issue und den Szenarien O1 bis OG9
+CREATE_TITLE = {
+    "ring": gettext_lazy("Ring anlegen"),
+    "troop": gettext_lazy("Stamm anlegen"),
+    "group": gettext_lazy("Gruppe anlegen"),
+}
+CREATE_IN = gettext_lazy("in %(unit)s")
+CREATE_BUTTON = gettext_lazy("Anlegen")
+CREATED = gettext_lazy("%(unit)s ist angelegt.")
+NAME_LABEL = gettext_lazy("Name")
+NAME_TOO_LONG = gettext_lazy("Der Name darf höchstens 100 Zeichen haben.")
+# Gibt es den Namen dort schon, wo er eindeutig sein muss (#88); Namen in einfachen Anführungszeichen wie in OG1.
+NAME_TAKEN = {
+    "association": gettext_lazy("Den Bund ‚%(name)s‘ gibt es schon."),
+    "ring": gettext_lazy("Den Ring ‚%(name)s‘ gibt es in %(place)s schon."),
+    "troop": gettext_lazy("Den Stamm ‚%(name)s‘ gibt es in %(place)s schon."),
+    "group": gettext_lazy("Die Gruppe ‚%(name)s‘ gibt es in %(place)s schon."),
+}
+RENAME_BUTTON = gettext_lazy("Umbenennen")
+RENAME_TITLE = gettext_lazy("Umbenennen")
+RENAMED_TO = gettext_lazy("%(old)s heißt jetzt %(new)s.")
+CHANGE_RING_BUTTON = gettext_lazy("Ring wechseln")
+CHANGE_RING_QUESTION = gettext_lazy("Zu welchem Ring soll %(unit)s gehören?")
+RING_CHANGED_TO = gettext_lazy("%(unit)s gehört jetzt zu %(ring)s.")
+RING_CHANGE_ROLE_BLOCKS = gettext_lazy(
+    "%(person)s ist %(roles)s. Nach dem Wechsel passt diese Rolle nicht mehr zu der Mitgliedschaft in %(unit)s. "
+    "Sie kann zuerst beendet werden."
+)
+RING_CHANGE_ROLES_BLOCK = gettext_lazy(
+    "%(person)s ist %(roles)s. Nach dem Wechsel passen diese Rollen nicht mehr zu der Mitgliedschaft in %(unit)s. "
+    "Sie können zuerst beendet werden."
+)
+INTRODUCE_RINGS_BUTTON = gettext_lazy("Ringe einführen")
+INTRODUCE_RINGS_QUESTION = gettext_lazy("Ringe für %(unit)s einführen?")
+INTRODUCE_RINGS_LINES = (
+    gettext_lazy("Danach muss jeder neue Stamm in einem Ring hängen."),
+    gettext_lazy("Die bisherigen Stämme bleiben ohne Ring, bis du sie einem Ring zuordnest."),
+    gettext_lazy("Zurücknehmen lässt sich das vorerst nicht."),
+)
+RINGS_INTRODUCED = gettext_lazy("%(unit)s hat jetzt Ringe.")

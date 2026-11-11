@@ -55,7 +55,12 @@ class Unit(models.Model):
       was sich nur in Groß- und Kleinschreibung oder Leerzeichen am Rand unterscheidet.
     - Eine Einheit, unter der noch etwas hängt, lässt sich nicht löschen (Entscheidung W5).
 
-    - Die Ebene einer Einheit bleibt, und ein Ring oder Stamm wechselt nicht den Bund.
+    - Die Ebene einer Einheit bleibt, ein Ring oder Stamm wechselt nicht den Bund und eine Gruppe
+      nicht den Stamm (#95, Frage 13; #127 kann das gezielt öffnen).
+    - Ein Stamm wechselt den Ring nur, wenn danach jede Leitungsrolle noch auf dem Pfad der
+      Mitgliedschaft ihrer Person liegt (#89, #95). Dafür sperrt `save()` den Bund, wie das
+      Speichern einer Rolle (`roles.models.Role.save()`), damit gleichzeitige Änderungen den
+      Stand der anderen sehen.
 
     Die Regeln gelten bei jedem Speichern, auch für Testdaten und spätere Seiten; `save()`
     lehnt mit `ValidationError` und einer Meldung in Alltagssprache ab. Jedes Anlegen und jede
@@ -155,6 +160,7 @@ class Unit(models.Model):
                 self._lock_association()
                 stored = self._lock_stored()
                 self.full_clean(validate_unique=False, validate_constraints=False)
+                self._check_leads_on_path(stored)
                 super().save(*args, **kwargs)
                 if self.parent_id:
                     # Die Einheit darüber frisch lesen: Im Programm kann ihr Name veraltet sein,
@@ -169,6 +175,22 @@ class Unit(models.Model):
             if clash:
                 raise ValidationError(clash) from error
             raise
+
+    def _check_leads_on_path(self, stored: "Unit | None") -> None:
+        """Lehnt einen Ringwechsel ab, nach dem eine Leitungsrolle nicht mehr auf dem Pfad läge (#89, #95).
+
+        Läuft unter der Sperre des Bundes, die auch das Speichern einer Rolle nimmt; so sieht die
+        Prüfung eine gleichzeitig benannte Leitung (OG9).
+        """
+        if stored is None or self.kind != Kind.TROOP or stored.parent_id == self.parent_id:
+            return
+        # Rollen liegen eine Schicht gleich hoch und binden dieses Modul ein; deshalb erst hier.
+        from roles.models import describe, leads_off_path
+
+        blocking = [lead for _membership, leads in leads_off_path(self, self.parent) for lead in leads]
+        if blocking:
+            roles = ", ".join(f"{lead.get_kind_display()} {describe(lead.unit)}" for lead in blocking)
+            raise ValidationError(texts.LEADS_OFF_PATH % {"roles": roles}, code="leads_off_path")
 
     def clean(self) -> None:
         """Prüft Ebene, Ringe und Namen und sammelt alle Gründe für eine Ablehnung."""
@@ -251,13 +273,11 @@ class Unit(models.Model):
             UnitChange.record(by, self, name, UnitChange.Action.HAS_RINGS, old=switch[0], new=switch[1])
 
     def _move_action(self, old_parent: "Unit") -> str:
-        """Was das Verschieben heißt. Nur Stämme und Gruppen wechseln die Einheit darüber.
+        """Was das Verschieben heißt. Nur Stämme wechseln die Einheit darüber, seit #95 keine Gruppen mehr.
 
         Ein Stamm kommt nie neu ohne Ring an den Bund (#88); deshalb gibt es kein „aus dem
         Ring genommen“.
         """
-        if self.kind == Kind.GROUP:
-            return UnitChange.Action.TROOP_CHANGED
         if old_parent.kind == Kind.ASSOCIATION:
             return UnitChange.Action.RING_ASSIGNED
         return UnitChange.Action.RING_CHANGED
@@ -276,6 +296,8 @@ class Unit(models.Model):
             return [texts.KIND_FIXED]
         if self.kind in WITH_ASSOCIATION and stored["association_id"] != self.association_id:
             return [texts.STAYS_IN_ASSOCIATION]
+        if self.kind == Kind.GROUP and stored["parent_id"] != self.parent_id:
+            return [texts.GROUP_STAYS_IN_TROOP]
         return []
 
     def _parent_errors(self) -> list:
@@ -311,29 +333,41 @@ class Unit(models.Model):
             return [texts.NEW_TROOP_NEEDS_RING % {"association": association.name}]
         return []
 
-    def _name_clash(self) -> str | None:
-        """Meldung, wenn es den Namen dort schon gibt, wo er eindeutig sein muss; sonst None."""
+    def clashing(self) -> "Unit | None":
+        """Die andere Einheit mit demselben Namen dort, wo er eindeutig sein muss; sonst None.
+
+        Gleich ist, was sich nur in Groß- und Kleinschreibung unterscheidet; Leerzeichen am Rand
+        entfernt `save()` vorher. Seiten nennen damit den Grund einer Ablehnung (#95, OG1).
+        """
         if self.kind == Kind.FEDERATION:
-            other = Unit.objects.filter(kind=Kind.FEDERATION).exclude(pk=self.pk).first()
-            return texts.FEDERATION_EXISTS % {"name": other.name} if other else None
+            return Unit.objects.filter(kind=Kind.FEDERATION).exclude(pk=self.pk).first()
         same_name = (
             Unit.objects.alias(lowered_name=Lower("name"))
-            .filter(lowered_name=Lower(Value(self.name)))
+            .filter(lowered_name=Lower(Value(self.name.strip())))
             .exclude(pk=self.pk)
         )
         if self.kind == Kind.ASSOCIATION:
-            other = same_name.filter(kind=Kind.ASSOCIATION).first()
-            return texts.ASSOCIATION_EXISTS % {"name": other.name} if other else None
-        if self.kind in (Kind.RING, Kind.TROOP) and self.association_id:
-            other = same_name.filter(kind__in=(Kind.RING, Kind.TROOP), association_id=self.association_id).first()
-            if other:
-                message = texts.RING_EXISTS if other.kind == Kind.RING else texts.TROOP_EXISTS
-                return message % {"association": self.association.name, "name": other.name}
+            return same_name.filter(kind=Kind.ASSOCIATION).first()
+        association_id = self.association_id or getattr(self._find_association(), "pk", None)
+        if self.kind in (Kind.RING, Kind.TROOP) and association_id:
+            return same_name.filter(kind__in=(Kind.RING, Kind.TROOP), association_id=association_id).first()
         if self.kind == Kind.GROUP and self.parent_id:
-            other = same_name.filter(kind=Kind.GROUP, parent_id=self.parent_id).first()
-            if other:
-                return texts.GROUP_EXISTS % {"troop": self.parent.name, "name": other.name}
+            return same_name.filter(kind=Kind.GROUP, parent_id=self.parent_id).first()
         return None
+
+    def _name_clash(self) -> str | None:
+        """Meldung, wenn es den Namen dort schon gibt, wo er eindeutig sein muss; sonst None."""
+        other = self.clashing()
+        if other is None:
+            return None
+        if self.kind == Kind.FEDERATION:
+            return texts.FEDERATION_EXISTS % {"name": other.name}
+        if self.kind == Kind.ASSOCIATION:
+            return texts.ASSOCIATION_EXISTS % {"name": other.name}
+        if self.kind == Kind.GROUP:
+            return texts.GROUP_EXISTS % {"troop": self.parent.name, "name": other.name}
+        message = texts.RING_EXISTS if other.kind == Kind.RING else texts.TROOP_EXISTS
+        return message % {"association": other.association.name, "name": other.name}
 
 
 def logged_name(unit: Unit) -> str:
@@ -348,8 +382,8 @@ class UnitChange(models.Model):
 
     Regeln (Klärung von #131 am 23.10.2026, Fragen bei der Umsetzung am selben Tag):
     - Ins Protokoll kommen Anlegen, Umbenennen, einen Stamm einem Ring zuordnen oder in einen
-      anderen Ring verschieben, eine Gruppe in einen anderen Stamm verschieben und „hat Ringe“
-      ein- oder ausschalten; jede Änderung ein Eintrag. Nur tatsächliche Änderungen zählen,
+      anderen Ring verschieben und „hat Ringe“ ein- oder ausschalten; jede Änderung ein Eintrag.
+      „Stamm gewechselt“ bleibt als Art für #127; seit #95 wechselt eine Gruppe nicht den Stamm. Nur tatsächliche Änderungen zählen,
       eine andere Schreibweise des Namens ist eine. Das Notfall-Löschen steht im Protokoll
       der Admin-Zugriffe (#92), nicht hier.
     - Ein Eintrag nennt Zeitpunkt, wer geändert hat, welche Organisation, was geändert wurde

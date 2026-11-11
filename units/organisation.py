@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from django.db.models import Q
 from django.urls import reverse
 
-from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, listed, unit_label
+from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, child_kind, listed, unit_label
 from accounts.models import display_name
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
@@ -125,6 +125,16 @@ class Page:
     # Der Knopf „Person aufnehmen“, nur wo die Person aufnehmen darf (PK-17, PK-26, EH-18).
     admit_href: str | None = None
     admit_label: str = texts.ADMIT_TITLE
+    # Der Knopf „… anlegen“ unter „Organisationen darunter“, nur wo die Person anlegen darf (#95).
+    create_href: str | None = None
+    create_label: str = ""
+    # Die Knöpfe im Kopf, je nur wo die Person das darf (#95): Umbenennen, Ring wechseln, Ringe einführen.
+    rename_href: str | None = None
+    rename_label: str = texts.RENAME_BUTTON
+    change_ring_href: str | None = None
+    change_ring_label: str = texts.CHANGE_RING_BUTTON
+    introduce_rings_href: str | None = None
+    introduce_rings_label: str = texts.INTRODUCE_RINGS_BUTTON
 
 
 @dataclass
@@ -305,8 +315,23 @@ class Organisation:
             appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
             appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
             back_label=back_label,
+            **self._structure_buttons(unit),
             **self._persons_section(unit, access),
         )
+
+    def _structure_buttons(self, unit: Unit) -> dict:
+        """Die Knöpfe zum Anlegen und Bearbeiten, je nur wo die Rechteprüfung es erlaubt (#95)."""
+        rights = self.rights
+        kind = child_kind(unit)
+        return {
+            "create_href": reverse("organisation_create", args=[unit.key]) if rights.may_create(unit) else None,
+            "create_label": texts.CREATE_TITLE[kind] if kind else "",
+            "rename_href": reverse("organisation_rename", args=[unit.key]) if rights.may_rename(unit) else None,
+            "change_ring_href": (reverse("organisation_change_ring", args=[unit.key])
+                                 if rights.may_change_ring(unit) else None),
+            "introduce_rings_href": (reverse("organisation_introduce_rings", args=[unit.key])
+                                     if rights.may_introduce_rings(unit) else None),
+        }
 
     def _persons_section(self, unit: Unit, access: str) -> dict:
         """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1)."""
@@ -506,6 +531,71 @@ def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: 
         "form_id": "f-dialog",
         "choice": _choice("ziel", str(texts.MOVE_QUESTION), options, chosen=chosen),
         "notice": notice,
+    }
+
+
+def create_dialog(parent: Unit, form, action: str) -> dict:
+    """Der Dialog „… anlegen“ (#95): Titel nach der Art, darunter wo, das Feld „Name“ und der blaue Knopf „Anlegen“.
+
+    Die Art kommt aus `child_kind()`, also aus der Adresse. Eine Ablehnung steht als Fehler am Feld (OG1, OG3).
+    """
+    return {
+        "title": texts.CREATE_TITLE[child_kind(parent)],
+        "subtitle": texts.CREATE_IN % {"unit": unit_label(parent)},
+        "close_href": reverse("organisation_unit", args=[parent.key]),
+        "confirm_action": action,
+        "confirm_label": texts.CREATE_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "form": form,
+    }
+
+
+def rename_dialog(unit: Unit, form, action: str) -> dict:
+    """Der Dialog „Umbenennen“ (#95): das Feld „Name“ mit dem jetzigen Namen und der blaue Knopf „Umbenennen“."""
+    return {
+        "title": texts.RENAME_TITLE,
+        "subtitle": unit_label(unit),
+        "close_href": reverse("organisation_unit", args=[unit.key]),
+        "confirm_action": action,
+        "confirm_label": texts.RENAME_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "form": form,
+    }
+
+
+def ring_dialog(troop: Unit, rings: list[Unit], action: str, notice: str = "", chosen: str = "") -> dict:
+    """Der Dialog „Ring wechseln“ (#95, EH-16): die anderen Ringe des Bundes als Auswahl ohne Vorschau, blauer Knopf.
+
+    Wie beim Verschieben (#287) steht eine Ablehnung im Dialog an der Stelle der Handlung, und der
+    abgelehnte Ring bleibt gewählt (OG5).
+    """
+    question = str(texts.CHANGE_RING_QUESTION % {"unit": unit_label(troop)})
+    options = [(ring.key, unit_label(ring), []) for ring in rings]
+    return {
+        "title": texts.CHANGE_RING_BUTTON,
+        "subtitle": unit_label(troop),
+        "lines": [question],
+        "close_href": reverse("organisation_unit", args=[troop.key]),
+        "confirm_action": action,
+        "confirm_label": texts.CHANGE_RING_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "choice": _choice("ring", question, options, chosen=chosen),
+        "notice": notice,
+    }
+
+
+def rings_dialog(bund: Unit, action: str) -> dict:
+    """Die Rückfrage „Ringe für … einführen?“ (#95, EH-23) mit den Folgen und dem blauen Knopf „Ringe einführen“."""
+    return {
+        "title": texts.INTRODUCE_RINGS_QUESTION % {"unit": bund.name},
+        "lines": [str(line) for line in texts.INTRODUCE_RINGS_LINES],
+        "close_href": reverse("organisation_unit", args=[bund.key]),
+        "confirm_action": action,
+        "confirm_label": texts.INTRODUCE_RINGS_BUTTON,
+        "confirm_primary": True,
     }
 
 

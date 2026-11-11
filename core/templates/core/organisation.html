@@ -17,7 +17,7 @@
       </section>
       {% if page.tiles is not None %}
         <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-darunter">
-          {% if start %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" level=3 %}{% else %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" %}{% endif %}
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" level=3 action_href=page.create_href action_label=page.create_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" action_href=page.create_href action_label=page.create_label %}{% endif %}
           {% if page.tiles %}
             <ul class="a-rollenkacheln">
               {% for tile in page.tiles %}<li class="a-orgakachel{% if not tile.href %} ist-ohne-zugriff{% endif %}">{% include "core/_rollenkachel.html" %}</li>{% endfor %}
@@ -48,9 +48,10 @@
     {% include "core/_dialog_zu.html" %}
   {% endif %}
   {% if removal %}
-    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287): eigene Adresse, kommt offen vom Server. #}
+    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287); „… anlegen“ und „Umbenennen“ mit dem Textfeld „Name“, „Ring wechseln“ mit Wahl und „Ringe einführen“ als Rückfrage (#95): eigene Adresse, kommt offen vom Server. #}
     {% include "core/_dialog_auf.html" with dialog=removal %}
     {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if removal.form %}{% textfeld removal.form.name %}{% endif %}
     {% if removal.choice %}{% include "core/_auswahl.html" with choice=removal.choice form_id=removal.form_id %}{% endif %}
     {% if removal.notice %}{% meldung "error" text=removal.notice live=True %}{% endif %}
     {% include "core/_dialog_zu.html" with dialog=removal %}

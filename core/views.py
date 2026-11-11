@@ -14,7 +14,7 @@ from access.addresses import checks_rights, without_personal_data
 from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import AccountSearchForm, FederationSearchForm, PatternForm
+from core.forms import AccountSearchForm, FederationSearchForm, PatternForm, UnitNameForm
 from roles.models import Role
 from units.models import Unit
 from units import texts
@@ -29,11 +29,15 @@ from units.organisation import (
     Organisation,
     Page,
     admission,
+    create_dialog,
     exit_dialog,
     expulsion_dialog,
     move_dialog,
     federation_done,
     hits,
+    rename_dialog,
+    ring_dialog,
+    rings_dialog,
 )
 
 logger = logging.getLogger(__name__)
@@ -530,33 +534,105 @@ def organisation_move(request: HttpRequest, unit: str, person: str) -> HttpRespo
                                                        "start": False, "removal": removal})
 
 
-# Organisationen anlegen und bearbeiten (#95, ORG-06). Gerüst; die Regeln kommen mit den Tests.
+# Organisationen anlegen und bearbeiten (#95, ORG-06). Wie beim Verschieben hat jeder Dialog eine eigene
+# Adresse unter der Seite der Organisation, damit er auch ohne Skript geht. Die Organisation darüber und die
+# Art der neuen Organisation kommen immer aus der Adresse, nie aus dem Formular (OV1, OV4); das Formular
+# bringt nur den Namen oder den gewählten Ring. Wer dort nicht darf, bekommt „nicht gefunden“, auch per
+# Skript. Einen Löschknopf gibt es nicht (EH-21), ebenso kein Ausschalten von „hat Ringe“ (EH-25).
 STRUCTURE_ROWS = ("EH-10", "EH-11", "EH-12", "EH-13", "EH-14", "EH-15", "EH-16", "EH-17", "EH-18", "EH-19",
                   "EH-20", "EH-21", "EH-23", "EH-24", "EH-25", "EH-26", "EH-27")
 
 
+def _with_dialog(request: HttpRequest, found: Unit, dialog: dict) -> HttpResponse:
+    """Die Seite der Organisation mit offenem Dialog, der kommt offen vom Server."""
+    shown = Organisation(request.rights, request.user)
+    return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
+                                                       "start": False, "removal": dialog})
+
+
+def _named(request: HttpRequest, found: Unit, act, dialog_for, initial: str = "") -> HttpResponse:
+    """Gemeinsamer Ablauf für „… anlegen“ und „Umbenennen“: Dialog zeigen, Namen prüfen, `act` ausführen.
+
+    Gelingt es, geht es zur Seite der Organisation, die `act` nennt, mit der kurzen Meldung (#186);
+    sonst bleibt der Dialog offen, mit dem Grund als Fehler am Feld und der Eingabe darin.
+    """
+    if request.method == "POST":
+        form = UnitNameForm(request.POST)
+        if form.is_valid():
+            done, text, target = act(form.cleaned_data["name"])
+            if done:
+                messages.success(request, text)
+                return redirect("organisation_unit", unit=target.key)
+            form.add_error("name", text)
+    elif request.method in READING:
+        form = UnitNameForm(initial={"name": initial})
+    else:
+        raise Http404
+    return _with_dialog(request, found, dialog_for(found, form, action=request.path))
+
+
 @checks_rights(*STRUCTURE_ROWS)
 def organisation_create(request: HttpRequest, unit: str) -> HttpResponse:
-    """Dialog „… anlegen“ (Gerüst)."""
-    raise Http404
+    """Dialog „Gruppe anlegen“, „Stamm anlegen“ oder „Ring anlegen“ zeigen und anlegen (EH-10 bis EH-12).
+
+    Danach steht die neue Organisation unter „Organisationen darunter“ der Seite, von der aus sie angelegt wurde.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_create)
+
+    def act(name):
+        done, text = rights.create(found, name)
+        return done, text, found
+
+    return _named(request, found, act, create_dialog)
 
 
 @checks_rights(*STRUCTURE_ROWS)
 def organisation_rename(request: HttpRequest, unit: str) -> HttpResponse:
-    """Dialog „Umbenennen“ (Gerüst)."""
-    raise Http404
+    """Dialog „Umbenennen“ zeigen und umbenennen (EH-14); gespeichert wird nur der Name (OG4)."""
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_rename)
+
+    def act(name):
+        done, text = rights.rename(found, name)
+        return done, text, found
+
+    return _named(request, found, act, rename_dialog, initial=found.name)
 
 
 @checks_rights(*STRUCTURE_ROWS)
 def organisation_change_ring(request: HttpRequest, unit: str) -> HttpResponse:
-    """Dialog „Ring wechseln“ (Gerüst)."""
-    raise Http404
+    """Dialog „Ring wechseln“ zeigen und den Stamm einem anderen Ring zuordnen (EH-16).
+
+    Passt danach eine Leitungsrolle nicht mehr, bleibt der Dialog offen, nennt sie und lässt den Ring gewählt (OG5).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_change_ring)
+    notice, chosen = "", ""
+    if request.method == "POST":
+        chosen = request.POST.get("ring", "")
+        done, text = rights.change_ring(found, chosen)
+        if done:
+            messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        notice = text
+    elif request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, ring_dialog(found, rights.ring_targets(found), action=request.path,
+                                                    notice=notice, chosen=chosen))
 
 
 @checks_rights(*STRUCTURE_ROWS)
 def organisation_introduce_rings(request: HttpRequest, unit: str) -> HttpResponse:
-    """Rückfrage „Ringe einführen“ (Gerüst)."""
-    raise Http404
+    """Rückfrage „Ringe für … einführen?“ zeigen und „hat Ringe“ einschalten (EH-23); nur die Bundesleitung, nur einmal."""
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_introduce_rings)
+    if request.method == "POST":
+        messages.success(request, rights.introduce_rings(found))
+        return redirect("organisation_unit", unit=found.key)
+    if request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, rings_dialog(found, action=request.path))
 
 
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
@@ -819,26 +895,28 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "knopfverschieben": {
-        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287],
+        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287, 95],
         "purpose": _("Für Handlungen, die etwas umstellen, ohne etwas wegzunehmen, etwa „Verschieben“ bei einer "
-                     "Person: kleiner Knopf mit zarter blauer Fläche und blauer Schrift, die Farben der "
+                     "Person oder „Umbenennen“ im Kopf einer Organisationsseite: kleiner Knopf mit zarter blauer Fläche und blauer Schrift, die Farben der "
                      "Informationsmeldung. Er führt zum Dialog, nie gleich zur Handlung."),
         "pages": [_("Organisation")],
     },
     "orgakopf": {
-        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218],
+        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
-                     "Art und Organisation darüber, rechts die Marke. Für die Verbandsleitung steht der Verband "
-                     "als erste Ebene im Pfad und führt zur Seite „Verband“ (zweites Beispiel)."),
+                     "Art und Organisation darüber, rechts die Marke. Darunter stehen kleine Knöpfe wie "
+                     "„Verschieben“, nur wo man das darf: „Umbenennen“, beim Stamm „Ring wechseln“, beim Bund "
+                     "„Ringe einführen“. Für die Verbandsleitung steht der Verband als erste Ebene im Pfad und "
+                     "führt zur Seite „Verband“ (zweites Beispiel)."),
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
                      "„Entfernen“, oder, wo nichts weggenommen wird, ein dunkelblauer, etwa „Verschieben“; er "
-                     "schickt eine Wahl aus der „Auswahl im Dialog“ mit."),
+                     "schickt eine Wahl aus der „Auswahl im Dialog“ oder ein Textfeld mit, etwa den Namen beim Anlegen."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
@@ -906,7 +984,8 @@ def _organisation_examples() -> dict:
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
-                kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="")
+                kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="",
+                rename_href="#h-orgakopf", change_ring_href="#h-orgakopf")
     # Wie die Verbandsleitung den Kopf sieht, wenn sie zugleich Leitung in Boreas ist (#218).
     federation_page = Page(unit=Unit(kind=kind.TROOP, name="Zugvögel"), access="manage",
                            path=[("DPV", "#h-orgakopf"), ("Pfadfinderbund Boreas", "#h-orgakopf")],

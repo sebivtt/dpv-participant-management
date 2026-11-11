@@ -228,6 +228,8 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
+/* Knöpfe im Kopf einer Organisationsseite (#95): kleine Knöpfe „Verschieben“ in einer Reihe unter der Art. */
+.a-orga-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
 /* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
    „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */

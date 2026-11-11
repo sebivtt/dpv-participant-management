@@ -259,11 +259,11 @@ V4. Nur bei Bedarf: einen Bund umbenennen, erst der alte, dann der neue Name.
    uv run --env-file .env python manage.py association rename "Pfadfinderbund Boreas" "Bund Boreas"
    ```
    Danach: `Der Bund „Pfadfinderbund Boreas“ heißt jetzt „Bund Boreas“.` Den Verband benennt `federation rename "Neuer Name"` um.
-V5. Nur bei Bedarf: „hat Ringe“ einschalten (`on`) oder ausschalten (`off`).
+V5. Nur bei Bedarf: „hat Ringe“ einschalten (`on`). Das kann seit #95 auch die Bundesleitung selbst im Tool („Ringe einführen“). Ausschalten geht nicht, weder hier noch im Tool, bis #204 es baut.
    ```bash
    uv run --env-file .env python manage.py association rings "Bund Boreas" on
    ```
-   Danach: `Im Bund „Bund Boreas“ ist „hat Ringe“ jetzt eingeschaltet.` Ausschalten geht nur, solange der Bund keinen Ring hat; sonst nennt der Befehl den Grund.
+   Danach: `Im Bund „Bund Boreas“ ist „hat Ringe“ jetzt eingeschaltet.`
 
 In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-file .env python manage.py` jeweils `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`, z. B.:
    ```bash

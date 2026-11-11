@@ -52,7 +52,7 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, on_path
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, leads_off_path, on_path
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
 from units.models import Unit
@@ -893,19 +893,153 @@ class Rights:
         values = {**shown, "unit": unit.name}
         return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
 
-    # Organisationen anlegen und bearbeiten (#95, ORG-06). Gerüst; die Regeln kommen mit den Tests.
+    # Organisationen anlegen und bearbeiten (#95, ORG-06)
+
+    def may_create(self, parent: Unit | None) -> bool:
+        """Darf die Person unter `parent` eine Organisation anlegen (EH-10 bis EH-13, EH-18, EH-19)?
+
+        Gruppen in jedem Stamm des eigenen Bereichs: die Stammesleitung, die Ringleitung im ganzen
+        Ring, die Bundesleitung im ganzen Bund. Stämme in einem Ring nur die Leitung des Rings
+        selbst oder, solange er keine Leitung mit Konto hat, die einspringende Bundesleitung. Ringe
+        und, in einem Bund ohne Ringe, Stämme nur die Bundesleitung. Unter einer Gruppe und im
+        Verband entsteht nichts; Verbandsleitung, Team, Mitglieder und Admins leiten keine Organisation.
+        """
+        kind = child_kind(parent)
+        if kind is None or not self.sees_organisation():
+            return False
+        if kind == UnitKind.GROUP:
+            return parent.pk in self.area
+        if parent.kind == UnitKind.RING:
+            return self.leads_unit(parent)
+        return parent.pk in self._led
 
     def create(self, parent: Unit, name: str) -> tuple[bool, str]:
-        """Legt eine Organisation unter `parent` an (Gerüst)."""
-        raise Http404
+        """Legt unter `parent` eine Organisation der Art aus `child_kind()` an; gibt zurück, ob es geklappt hat, und die Meldung.
+
+        Art und Organisation darüber kommen nur aus der Adresse, nie aus dem Formular (OV1, OV4).
+        Ohne Recht „nicht gefunden“. Gibt es den Namen dort schon, nennt die Meldung die vorhandene
+        Organisation (OG1, OG2); legen zwei gleichzeitig denselben Namen an, entsteht genau eine.
+        Das Anlegen steht im Protokoll der Strukturänderungen (#131). Gesperrt ist das eigene Konto,
+        dann wird das Recht frisch geprüft, wie bei `appoint()`.
+        """
+        if not self.may_create(parent):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            parent = Unit.objects.select_related("parent").get(pk=parent.pk)
+            if not Rights(me).may_create(parent):
+                raise Http404
+            created = Unit(kind=child_kind(parent), name=name, parent=parent)
+            refused = _saved_or_reason(created, me)
+        if refused:
+            return False, refused
+        return True, str(unit_texts.CREATED % {"unit": unit_label(created)})
+
+    def may_rename(self, unit: Unit | None) -> bool:
+        """Darf die Person diese Organisation umbenennen (EH-14, EH-15, EH-20)?
+
+        Jede Leitung ihre eigene Organisation und alle darunter, die Bundesleitung auch ihren Bund;
+        also genau der eigene Bereich. Den Verband und fremde Bünde benennt niemand im Tool um.
+        """
+        return unit is not None and self.sees_organisation() and unit.pk in self.area
 
     def rename(self, unit: Unit, name: str) -> tuple[bool, str]:
-        """Benennt eine Organisation um (Gerüst)."""
-        raise Http404
+        """Benennt eine Organisation um; gibt zurück, ob es geklappt hat, und die Meldung (EH-14).
+
+        Geschrieben wird nur der Name, aus dem frischen Stand unter der Sperre: Ein veralteter Stand
+        der Seite überschreibt so keine gleichzeitige Änderung, etwa einen Ringwechsel (OG4).
+        """
+        if not self.may_rename(unit):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            if not Rights(me).may_rename(unit):
+                raise Http404
+            current = self._lock_structure(unit)
+            old = unit_label(current)
+            current.name = name
+            refused = _saved_or_reason(current, me, update_fields=["name"])
+        if refused:
+            return False, refused
+        return True, str(unit_texts.RENAMED_TO % {"old": old, "new": unit_label(current)})
+
+    def may_change_ring(self, troop: Unit | None) -> bool:
+        """Darf die Person diesen Stamm einem Ring zuordnen oder in einen anderen Ring wechseln (EH-16, EH-17)?
+
+        Nur die Bundesleitung des Bundes, nur in einem Bund mit Ringen und nur, wenn es einen
+        anderen Ring gibt. Ringleitungen, Stammesleitungen und alle anderen nie.
+        """
+        if troop is None or troop.kind != UnitKind.TROOP or not self.sees_organisation():
+            return False
+        if troop.association_id not in self._led or not self.ring_targets(troop):
+            return False
+        return Unit.objects.filter(pk=troop.association_id, has_rings=True).exists()
+
+    @staticmethod
+    def ring_targets(troop: Unit) -> list[Unit]:
+        """Die Ringe des Bundes außer dem jetzigen, nach dem Alphabet: die einzigen Ziele (EH-16, EH-26)."""
+        rings = Unit.objects.filter(kind=UnitKind.RING, parent_id=troop.association_id).exclude(pk=troop.parent_id)
+        return sorted(rings, key=lambda ring: alphabetical(ring.name))
 
     def change_ring(self, troop: Unit, ring_key) -> tuple[bool, str]:
-        """Ordnet einen Stamm einem Ring zu oder wechselt ihn (Gerüst)."""
-        raise Http404
+        """Ordnet einen Stamm einem Ring zu oder wechselt ihn; gibt zurück, ob es geklappt hat, und die Meldung (EH-16).
+
+        Das Ziel kommt nur aus `ring_targets()`; der Bund, ein Stamm oder ein Ring eines anderen
+        Bundes sind „nicht gefunden“ (OV9). Gruppen und Mitglieder ziehen mit, weil sie am Stamm
+        hängen. Läge danach eine Leitungsrolle nicht mehr auf dem Pfad ihrer Mitgliedschaft, lehnt
+        das Tool ab und nennt Person und Rollen (OG5, PK-25). Gesperrt sind das eigene Konto, der
+        Bund und der Stamm, in dieser Reihenfolge wie beim Benennen; so sieht ein gleichzeitiges
+        Benennen den Wechsel und umgekehrt (OG9).
+        """
+        if not self.may_change_ring(troop) or not is_key(ring_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            if not Rights(me).may_change_ring(troop):
+                raise Http404
+            current = self._lock_structure(troop)
+            target = next((ring for ring in self.ring_targets(current) if ring.key == ring_key), None)
+            if target is None:
+                raise Http404
+            blocking = leads_off_path(current, target)
+            if blocking:
+                return False, " ".join(_off_path_sentence(membership, leads) for membership, leads in blocking)
+            current.parent = target
+            current.save(update_fields=["parent"], by=me)
+        return True, str(unit_texts.RING_CHANGED_TO % {"unit": unit_label(current), "ring": unit_label(target)})
+
+    def may_introduce_rings(self, unit: Unit | None) -> bool:
+        """Darf die Person für diesen Bund „hat Ringe“ einschalten (EH-23, EH-24)? Nur die eigene Bundesleitung, nur einmal."""
+        return (unit is not None and unit.kind == UnitKind.ASSOCIATION and not unit.has_rings
+                and self.sees_organisation() and unit.pk in self._led)
+
+    def introduce_rings(self, unit: Unit) -> str:
+        """Schaltet „hat Ringe“ für den Bund ein; gibt die kurze Meldung zurück (EH-23).
+
+        Ausschalten gibt es nicht (EH-25). Hat der Bund inzwischen schon Ringe, ist das Ergebnis
+        „nicht gefunden“, und nichts ändert sich. Geschrieben wird nur der Schalter.
+        """
+        if not self.may_introduce_rings(unit):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            current = self._lock_structure(unit)
+            if not Rights(me).may_introduce_rings(current):
+                raise Http404
+            current.has_rings = True
+            current.save(update_fields=["has_rings"], by=me)
+        return str(unit_texts.RINGS_INTRODUCED % {"unit": current.name})
+
+    def _lock_structure(self, unit: Unit) -> Unit:
+        """Sperrt den Bund der Organisation und dann sie selbst; gibt sie frisch zurück (#95).
+
+        Dieselbe Reihenfolge wie beim Speichern einer Rolle oder Einheit: Konten, Bund, Einheit.
+        """
+        bund = self._association_of(unit.pk)
+        if bund is not None:
+            list(Unit.objects.select_for_update().filter(pk=bund).values_list("pk"))
+        list(Unit.objects.select_for_update().filter(pk=unit.pk).values_list("pk"))
+        return Unit.objects.select_related("parent").get(pk=unit.pk)
 
     # Seite „Verband“ der Verbandsleitung (#94)
 
@@ -1059,6 +1193,49 @@ class Rights:
             return False
         membership = Role.objects.filter(user_id=person.pk, kind=R.MEMBER).select_related("unit").first()
         return membership is not None and self.leads_unit(membership.unit)
+
+
+# Was unter jeder Ebene angelegt wird (#95); unter einem Bund hängt es an „hat Ringe“ (#88).
+CHILD_KINDS = {UnitKind.RING: UnitKind.TROOP, UnitKind.TROOP: UnitKind.GROUP}
+
+
+def child_kind(parent: Unit | None) -> str | None:
+    """Die Art einer neuen Organisation unter `parent`: im Bund Ringe oder Stämme, im Ring Stämme, im Stamm Gruppen."""
+    if parent is None:
+        return None
+    if parent.kind == UnitKind.ASSOCIATION:
+        return UnitKind.RING if parent.has_rings else UnitKind.TROOP
+    return CHILD_KINDS.get(parent.kind)
+
+
+def _saved_or_reason(unit: Unit, by, **options) -> str:
+    """Speichert die Organisation; gibt bei Ablehnung den Grund für die Seite zurück, sonst einen leeren Text.
+
+    Gibt es den Namen schon, nennt der Grund die vorhandene Organisation wie in OG1; das gilt
+    auch, wenn die Datenbank einen gleichzeitig angelegten gleichen Namen ablehnt.
+    """
+    try:
+        with transaction.atomic():
+            unit.save(by=by, **options)
+    except ValidationError as error:
+        other = unit.clashing()
+        if other is None:
+            return " ".join(error.messages)
+        if other.kind == UnitKind.ASSOCIATION:
+            # Andere Bünde sieht eine Leitung nicht (EH-03); die Meldung nennt deshalb nur den eigenen Namen.
+            return str(unit_texts.NAME_TAKEN[other.kind] % {"name": unit.name})
+        place = unit.parent.name if unit.kind == UnitKind.GROUP else other.association.name
+        return str(unit_texts.NAME_TAKEN[other.kind] % {"name": other.name, "place": place})
+    return ""
+
+
+def _off_path_sentence(membership: Role, leads: list[Role]) -> str:
+    """Ein Satz je Person, deren Leitungsrollen nach einem Ringwechsel nicht mehr passen (OG5)."""
+    user = membership.user
+    roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)}) for lead in leads]
+    text = unit_texts.RING_CHANGE_ROLE_BLOCKS if len(roles) == 1 else unit_texts.RING_CHANGE_ROLES_BLOCK
+    name = display_name(user.first_name, user.last_name, user.scout_name) or user.username
+    return str(text % {"person": name, "roles": listed(roles), "unit": unit_label(membership.unit)})
 
 
 def unit_label(unit: Unit) -> str:
