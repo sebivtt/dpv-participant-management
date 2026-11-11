@@ -456,7 +456,8 @@ def test_a11_ein_stamm_ohne_gruppen_sagt_das(org):
 
     root = page_tree(org.bundesleitung, unit_address(neu))
 
-    assert below_text(root) == "Organisationen darunter Wolkenburg hat noch keine Gruppen."
+    # Seit #95 steht in der Überschrift der Knopf „Gruppe anlegen“; Bruno darf dort Gruppen anlegen (EH-10).
+    assert below_text(root) == "Organisationen darunter Gruppe anlegen Wolkenburg hat noch keine Gruppen."
     assert children_on_page(root) == {}
 
 
@@ -465,7 +466,8 @@ def test_a11_ein_ring_ohne_staemme_sagt_das(org):
 
     root = page_tree(org.mosaik_leitung, unit_address(neu))
 
-    assert below_text(root) == "Organisationen darunter Süd hat noch keine Stämme."
+    # Seit #95 steht dort „Stamm anlegen“: Süd hat keine Ringleitung, Mona springt ein (EH-18).
+    assert below_text(root) == "Organisationen darunter Stamm anlegen Süd hat noch keine Stämme."
 
 
 def test_a12_ohne_vor_und_nachnamen_steht_der_benutzername(org):

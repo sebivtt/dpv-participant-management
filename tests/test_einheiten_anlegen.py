@@ -23,7 +23,7 @@ from roles.models import Role
 from tests import test_benennen
 from tests.test_benennen import _one_after_the_other, dialog_of, short_notices
 from tests.test_einheiten_befehle import refused, run
-from tests.test_gestaltung import _all, _attr, _classes, _tree, _visible_text
+from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _tree, _visible_text
 from tests.test_nicht_gefunden import assert_like_missing
 from tests.test_organisation import client_for, page_tree, unit_address
 from tests.test_rechtepruefung import lead, remove
@@ -222,7 +222,7 @@ def test_ov2_fiete_hat_keinen_knopf_und_legt_nichts_an(org):
     assert not Unit.objects.filter(name="Sippe Küken").exists()
 
 
-@pytest.mark.rechtematrix("EH-13")
+@pytest.mark.rechtematrix("EH-13", "EH-12")
 def test_ov3_wanda_legt_keinen_stamm_an_und_unter_einer_gruppe_gibt_es_nichts(org):
     assert create(org.walhall_leitung, org.boreas, "Stamm Neu").status_code == 404
     assert create(org.walhall_leitung, org.falken, "Unter Falken").status_code == 404
@@ -230,7 +230,7 @@ def test_ov3_wanda_legt_keinen_stamm_an_und_unter_einer_gruppe_gibt_es_nichts(or
     assert not Unit.objects.filter(name__in=["Stamm Neu", "Unter Falken"]).exists()
 
 
-@pytest.mark.rechtematrix("EH-13")
+@pytest.mark.rechtematrix("EH-13", "EH-10", "EH-11")
 def test_ov4_mona_legt_keinen_stamm_direkt_im_mosaik_an_und_kai_keinen_ring(org):
     """OV4: Die Art kommt aus der Adresse; ein Feld „kind“ ändert sie nicht."""
     create(org.mosaik_leitung, org.mosaik, "Möwenstein", kind=U.TROOP)
@@ -241,7 +241,7 @@ def test_ov4_mona_legt_keinen_stamm_direkt_im_mosaik_an_und_kai_keinen_ring(org)
     assert not Unit.objects.filter(name="Ring Kai").exists()
 
 
-@pytest.mark.rechtematrix("EH-13", "EH-19")
+@pytest.mark.rechtematrix("EH-13", "EH-19", "EH-10")
 def test_mona_legt_in_ring_kueste_mit_ringleitung_keinen_stamm_an(org):
     """EH-13, EH-19: Stämme in einem Ring legt die Bundesleitung nur an, wenn sie für den Ring einspringt."""
     assert create(org.mosaik_leitung, org.kueste, "Stamm Mona").status_code == 404
@@ -326,7 +326,7 @@ def test_zu_langer_name_wird_abgelehnt_und_nicht_abgeschnitten(org):
 # ---------- Umbenennen ----------
 
 
-@pytest.mark.rechtematrix("EH-14")
+@pytest.mark.rechtematrix("EH-14", "EH-15")
 def test_o5_wanda_benennt_die_falken_und_ihren_stamm_um_fiete_seine_gruppe(org):
     start = mark()
     client = client_for(org.walhall_leitung)
@@ -362,7 +362,7 @@ def test_umbenennen_nur_in_der_schreibweise_geht(org):
     assert fresh(org.falken).name == "sippe falken"
 
 
-@pytest.mark.rechtematrix("EH-15")
+@pytest.mark.rechtematrix("EH-15", "EH-14")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/umbenennen/")
 def test_ov5_fiete_benennt_walhall_nicht_um_und_wanda_boreas_nicht(org):
     start = mark()
@@ -409,7 +409,7 @@ def test_og4_umbenennen_und_gleichzeitig_ring_zuordnen_beides_bleibt(transaction
 # ---------- Ringe ----------
 
 
-@pytest.mark.rechtematrix("EH-16")
+@pytest.mark.rechtematrix("EH-16", "EH-17", "EH-26")
 def test_o7_mona_verschiebt_leuchtturm_nach_ring_nord(org):
     start = mark()
     client = client_for(org.mosaik_leitung)
@@ -428,11 +428,11 @@ def test_o7_mona_verschiebt_leuchtturm_nach_ring_nord(org):
     assert entries(start) == [(org.mosaik_leitung.pk, "Leuchtturm", A.RING_CHANGED, "Küste", "Nord")]
 
 
-@pytest.mark.rechtematrix("EH-23", "EH-16")
+@pytest.mark.rechtematrix("EH-23", "EH-16", "EH-24")
 def test_o8_bruno_fuehrt_ringe_ein_legt_einen_ring_an_und_ordnet_walhall_zu(org):
     start = mark()
     client = client_for(org.bundesleitung)
-    assert RINGS_QUESTION in _visible_text(dialog_of(_tree(client.get(rings_address(org.boreas)))))
+    assert RINGS_QUESTION in " ".join(_visible_text(dialog_of(_tree(client.get(rings_address(org.boreas))))).split())
 
     response = introduce_rings(org.bundesleitung, org.boreas, client=client)
 
@@ -452,7 +452,7 @@ def test_o8_bruno_fuehrt_ringe_ein_legt_einen_ring_an_und_ordnet_walhall_zu(org)
     ]
 
 
-@pytest.mark.rechtematrix("EH-24")
+@pytest.mark.rechtematrix("EH-24", "EH-23")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/ringe-einfuehren/")
 def test_ov8_mona_schaltet_fuer_boreas_keine_ringe_ein(org):
     start = mark()
@@ -472,7 +472,7 @@ def test_og8_mit_ringen_gibt_es_ringe_einfuehren_nicht(org):
     assert introduce_rings(org.mosaik_leitung, org.mosaik).status_code == 404
 
 
-@pytest.mark.rechtematrix("EH-17")
+@pytest.mark.rechtematrix("EH-17", "EH-16")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/ring-wechseln/")
 def test_ov6_kai_und_lars_verschieben_leuchtturm_nicht(org):
     start = mark()
@@ -625,7 +625,7 @@ def _assert_exactly_one(org, results, moving_first: bool) -> None:
 # ---------- Einspringen ----------
 
 
-@pytest.mark.rechtematrix("EH-18", "EH-11", "EH-14")
+@pytest.mark.rechtematrix("EH-11", "EH-14")
 def test_o9_nele_legt_in_sturmvogel_eine_gruppe_an_und_benennt_sie_um(org):
     assert create(org.nord_leitung, org.sturmvogel, "Sippe Sturm").status_code == 302
     sturm = Unit.objects.get(name="Sippe Sturm")
@@ -634,7 +634,7 @@ def test_o9_nele_legt_in_sturmvogel_eine_gruppe_an_und_benennt_sie_um(org):
     assert fresh(sturm).name == "Sippe Orkan"
 
 
-@pytest.mark.rechtematrix("EH-18")
+@pytest.mark.rechtematrix("EH-18", "EH-19")
 def test_o9_ohne_ringleitung_legt_mona_in_ring_nord_einen_stamm_an(org):
     remove(org.nord_leitung, R.RING_LEAD, org.nord)
 
@@ -643,7 +643,7 @@ def test_o9_ohne_ringleitung_legt_mona_in_ring_nord_einen_stamm_an(org):
     assert (U.TROOP, "Brandung") in children(org.nord)
 
 
-@pytest.mark.rechtematrix("EH-19")
+@pytest.mark.rechtematrix("EH-19", "EH-18")
 def test_mit_neuer_ringleitung_endet_das_einspringen_beim_naechsten_klick(org):
     remove(org.nord_leitung, R.RING_LEAD, org.nord)
     client = client_for(org.mosaik_leitung)
@@ -694,3 +694,127 @@ def test_abgelehnte_versuche_schreiben_nichts_ins_protokoll(org):
     introduce_rings(org.walhall_leitung, org.boreas)
 
     assert entries(start) == []
+
+
+# ---------- Was beim Browser ankommt (Antworten bei der Umsetzung vom 11.11.2026, Kommentar in #95) ----------
+
+
+def head_buttons(user, where) -> dict[str, str]:
+    """Die Knöpfe im Kopf der Seite: Beschriftung und Adresse, im Aussehen des Knopfs „Verschieben“ (Antwort 1)."""
+    root = page_tree(user, unit_address(where))
+    head = _one(_all(root, lambda e: "a-orga-kopf" in _classes(e)))
+    found = {}
+    for link in _all(head, lambda e: e.name == "a" and "btn" in _classes(e)):
+        assert {"btn", "btn-sm", "btn-verschieben"} <= set(_classes(link))
+        found[_visible_text(link)] = _attr(link, "href")
+    return found
+
+
+def create_button(user, where) -> tuple[str, str] | None:
+    """Der Knopf mit Plus in der Überschrift von „Organisationen darunter“, oder None."""
+    root = page_tree(user, unit_address(where))
+    sections = _by_tag(root, "section", aria_labelledby="h-darunter")
+    if not sections:
+        return None
+    links = _all(_one(sections), lambda e: "a-flaeche-aktion" in _classes(e))
+    return (_visible_text(_one(links)), _attr(_one(links), "href")) if links else None
+
+
+def test_der_knopf_anlegen_heisst_nach_der_art(org):
+    assert create_button(org.walhall_leitung, org.walhall) == ("Gruppe anlegen", create_address(org.walhall))
+    assert create_button(org.bundesleitung, org.boreas) == ("Stamm anlegen", create_address(org.boreas))
+    assert create_button(org.mosaik_leitung, org.mosaik) == ("Ring anlegen", create_address(org.mosaik))
+    assert create_button(org.kueste_leitung, org.kueste) == ("Stamm anlegen", create_address(org.kueste))
+    assert create_button(org.mosaik_leitung, org.kueste) is None
+    assert create_button(org.falken_leitung, org.falken) is None
+
+
+def test_im_kopf_stehen_nur_die_knoepfe_die_die_person_darf(org):
+    assert head_buttons(org.walhall_leitung, org.walhall) == {"Umbenennen": rename_address(org.walhall)}
+    assert head_buttons(org.bundesleitung, org.boreas) == {
+        "Umbenennen": rename_address(org.boreas), "Ringe einführen": rings_address(org.boreas)}
+    assert head_buttons(org.mosaik_leitung, org.leuchtturm) == {
+        "Umbenennen": rename_address(org.leuchtturm), "Ring wechseln": ring_address(org.leuchtturm)}
+    assert head_buttons(org.kueste_leitung, org.leuchtturm) == {"Umbenennen": rename_address(org.leuchtturm)}
+    assert head_buttons(org.mosaik_leitung, org.mosaik) == {"Umbenennen": rename_address(org.mosaik)}
+    # Auf der Leseseite gibt es keine Knöpfe (EH-28).
+    assert head_buttons(org.falken_leitung, org.walhall) == {}
+
+
+def _dialog(response) -> dict:
+    assert response.status_code == 200
+    dialog = dialog_of(_tree(response))
+    form = _one(_by_tag(dialog, "form", method="post"))
+    return {
+        "title": _visible_text(_one(_by_tag(dialog, "h2"))),
+        "subtitle": " ".join(_visible_text(entry) for entry in _all(dialog, lambda e: "a-unterzeile" in _classes(e))),
+        "dialog": dialog,
+        "form": form,
+        "button": _one(_by_tag(form, "button", type="submit")),
+    }
+
+
+def test_dialog_anlegen_mit_dem_feld_name_und_blauem_knopf(org):
+    shown = _dialog(client_for(org.walhall_leitung).get(create_address(org.walhall)))
+
+    assert (shown["title"], shown["subtitle"]) == ("Gruppe anlegen", "in Stamm Walhall")
+    field = _one(_by_tag(shown["dialog"], "input", name="name"))
+    assert _attr(field, "form") == _attr(shown["form"], "id")
+    assert _attr(field, "maxlength") is None
+    label = _one(_by_tag(shown["dialog"], "label", **{"for": _attr(field, "id")}))
+    assert " ".join(_visible_text(label).split()) == "Name (Pflicht)"
+    assert _visible_text(shown["button"]) == "Anlegen"
+    assert "btn-primary" in _classes(shown["button"])
+    assert _attr(shown["form"], "action") == create_address(org.walhall)
+
+
+def test_dialog_umbenennen_zeigt_den_jetzigen_namen(org):
+    shown = _dialog(client_for(org.walhall_leitung).get(rename_address(org.falken)))
+
+    assert (shown["title"], shown["subtitle"]) == ("Umbenennen", "Sippe Falken")
+    assert _attr(_one(_by_tag(shown["dialog"], "input", name="name")), "value") == "Sippe Falken"
+    assert _visible_text(shown["button"]) == "Umbenennen"
+
+
+def test_dialog_ring_wechseln_bietet_nur_die_anderen_ringe(org):
+    shown = _dialog(client_for(org.mosaik_leitung).get(ring_address(org.leuchtturm)))
+
+    assert shown["title"] == "Ring wechseln"
+    options = [(_attr(entry, "value"), _attr(entry, "form")) for entry in _by_tag(shown["dialog"], "input", type="radio")]
+    assert options == [(org.nord.key, _attr(shown["form"], "id"))]
+    assert "Zu welchem Ring soll Stamm Leuchtturm gehören?" in _visible_text(shown["dialog"])
+    assert "btn-primary" in _classes(shown["button"])
+
+
+def test_nach_einer_ablehnung_bleibt_der_dialog_mit_dem_ring_gewaehlt(org):
+    membership = Role.objects.get(user=org.kueste_leitung, kind=R.MEMBER)
+    membership.unit = org.leuchtturm
+    membership.save(by=BY)
+
+    shown = _dialog(change_ring(org.mosaik_leitung, org.leuchtturm, org.nord))
+
+    radio = _one(_by_tag(shown["dialog"], "input", type="radio"))
+    assert (_attr(radio, "value"), _attr(radio, "checked") is not None) == (org.nord.key, True)
+
+
+def test_rueckfrage_ringe_einfuehren_mit_blauem_knopf(org):
+    shown = _dialog(client_for(org.bundesleitung).get(rings_address(org.boreas)))
+
+    assert shown["title"] == "Ringe für Pfadfinderbund Boreas einführen?"
+    assert _visible_text(shown["button"]) == "Ringe einführen"
+    assert "btn-primary" in _classes(shown["button"])
+
+
+@pytest.mark.rechtematrix("EH-18", "EH-11", "EH-14")
+def test_og7_mit_stammesleitung_endet_nur_was_nele_durch_das_einspringen_hatte(org):
+    """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und „Umbenennen“ bleiben (EH-11, EH-14)."""
+    client = client_for(org.nord_leitung)
+    root = _tree(client.get(unit_address(org.sturmvogel)))
+    assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
+
+    lead("sina.sturm", R.TROOP_LEAD, org.sturmvogel)
+
+    root = _tree(client.get(unit_address(org.sturmvogel)))
+    assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
+    assert create_button(org.nord_leitung, org.sturmvogel) == ("Gruppe anlegen", create_address(org.sturmvogel))
+    assert head_buttons(org.nord_leitung, org.sturmvogel) == {"Umbenennen": rename_address(org.sturmvogel)}

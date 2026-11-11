@@ -182,14 +182,16 @@ def test_anlegen_nennt_wo_die_organisation_haengt(org, kind, name, parent, logge
     assert (entry.unit_id, entry.unit_kind, entry.new_parent_id) == (created.pk, kind, getattr(org, parent).pk)
 
 
-def test_hat_ringe_ein_und_ausschalten_per_befehl(db):
-    """S7."""
+def test_hat_ringe_einschalten_per_befehl_und_ausschalten_im_datenmodell(db):
+    """S7; einen Befehl zum Ausschalten gibt es seit #95 nicht mehr (Frage 16), das Datenmodell protokolliert es weiter (#204)."""
     run("federation", "create", "DPV")
     run("association", "create", "Pfadfinderbund Boreas")
     start = mark()
 
     run("association", "rings", "Pfadfinderbund Boreas", "on")
-    run("association", "rings", "Pfadfinderbund Boreas", "off")
+    boreas = Unit.objects.get(name="Pfadfinderbund Boreas")
+    boreas.has_rings = False
+    boreas.save(by=SERVER_COMMAND)
 
     assert entries(start) == [
         ("Befehl auf dem Server", "Pfadfinderbund Boreas", A.HAS_RINGS, "aus", "ein"),
