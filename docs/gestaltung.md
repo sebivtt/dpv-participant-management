@@ -128,6 +128,15 @@ Kein eigenes Zielbild; Orientierung ist `docs/zielbilder/personen.html` (Dialog 
 - **Auswahl im Dialog:** Die Vorschau ist freiwillig; beim Verschieben fehlt sie. Nach einer Ablehnung bleibt die abgelehnte Möglichkeit gewählt.
 - **Danach** eine kurze Meldung (#186): „… gehört jetzt zu ….“ Passt eine Leitungsrolle nicht zum Ziel, steht die Fehlermeldung fest im Dialog unter der Wahl.
 
+### Organisationen anlegen und bearbeiten (#95, 11.11.2026)
+
+Kein Zielbild (Frage 14 in #95); Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 11.11.2026 zu #95. Kein neuer Baustein, einer erweitert:
+
+- **Kopf einer Organisationsseite** (Sebastian, 11.11.2026: „Baustein erweitern“): unter der Zeile mit der Art eine Reihe kleiner Knöpfe im Aussehen des „Knopfs ‚Verschieben‘“, nur wo man das darf: „Umbenennen“, beim Stamm „Ring wechseln“, beim Bund „Ringe einführen“. Auf der Leseseite keine.
+- **„… anlegen“** steht als Knopf mit Plus in der Überschrift von „Organisationen darunter“ und heißt nach der Art („Gruppe anlegen“, „Stamm anlegen“, „Ring anlegen“).
+- **Dialoge:** „… anlegen“ und „Umbenennen“ mit dem Textfeld „Name“ (Pflicht, Zahl der Zeichen bis 100), „Ring wechseln“ mit der „Auswahl im Dialog“ ohne Vorschau, „Ringe einführen“ als Rückfrage; der Knopf zum Bestätigen ist überall dunkelblau. Ein doppelter oder leerer Name steht als Fehler am Feld, eine Ablehnung beim Ringwechsel fest im Dialog unter der Wahl.
+- **Danach** eine kurze Meldung (#186), etwa „Sippe Kraniche ist angelegt.“
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

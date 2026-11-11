@@ -228,8 +228,24 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
-/* Knöpfe im Kopf einer Organisationsseite (#95): kleine Knöpfe „Verschieben“ in einer Reihe unter der Art. */
-.a-orga-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+/* Bearbeiten-Symbol (#95): der Stift oben rechts in der Fläche, im Aussehen wie das × eines Dialogs. */
+.a-orga-kopf { position: relative; }
+.a-orga-kopf.hat-stift { padding-right: 64px; }
+.a-stift { position: absolute; top: 12px; right: 12px; display: inline-flex; padding: 6px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); text-decoration: none; }
+.a-stift:hover, .a-stift:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
+/* Schalter (#95) nach dem Zielbild „Mein Profil“ (Zeile „Profil freigeben“): Titel und Satz links, rechts der runde Schalter. */
+.a-schalter-zeile { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.a-schalter-satz { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; }
+.a-schalter { position: relative; display: inline-flex; flex: none; width: 46px; height: 26px; }
+.a-schalter input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.a-schalter-bahn { position: absolute; inset: 0; border: 1px solid var(--linie); border-radius: 999px; background: var(--grund); transition: background .15s ease; pointer-events: none; }
+.a-schalter-bahn::after { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--flaeche); box-shadow: 0 1px 2px rgba(0, 0, 0, .25); content: ""; transition: transform .15s ease; }
+.a-schalter input:checked + .a-schalter-bahn { border-color: var(--dpv); background: var(--dpv); }
+.a-schalter input:checked + .a-schalter-bahn::after { transform: translateX(20px); }
+.a-schalter input:focus-visible + .a-schalter-bahn { outline: 3px solid var(--dpv); outline-offset: 3px; }
+.a-schalter input:disabled { cursor: default; }
+.a-schalter input:disabled + .a-schalter-bahn { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .a-schalter-bahn, .a-schalter-bahn::after { transition: none; } }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
 /* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle
    „DPV-Veranstaltungsteam“ mit „Rolle abgeben“ am Handy; sonst stünde die Seite seitlich über (#94). */

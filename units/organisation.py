@@ -128,13 +128,9 @@ class Page:
     # Der Knopf „… anlegen“ unter „Organisationen darunter“, nur wo die Person anlegen darf (#95).
     create_href: str | None = None
     create_label: str = ""
-    # Die Knöpfe im Kopf, je nur wo die Person das darf (#95): Umbenennen, Ring wechseln, Ringe einführen.
-    rename_href: str | None = None
-    rename_label: str = texts.RENAME_BUTTON
-    change_ring_href: str | None = None
-    change_ring_label: str = texts.CHANGE_RING_BUTTON
-    introduce_rings_href: str | None = None
-    introduce_rings_label: str = texts.INTRODUCE_RINGS_BUTTON
+    # Der Stift oben rechts im Kopf, nur wo die Person umbenennen darf; er öffnet „… bearbeiten“ (#95).
+    edit_href: str | None = None
+    edit_label: str = ""
 
 
 @dataclass
@@ -326,11 +322,8 @@ class Organisation:
         return {
             "create_href": reverse("organisation_create", args=[unit.key]) if rights.may_create(unit) else None,
             "create_label": texts.CREATE_TITLE[kind] if kind else "",
-            "rename_href": reverse("organisation_rename", args=[unit.key]) if rights.may_rename(unit) else None,
-            "change_ring_href": (reverse("organisation_change_ring", args=[unit.key])
-                                 if rights.may_change_ring(unit) else None),
-            "introduce_rings_href": (reverse("organisation_introduce_rings", args=[unit.key])
-                                     if rights.may_introduce_rings(unit) else None),
+            "edit_href": reverse("organisation_edit", args=[unit.key]) if rights.may_rename(unit) else None,
+            "edit_label": texts.EDIT_TITLE % {"unit": unit_label(unit)},
         }
 
     def _persons_section(self, unit: Unit, access: str) -> dict:
@@ -551,44 +544,41 @@ def create_dialog(parent: Unit, form, action: str) -> dict:
     }
 
 
-def rename_dialog(unit: Unit, form, action: str) -> dict:
-    """Der Dialog „Umbenennen“ (#95): das Feld „Name“ mit dem jetzigen Namen und der blaue Knopf „Umbenennen“."""
-    return {
-        "title": texts.RENAME_TITLE,
-        "subtitle": unit_label(unit),
+def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_switch: bool, ring_key: str = "",
+                rings_on: bool = False, ring_notice: str = "") -> dict:
+    """Der Dialog „… bearbeiten“ (#95; Sebastian bei der Vorschau, 11.11.2026): alles an einem Ort.
+
+    Das Textfeld „Name“ für jede Leitung, die umbenennen darf; mit `rings` (nur die Bundesleitung,
+    beim Stamm) die Wahl des Rings als „Auswahl im Dialog“ ohne Vorschau, der jetzige gewählt, bei
+    einem Stamm ohne Ring zuerst „ohne Ring (bisher)“; mit `rings_switch` (nur die Bundesleitung,
+    beim Bund) der Schalter „Hat Ringe“, nach dem Einschalten gesperrt. `ring_key` und `rings_on`
+    halten nach einer Ablehnung die Eingabe fest; `ring_notice` steht dann unter der Wahl.
+    """
+    dialog = {
+        "title": texts.EDIT_TITLE % {"unit": unit_label(unit)},
         "close_href": reverse("organisation_unit", args=[unit.key]),
         "confirm_action": action,
-        "confirm_label": texts.RENAME_BUTTON,
+        "confirm_label": texts.SAVE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
         "form": form,
+        "notice": ring_notice,
     }
+    if rings is not None:
+        now = unit.parent.key if unit.parent.kind == Kind.RING else ""
+        options = [] if now else [("", str(texts.NO_RING_YET), [])]
+        options += [(ring.key, unit_label(ring), []) for ring in rings]
+        dialog["choice"] = _choice("ring", str(texts.RING_LABEL), options, chosen=ring_key or now)
+        dialog["choice"]["legend_shown"] = True
+    if rings_switch:
+        dialog["switch"] = {"name": "hat_ringe", "value": "an", "title": texts.HAS_RINGS_TITLE,
+                            "checked": unit.has_rings or rings_on, "locked": unit.has_rings,
+                            "text": texts.HAS_RINGS_LOCKED if unit.has_rings else texts.HAS_RINGS_OFF}
+    return dialog
 
 
-def ring_dialog(troop: Unit, rings: list[Unit], action: str, notice: str = "", chosen: str = "") -> dict:
-    """Der Dialog „Ring wechseln“ (#95, EH-16): die anderen Ringe des Bundes als Auswahl ohne Vorschau, blauer Knopf.
-
-    Wie beim Verschieben (#287) steht eine Ablehnung im Dialog an der Stelle der Handlung, und der
-    abgelehnte Ring bleibt gewählt (OG5).
-    """
-    question = str(texts.CHANGE_RING_QUESTION % {"unit": unit_label(troop)})
-    options = [(ring.key, unit_label(ring), []) for ring in rings]
-    return {
-        "title": texts.CHANGE_RING_BUTTON,
-        "subtitle": unit_label(troop),
-        "lines": [question],
-        "close_href": reverse("organisation_unit", args=[troop.key]),
-        "confirm_action": action,
-        "confirm_label": texts.CHANGE_RING_BUTTON,
-        "confirm_primary": True,
-        "form_id": "f-dialog",
-        "choice": _choice("ring", question, options, chosen=chosen),
-        "notice": notice,
-    }
-
-
-def rings_dialog(bund: Unit, action: str) -> dict:
-    """Die Rückfrage „Ringe für … einführen?“ (#95, EH-23) mit den Folgen und dem blauen Knopf „Ringe einführen“."""
+def rings_question(bund: Unit, action: str, name: str) -> dict:
+    """Die Rückfrage aus O8, bevor „hat Ringe“ eingeschaltet wird; sie trägt den Namen aus dem Dialog weiter (#95, EH-23)."""
     return {
         "title": texts.INTRODUCE_RINGS_QUESTION % {"unit": bund.name},
         "lines": [str(line) for line in texts.INTRODUCE_RINGS_LINES],
@@ -596,6 +586,7 @@ def rings_dialog(bund: Unit, action: str) -> dict:
         "confirm_action": action,
         "confirm_label": texts.INTRODUCE_RINGS_BUTTON,
         "confirm_primary": True,
+        "hidden": [("name", name), ("hat_ringe", "an"), ("bestaetigt", "ja")],
     }
 
 

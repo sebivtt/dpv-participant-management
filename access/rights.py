@@ -944,24 +944,8 @@ class Rights:
         return unit is not None and self.sees_organisation() and unit.pk in self.area
 
     def rename(self, unit: Unit, name: str) -> tuple[bool, str]:
-        """Benennt eine Organisation um; gibt zurück, ob es geklappt hat, und die Meldung (EH-14).
-
-        Geschrieben wird nur der Name, aus dem frischen Stand unter der Sperre: Ein veralteter Stand
-        der Seite überschreibt so keine gleichzeitige Änderung, etwa einen Ringwechsel (OG4).
-        """
-        if not self.may_rename(unit):
-            raise Http404
-        with transaction.atomic():
-            me = self._lock_with(self.user.pk)
-            if not Rights(me).may_rename(unit):
-                raise Http404
-            current = self._lock_structure(unit)
-            old = unit_label(current)
-            current.name = name
-            refused = _saved_or_reason(current, me, update_fields=["name"])
-        if refused:
-            return False, refused
-        return True, str(unit_texts.RENAMED_TO % {"old": old, "new": unit_label(current)})
+        """Benennt eine Organisation um; gibt zurück, ob es geklappt hat, und die Meldung (EH-14). Wie `edit()`."""
+        return _done_or_refused(self.edit(unit, name=name))
 
     def may_change_ring(self, troop: Unit | None) -> bool:
         """Darf die Person diesen Stamm einem Ring zuordnen oder in einen anderen Ring wechseln (EH-16, EH-17)?
@@ -976,59 +960,87 @@ class Rights:
         return Unit.objects.filter(pk=troop.association_id, has_rings=True).exists()
 
     @staticmethod
+    def rings_of(troop: Unit) -> list[Unit]:
+        """Alle Ringe des Bundes eines Stammes nach dem Alphabet, der jetzige eingeschlossen: die Wahl im Dialog (#95)."""
+        rings = Unit.objects.filter(kind=UnitKind.RING, parent_id=troop.association_id)
+        return sorted(rings, key=lambda ring: alphabetical(ring.name))
+
+    @staticmethod
     def ring_targets(troop: Unit) -> list[Unit]:
         """Die Ringe des Bundes außer dem jetzigen, nach dem Alphabet: die einzigen Ziele (EH-16, EH-26)."""
         rings = Unit.objects.filter(kind=UnitKind.RING, parent_id=troop.association_id).exclude(pk=troop.parent_id)
         return sorted(rings, key=lambda ring: alphabetical(ring.name))
 
     def change_ring(self, troop: Unit, ring_key) -> tuple[bool, str]:
-        """Ordnet einen Stamm einem Ring zu oder wechselt ihn; gibt zurück, ob es geklappt hat, und die Meldung (EH-16).
-
-        Das Ziel kommt nur aus `ring_targets()`; der Bund, ein Stamm oder ein Ring eines anderen
-        Bundes sind „nicht gefunden“ (OV9). Gruppen und Mitglieder ziehen mit, weil sie am Stamm
-        hängen. Läge danach eine Leitungsrolle nicht mehr auf dem Pfad ihrer Mitgliedschaft, lehnt
-        das Tool ab und nennt Person und Rollen (OG5, PK-25). Gesperrt sind das eigene Konto, der
-        Bund und der Stamm, in dieser Reihenfolge wie beim Benennen; so sieht ein gleichzeitiges
-        Benennen den Wechsel und umgekehrt (OG9).
-        """
-        if not self.may_change_ring(troop) or not is_key(ring_key):
+        """Ordnet einen Stamm einem Ring zu oder wechselt ihn; gibt zurück, ob es geklappt hat, und die Meldung (EH-16). Wie `edit()`."""
+        if not is_key(ring_key):
             raise Http404
-        with transaction.atomic():
-            me = self._lock_with(self.user.pk)
-            if not Rights(me).may_change_ring(troop):
-                raise Http404
-            current = self._lock_structure(troop)
-            target = next((ring for ring in self.ring_targets(current) if ring.key == ring_key), None)
-            if target is None:
-                raise Http404
-            blocking = leads_off_path(current, target)
-            if blocking:
-                return False, " ".join(_off_path_sentence(membership, leads) for membership, leads in blocking)
-            current.parent = target
-            current.save(update_fields=["parent"], by=me)
-        return True, str(unit_texts.RING_CHANGED_TO % {"unit": unit_label(current), "ring": unit_label(target)})
+        return _done_or_refused(self.edit(troop, ring_key=ring_key))
 
     def may_introduce_rings(self, unit: Unit | None) -> bool:
         """Darf die Person für diesen Bund „hat Ringe“ einschalten (EH-23, EH-24)? Nur die eigene Bundesleitung, nur einmal."""
         return (unit is not None and unit.kind == UnitKind.ASSOCIATION and not unit.has_rings
                 and self.sees_organisation() and unit.pk in self._led)
 
-    def introduce_rings(self, unit: Unit) -> str:
-        """Schaltet „hat Ringe“ für den Bund ein; gibt die kurze Meldung zurück (EH-23).
+    def edit(self, unit: Unit, name: str | None = None, ring_key: str | None = None, rings_on: bool = False) -> dict:
+        """Speichert den Dialog „… bearbeiten“: Name, Ring und „hat Ringe“, alles zusammen oder nichts (#95).
 
-        Ausschalten gibt es nicht (EH-25). Hat der Bund inzwischen schon Ringe, ist das Ergebnis
-        „nicht gefunden“, und nichts ändert sich. Geschrieben wird nur der Schalter.
+        Ohne Recht, die Organisation umzubenennen, ist das Ergebnis „nicht gefunden“ (EH-15). Ändert
+        die Anfrage etwas, das die Person nicht ändern darf, etwa den Ring als Ringleitung oder „hat
+        Ringe“ in einem fremden Bund, ebenso, und nichts ändert sich (OV6, OV8). `None` und ein
+        ausgeschalteter Schalter heißen „bleibt“; ausschalten lässt sich „hat Ringe“ nie (EH-25). Als
+        Ring zählen nur `ring_targets()` und der jetzige Ring; „" heißt ohne Ring und geht nur, solange
+        der Stamm keinen hat (EH-26, OV9).
+
+        Gelesen wird unter der Sperre (Konto, Bund, Organisation) frisch, geschrieben nur, was sich
+        ändert (OG4). Gibt `{"messages": [...], "errors": {...}}` zurück: je Änderung die kurze
+        Meldung, bei einer Ablehnung je Feld („name“, „ring“) der Grund; dann ist nichts gespeichert,
+        auch nicht die übrigen Änderungen.
         """
-        if not self.may_introduce_rings(unit):
+        if not self.may_rename(unit) or (ring_key not in (None, "") and not is_key(ring_key)):
             raise Http404
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
-            current = self._lock_structure(unit)
-            if not Rights(me).may_introduce_rings(current):
+            fresh = Rights(me)
+            if not fresh.may_rename(unit):
                 raise Http404
-            current.has_rings = True
-            current.save(update_fields=["has_rings"], by=me)
-        return str(unit_texts.RINGS_INTRODUCED % {"unit": current.name})
+            current = self._lock_structure(unit)
+            target = fresh._ring_target(current, ring_key)
+            if rings_on and not current.has_rings and not fresh.may_introduce_rings(current):
+                raise Http404
+            saved = transaction.savepoint()
+            result = _apply_edit(current, me, name, target, rings_on and not current.has_rings)
+            if result["errors"]:
+                transaction.savepoint_rollback(saved)
+        return result
+
+    def _ring_target(self, troop: Unit, ring_key: str | None) -> Unit | None:
+        """Der neue Ring aus der Anfrage, oder None, wenn er bleibt; ohne Recht oder fremd „nicht gefunden“."""
+        if ring_key is None or troop.kind != UnitKind.TROOP:
+            if ring_key not in (None, ""):
+                raise Http404
+            return None
+        now = troop.parent.key if troop.parent.kind == UnitKind.RING else ""
+        if ring_key == now:
+            return None
+        if not self.may_change_ring(troop):
+            raise Http404
+        target = next((ring for ring in self.ring_targets(troop) if ring.key == ring_key), None)
+        if target is None:
+            raise Http404
+        return target
+
+    def introduce_rings(self, unit: Unit) -> str:
+        """Schaltet „hat Ringe“ für den Bund ein; gibt die kurze Meldung zurück (EH-23). Wie `edit()`.
+
+        Hat der Bund inzwischen schon Ringe, ist das Ergebnis „nicht gefunden“, und nichts ändert sich.
+        """
+        if not self.may_introduce_rings(unit):
+            raise Http404
+        result = self.edit(unit, rings_on=True)
+        if not result["messages"]:
+            raise Http404
+        return result["messages"][0]
 
     def _lock_structure(self, unit: Unit) -> Unit:
         """Sperrt den Bund der Organisation und dann sie selbst; gibt sie frisch zurück (#95).
@@ -1227,6 +1239,43 @@ def _saved_or_reason(unit: Unit, by, **options) -> str:
         place = unit.parent.name if unit.kind == UnitKind.GROUP else other.association.name
         return str(unit_texts.NAME_TAKEN[other.kind] % {"name": other.name, "place": place})
     return ""
+
+
+def _apply_edit(unit: Unit, by, name: str | None, ring: Unit | None, rings_on: bool) -> dict:
+    """Schreibt die Änderungen aus „… bearbeiten“ nacheinander, je nur ihr Feld; sammelt Meldungen und Gründe (#95).
+
+    Nur innerhalb der Transaktion von `Rights.edit()`; bei einem Grund rollt sie alles zurück.
+    """
+    messages, errors = [], {}
+    # Zuerst prüfen, ob der Ring passt, solange der Name noch der alte ist; sonst nennte die Meldung
+    # einen Namen, der wegen der Ablehnung gar nicht gespeichert wird.
+    blocking = leads_off_path(unit, ring) if ring is not None else []
+    if blocking:
+        errors["ring"] = " ".join(_off_path_sentence(membership, leads) for membership, leads in blocking)
+    if name is not None and name.strip() != unit.name:
+        old = unit_label(unit)
+        unit.name = name
+        refused = _saved_or_reason(unit, by, update_fields=["name"])
+        if refused:
+            errors["name"] = refused
+        else:
+            messages.append(str(unit_texts.RENAMED_TO % {"old": old, "new": unit_label(unit)}))
+    if ring is not None and not errors:
+        unit.parent = ring
+        unit.save(update_fields=["parent"], by=by)
+        messages.append(str(unit_texts.RING_CHANGED_TO % {"unit": unit_label(unit), "ring": unit_label(ring)}))
+    if rings_on and not errors:
+        unit.has_rings = True
+        unit.save(update_fields=["has_rings"], by=by)
+        messages.append(str(unit_texts.RINGS_INTRODUCED % {"unit": unit.name}))
+    return {"messages": messages, "errors": errors}
+
+
+def _done_or_refused(result: dict) -> tuple[bool, str]:
+    """Aus dem Ergebnis von `Rights.edit()`: ob es geklappt hat, und die Meldungen oder Gründe als ein Text."""
+    if result["errors"]:
+        return False, " ".join(result["errors"].values())
+    return True, " ".join(result["messages"])
 
 
 def _off_path_sentence(membership: Role, leads: list[Role]) -> str:

@@ -267,11 +267,15 @@ NAME_TAKEN = {
     "troop": gettext_lazy("Den Stamm ‚%(name)s‘ gibt es in %(place)s schon."),
     "group": gettext_lazy("Die Gruppe ‚%(name)s‘ gibt es in %(place)s schon."),
 }
-RENAME_BUTTON = gettext_lazy("Umbenennen")
-RENAME_TITLE = gettext_lazy("Umbenennen")
+# Dialog „… bearbeiten“ (Sebastian bei der Vorschau, 11.11.2026): Stift, Name, Ring und Schalter „Hat Ringe“
+EDIT_TITLE = gettext_lazy("%(unit)s bearbeiten")
+SAVE_BUTTON = gettext_lazy("Speichern")
 RENAMED_TO = gettext_lazy("%(old)s heißt jetzt %(new)s.")
-CHANGE_RING_BUTTON = gettext_lazy("Ring wechseln")
-CHANGE_RING_QUESTION = gettext_lazy("Zu welchem Ring soll %(unit)s gehören?")
+RING_LABEL = gettext_lazy("Ring")
+NO_RING_YET = gettext_lazy("ohne Ring (bisher)")
+HAS_RINGS_TITLE = gettext_lazy("Hat Ringe")
+HAS_RINGS_OFF = gettext_lazy("Dann muss jeder neue Stamm in einem Ring hängen.")
+HAS_RINGS_LOCKED = gettext_lazy("Ausschalten lässt sich das vorerst nicht.")
 RING_CHANGED_TO = gettext_lazy("%(unit)s gehört jetzt zu %(ring)s.")
 RING_CHANGE_ROLE_BLOCKS = gettext_lazy(
     "%(person)s ist %(roles)s. Nach dem Wechsel passt diese Rolle nicht mehr zu der Mitgliedschaft in %(unit)s. "
@@ -281,7 +285,7 @@ RING_CHANGE_ROLES_BLOCK = gettext_lazy(
     "%(person)s ist %(roles)s. Nach dem Wechsel passen diese Rollen nicht mehr zu der Mitgliedschaft in %(unit)s. "
     "Sie können zuerst beendet werden."
 )
-INTRODUCE_RINGS_BUTTON = gettext_lazy("Ringe einführen")
+INTRODUCE_RINGS_BUTTON = gettext_lazy("Ringe einführen")  # Knopf der Rückfrage aus O8
 INTRODUCE_RINGS_QUESTION = gettext_lazy("Ringe für %(unit)s einführen?")
 INTRODUCE_RINGS_LINES = (
     gettext_lazy("Danach muss jeder neue Stamm in einem Ring hängen."),

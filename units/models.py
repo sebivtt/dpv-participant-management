@@ -383,9 +383,9 @@ class UnitChange(models.Model):
     Regeln (Klärung von #131 am 23.10.2026, Fragen bei der Umsetzung am selben Tag):
     - Ins Protokoll kommen Anlegen, Umbenennen, einen Stamm einem Ring zuordnen oder in einen
       anderen Ring verschieben und „hat Ringe“ ein- oder ausschalten; jede Änderung ein Eintrag.
-      „Stamm gewechselt“ bleibt als Art für #127; seit #95 wechselt eine Gruppe nicht den Stamm. Nur tatsächliche Änderungen zählen,
-      eine andere Schreibweise des Namens ist eine. Das Notfall-Löschen steht im Protokoll
-      der Admin-Zugriffe (#92), nicht hier.
+      „Stamm gewechselt“ bleibt als Art für #127; seit #95 wechselt eine Gruppe nicht den Stamm.
+      Nur tatsächliche Änderungen zählen, eine andere Schreibweise des Namens ist eine. Das
+      Notfall-Löschen steht im Protokoll der Admin-Zugriffe (#92), nicht hier.
     - Ein Eintrag nennt Zeitpunkt, wer geändert hat, welche Organisation, was geändert wurde
       und bei Änderungen den alten und den neuen Wert; beim Anlegen als neuen Wert, wo die
       Organisation hängt. Ein Feld für einen Grund oder anderen freien Text gibt es nicht.
