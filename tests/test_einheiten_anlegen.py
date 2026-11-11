@@ -532,7 +532,7 @@ def test_ov9_hat_ringe_ausschalten_gibt_es_nicht_als_befehl(org):
 
 @pytest.mark.rechtematrix("EH-25")
 def test_ov9_keine_adresse_schaltet_hat_ringe_aus(org):
-    """OV9: Auch ein manipuliertes Formular an „Ringe einführen“ oder „Umbenennen“ schaltet nichts aus."""
+    """OV9: Auch ein manipuliertes Formular an „… bearbeiten“ schaltet „hat Ringe“ nicht aus."""
     client = client_for(org.mosaik_leitung)
 
     client.post(edit_address(org.mosaik), {"name": "DPBM Mosaik", "has_rings": "", "ringe": "aus"})

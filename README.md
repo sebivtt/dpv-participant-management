@@ -259,7 +259,7 @@ V4. Nur bei Bedarf: einen Bund umbenennen, erst der alte, dann der neue Name.
    uv run --env-file .env python manage.py association rename "Pfadfinderbund Boreas" "Bund Boreas"
    ```
    Danach: `Der Bund „Pfadfinderbund Boreas“ heißt jetzt „Bund Boreas“.` Den Verband benennt `federation rename "Neuer Name"` um.
-V5. Nur bei Bedarf: „hat Ringe“ einschalten (`on`). Das kann seit #95 auch die Bundesleitung selbst im Tool („Ringe einführen“). Ausschalten geht nicht, weder hier noch im Tool, bis #204 es baut.
+V5. Nur bei Bedarf: „hat Ringe“ einschalten (`on`). Das kann seit #95 auch die Bundesleitung selbst im Tool (Stift oben rechts auf der Seite des Bundes, Schalter „Hat Ringe“). Ausschalten geht nicht, weder hier noch im Tool, bis #204 es baut.
    ```bash
    uv run --env-file .env python manage.py association rings "Bund Boreas" on
    ```

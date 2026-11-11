@@ -549,41 +549,29 @@ def _with_dialog(request: HttpRequest, found: Unit, dialog: dict) -> HttpRespons
                                                        "start": False, "removal": dialog})
 
 
-def _named(request: HttpRequest, found: Unit, act, dialog_for, initial: str = "") -> HttpResponse:
-    """Gemeinsamer Ablauf für „… anlegen“ und „Umbenennen“: Dialog zeigen, Namen prüfen, `act` ausführen.
-
-    Gelingt es, geht es zur Seite der Organisation, die `act` nennt, mit der kurzen Meldung (#186);
-    sonst bleibt der Dialog offen, mit dem Grund als Fehler am Feld und der Eingabe darin.
-    """
-    if request.method == "POST":
-        form = UnitNameForm(request.POST)
-        if form.is_valid():
-            done, text, target = act(form.cleaned_data["name"])
-            if done:
-                messages.success(request, text)
-                return redirect("organisation_unit", unit=target.key)
-            form.add_error("name", text)
-    elif request.method in READING:
-        form = UnitNameForm(initial={"name": initial})
-    else:
-        raise Http404
-    return _with_dialog(request, found, dialog_for(found, form, action=request.path))
-
-
 @checks_rights(*STRUCTURE_ROWS)
 def organisation_create(request: HttpRequest, unit: str) -> HttpResponse:
     """Dialog „Gruppe anlegen“, „Stamm anlegen“ oder „Ring anlegen“ zeigen und anlegen (EH-10 bis EH-12).
 
-    Danach steht die neue Organisation unter „Organisationen darunter“ der Seite, von der aus sie angelegt wurde.
+    Danach steht die neue Organisation unter „Organisationen darunter“ der Seite, von der aus sie
+    angelegt wurde, mit der kurzen Meldung (#186); sonst bleibt der Dialog offen, mit dem Grund als
+    Fehler am Feld und der Eingabe darin.
     """
     rights = request.rights
     found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_create)
-
-    def act(name):
-        done, text = rights.create(found, name)
-        return done, text, found
-
-    return _named(request, found, act, create_dialog)
+    if request.method == "POST":
+        form = UnitNameForm(request.POST)
+        if form.is_valid():
+            done, text = rights.create(found, form.cleaned_data["name"])
+            if done:
+                messages.success(request, text)
+                return redirect("organisation_unit", unit=found.key)
+            form.add_error("name", text)
+    elif request.method in READING:
+        form = UnitNameForm()
+    else:
+        raise Http404
+    return _with_dialog(request, found, create_dialog(found, form, action=request.path))
 
 
 @checks_rights(*STRUCTURE_ROWS)

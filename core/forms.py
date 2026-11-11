@@ -1,4 +1,4 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285) und der Name beim Anlegen und Umbenennen (#95)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285) und der Name beim Anlegen und Bearbeiten einer Organisation (#95)."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -63,7 +63,7 @@ class FederationSearchForm(AccountSearchForm):
 
 
 class UnitNameForm(forms.Form):
-    """Der Name im Dialog „… anlegen“ und „Umbenennen“ (#95): Pflicht, höchstens 100 Zeichen, ohne Leerzeichen am Rand.
+    """Der Name im Dialog „… anlegen“ und „… bearbeiten“ (#95): Pflicht, höchstens 100 Zeichen, ohne Leerzeichen am Rand.
 
     Nimmt nur den Namen an; welche Organisation und welche Art, kommt aus der Adresse (OV1, OV4).
     Die Länge prüft erst der Server, wie beim Fahrtennamen: Ein `maxlength` schnitte beim Einfügen
