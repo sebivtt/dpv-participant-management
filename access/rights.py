@@ -1008,7 +1008,7 @@ class Rights:
             target = fresh._ring_target(current, ring_key)
             if rings_on and not current.has_rings and not fresh.may_introduce_rings(current):
                 raise Http404
-            saved = transaction.savepoint()
+            saved = transaction.savepoint_create()
             result = _apply_edit(current, me, name, target, rings_on and not current.has_rings)
             if result["errors"]:
                 transaction.savepoint_rollback(saved)
