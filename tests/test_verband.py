@@ -589,7 +589,7 @@ def test_vg4_ohne_rolle_zeigt_der_naechste_klick_kein_zugriff(org):
 
 @pytest.mark.rechtematrix("EH-05", "PK-07")
 def test_verbandsleitung_sieht_keine_personen_mit_konto_auf_keinem_weg(org):
-    """Personen mit Konto; verwaltete Personen kommen mit #117, Anmeldungen mit #101 (Nachklärung vom 22.10.2026)."""
+    """Personen mit Konto; verwaltete Personen prüft `tests/test_verwaltete_personen.py` (#117), Anmeldungen kommen mit #101 (Nachklärung vom 22.10.2026)."""
     assert set(Rights(org.verbandsleitung).persons().values_list("username", flat=True)) == {"vera.verband"}
     for where in (org.boreas, org.walhall, org.falken, org.mosaik):
         assert_like_missing(org.verbandsleitung, unit_address(where))

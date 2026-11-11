@@ -175,7 +175,7 @@ def lena_now() -> ManagedPerson:
 # ---------- Erlaubt ----------
 
 
-@pytest.mark.rechtematrix("VP-01")
+@pytest.mark.rechtematrix("VP-01", "GA-05")
 def test_m1_fiete_legt_lena_in_den_falken_an(org):
     client = client_for(org.falken_leitung)
     root = page_tree(org.falken_leitung, unit_address(org.falken))
@@ -517,6 +517,7 @@ def test_mv5_finns_kennung_ergibt_beim_bearbeiten_nicht_gefunden(org, lena):
     assert "Bearbeiten" not in shown["Funke"]["buttons"]
 
 
+@pytest.mark.rechtematrix("GA-05")
 def test_mv6_gesundheitsangaben_werden_nicht_gespeichert(org):
     response = add(org.falken_leitung, org.falken, allergien="Nüsse", gesundheit="Asthma", medikamente="Spray",
                    health="Asthma")
