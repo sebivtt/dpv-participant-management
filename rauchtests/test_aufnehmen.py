@@ -15,7 +15,8 @@ from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 
 PERSONS = '[aria-labelledby="h-personen"]'
-ADMIT_BUTTON = f"{PERSONS} .a-flaeche-aktion"
+# Seit #117 steht daneben „Verwaltete Person anlegen“; gemeint ist der Knopf, der zum Aufnehmen führt.
+ADMIT_BUTTON = f'{PERSONS} .a-flaeche-aktion[href$="/aufnehmen/"]'
 
 
 def _dialog(page: Page):
@@ -32,14 +33,14 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
 
     stations = _stations_to_element(pc, ADMIT_BUTTON, steps=60)
     _all_visible(stations)
-    expect(pc.locator(ADMIT_BUTTON)).to_have_text("Person aufnehmen")
+    expect(pc.locator(ADMIT_BUTTON)).to_have_text("Person mit Konto aufnehmen")
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{page_address}aufnehmen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
     assert dialog.evaluate("d => d.matches(':modal')")
-    expect(dialog.locator("h2")).to_have_text("Person aufnehmen")
+    expect(dialog.locator("h2")).to_have_text("Person mit Konto aufnehmen")
     expect(dialog).to_contain_text("Die Person muss sich schon einmal im Tool angemeldet haben.")
     field = pc.get_by_label("Mail oder Benutzername")
     expect(field).to_be_focused()

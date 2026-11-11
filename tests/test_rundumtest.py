@@ -280,6 +280,8 @@ PERSONAL_MODELS = {
     "EmailAddress",
     # Wer wann über die genaue Mail oder den Benutzernamen gesucht hat (PK-24, #190).
     "AccountSearch",
+    # Verwaltete Personen (#117).
+    "ManagedPerson",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
