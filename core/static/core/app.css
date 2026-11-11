@@ -228,11 +228,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-kopf-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .a-orga-name { margin: 0; font-size: 1.5rem; line-height: 1.2; overflow-wrap: anywhere; }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
-/* Bearbeiten-Symbol (#95): der Stift oben rechts in der Fläche, im Aussehen wie das × eines Dialogs. */
+/* Bearbeiten-Symbol (#95): der Stift oben rechts in der Fläche; sein Aussehen teilt er mit dem × eines Dialogs (.a-schliessen unten). */
 .a-orga-kopf { position: relative; }
 .a-orga-kopf.hat-stift { padding-right: 64px; }
-.a-stift { position: absolute; top: 12px; right: 12px; display: inline-flex; padding: 6px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); text-decoration: none; }
-.a-stift:hover, .a-stift:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
 /* Schalter (#95) nach dem Zielbild „Mein Profil“ (Zeile „Profil freigeben“): Titel und Satz links, rechts der runde Schalter. */
 .a-schalter-zeile { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
 .a-schalter-satz { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; }
@@ -433,9 +431,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
   .a-topbar .a-profil[aria-current="page"] { background: none; }
   .a-topbar .a-avatar { width: 36px; height: 36px; }
 }
-.a-menueknopf, .a-schliessen { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.a-menueknopf, .a-schliessen, .a-stift { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
 /* Beim Darüberfahren und Drücken wie die zarten Knöpfe (.btn-zart), denen sie in Ruhe gleichen (#216) */
-.a-menueknopf:hover, .a-menueknopf:active, .a-schliessen:hover, .a-schliessen:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
+.a-menueknopf:hover, .a-menueknopf:active, .a-schliessen:hover, .a-schliessen:active, .a-stift:hover, .a-stift:active { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--dpv); }
 /* Ohne Skript ist „Menü“ ein Sprung ans Seitenende (#281) und sieht aus wie der Knopf. */
 a.a-menueknopf { text-decoration: none; }
 /* Liste am Seitenende (#281): Navigation, Profilkreis und „Abmelden“ für das Handy ohne Skript, nach dem
@@ -486,6 +484,7 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-dialog-kopf h2 { margin: 0; font-size: 1.15rem; }
 .a-dialog-kopf .a-unterzeile { margin: 4px 0 0; }
 .a-dialog-kopf .a-schliessen { flex: none; padding: 6px; text-decoration: none; }
+.a-stift { position: absolute; top: 12px; right: 12px; padding: 6px; text-decoration: none; }
 .a-dialog-inhalt { padding: 18px 20px; }
 .a-dialog-fuss { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
 /* Auswahl im Dialog (#286): Optionsfelder wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit.

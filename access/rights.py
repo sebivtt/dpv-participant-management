@@ -919,14 +919,16 @@ class Rights:
         Art und Organisation darüber kommen nur aus der Adresse, nie aus dem Formular (OV1, OV4).
         Ohne Recht „nicht gefunden“. Gibt es den Namen dort schon, nennt die Meldung die vorhandene
         Organisation (OG1, OG2); legen zwei gleichzeitig denselben Namen an, entsteht genau eine.
-        Das Anlegen steht im Protokoll der Strukturänderungen (#131). Gesperrt ist das eigene Konto,
-        dann wird das Recht frisch geprüft, wie bei `appoint()`.
+        Das Anlegen steht im Protokoll der Strukturänderungen (#131). Gesperrt sind das eigene Konto,
+        der Bund und die Organisation darüber, dann wird das Recht frisch geprüft.
         """
         if not self.may_create(parent):
             raise Http404
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
-            parent = Unit.objects.select_related("parent").get(pk=parent.pk)
+            # Erst den Bund sperren, dann das Recht prüfen: Ein gleichzeitiger Ringwechsel ist danach
+            # entweder schon gespeichert oder wartet (unabhängige Prüfung, Befund 2).
+            parent = self._lock_structure(parent)
             if not Rights(me).may_create(parent):
                 raise Http404
             created = Unit(kind=child_kind(parent), name=name, parent=parent)
@@ -992,8 +994,8 @@ class Rights:
         Ring zählen nur `ring_targets()` und der jetzige Ring; „" heißt ohne Ring und geht nur, solange
         der Stamm keinen hat (EH-26, OV9).
 
-        Gelesen wird unter der Sperre (Konto, Bund, Organisation) frisch, geschrieben nur, was sich
-        ändert (OG4). Gibt `{"messages": [...], "errors": {...}}` zurück: je Änderung die kurze
+        Gelesen und das Recht geprüft wird unter der Sperre (Konto, Bund, Organisation) frisch,
+        geschrieben nur, was sich ändert (OG4). Gibt `{"messages": [...], "errors": {...}}` zurück: je Änderung die kurze
         Meldung, bei einer Ablehnung je Feld („name“, „ring“) der Grund; dann ist nichts gespeichert,
         auch nicht die übrigen Änderungen.
         """
@@ -1001,10 +1003,10 @@ class Rights:
             raise Http404
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
-            fresh = Rights(me)
-            if not fresh.may_rename(unit):
-                raise Http404
             current = self._lock_structure(unit)
+            fresh = Rights(me)
+            if not fresh.may_rename(current):
+                raise Http404
             target = fresh._ring_target(current, ring_key)
             if rings_on and not current.has_rings and not fresh.may_introduce_rings(current):
                 raise Http404
@@ -1029,18 +1031,6 @@ class Rights:
         if target is None:
             raise Http404
         return target
-
-    def introduce_rings(self, unit: Unit) -> str:
-        """Schaltet „hat Ringe“ für den Bund ein; gibt die kurze Meldung zurück (EH-23). Wie `edit()`.
-
-        Hat der Bund inzwischen schon Ringe, ist das Ergebnis „nicht gefunden“, und nichts ändert sich.
-        """
-        if not self.may_introduce_rings(unit):
-            raise Http404
-        result = self.edit(unit, rings_on=True)
-        if not result["messages"]:
-            raise Http404
-        return result["messages"][0]
 
     def _lock_structure(self, unit: Unit) -> Unit:
         """Sperrt den Bund der Organisation und dann sie selbst; gibt sie frisch zurück (#95).

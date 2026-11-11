@@ -545,7 +545,8 @@ def create_dialog(parent: Unit, form, action: str) -> dict:
 
 
 def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_switch: bool, ring_key: str = "",
-                rings_on: bool = False, ring_notice: str = "") -> dict:
+                rings_on: bool = False, ring_notice: str = "", shown_name: str | None = None,
+                shown_ring: str | None = None) -> dict:
     """Der Dialog „… bearbeiten“ (#95; Sebastian bei der Vorschau, 11.11.2026): alles an einem Ort.
 
     Das Textfeld „Name“ für jede Leitung, die umbenennen darf; mit `rings` (nur die Bundesleitung,
@@ -553,6 +554,8 @@ def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_s
     einem Stamm ohne Ring zuerst „ohne Ring (bisher)“; mit `rings_switch` (nur die Bundesleitung,
     beim Bund) der Schalter „Hat Ringe“, nach dem Einschalten gesperrt. `ring_key` und `rings_on`
     halten nach einer Ablehnung die Eingabe fest; `ring_notice` steht dann unter der Wahl.
+    Versteckt geht mit, was der Dialog beim ersten Öffnen gezeigt hat (`shown_name`, `shown_ring`,
+    sonst der jetzige Stand), damit nur Geändertes gespeichert wird (OG4).
     """
     dialog = {
         "title": texts.EDIT_TITLE % {"unit": unit_label(unit)},
@@ -563,9 +566,11 @@ def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_s
         "form_id": "f-dialog",
         "form": form,
         "notice": ring_notice,
+        "hidden": [("name_vorher", unit.name if shown_name is None else shown_name)],
     }
     if rings is not None:
         now = unit.parent.key if unit.parent.kind == Kind.RING else ""
+        dialog["hidden"].append(("ring_vorher", now if shown_ring is None else shown_ring))
         options = [] if now else [("", str(texts.NO_RING_YET), [])]
         options += [(ring.key, unit_label(ring), []) for ring in rings]
         dialog["choice"] = _choice("ring", str(texts.RING_LABEL), options, chosen=ring_key or now)
@@ -577,8 +582,11 @@ def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_s
     return dialog
 
 
-def rings_question(bund: Unit, action: str, name: str) -> dict:
-    """Die Rückfrage aus O8, bevor „hat Ringe“ eingeschaltet wird; sie trägt den Namen aus dem Dialog weiter (#95, EH-23)."""
+def rings_question(bund: Unit, action: str, name: str, shown_name: str | None = None) -> dict:
+    """Die Rückfrage aus O8, bevor „hat Ringe“ eingeschaltet wird (#95, EH-23).
+
+    Sie trägt den Namen aus dem Dialog weiter und, was der Dialog beim Öffnen gezeigt hat (OG4).
+    """
     return {
         "title": texts.INTRODUCE_RINGS_QUESTION % {"unit": bund.name},
         "lines": [str(line) for line in texts.INTRODUCE_RINGS_LINES],
@@ -586,7 +594,8 @@ def rings_question(bund: Unit, action: str, name: str) -> dict:
         "confirm_action": action,
         "confirm_label": texts.INTRODUCE_RINGS_BUTTON,
         "confirm_primary": True,
-        "hidden": [("name", name), ("hat_ringe", "an"), ("bestaetigt", "ja")],
+        "hidden": [("name", name), ("name_vorher", bund.name if shown_name is None else shown_name),
+                   ("hat_ringe", "an"), ("bestaetigt", "ja")],
     }
 
 

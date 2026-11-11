@@ -582,19 +582,27 @@ def organisation_edit(request: HttpRequest, unit: str) -> HttpResponse:
     der Dialog nur der Bundesleitung. Wird „hat Ringe“ neu eingeschaltet, kommt vor dem Speichern
     die Rückfrage aus O8. Gespeichert wird alles zusammen oder nichts; danach je Änderung eine kurze
     Meldung (#186). Bei einer Ablehnung bleibt der Dialog mit der Eingabe offen.
+
+    Der Dialog schickt mit, was er beim Öffnen gezeigt hat (`name_vorher`, `ring_vorher`). Was die
+    Person nicht geändert hat, gilt als „bleibt“, auch wenn inzwischen jemand anderes es geändert hat;
+    so dreht ein veralteter Stand keine gleichzeitige Änderung zurück (OG4, unabhängige Prüfung, Befund 1).
     """
     rights = request.rights
     found = rights.entry(Unit.objects.select_related("parent"), unit, allowed=rights.may_rename)
     ring_key = request.POST.get("ring") if request.method == "POST" else None
     rings_on = request.method == "POST" and request.POST.get("hat_ringe") == "an"
+    shown_name = request.POST.get("name_vorher") if request.method == "POST" else None
+    shown_ring = request.POST.get("ring_vorher") if request.method == "POST" else None
     notice = ""
     if request.method == "POST":
         form = UnitNameForm(request.POST)
         if form.is_valid():
             name = form.cleaned_data["name"]
             if rings_on and request.POST.get("bestaetigt") != "ja" and rights.may_introduce_rings(found):
-                return _with_dialog(request, found, rings_question(found, action=request.path, name=name))
-            result = rights.edit(found, name=name, ring_key=ring_key, rings_on=rings_on)
+                return _with_dialog(request, found, rings_question(found, action=request.path, name=name,
+                                                                   shown_name=shown_name))
+            result = rights.edit(found, name=None if name == shown_name else name,
+                                 ring_key=None if ring_key == shown_ring else ring_key, rings_on=rings_on)
             if not result["errors"]:
                 for text in result["messages"]:
                     messages.success(request, text)
@@ -610,7 +618,7 @@ def organisation_edit(request: HttpRequest, unit: str) -> HttpResponse:
     # Den Schalter sieht nur die Bundesleitung des Bundes selbst, eingeschaltet gesperrt (EH-23, EH-24, EH-25).
     switch = found.kind == Unit.Kind.ASSOCIATION and rights.leads_itself(found)
     dialog = edit_dialog(found, form, action=request.path, rings=rings, rings_switch=switch, ring_key=ring_key or "",
-                         rings_on=rings_on, ring_notice=notice)
+                         rings_on=rings_on, ring_notice=notice, shown_name=shown_name, shown_ring=shown_ring)
     return _with_dialog(request, found, dialog)
 
 
