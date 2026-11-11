@@ -471,6 +471,9 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 .a-textfeld-zeile .form-control { flex: 1; min-width: 0; }
 .a-textfeld-hilfe { margin: 6px 0 0; color: var(--text-leise); font-size: .85rem; }
 .a-textfeld.ist-suchfeld { margin: 0; }
+/* Datumsfeld (#117): Wer mit Tab zwischen Tag, Monat und Jahr wechselt, bekommt in Chromium und WebKit kein
+   :focus-visible am Feld; der Fokusrahmen steht deshalb, solange das Feld den Fokus hat. */
+.a-datumsfeld .form-control:focus, .a-datumsfeld .form-control:focus-within { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
 /* Vor- und Nachname nebeneinander im Dialog einer verwalteten Person (#117, Zielbild); schmal untereinander */
 .a-felder-nebeneinander { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); column-gap: 14px; }
 /* Dialog: ein Fenster über der Seite mit Kopf, Inhalt und Fuß. Mit Skript modal (showModal), ohne Skript
