@@ -254,10 +254,9 @@ def test_m4_in_mosaik_sehen_mona_und_kai_lotta_in_der_meute_moewen(org):
         shown = entries(page_tree(user, unit_address(org.moewen)))
         assert shown["Lotta Probe"]["buttons"] == {"Bearbeiten": edit_address(org.moewen, org.lotta)}, user.username
         _found, version = open_edit(user, org.moewen, org.lotta)
-        assert save(user, org.moewen, org.lotta, version, last_name="Probe-Muster").status_code == 302
-
-    org.lotta.refresh_from_db()
-    assert org.lotta.last_name == "Probe-Muster"
+        assert save(user, org.moewen, org.lotta, version, birth_date=f"2017-07-0{version}").status_code == 302
+        org.lotta.refresh_from_db()
+        assert org.lotta.birth_date == date(2017, 7, int(version)), user.username
 
 
 @pytest.mark.rechtematrix("VP-02")
@@ -629,11 +628,12 @@ def test_mg4_das_datumsfeld_ist_das_feld_des_browsers_ohne_tage_in_der_zukunft(o
 
 
 def test_mg5_eine_zweite_lena_mit_gleichem_geburtsdatum_wird_ohne_hinweis_angelegt(org, lena):
-    response = add(org.falken_leitung, org.falken)
+    client = client_for(org.falken_leitung)
+    response = add(org.falken_leitung, org.falken, client=client)
 
     assert response.status_code == 302
     assert ManagedPerson.objects.filter(first_name="Lena", last_name="Probe", birth_date=date(2015, 5, 14)).count() == 2
-    page = client_for(org.falken_leitung).get(response.url)
+    page = client.get(response.url)
     assert short_notices(page) == ["Kiwi (Lena Probe) gehört jetzt zu Sippe Falken."]
 
 
@@ -762,7 +762,10 @@ def test_der_bausteinkatalog_zeigt_das_datumsfeld_und_die_marke_verwaltet(org, s
 
     section = _one(_by_tag(root, "section", aria_labelledby="h-datumsfeld"))
     assert _text(_one(_by_tag(section, "h2"))) == "Datumsfeld"
-    assert _attr(_one(_by_tag(section, "input", type="date")), "max")
+    fields = _by_tag(section, "input", type="date")
+    assert len(fields) == 2
+    assert all(_attr(field, "max") for field in fields)
+    assert "Bitte gib das Geburtsdatum ein." in _visible_text(section)
     marks = _one(_by_tag(root, "section", aria_labelledby="h-kennmarke"))
     assert "verwaltet" in _visible_text(marks)
 
