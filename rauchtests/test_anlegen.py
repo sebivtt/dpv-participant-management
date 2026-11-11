@@ -1,11 +1,11 @@
-"""Rauchtest „… anlegen“, „Umbenennen“, „Ring wechseln“ und „Ringe einführen“ im Browser (#95).
+"""Rauchtest „… anlegen“ und „… bearbeiten“ (Name, Ring, Schalter „Hat Ringe“) im Browser (#95).
 
 Erika meldet sich wirklich bei der Keycloak-Testumgebung an und leitet danach Walhall, wie Wanda in
 den Szenarien; für die Ringe leitet sie den Bund, wie Bruno und Mona. Geprüft wird, was nur ein Browser
-zeigt: Die Knöpfe sind mit der Tastatur erreichbar und stehen am Handy ohne seitlichen Überstand, der
-Dialog ist modal, Enter im Feld „Name“ schickt den Dialog ab, der Name bleibt beim Tippen wie am Handy
-mit Wortvorschlag stehen, die kurze Meldung erscheint, auch ohne Skript, und die Seiten bestehen die
-Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_einheiten_anlegen.py. Alle Namen sind erfunden.
+zeigt: Knopf „… anlegen“, Stift oben rechts im Kopf, Wahl des Rings und Schalter sind mit der Tastatur
+erreichbar und stehen am Handy ohne seitlichen Überstand, der Dialog ist modal, Enter im Feld „Name“
+schickt den Dialog ab, der Name bleibt beim Tippen wie am Handy mit Wortvorschlag stehen, die kurze
+Meldung erscheint, auch ohne Skript, und die Seiten bestehen die Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_einheiten_anlegen.py. Alle Namen sind erfunden.
 """
 
 from django.contrib.auth import get_user_model
@@ -22,6 +22,8 @@ R = Role.Kind
 U = Unit.Kind
 CREATE_BUTTON = '[aria-labelledby="h-darunter"] .a-flaeche-aktion'
 HEAD = ".a-orga-kopf"
+PEN = f"{HEAD} .a-stift"
+SWITCH = 'dialog input[role="switch"]'
 
 
 def _boreas(lead: str) -> dict:
@@ -83,19 +85,26 @@ def test_am_pc_nur_mit_der_tastatur_umbenennen_und_doppelten_namen_sehen(pc):
     login(pc)
     units = _boreas("walhall")
     pc.goto(_page_of(units["falken"]))
+    expect(pc.locator(PEN)).to_have_accessible_name("Sippe Falken bearbeiten")
 
-    button = f'{HEAD} .btn-verschieben[href$="/umbenennen/"]'
-    stations = _stations_to_element(pc, button, steps=40)
+    stations = _stations_to_element(pc, PEN, steps=40)
     _all_visible(stations)
     pc.keyboard.press("Enter")
-    pc.wait_for_url(f"{_page_of(units['falken'])}umbenennen/")
+    pc.wait_for_url(f"{_page_of(units['falken'])}bearbeiten/")
+    dialog = _dialog(pc)
+    expect(dialog.locator("h2")).to_have_text("Sippe Falken bearbeiten")
     field = pc.get_by_label("Name (Pflicht)")
     expect(field).to_have_value("Sippe Falken")
+    expect(field).to_be_focused()
+    # Ring und Schalter hat nur die Bundesleitung, und nur beim Stamm oder beim Bund.
+    expect(dialog.locator('input[type="radio"]')).to_have_count(0)
+    expect(dialog.locator(SWITCH)).to_have_count(0)
     assert run_axe(pc) == []
 
     field.fill("Sippe Habichte")
     stations = _stations_to_element(pc, "dialog .btn-primary", steps=10)
     _all_visible(stations)
+    expect(pc.locator("dialog .btn-primary")).to_have_text("Speichern")
     pc.keyboard.press("Enter")
     pc.wait_for_url(_page_of(units["falken"]))
     expect(pc.locator(".a-kurz")).to_contain_text("Sippe Falken heißt jetzt Sippe Habichte.")
@@ -125,7 +134,8 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_wortvorschlag_anlegen(handy):
     units = _boreas("walhall")
     handy.goto(_page_of(units["walhall"]))
     _no_side_scroll(handy)
-    expect(handy.locator(f"{HEAD} .btn-verschieben")).to_have_text(["Umbenennen: Walhall"])
+    expect(handy.locator(PEN)).to_have_accessible_name("Stamm Walhall bearbeiten")
+    expect(handy.locator(PEN)).to_be_in_viewport()
 
     stations = _stations_to_element(handy, CREATE_BUTTON, steps=60)
     _all_visible(stations)
@@ -154,32 +164,59 @@ def test_am_pc_ringe_einfuehren_und_am_handy_mit_der_tastatur_den_ring_wechseln(
     login(pc)
     units = _boreas("boreas")
     pc.goto(_page_of(units["boreas"]))
-    expect(pc.locator(f"{HEAD} .btn-verschieben")).to_have_text(
-        ["Umbenennen: Pfadfinderbund Boreas", "Ringe einführen: Pfadfinderbund Boreas"])
-    pc.locator(f'{HEAD} .btn-verschieben[href$="/ringe-einfuehren/"]').click()
+    pc.locator(PEN).click()
+    pc.wait_for_url(f"{_page_of(units['boreas'])}bearbeiten/")
+    switch = pc.locator(SWITCH)
+    expect(switch).to_have_accessible_name("Hat Ringe")
+    expect(switch).not_to_be_checked()
+    expect(switch).to_be_enabled()
+    assert run_axe(pc) == []
+    # Mit der Tastatur: Tab bis zum Schalter, Leertaste schaltet ihn ein; der Fokus ist zu sehen.
+    stations = _stations_to_element(pc, SWITCH, steps=10)
+    _all_visible(stations)
+    pc.keyboard.press(" ")
+    expect(switch).to_be_checked()
+    pc.locator("dialog .btn-primary").click()
+
+    # Vor dem Speichern die Rückfrage aus O8; erst sie führt die Ringe ein.
     dialog = _dialog(pc)
+    expect(dialog.locator("h2")).to_have_text("Ringe für Pfadfinderbund Boreas einführen?")
     expect(dialog).to_contain_text("Zurücknehmen lässt sich das vorerst nicht.")
+    assert not Unit.objects.get(pk=units["boreas"].pk).has_rings
     assert run_axe(pc) == []
     dialog.locator(".btn-primary").click()
     pc.wait_for_url(_page_of(units["boreas"]))
     expect(pc.locator(".a-kurz")).to_contain_text("Pfadfinderbund Boreas hat jetzt Ringe.")
     expect(pc.locator(CREATE_BUTTON)).to_have_text("Ring anlegen")
+
+    # Danach steht der Schalter eingeschaltet und gesperrt da (EH-25).
+    pc.goto(f"{_page_of(units['boreas'])}bearbeiten/")
+    expect(pc.locator(SWITCH)).to_be_checked()
+    expect(pc.locator(SWITCH)).to_be_disabled()
+    expect(_dialog(pc)).to_contain_text("Ausschalten lässt sich das vorerst nicht.")
     nord = unit(U.RING, "Nord", units["boreas"])
     unit(U.RING, "Süd", units["boreas"])
 
     login(handy)
     handy.goto(_page_of(units["walhall"]))
     _no_side_scroll(handy)
-    button = f'{HEAD} .btn-verschieben[href$="/ring-wechseln/"]'
-    stations = _stations_to_element(handy, button, steps=40)
+    stations = _stations_to_element(handy, PEN, steps=40)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(f"{_page_of(units['walhall'])}ring-wechseln/")
-    expect(_dialog(handy)).to_be_visible()
+    handy.wait_for_url(f"{_page_of(units['walhall'])}bearbeiten/")
+    dialog = _dialog(handy)
+    expect(dialog).to_be_visible()
     _no_side_scroll(handy)
+    expect(dialog.locator("legend")).to_be_visible()
+    expect(dialog.locator("legend")).to_have_text("Ring")
+    expect(handy.get_by_label("ohne Ring (bisher)")).to_be_checked()
     assert run_axe(handy) == []
-    expect(handy.get_by_label("Ring Nord")).to_be_checked()
 
+    # Mit der Tastatur: Tab bis zur gewählten Möglichkeit, Pfeil nach unten wählt Ring Nord.
+    stations = _stations_to_element(handy, 'dialog input[type="radio"]:checked', steps=10)
+    _all_visible(stations)
+    handy.keyboard.press("ArrowDown")
+    expect(handy.get_by_label("Ring Nord")).to_be_checked()
     stations = _stations_to_element(handy, "dialog .btn-primary", steps=10)
     _all_visible(stations)
     handy.keyboard.press("Enter")
