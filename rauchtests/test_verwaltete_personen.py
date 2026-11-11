@@ -100,12 +100,8 @@ def test_am_pc_fehler_am_feld_und_escape_legt_niemanden_an(pc):
 
     pc.goto(f"{page_address}verwaltete-person/anlegen/")
     pc.get_by_label("Fahrtenname").fill("Kiwi")
+    # Der Browser hält das leere Pflichtfeld nicht selbst an; die Meldung kommt vom Tool (MG1, unabhängige Prüfung, Befund 1).
     pc.get_by_role("button", name="Anlegen").click()
-    first = pc.get_by_label("Vorname")
-    # Der Browser hält ein leeres Pflichtfeld selbst an; ohne diese Sperre prüft der Server (MG1).
-    if first.evaluate("e => e.validity.valueMissing"):
-        first.evaluate("e => e.form.noValidate = true")
-        pc.get_by_role("button", name="Anlegen").click()
     expect(_dialog(pc)).to_contain_text("Bitte gib den Vornamen ein.")
     expect(pc.get_by_label("Vorname")).to_have_attribute("aria-invalid", "true")
     expect(pc.get_by_label("Fahrtenname")).to_have_value("Kiwi")

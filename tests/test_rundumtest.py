@@ -296,11 +296,11 @@ ALLOWED_FILES = {
     "roles/management/commands/admin.py",
     "roles/management/commands/federation_lead.py",
 }
-# Abfragen über einen Verweis auf Rollen oder Konten, auch über mehrere Stufen, z. B.
+# Abfragen über einen Verweis auf Rollen, Konten oder verwaltete Personen (#117), auch über mehrere Stufen, z. B.
 # filter(roles__user=…), order_by("-user__email"), filter(parent__roles__kind=…),
 # prefetch_related("roles"). Ein bloßes "roles" oder "user" zählt nur als Angabe an eine Abfrage;
 # sonst heißen so auch die App und das Konto der Anfrage.
-LOOKUP_THROUGH_PERSONS = re.compile(r"(^-?|__)(roles|user)__\w|__(roles|user)$")
+LOOKUP_THROUGH_PERSONS = re.compile(r"(^-?|__)(roles|user|managed_persons)__\w|__(roles|user|managed_persons)$")
 QUERY_METHODS = {"select_related", "prefetch_related", "values", "values_list", "only", "order_by", "annotate"}
 # Ordner, die nur Tests enthalten; jeder andere Python-Ordner gehört zum Tool und wird durchsucht.
 ONLY_FOR_TESTS = {"tests", "rauchtests", "containertests"}
@@ -321,7 +321,7 @@ def bypasses(source: str) -> list[str]:
             owner = ast.unparse(node.value)
             if node.attr in ("objects", "_default_manager", "_base_manager") and owner in PERSONAL_MODELS:
                 found.append(f"{owner}.{node.attr}")
-            elif node.attr == "roles" or node.attr in ("raw", "cursor"):
+            elif node.attr in ("roles", "managed_persons") or node.attr in ("raw", "cursor"):
                 found.append(f"{owner}.{node.attr}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             if LOOKUP_THROUGH_PERSONS.search(node.value):
@@ -334,7 +334,7 @@ def bypasses(source: str) -> list[str]:
 
 
 def _names_persons(arg: ast.expr) -> bool:
-    return isinstance(arg, ast.Constant) and arg.value in ("roles", "user", "-user")
+    return isinstance(arg, ast.Constant) and arg.value in ("roles", "user", "-user", "managed_persons")
 
 
 def app_folders() -> set[str]:
@@ -403,6 +403,10 @@ def test_ausnahmen_gibt_es_noch():
         "Unit.objects.prefetch_related('roles')",
         "Unit.objects.values('roles')",
         "Unit.objects.filter(roles__user__email='x')",
+        # Verwaltete Personen über ihre Organisation (#117, unabhängige Prüfung, Befund 4).
+        "unit.managed_persons.all()",
+        "Unit.objects.filter(managed_persons__first_name='Lena')",
+        "Unit.objects.prefetch_related('managed_persons')",
     ],
 )
 def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):

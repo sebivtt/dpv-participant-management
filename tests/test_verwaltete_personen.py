@@ -385,7 +385,7 @@ def test_mw2_frida_sieht_lena_nach_dem_benennen_und_kann_sie_bearbeiten(org, len
     assert save(frida, org.falken, lena, version, scout_name="Kiwi Frida").status_code == 302
 
 
-@pytest.mark.rechtematrix("VP-17", "EH-18")
+@pytest.mark.rechtematrix("VP-17", "EH-18", "EH-19")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/anlegen/")
 def test_mw3_das_einspringen_endet_bei_offenem_dialog_und_niemand_wird_angelegt(org):
     wolke = managed("Wolke", "Probe", org.woelfe)
@@ -409,7 +409,7 @@ def test_mw3_das_einspringen_endet_bei_offenem_dialog_und_niemand_wird_angelegt(
 # ---------- Verboten ----------
 
 
-@pytest.mark.rechtematrix("VP-01", "VP-17")
+@pytest.mark.rechtematrix("VP-01", "VP-17", "EH-19")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/anlegen/")
 def test_mv1_ohne_einspringen_legt_niemand_in_einer_organisation_darunter_an(org):
     forbidden = [(org.walhall_leitung, org.falken), (org.bundesleitung, org.walhall), (org.kueste_leitung, org.leuchtturm)]
@@ -435,6 +435,36 @@ def test_mv2_zora_wim_und_ada_sehen_und_bearbeiten_lena_nicht(org, lena):
 
     lena.refresh_from_db()
     assert (lena.first_name, lena.scout_name) == ("Lena", "Kiwi")
+
+
+@pytest.mark.rechtematrix("VP-03")
+@pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/bearbeiten/")
+def test_fiete_bearbeitet_und_legt_auf_der_leseseite_von_walhall_nichts_an(org):
+    """Von unten nach oben: Walhall liegt nur auf Fietes Kette, nicht in seinem Bereich (unabhängige Prüfung, Befund 5)."""
+    assert client_for(org.falken_leitung).get(unit_address(org.walhall)).status_code == 200
+    assert "Paul" not in client_for(org.falken_leitung).get(unit_address(org.walhall)).content.decode()
+    assert_like_missing(org.falken_leitung, edit_address(org.walhall, org.paul))
+    assert_like_missing(org.falken_leitung, add_address(org.walhall))
+    response = client_for(org.falken_leitung).post(edit_address(org.walhall, org.paul),
+                                                    {**LENA, "first_name": "Gekapert", "version": "1"})
+    assert response.status_code == 404
+    org.paul.refresh_from_db()
+    assert org.paul.first_name == "Paul"
+
+
+def test_die_dialoge_pruefen_im_tool_nicht_im_browser(org, lena):
+    """Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (MG1, MG4; unabhängige Prüfung, Befund 1)."""
+    for found in (open_add(org.falken_leitung, org.falken)[0], open_edit(org.falken_leitung, org.falken, lena)[0]):
+        form = _one(_by_tag(found, "form", id="f-dialog"))
+        assert _attr(form, "novalidate") is not None
+
+
+def test_der_dialog_anlegen_kommt_nicht_aus_dem_zwischenspeicher(org):
+    """Nach „Zurück“ im Browser kommt der Dialog neu vom Server, mit neuer Kennung; sonst legte die zweite Person
+    stillschweigend niemanden an (MG7; unabhängige Prüfung, Befund 2)."""
+    response = client_for(org.falken_leitung).get(add_address(org.falken))
+
+    assert "no-store" in response["Cache-Control"]
 
 
 @pytest.mark.rechtematrix("VP-06")
