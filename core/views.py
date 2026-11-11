@@ -10,6 +10,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
 
 from access.addresses import checks_rights, without_personal_data
 from access.keys import is_key, new_key
@@ -40,6 +41,7 @@ from units.organisation import (
     move_dialog,
     federation_done,
     hits,
+    edit_anchor,
     managed_dialog,
     rings_question,
 )
@@ -636,6 +638,7 @@ EDIT_MANAGED_ROWS = ("VP-02", "VP-03", "VP-04", "VP-05", "VP-06")
 
 
 @checks_rights(*ADD_MANAGED_ROWS)
+@never_cache
 def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
     """Dialog „Verwaltete Person anlegen“ zeigen und die Person in dieser Organisation anlegen (VP-01, EH-18).
 
@@ -643,6 +646,8 @@ def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
     eigene Kennung (`creation_key`), damit ein Doppelklick niemanden zweimal anlegt (MG7). Danach geht es
     zurück zur Seite, zum Knopf, mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog mit
     den Eingaben und dem Fehler am Feld offen. Eine Kennung des Dialogs in falscher Form ist „nicht gefunden“.
+    Der Browser speichert den Dialog nicht: Nach „Zurück“ kommt er neu, mit neuer Kennung, sonst legte ein
+    zweites Anlegen daraus stillschweigend niemanden an (unabhängige Prüfung, Befund 2).
     """
     rights = request.rights
     found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_add_managed)
@@ -685,7 +690,7 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
             done, entry, text = rights.edit_managed(found, person, form.cleaned_data, version)
             if done:
                 messages.success(request, text)
-                return redirect(f"{reverse('organisation_unit', args=[found.key])}#bearbeiten-{entry.key}")
+                return redirect(f"{reverse('organisation_unit', args=[found.key])}#{edit_anchor(entry)}")
             form, version, conflict = ManagedPersonForm(initial=_managed_values(entry)), entry.version, text
     elif request.method in READING:
         form, version = ManagedPersonForm(initial=_managed_values(entry)), entry.version

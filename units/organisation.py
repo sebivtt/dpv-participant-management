@@ -19,6 +19,8 @@ from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
 from units.models import Kind, Unit
 
+# Die Kennung des Knopfs „Verwaltete Person anlegen“; dorthin führt sein Dialog zurück (#117).
+ADD_MANAGED_ID = "verwaltete-person-anlegen"
 # Was unter jeder Ebene hängt, für „… hat noch keine …“ (A11); ein Bund mit Ringen bekommt Ringe.
 CHILDREN_WORD = {Kind.TROOP: texts.GROUPS, Kind.RING: texts.TROOPS, Kind.ASSOCIATION: texts.TROOPS}
 
@@ -140,6 +142,7 @@ class Page:
     # Daneben „Verwaltete Person anlegen“, nur wo die Person anlegen darf (VP-01, VP-17, EH-18; #117).
     add_managed_href: str | None = None
     add_managed_label: str = person_texts.ADD_TITLE
+    add_managed_id: str = ADD_MANAGED_ID
     # Der Knopf „… anlegen“ unter „Organisationen darunter“, nur wo die Person anlegen darf (#95).
     create_href: str | None = None
     create_label: str = ""
@@ -358,7 +361,7 @@ class Organisation:
         may = {"expel": self.rights.may_expel(unit), "move": self.rights.may_move(unit)}
         may_add = self.rights.may_add_managed(unit)
         people = [(_user_by_name(user), self._person(user, unit, **may)) for user in self.rights.members(unit)]
-        people += [(_managed_by_name(entry), self._managed(entry, unit)) for entry in self.rights.managed_persons(unit)]
+        people += [(_managed_by_name(entry), self._managed(entry, unit)) for entry in self.rights.managed_in(unit)]
         persons = [lead for _order, lead in sorted(people, key=lambda pair: pair[0])]
         empty = str(person_texts.NOBODY_YET)
         if may_add:
@@ -388,7 +391,7 @@ class Organisation:
             is_self=False,
             managed=True,
             edit_href=reverse("organisation_edit_managed", args=[unit.key, entry.key]),
-            edit_id=f"bearbeiten-{entry.key}",
+            edit_id=edit_anchor(entry),
         )
 
     def _person(self, user, unit: Unit, expel: bool, move: bool) -> Lead:
@@ -579,8 +582,9 @@ def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: 
     }
 
 
-# Die Kennung des Knopfs „Verwaltete Person anlegen“; dorthin führt der Dialog zurück (#117).
-ADD_MANAGED_ID = "verwaltete-person-anlegen"
+def edit_anchor(entry) -> str:
+    """Die Kennung des Knopfs „Bearbeiten“ einer verwalteten Person; dorthin führt ihr Dialog zurück (#117)."""
+    return f"bearbeiten-{entry.key}"
 
 
 def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = (), conflict: str = "") -> dict:
@@ -592,8 +596,7 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
     Fokus wieder. `hidden` sind die versteckten Felder (Kennung des Dialogs oder Stand), `conflict`
     der Satz, wenn inzwischen jemand anderes gespeichert hat (MG6).
     """
-    page = reverse("organisation_unit", args=[unit.key])
-    back = f"{page}#bearbeiten-{entry.key}" if entry else f"{page}#{ADD_MANAGED_ID}"
+    back = f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry) if entry else ADD_MANAGED_ID}"
     return {
         "title": person_texts.EDIT_TITLE % {"person": entry.display_name} if entry else person_texts.ADD_TITLE,
         "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
@@ -602,6 +605,8 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
         "confirm_label": person_texts.SAVE_BUTTON if entry else person_texts.ADD_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
+        # Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (MG1, MG4).
+        "novalidate": True,
         "person_form": form,
         "hidden": list(hidden),
         "conflict": conflict,

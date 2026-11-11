@@ -848,7 +848,7 @@ class Rights:
             return ManagedPerson.objects.none()
         return ManagedPerson.objects.filter(unit_id__in=self.area)
 
-    def managed_persons(self, unit: Unit | None) -> list[ManagedPerson]:
+    def managed_in(self, unit: Unit | None) -> list[ManagedPerson]:
         """Die direkten verwalteten Personen einer Organisation im eigenen Bereich; sonst keine (#117, Frage 1).
 
         Die einer Organisation darunter stehen auf deren Seite. Eine Abfrage, egal wie viele es sind (MG9).

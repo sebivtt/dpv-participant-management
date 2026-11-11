@@ -149,7 +149,7 @@ Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/z
 - **Person in einer Liste:** Eine verwaltete Person hat einen grauen Kreis, in der zweiten Zeile die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Mail und Geburtsdatum stehen nicht in der Liste.
 - **Marke:** neu „verwaltet“, grau wie „nur lesen“, ohne Schloss.
 - **Knopf „Verschieben“:** auch für „Bearbeiten“ bei einer verwalteten Person, ohne Symbol.
-- **Dialog:** Nach dem Dialog bekommt der Knopf, der ihn geöffnet hat, wieder den Fokus; dafür trägt der Knopf eine Kennung, und der Dialog führt zur Seite mit dieser Kennung in der Adresse zurück. Bisher nur bei verwalteten Personen.
+- **Dialog:** Nach dem Dialog bekommt der Knopf, der ihn geöffnet hat, wieder den Fokus; dafür trägt der Knopf eine Kennung, und der Dialog führt zur Seite mit dieser Kennung in der Adresse zurück. Bisher nur bei verwalteten Personen. Dort prüft der Browser die Felder nicht selbst (`novalidate`), damit die Meldungen des Tools am Feld erscheinen statt der Blase des Browsers.
 - **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
 - **Danach** eine kurze Meldung (#186): „Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.“, „Die Angaben zu Kiwi (Lena Probe) sind gespeichert.“ Hat inzwischen jemand anderes gespeichert, steht die Fehlermeldung oben im Dialog, und er zeigt den neuen Stand.
 
