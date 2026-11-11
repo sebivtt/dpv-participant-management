@@ -52,6 +52,7 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
+from persons.models import ManagedPerson
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, leads_off_path, on_path
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
@@ -830,6 +831,28 @@ class Rights:
             cover = self._lead_above(entry["role"].unit_id, without=emptied) if entry["last"] else None
             entry["cover"] = Unit.objects.get(pk=cover) if cover is not None else None
         return found
+
+    # Verwaltete Personen (#117, PER-02)
+
+    def managed_persons(self, unit: Unit | None) -> list[ManagedPerson]:
+        """Gerüst: die direkten verwalteten Personen einer Organisation im eigenen Bereich (VP-02)."""
+        return []
+
+    def may_add_managed(self, unit: Unit | None) -> bool:
+        """Gerüst: Darf die Person in dieser Organisation eine verwaltete Person anlegen (VP-01, VP-17, EH-18)?"""
+        return False
+
+    def managed_person(self, unit: Unit, person_key) -> ManagedPerson:
+        """Gerüst: eine verwaltete Person direkt in `unit` über ihre Kennung; ohne Recht „nicht gefunden“."""
+        raise Http404
+
+    def add_managed(self, unit: Unit, values: dict, creation_key) -> str:
+        """Gerüst: legt eine verwaltete Person in `unit` an; gibt die kurze Meldung zurück (VP-01)."""
+        raise Http404
+
+    def edit_managed(self, unit: Unit, person_key, values: dict, version) -> tuple[bool, ManagedPerson, str]:
+        """Gerüst: speichert die Angaben einer verwalteten Person (VP-02)."""
+        raise Http404
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 

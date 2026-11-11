@@ -622,6 +622,25 @@ def organisation_edit(request: HttpRequest, unit: str) -> HttpResponse:
     return _with_dialog(request, found, dialog)
 
 
+# Verwaltete Personen anlegen und bearbeiten (#117, PER-02). Wie die übrigen Dialoge der Seite hat jeder eine
+# eigene Adresse unter der Seite der Organisation, damit er auch ohne Skript geht. Die Organisation kommt immer
+# aus der Adresse, die Person über ihre Kennung, nie aus dem Formular (MV4).
+ADD_MANAGED_ROWS = ("VP-01", "VP-03", "VP-06", "VP-17", "EH-18")
+EDIT_MANAGED_ROWS = ("VP-02", "VP-03", "VP-04", "VP-05", "VP-06")
+
+
+@checks_rights(*ADD_MANAGED_ROWS)
+def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
+    """Gerüst: Dialog „Verwaltete Person anlegen“ (VP-01)."""
+    raise Http404
+
+
+@checks_rights(*EDIT_MANAGED_ROWS)
+def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Gerüst: Dialog „… bearbeiten“ einer verwalteten Person (VP-02)."""
+    raise Http404
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).

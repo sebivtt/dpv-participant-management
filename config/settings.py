@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "accounts",
     "units",
     "roles",
+    "persons",
 ]
 
 MIDDLEWARE = [

@@ -269,6 +269,7 @@ Jede Tabelle der Datenbank steht hier mit dem Abschnitt, der ihre Rechte regelt.
 | `accounts.User` | Konten: Vorname, Nachname, Benutzername, Mail, Fahrtenname (#111), zufällige Kennung für Adressen | Eigenes Profil; Personen mit Konto |
 | `units.Unit` | Einheiten, zufällige Kennung für Adressen | Einheiten |
 | `roles.Role` | Rollen und Mitgliedschaften, zufällige Kennung für Adressen (#191) | Leitungen und Rollen; Personen mit Konto; Support-Zugang der Admins (Rolle Admin) |
+| `persons.ManagedPerson` | Verwaltete Personen: Vorname, Nachname, Geburtsdatum, Fahrtenname, Organisation, zufällige Kennung für Adressen, Stand der Angaben (MG6) und Kennung des Dialogs, aus dem sie angelegt wurde (MG7) (#117) | Verwaltete Personen |
 | `accounts.AccountSearch` | Wer wann über die genaue Mail oder den Benutzernamen gesucht hat, nur fürs Suchlimit (PK-24, #190); ohne Suchbegriff; ältere als 60 Minuten löscht die nächste Suche, egal von wem | Personen mit Konto |
 | `roles.RoleChange` | Protokoll der Rollenänderungen | Protokolle |
 | `units.UnitChange` | Protokoll der Strukturänderungen | Protokolle |
