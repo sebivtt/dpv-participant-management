@@ -794,7 +794,8 @@ def test_218_der_bausteinkatalog_zeigt_den_kopf_auch_mit_verband_im_pfad(org):
     heads = _all(block, lambda e: "a-orga-kopf" in _classes(e))
 
     paths = [[_text(link) for link in _by_tag(_one(_all(head, lambda e: "a-pfad" in _classes(e))), "a")] for head in heads]
-    assert paths == [["Pfadfinderbund Boreas"], ["DPV", "Pfadfinderbund Boreas"]]
+    # Das dritte Beispiel zeigt seit #92 den Kopf für Admins mit „Support-Zugang starten“.
+    assert paths == [["Pfadfinderbund Boreas"], ["DPV", "Pfadfinderbund Boreas"], ["Pfadfinderbund Boreas"]]
 
 
 # Nachtrag vom 30.10.2026: keine Marke „Deine Rolle: Bundesleitung“ mehr (Szenarien M1, M2,

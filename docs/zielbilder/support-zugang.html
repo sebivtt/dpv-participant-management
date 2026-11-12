@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support-Zugang · grober Entwurf zu #92</title>
+<!--
+  Grober Entwurf zu #92 (Support-Zugang der Admins) vom 11.11.2026, von der KI.
+  Grundlage: Text und Szenarien von #92 (Klärung vom 11.11.2026), Gestaltung aus den Zielbildern zu #93 und #65
+  (Seite einer Organisation, Dialog, Auswahl, kurze Meldung) und docs/gestaltung.md.
+  Nur erfundene Daten. Eine Datei, lädt nichts von fremden Servern.
+  Oben im dunklen Band umschalten. Band und Hinweiskasten gehören nicht zur Seite.
+-->
+<style>
+:root{
+  --dpv:#1a4b7e;--dpv-tief:#12385f;--dpv-hauch:#e9eff6;--akzent:#f0ad2c;
+  --grund:#f4f6f9;--flaeche:#fff;--linie:#dbe2ea;--text:#1b2532;--text-leise:#566375;
+  --ok-text:#245c3d;--ok-grund:#e1f0e6;--warte-text:#74500c;--warte-grund:#fbefd5;
+  --ab-text:#8a2c2c;--ab-grund:#f7e2e2;--zu-text:#3f4a58;--zu-grund:#e6e9ee;
+  --radius:14px;--radius-klein:9px;--leiste:236px;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--text);background:var(--grund);line-height:1.45}
+.a-symbole{display:none}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic-klein{width:16px;height:16px}
+.lilie{width:34px;height:34px;color:var(--dpv);flex:none}
+h1{font-size:1.45rem;margin:0;line-height:1.2}
+h2{font-size:1.06rem;margin:0}
+h3{font-size:.96rem;margin:0}
+a{color:var(--dpv)}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--dpv);outline-offset:2px}
+[hidden]{display:none!important}
+.sr-nur{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Entwurfs-Steuerung (gehört nicht zur Seite) */
+.e-band{background:#1b2532;color:#fff;font-size:.84rem;position:sticky;top:0;z-index:40;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.e-band>summary{padding:9px 16px;cursor:pointer;font-weight:700;color:var(--akzent);list-style:none}
+.e-band>summary::-webkit-details-marker{display:none}
+.e-band>summary::after{content:" ▾";color:#a3b1c2}
+.e-band[open]>summary::after{content:" ▴"}
+.e-band-rumpf{padding:0 16px 10px;display:grid;gap:7px}
+.e-zeile{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.e-zeile .label{color:#a3b1c2;font-weight:600;min-width:86px}
+.e-band button{background:#2e3a4a;color:#fff;border:1px solid transparent;border-radius:20px;padding:4px 12px;cursor:pointer;font-size:.82rem}
+.e-band button:hover{background:#3e4d61}
+.e-band button[aria-pressed="true"]{background:var(--akzent);color:#1b2532;font-weight:700}
+.e-band button:disabled{opacity:.4;cursor:not-allowed}
+.e-notiz{background:#fff8e6;border-left:4px solid var(--akzent);padding:10px 14px;border-radius:var(--radius-klein);font-size:.86rem;color:#4a3a10;margin:0 0 16px}
+.e-notiz summary{cursor:pointer;font-weight:700}
+.e-notiz ul{margin:8px 0 0;padding-left:20px}
+.e-notiz li{margin:3px 0}
+.e-notiz h4{margin:10px 0 2px;font-size:.86rem}
+
+/* App-Rahmen */
+.a-app{display:flex;min-height:calc(100vh - 40px)}
+.a-leiste{width:var(--leiste);background:var(--flaeche);padding:20px 16px;display:flex;flex-direction:column;gap:18px;position:sticky;top:40px;height:calc(100vh - 40px);border-right:1px solid var(--linie);flex:none}
+.a-marke{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--dpv);font-size:1.02rem}
+.a-nav ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.a-navlink{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-klein);color:var(--text);text-decoration:none;font-weight:600}
+.a-navlink:hover{background:var(--grund)}
+.a-navlink[aria-current="page"]{background:var(--dpv-hauch);color:var(--dpv);font-weight:800}
+.a-navlink[aria-current="page"]::after{content:"";margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--akzent)}
+.a-konto{margin-top:auto;display:flex;align-items:center;gap:10px;font-weight:600;padding-top:12px;border-top:1px solid var(--linie);min-width:0}
+.a-kreis{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+.a-inhalt{flex:1;padding:22px 26px;max-width:1380px;width:100%;min-width:0}
+
+/* Bausteine */
+.a-flaeche{background:var(--flaeche);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;border:1px solid var(--linie);min-width:0}
+.a-flaeche-kopf{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.a-flaeche-ic{width:34px;height:34px;border-radius:10px;background:var(--dpv-hauch);color:var(--dpv);display:grid;place-items:center;flex:none}
+.a-rechts{margin-left:auto;display:flex;gap:8px;align-items:center}
+.k{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-klein);padding:7px 14px;font-weight:600;font-size:.9rem;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.k-haupt{background:var(--dpv);color:#fff}
+.k-haupt:hover{background:var(--dpv-tief)}
+.k-zweit{background:var(--dpv-hauch);color:var(--dpv)}
+.k-zweit:hover{background:#dce6f2}
+.k-neutral{background:var(--flaeche);color:var(--text);border-color:var(--linie)}
+.k-neutral:hover{background:var(--grund)}
+.k-leise{background:transparent;color:var(--ab-text);padding:6px 10px}
+.k-leise:hover{background:var(--ab-grund)}
+.k-gefahr{background:var(--ab-text);color:#fff}
+.k-klein{padding:4px 10px;font-size:.82rem}
+.marke{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.m-rolle{background:var(--dpv-hauch);color:var(--dpv)}
+.m-ein{background:var(--warte-grund);color:var(--warte-text)}
+.m-lesen{background:var(--zu-grund);color:var(--zu-text)}
+.m-gesperrt{background:var(--ab-grund);color:var(--ab-text)}
+.m-spaeter{background:#efe7fb;color:#5a3d8a}
+.meldung{display:flex;gap:12px;border-radius:var(--radius-klein);padding:12px 14px;margin:0 0 14px;align-items:flex-start}
+.meldung .ic-kasten{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.75);display:grid;place-items:center;flex:none;font-weight:800}
+.meldung p{margin:0;font-size:.9rem;flex:1;min-width:0}
+.meldung b{display:block;margin-bottom:2px}
+.mel-info{background:var(--dpv-hauch)}
+.mel-info .ic-kasten{color:var(--dpv)}
+.mel-warn{background:var(--warte-grund);color:var(--warte-text)}
+.mel-fehler{background:var(--ab-grund);color:var(--ab-text)}
+.mel-ok{background:var(--ok-grund);color:var(--ok-text)}
+
+.leute{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.person{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-radius:var(--radius-klein);background:var(--grund)}
+.av{width:36px;height:36px;border-radius:50%;background:var(--dpv);color:#fff;display:grid;place-items:center;font-weight:800;flex:none;font-size:.9rem}
+.person.gesperrt .av{background:var(--zu-grund);color:var(--zu-text)}
+.wer{flex:1;min-width:160px}
+.fahrt{font-weight:700}
+.zusatz{color:var(--text-leise);font-size:.86rem}
+.mail{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--dpv);text-decoration:none;padding:4px 8px;border-radius:6px;overflow-wrap:anywhere;min-width:0}
+.mail:hover{background:var(--dpv-hauch)}
+.aktion{margin-left:auto;display:flex;gap:6px}
+
+.kacheln{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.kachel{display:block;width:100%;text-align:left;border-radius:var(--radius-klein);padding:12px 14px;background:var(--flaeche);border:1px solid var(--linie);border-top:3px solid var(--dpv);color:var(--text);cursor:pointer}
+.kachel:hover{border-color:var(--dpv);background:var(--dpv-hauch)}
+.kachel.nur{border-top-color:var(--linie);background:var(--grund);color:var(--text-leise);cursor:default}
+.kachel .klein{font-size:.72rem;color:var(--text-leise);text-transform:uppercase;letter-spacing:.04em;display:block;font-weight:700}
+.kachel .gross{display:block;font-weight:800;font-size:1rem;margin:2px 0 4px}
+.kachel .zeile{font-size:.84rem;color:var(--text-leise);display:block}
+
+.a-pfad{font-size:.84rem;color:var(--text-leise);margin:0 0 6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.a-pfad button{background:none;border:0;padding:0;color:var(--dpv);cursor:pointer;font-size:inherit;font-weight:600}
+.a-pfad button:hover{text-decoration:underline}
+.a-unterzeile{color:var(--text-leise);margin:4px 0 0;font-size:.9rem}
+.seitenkopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.spaeter-tabelle{width:100%;border-collapse:collapse;font-size:.88rem}
+.spaeter-tabelle th{text-align:left;font-size:.74rem;text-transform:uppercase;color:var(--text-leise);padding:6px 8px;border-bottom:2px solid var(--linie)}
+.spaeter-tabelle td{padding:8px;border-bottom:1px solid var(--linie)}
+.flaeche-spaeter{border-style:dashed}
+
+/* VARIANTE 1: Gliederung links, Seite rechts */
+.v1{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:stretch}
+/* Die Seite rechts bestimmt die Höhe; die Gliederung passt sich an und rollt innen (mindestens 360px hoch) */
+.v1-baum{background:var(--flaeche);border-radius:var(--radius);padding:16px;border:1px solid var(--linie);contain:size;min-height:360px;margin-bottom:16px;display:flex;flex-direction:column}
+.v1-baum-rolle{flex:1;min-height:0;overflow:auto;margin:0 -6px;padding:0 6px}
+.v1-baum-kopf{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--linie)}
+.baum,.baum ul{list-style:none;margin:0;padding:0}
+.baum ul{margin-left:12px;padding-left:10px;border-left:2px solid var(--linie)}
+.knoten{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:var(--radius-klein);background:var(--grund);margin:5px 0;width:100%;text-align:left;border:1px solid transparent;color:var(--text)}
+button.knoten{cursor:pointer}
+button.knoten:hover{border-color:var(--dpv)}
+.knoten.verwalten{background:var(--flaeche);border-color:var(--linie)}
+.knoten.einspringen{border-left:4px solid var(--akzent)}
+.knoten.aktiv{background:var(--dpv-hauch);border-color:var(--dpv)}
+.knoten .kopfzeile{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.knoten .art{font-size:.68rem;color:var(--text-leise);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.knoten .name{font-weight:700;font-size:.94rem}
+.knoten.aktiv .name{color:var(--dpv)}
+.knoten .kurz{font-size:.78rem;color:var(--text-leise);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.knoten.nurname{background:transparent;padding:4px 11px;margin:2px 0}
+.knoten.nurname .name{font-weight:600;color:var(--text-leise);font-size:.88rem}
+.weitere summary{cursor:pointer;padding:7px 11px;border-radius:var(--radius-klein);background:var(--grund);color:var(--text-leise);font-size:.82rem;font-weight:600;margin:5px 0}
+.v1-zurueck{display:none}
+
+/* Dialoge */
+.dlg-hg{position:fixed;inset:0;background:rgba(27,37,50,.55);display:none;place-items:center;padding:16px;z-index:100;overflow-y:auto}
+.dlg-hg.offen{display:grid}
+.dlg{background:var(--flaeche);border-radius:var(--radius);max-width:580px;width:100%;box-shadow:0 20px 45px rgba(18,56,95,.22);border:1px solid var(--linie);overflow:hidden}
+.dlg-kopf{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--linie)}
+.dlg-x{background:transparent;border:0;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;cursor:pointer;color:var(--text-leise);flex:none}
+.dlg-x:hover{background:var(--grund)}
+.dlg-inhalt{padding:18px 20px}
+.dlg-inhalt p{margin:0 0 10px}
+.dlg-fuss{padding:12px 20px;background:var(--grund);border-top:1px solid var(--linie);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.feld label{display:block;font-weight:600;margin-bottom:6px;font-size:.9rem}
+.feld .zeile{display:flex;gap:8px}
+.feld input{flex:1;min-width:0;font:inherit;padding:9px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein)}
+.feld input:focus{border-color:var(--dpv);outline:none;box-shadow:0 0 0 3px var(--dpv-hauch)}
+.hilfe{font-size:.82rem;color:var(--text-leise);margin:6px 0 0}
+.treffer{list-style:none;margin:12px 0 0;padding:6px;border:1px solid var(--linie);border-radius:var(--radius-klein)}
+.treffer-titel{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-leise);padding:4px 8px;font-weight:700}
+.treffer li.t{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:8px}
+.treffer li.t:hover{background:var(--dpv-hauch)}
+.treffer .k{margin-left:auto}
+.probe{margin-top:16px;padding-top:12px;border-top:1px dashed var(--linie);font-size:.82rem;color:var(--text-leise)}
+.probe code{background:var(--grund);padding:1px 5px;border-radius:5px;cursor:pointer}
+
+@media (max-width:991px){
+  .a-app{display:block}
+  .a-leiste{width:auto;height:auto;position:static;flex-direction:row;align-items:center;padding:8px 12px;border-right:0;border-bottom:1px solid var(--linie);gap:8px}
+  .a-marke span{display:none}
+  .a-nav ul{display:flex;gap:4px}
+  .a-navlink{padding:6px 8px;font-size:.86rem;gap:6px}
+  .a-konto{margin:0 0 0 auto;padding-top:0;border-top:0}
+  .a-konto span:not(.a-kreis){display:none}
+  .a-inhalt{padding:14px 12px}
+  .a-flaeche{padding:16px}
+  .e-band{position:static}
+  .v1{display:block}
+  .v1-baum{contain:none;min-height:0}
+  .v1-baum-rolle{overflow:visible}
+  .v1:not(.zeigt-seite) .v1-seite{display:none}
+  .v1.zeigt-seite .v1-baum{display:none}
+  .v1-zurueck{display:inline-flex;margin-bottom:12px}
+}
+/* Ergänzungen für den Entwurf zu #65 */
+.zahl{font-size:.8rem;color:var(--text-leise);font-weight:600}
+.k-rot{background:var(--ab-grund);color:var(--ab-text)}
+.k-rot:hover{background:#f0d2d2}
+.wahl{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.wahl label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--linie);border-radius:var(--radius-klein);cursor:pointer;background:var(--flaeche)}
+.wahl label:hover{border-color:var(--dpv)}
+.wahl input{margin-top:3px}
+.wahl input:checked + span{font-weight:700;color:var(--dpv)}
+.vorschau{background:var(--grund);border-radius:var(--radius-klein);padding:12px 14px;margin:4px 0 0}
+.vorschau p{margin:0 0 6px}
+.vorschau p:last-child{margin:0}
+.vorschau .frage{font-weight:700}
+.fehler-stelle{color:var(--ab-text);font-size:.88rem;margin:8px 0 0;display:flex;gap:8px;align-items:flex-start}
+.kurz-stapel{position:fixed;left:calc(var(--leiste) + (100vw - var(--leiste))/2);transform:translateX(-50%);bottom:18px;width:min(560px,calc(100vw - var(--leiste) - 32px));display:grid;gap:8px;z-index:90}
+.kurz{display:flex;gap:12px;align-items:flex-start;border-radius:var(--radius-klein);padding:12px 14px;background:var(--ok-grund);color:var(--ok-text);box-shadow:0 10px 28px rgba(18,56,95,.28)}
+.kurz p{margin:0;flex:1}
+@media (max-width:991px){ .kurz-stapel{left:12px;right:12px;transform:none;width:auto} }
+/* Ergänzungen für den Entwurf zu #92 */
+.sz-balken{position:sticky;top:40px;z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--dpv-tief);color:#fff;border-radius:var(--radius-klein);padding:10px 14px;margin:0 0 16px;box-shadow:0 6px 16px rgba(18,56,95,.25)}
+.sz-balken .sz-ic{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.14);display:grid;place-items:center;flex:none}
+.sz-balken p{margin:0;flex:1;min-width:180px;font-weight:600}
+.sz-balken p span{font-weight:400;opacity:.9}
+.sz-balken .k{background:#fff;color:var(--dpv-tief)}
+.sz-balken .k:hover{background:var(--dpv-hauch)}
+.wahl-fehler{border-color:var(--ab-text)!important}
+.kurz.k-info{background:var(--dpv-hauch);color:var(--text)}
+@media (max-width:991px){ .sz-balken{position:static} }
+</style>
+</head>
+<body>
+<svg class="a-symbole" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4 0 4 1.6 4.5 4.5"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-schliessen" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-haken" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></symbol>
+  <symbol id="i-schloss" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-links" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-schild" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.3 7.5 9.5 4.4-1.2 7.5-4.9 7.5-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+</svg>
+
+<details class="e-band" open>
+  <summary>Grober Entwurf #92 · Steuerung (gehört nicht zur Seite)</summary>
+  <div class="e-band-rumpf">
+    <div class="e-zeile"><span class="label">Zustand</span>
+      <button type="button" data-zustand="ohne" aria-pressed="true">Max ohne Support-Zugang (S1)</button>
+      <button type="button" data-zustand="im" aria-pressed="false">Im Support-Zugang für Walhall (S2, S3)</button>
+      <button type="button" data-zustand="ablauf" aria-pressed="false">Nach Ablauf (SA1)</button>
+      <button type="button" data-zustand="ablauf-formular" aria-pressed="false">Nach Ablauf mit Formular (SA2)</button>
+    </div>
+    <div class="e-zeile"><span class="label">Seite</span>
+      <button type="button" data-seite="walhall" aria-pressed="true">Stamm Walhall</button>
+      <button type="button" data-seite="falken" aria-pressed="false">Sippe Falken</button>
+      <button type="button" data-seite="zugvoegel" aria-pressed="false">Stamm Zugvögel</button>
+    </div>
+  </div>
+</details>
+
+<div class="a-app">
+  <aside class="a-leiste">
+    <div class="a-marke"><svg class="lilie" viewBox="0 0 283.46 283.46" fill="currentColor" aria-hidden="true" focusable="false"><path d="M141.73,21.53h-.00c-66.27,0-120.19,53.92-120.19,120.19,0,66.27,53.92,120.19,120.19,120.19h.00c66.27,0,120.19-53.91,120.19-120.19,0-66.27-53.92-120.19-120.19-120.19Zm0,232.81h-.00c-62.09,0-112.61-50.52-112.61-112.61,0-62.09,50.51-112.61,112.61-112.61h.00c62.09,0,112.61,50.52,112.61,112.61,0,62.09-50.51,112.61-112.61,112.61Z"/><path d="M155.61,190.46l-9.06,.03c-2.62,10.00-3.43,20.39-4.81,30.61-1.37-10.21-2.18-20.60-4.81-30.61l-9.06-.03c-2.32,9.61-6.11,18.33-11.29,26.71-.44,.71-.90,1.45-.51,2.30,1.51,3.31,19.84,24.08,25.29,26.91,.12,.06,.25,.09,.40,.11,.14-.02,.28-.05,.40-.11,5.44-2.83,23.78-23.60,25.29-26.91,.38-.84-.07-1.59-.51-2.30-5.17-8.37-8.97-17.09-11.29-26.71Z"/><path d="M242.38,128.52c-8.97-33.53-51.14-31.04-67.80-4.92-8.89,13.93-12.39,29.08-15.36,45.14,4.56,.61,9.00,1.82,13.48,2.84,3.49-5.92,5.98-12.74,11.33-17.33,8.29-7.10,22.97-4.39,25.72,6.94,.96,3.98,.62,8.09,.39,12.13,7.45-.66,15.51-3.35,21.31-8.20,10.24-8.57,14.32-23.89,10.92-36.60Z"/><path d="M172.96,187.85c-4.50,.62-8.95,1.56-13.42,2.36,1.23,10.70,6.87,27.99,19.30,29.97,7.27,1.15,12.91-.59,16.85-7.10,1.95-3.22,1.96-6.53,2.41-10.15-15.26,4.50-20.02-1.50-25.15-15.07Z"/><path d="M128.29,168.94c3.48-.13,6.96-.36,10.45-.45-.08-12.40,.80-25.09,1.29-37.50,.74-18.86,.57-37.80,.57-56.67,0-1.86,.13-3.75,1.11-5.35,.98,1.59,1.11,3.49,1.11,5.35,0,18.87-.16,37.81,.57,56.67,.49,12.41,1.37,25.10,1.29,37.50,3.48,.09,6.96,.32,10.45,.45,1.39-9.73,3.13-19.14,6.36-28.46,8.44-24.34,24.06-46.15,9.07-72.06-6.81-11.78-19.25-21.52-28.88-31.13-9.63,9.60-22.06,19.34-28.88,31.13-14.98,25.90,.63,47.72,9.07,72.06,3.23,9.31,4.97,18.72,6.36,28.46Z"/><path d="M99.43,154.25c5.35,4.58,7.84,11.41,11.33,17.33,4.48-1.01,8.92-2.22,13.48-2.84-2.97-16.06-6.47-31.20-15.36-45.14-16.65-26.11-58.83-28.60-67.80,4.92-3.40,12.71,.68,28.02,10.92,36.60,5.80,4.85,13.86,7.54,21.31,8.20-.23-4.04-.57-8.15,.39-12.13,2.74-11.34,17.42-14.04,25.72-6.94Z"/><path d="M110.49,187.85c-5.13,13.57-9.88,19.57-25.15,15.07,.44,3.61,.46,6.92,2.41,10.15,3.94,6.51,9.58,8.26,16.85,7.10,12.43-1.98,18.06-19.26,19.30-29.97-4.46-.80-8.92-1.74-13.42-2.36Z"/><path d="M141.73,170.10c-15.85,.20-43.93,2.04-39.60,11.01,2.17,4.49,13.09,5.75,17.48,6.28,5.54,.67,13.61,1.30,22.12,1.43,8.50-.12,16.58-.75,22.12-1.43,4.38-.53,15.30-1.79,17.48-6.28,4.33-8.96-23.74-10.81-39.60-11.01Zm0,13.07c-15.24,0-27.61-1.68-27.61-3.77,0-2.08,12.36-3.77,27.61-3.77,15.24,0,27.61,1.68,27.61,3.77,0,2.08-12.36,3.77-27.61,3.77Z"/></svg><span>DPV Anmeldetool</span></div>
+    <nav class="a-nav" aria-label="Hauptnavigation">
+      <ul>
+        <li><a class="a-navlink" href="#" onclick="return false"><svg class="ic"><use href="#i-home"/></svg><span>Startseite</span></a></li>
+        <li><a class="a-navlink" href="#" onclick="return false" aria-current="page"><svg class="ic"><use href="#i-organisation"/></svg><span>Organisation</span></a></li>
+      </ul>
+    </nav>
+    <div class="a-konto"><span class="a-kreis">M</span><span>Max</span></div>
+  </aside>
+
+  <main class="a-inhalt">
+    <details class="e-notiz">
+      <summary>Was in diesem Entwurf gilt (aufklappen)</summary>
+      <h4>Grundlage</h4>
+      <ul>
+        <li>Text und Szenarien von #92 nach der Klärung vom 11.11.2026 (S1 bis S8, SA1 bis SA3, SV1 bis SV8, SG1 bis SG6). Nur erfundene Personen; Max ist Admin ohne andere Rolle.</li>
+        <li>Seite einer Organisation, Dialog, Auswahl und kurze Meldung wie in den Zielbildern zu #93 und #65 und im Bausteinkatalog.</li>
+      </ul>
+      <h4>Ohne Support-Zugang (Frage 2)</h4>
+      <ul>
+        <li>Max sieht links die ganze Gliederung, nur mit Namen. Auf der Seite einer Organisation steht nur der Kopf mit dem Namen und oben rechts neben dem Titel „Support-Zugang starten“, keine Leitungen und keine Personen.</li>
+        <li>Der Knopf öffnet den Dialog mit dem Anlass; keine Möglichkeit ist vorgewählt, freien Text gibt es nicht (Frage 4).</li>
+      </ul>
+      <h4>Im Support-Zugang</h4>
+      <ul>
+        <li>Auf jeder Seite der Balken mit der Endzeit und „beenden“ (Frage 3). Neu ist nur der Balken; er soll auffallen, darf aber nicht Sonnengelb sein (das ist das Band der Testumgebung) und keine der vier Meldungsarten nachahmen. Hier dunkelblau als Vorschlag.</li>
+        <li>Walhall und alles darunter sieht Max wie die Stammesleitung (S3). Andere Organisationen, etwa die Zugvögel, zeigen weiter nur den Kopf mit dem Knopf; ein Start dort beendet den laufenden Zugang (S7).</li>
+        <li>Die Personen und Leitungen sind hier nur angedeutet; sie kommen mit ihren Issues (#189, #65, #117) und sehen aus wie dort.</li>
+      </ul>
+      <h4>Nach Ablauf (SA1, SA2)</h4>
+      <ul>
+        <li>Vorschlag: als feste Meldung oben auf der nächsten Seite, ohne weiteres Formular als Informationsmeldung, nach einem abgeschickten Formular als Warnmeldung, weil Max es neu starten und wiederholen muss.</li>
+      </ul>
+      <h4>Nicht in diesem Entwurf</h4>
+      <ul>
+        <li>Das Protokoll hat keine Seite (W4); was hineinkommt, steht in den Szenarien.</li>
+        <li>Die Ansicht am Handy folgt den vorhandenen Seiten; der Balken bricht dort um.</li>
+      </ul>
+    </details>
+    <div id="balken"></div>
+    <div id="meldung-oben"></div>
+    <div class="v1" id="v1">
+      <aside class="v1-baum" aria-label="Gliederung">
+        <div class="v1-baum-kopf"><h2>Gliederung</h2><span class="zusatz">alle Bünde</span></div>
+        <div class="v1-baum-rolle">
+          <ul class="baum">
+            <li><button type="button" class="knoten" data-zu-seite=""><span class="art">Bund</span><span class="name">Pfadfinderbund Boreas</span></button>
+              <ul>
+                <li><button type="button" class="knoten" data-zu-seite="walhall" id="kn-walhall"><span class="art">Stamm</span><span class="name">Walhall</span></button>
+                  <ul>
+                    <li><button type="button" class="knoten" data-zu-seite="falken" id="kn-falken"><span class="art">Gruppe</span><span class="name">Sippe Falken</span></button></li>
+                    <li><button type="button" class="knoten" data-zu-seite=""><span class="art">Gruppe</span><span class="name">Meute Wölfe</span></button></li>
+                  </ul>
+                </li>
+                <li><button type="button" class="knoten" data-zu-seite="zugvoegel" id="kn-zugvoegel"><span class="art">Stamm</span><span class="name">Zugvögel</span></button>
+                  <ul><li><button type="button" class="knoten" data-zu-seite=""><span class="art">Gruppe</span><span class="name">Sippe Adler</span></button></li></ul>
+                </li>
+              </ul>
+            </li>
+            <li><button type="button" class="knoten" data-zu-seite=""><span class="art">Bund</span><span class="name">Mosaik</span></button>
+              <ul>
+                <li><button type="button" class="knoten" data-zu-seite=""><span class="art">Ring</span><span class="name">Küste</span></button>
+                  <ul><li><button type="button" class="knoten" data-zu-seite=""><span class="art">Stamm</span><span class="name">Leuchtturm</span></button>
+                    <ul><li><button type="button" class="knoten" data-zu-seite=""><span class="art">Gruppe</span><span class="name">Meute Möwen</span></button></li></ul>
+                  </li></ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </aside>
+      <section class="v1-seite" id="seite"></section>
+    </div>
+  </main>
+</div>
+<div class="kurz-stapel" id="kurz-stapel" aria-live="polite"></div>
+
+<!-- Dialog: Support-Zugang starten -->
+<div class="dlg-hg" id="dlg-sz" role="dialog" aria-modal="true" aria-labelledby="sz-titel">
+  <div class="dlg" style="max-width:540px">
+    <div class="dlg-kopf">
+      <h2 id="sz-titel">Support-Zugang starten</h2>
+      <button type="button" class="dlg-x" data-zu="dlg-sz" aria-label="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></button>
+    </div>
+    <div class="dlg-inhalt">
+      <p id="sz-text"></p>
+      <fieldset style="border:0;margin:0;padding:0">
+        <legend style="font-weight:600;font-size:.9rem;margin-bottom:8px">Anlass</legend>
+        <ul class="wahl" id="sz-wahl">
+          <li><label><input type="radio" name="anlass" value="Anfrage einer Leitung"><span>Anfrage einer Leitung</span></label></li>
+          <li><label><input type="radio" name="anlass" value="Fehlersuche"><span>Fehlersuche</span></label></li>
+          <li><label><input type="radio" name="anlass" value="Anfrage einer betroffenen Person (Auskunft, Berichtigung)"><span>Anfrage einer betroffenen Person (Auskunft, Berichtigung)</span></label></li>
+          <li><label><input type="radio" name="anlass" value="Sonstiges"><span>Sonstiges</span></label></li>
+        </ul>
+      </fieldset>
+      <div id="sz-fehler"></div>
+    </div>
+    <div class="dlg-fuss">
+      <button type="button" class="k k-neutral" data-zu="dlg-sz">Abbrechen</button>
+      <button type="button" class="k k-haupt" id="sz-ok">Support-Zugang starten</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var NAMEN = {walhall:"Stamm Walhall", falken:"Sippe Falken", zugvoegel:"Stamm Zugvögel"};
+  var KOPF = {
+    walhall:{name:"Walhall", art:"Stamm in Pfadfinderbund Boreas", pfad:"Pfadfinderbund Boreas"},
+    falken:{name:"Sippe Falken", art:"Gruppe in Walhall", pfad:"Pfadfinderbund Boreas › Walhall"},
+    zugvoegel:{name:"Zugvögel", art:"Stamm in Pfadfinderbund Boreas", pfad:"Pfadfinderbund Boreas"}
+  };
+  var zustand = "ohne", seite = "walhall", zugang = null; // zugang: Schlüssel der Organisation im Support-Zugang
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function imZugang(s){ return zugang === s || (zugang === "walhall" && s === "falken"); }
+
+  function kopf(s, mitKnopf){
+    var d = KOPF[s];
+    var knopf = mitKnopf ? '<button type="button" class="k k-zweit" id="sz-start"><svg class="ic ic-klein"><use href="#i-schild"/></svg>Support-Zugang starten</button>' : '';
+    return '<div class="a-flaeche"><p class="a-pfad"><span>Organisation</span> › '+esc(d.pfad)+'</p>'+
+      '<div class="seitenkopf"><div><h1>'+esc(d.name)+'</h1><p class="a-unterzeile">'+esc(d.art)+'</p></div><div>'+knopf+'</div></div></div>';
+  }
+
+  function inhaltImZugang(s){
+    var h = '';
+    if (s === "walhall") {
+      h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-person"/></svg></span><h2>Leitungen</h2><span class="marke m-spaeter">wie #189 bis #191</span></div>'+
+        '<ul class="leute"><li class="person"><span class="av">W</span><span class="wer"><span class="fahrt">Wanda Muster</span><br><span class="zusatz">Stammesleitung</span></span></li>'+
+        '<li class="person"><span class="av">W</span><span class="wer"><span class="fahrt">Willi Muster</span><br><span class="zusatz">Stammesleitung</span></span></li></ul></div>';
+      h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-personen"/></svg></span><h2>Personen</h2><span class="zahl">2 Personen</span><span class="marke m-spaeter">wie #65 und #117</span></div>'+
+        '<ul class="leute"><li class="person"><span class="av">P</span><span class="wer"><span class="fahrt">Paul Probe</span> <span class="marke m-lesen">verwaltet</span></span></li>'+
+        '<li class="person"><span class="av">W</span><span class="wer"><span class="fahrt">Wilma Muster</span><br><span class="zusatz">wilma.muster@example.org</span></span></li></ul></div>';
+      h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-organisation"/></svg></span><h2>Organisationen darunter</h2><span class="marke m-spaeter">wie #189</span></div><p class="zusatz" style="margin:0">Sippe Falken, Meute Wölfe</p></div>';
+    } else if (s === "zugvoegel") {
+      h += '<div class="a-flaeche flaeche-spaeter"><p class="zusatz" style="margin:0">Leitungen, Personen und Organisationen darunter wie auf der Seite von Walhall (im Entwurf nur angedeutet).</p></div>';
+    } else {
+      h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-person"/></svg></span><h2>Leitungen</h2><span class="marke m-spaeter">wie #189 bis #191</span></div>'+
+        '<ul class="leute"><li class="person"><span class="av">F</span><span class="wer"><span class="fahrt">Fiete Muster</span><br><span class="zusatz">Gruppenleitung</span></span></li></ul></div>';
+      h += '<div class="a-flaeche flaeche-spaeter"><div class="a-flaeche-kopf"><span class="a-flaeche-ic"><svg class="ic"><use href="#i-personen"/></svg></span><h2>Personen</h2><span class="zahl">2 Personen</span><span class="marke m-spaeter">wie #65 und #117</span></div>'+
+        '<ul class="leute"><li class="person"><span class="av">K</span><span class="wer"><span class="fahrt">Kiwi</span> <span class="zusatz">(Lena Probe)</span> <span class="marke m-lesen">verwaltet</span></span></li>'+
+        '<li class="person"><span class="av">F</span><span class="wer"><span class="fahrt">Finn Muster</span><br><span class="zusatz">finn.muster@example.org</span></span></li></ul></div>';
+    }
+    return h;
+  }
+
+  function zeichne(){
+    // Balken
+    document.getElementById("balken").innerHTML = zugang ?
+      '<div class="sz-balken" role="region" aria-label="Support-Zugang"><span class="sz-ic"><svg class="ic"><use href="#i-schild"/></svg></span>'+
+      '<p>Support-Zugang für '+esc(NAMEN[zugang])+' aktiv <span>bis 14:35</span></p>'+
+      '<button type="button" class="k k-klein" id="sz-ende">beenden</button></div>' : '';
+    // feste Meldung nach Ablauf
+    var m = "";
+    if (zustand === "ablauf") m = '<div class="meldung mel-info"><span class="ic-kasten"><svg class="ic ic-klein"><use href="#i-info"/></svg></span><p>Dein Support-Zugang für Stamm Walhall ist nach 60 Minuten abgelaufen.</p></div>';
+    if (zustand === "ablauf-formular") m = '<div class="meldung mel-warn"><span class="ic-kasten"><svg class="ic ic-klein"><use href="#i-warn"/></svg></span><p><b>Dein Support-Zugang für Stamm Walhall ist nach 60 Minuten abgelaufen.</b>Was du gerade abgeschickt hast, ist nicht gespeichert.</p></div>';
+    document.getElementById("meldung-oben").innerHTML = m;
+    // Seite
+    var h = imZugang(seite) ? kopf(seite, false) + inhaltImZugang(seite) : kopf(seite, true);
+    document.getElementById("seite").innerHTML = h;
+    ["walhall","falken","zugvoegel"].forEach(function(s){ document.getElementById("kn-"+s).classList.toggle("aktiv", s === seite); });
+    document.querySelectorAll("[data-zustand]").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.zustand === zustand ? "true" : "false"); });
+    document.querySelectorAll("[data-seite]").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.seite === seite ? "true" : "false"); });
+    var start = document.getElementById("sz-start"); if (start) start.onclick = oeffneDialog;
+    var ende = document.getElementById("sz-ende"); if (ende) ende.onclick = function(){ var n = NAMEN[zugang]; zugang = null; zustand = "ohne"; zeichne(); kurz("Support-Zugang für "+n+" beendet."); };
+  }
+
+  function kurz(text){
+    var st = document.getElementById("kurz-stapel");
+    st.innerHTML = '<div class="kurz"><svg class="ic"><use href="#i-haken"/></svg><p>'+esc(text)+'</p></div>';
+    setTimeout(function(){ st.innerHTML = ""; }, 5000);
+  }
+
+  var letzterFokus = null;
+  function oeffneDialog(){
+    letzterFokus = document.activeElement;
+    var n = NAMEN[seite];
+    document.getElementById("sz-titel").textContent = "Support-Zugang für "+n+" starten";
+    document.getElementById("sz-text").textContent = "Du siehst und änderst danach höchstens 60 Minuten lang, was die Leitung von "+n+" darf. Jeder Schritt kommt ins Protokoll.";
+    document.querySelectorAll('#sz-wahl input').forEach(function(i){ i.checked = false; });
+    document.getElementById("sz-fehler").innerHTML = "";
+    document.getElementById("sz-wahl").classList.remove("wahl-fehler");
+    document.getElementById("dlg-sz").classList.add("offen");
+    document.querySelector('#sz-wahl input').focus();
+  }
+  function schliesse(){ document.getElementById("dlg-sz").classList.remove("offen"); if (letzterFokus) letzterFokus.focus(); }
+  document.querySelectorAll('[data-zu="dlg-sz"]').forEach(function(b){ b.onclick = schliesse; });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") schliesse(); });
+  document.getElementById("sz-ok").onclick = function(){
+    if (!document.querySelector('#sz-wahl input:checked')) {
+      document.getElementById("sz-fehler").innerHTML = '<p class="fehler-stelle" id="sz-fehler-text"><svg class="ic ic-klein"><use href="#i-schliessen"/></svg>Bitte wähle einen Anlass.</p>';
+      return;
+    }
+    schliesse();
+    var vorher = zugang;
+    zugang = seite; zustand = "im"; zeichne();
+    if (vorher && vorher !== seite) kurz("Support-Zugang für "+NAMEN[vorher]+" beendet. Support-Zugang für "+NAMEN[seite]+" gestartet.");
+    else kurz("Support-Zugang für "+NAMEN[seite]+" gestartet.");
+  };
+
+  document.querySelectorAll("[data-zustand]").forEach(function(b){ b.onclick = function(){
+    zustand = b.dataset.zustand; zugang = zustand === "im" ? "walhall" : null; zeichne(); }; });
+  document.querySelectorAll("[data-seite]").forEach(function(b){ b.onclick = function(){ seite = b.dataset.seite; zeichne(); }; });
+  document.querySelectorAll("[data-zu-seite]").forEach(function(b){ b.onclick = function(){ if (b.dataset.zuSeite) { seite = b.dataset.zuSeite; zeichne(); } }; });
+  zeichne();
+})();
+</script>
+</body>
+</html>

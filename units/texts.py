@@ -293,3 +293,12 @@ INTRODUCE_RINGS_LINES = (
     gettext_lazy("Zurücknehmen lässt sich das vorerst nicht."),
 )
 RINGS_INTRODUCED = gettext_lazy("%(unit)s hat jetzt Ringe.")
+
+# Notfall-Löschen per Befehl auf dem Server (#92, Entscheidung W5)
+EMERGENCY_UNKNOWN = gettext_lazy("Keine Organisation mit dieser Kennung. Die Kennung steht in der Adresse ihrer Seite.")
+EMERGENCY_FEDERATION = gettext_lazy("Den Verband löscht dieser Befehl nicht.")
+EMERGENCY_NOT_EMPTY = gettext_lazy(
+    "„%(unit)s“ ist nicht leer: Darunter hängen Organisationen, oder dort gibt es Rollen oder Personen. "
+    "Gelöscht wird nur eine leere Organisation."
+)
+EMERGENCY_DELETED = gettext_lazy("„%(unit)s“ ist gelöscht. Der Eintrag steht im Protokoll der Admin-Zugriffe.")

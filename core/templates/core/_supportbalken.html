@@ -1,0 +1,6 @@
+{% load i18n layout %}{# Balken „Support-Zugang aktiv“ (#92, Nachklärung N1, Zielbild docs/zielbilder/support-zugang.html): auf jeder Seite, solange ein Admin im Support-Zugang ist. Dunkelblau mit weißer Schrift, Schild-Symbol, der Organisation und der Endzeit statt Restminuten (Frage 3), rechts der weiße Knopf „beenden“, der ein Formular abschickt, also auch ohne Skript geht. Am PC bleibt er beim Scrollen oben im Inhalt stehen, am Handy steht er oben auf der Seite und bricht um (app.css). Er läuft nicht über die ganze Breite, ist weder Sonnengelb (Band der Testumgebung) noch eine der vier Meldungsarten. bar: label (etwa „Stamm Walhall“), until („14:35“), end_action; mit preview=True schickt der Knopf im Bausteinkatalog nichts ab. #}
+<div class="a-supportbalken" role="region" aria-label="{% translate "Support-Zugang" %}">
+  <span class="a-supportbalken-ic">{% icon "schild" %}</span>
+  <p>{% blocktranslate with unit=bar.label %}Support-Zugang für {{ unit }} aktiv{% endblocktranslate %}<span class="a-supportbalken-zeit"> {% blocktranslate with until=bar.until %}bis {{ until }}{% endblocktranslate %}</span></p>
+  <form method="post" action="{{ bar.end_action }}"{% if preview %} data-nur-ansicht{% endif %}>{% csrf_token %}<button type="submit" class="btn btn-sm a-supportbalken-knopf">{% translate "beenden" %}</button></form>
+</div>

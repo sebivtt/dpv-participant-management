@@ -7,9 +7,11 @@
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-orga{% if not start %} zeigt-seite{% endif %}">
     {% include "core/_gliederung.html" %}
-    <div class="a-orga-seite{% if start %} a-orga-start{% endif %}">
+    {% if page %}<div class="a-orga-seite{% if start %} a-orga-start{% endif %}">
       {% if not start %}<a class="btn btn-zart a-orga-zurueck" href="{% url "organisation" %}"><span aria-hidden="true">‹</span> {{ page.back_label }}</a>{% endif %}
       {% if start %}{% include "core/_orgakopf.html" with heading=2 %}{% else %}{% include "core/_orgakopf.html" %}{% endif %}
+      {# Ein Admin ohne Support-Zugang sieht nur den Kopf mit „Support-Zugang starten“ (#92, S1). #}
+      {% if not page.head_only %}
       <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-leitungen">
         {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 action_href=page.appoint_href action_label=page.appoint_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" action_href=page.appoint_href action_label=page.appoint_label %}{% endif %}
         {% if page.notice %}{% meldung "info" text=page.notice %}{% endif %}
@@ -34,7 +36,8 @@
           {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
         </section>
       {% endif %}
-    </div>
+      {% endif %}
+    </div>{% endif %}
   </div>
   {% if dialog %}
     {# Dialog „… benennen“ (#190) oder „Person mit Konto aufnehmen“ (#285): eigene Adresse, kommt offen vom Server. Beim Benennen holt das Skript beim Tippen die Vorschläge in die Trefferliste, beim Aufnehmen gibt es keine (#65 N3); „Suchen“ und Enter schicken das Formular ab. #}

@@ -273,7 +273,7 @@ In der Testumgebung im Container (zuerst Schritt T2) steht statt `uv run --env-f
 
 ## Admins ernennen und entfernen
 
-Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung. Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt. Beide Befehle schreiben einen Eintrag ins Protokoll der Rollenänderungen, mit „Befehl auf dem Server“ als Urheber (#91).
+Admin wird man bis ADM-01 (P6) nur per Befehl auf dem Server, nie über das Tool, über Keycloak oder als erstes angemeldetes Konto (#89). Die Rolle Admin gibt keine Rechte einer Leitung; Personendaten sieht ein Admin nur im Support-Zugang, den er auf der Seite einer Organisation startet und der ins Protokoll der Admin-Zugriffe kommt (#92). Gebraucht wird der Benutzername aus Keycloak eines Kontos, das sich schon einmal im Tool angemeldet hat. Den letzten Admin zu entfernen geht, weil sich mit Zugang zum Server jederzeit ein neuer ernennen lässt. Beide Befehle schreiben einen Eintrag ins Protokoll der Rollenänderungen, mit „Befehl auf dem Server“ als Urheber (#91).
 
 Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
 
@@ -287,6 +287,20 @@ A2. Das Admin-Recht wieder entfernen.
    uv run --env-file .env python manage.py admin revoke erika.testfrau
    ```
    Danach: `erika.testfrau ist jetzt kein Admin mehr.` Ist die Person kein Admin, steht dort `CommandError: erika.testfrau ist kein Admin.`
+
+In der Testumgebung im Container steht statt `uv run --env-file .env python manage.py` wieder `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`.
+
+## Leere Organisation im Notfall löschen (Admins)
+
+Im Tool lässt sich keine Organisation löschen (Entscheidung W5 in `docs/entscheidungen.md`; im Tool erst mit #108). Ist eine Organisation versehentlich angelegt und noch leer, löscht ein Admin sie per Befehl auf dem Server (#92). Der Befehl lehnt den Verband ab und jede Organisation, unter der noch Organisationen hängen oder in der es Rollen, Mitglieder oder verwaltete Personen gibt. Er schreibt einen Eintrag ins Protokoll der Admin-Zugriffe, mit „Befehl auf dem Server“ als Urheber. Gebraucht wird die Kennung der Organisation: Sie steht in der Adresse ihrer Seite, etwa `/organisation/KENNUNG/`; als Admin öffnet sich jede Seite einer Organisation, dort steht nur der Kopf.
+
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
+
+N1. Die Organisation mit dieser Kennung löschen; `KENNUNG` durch die Kennung aus der Adresse ersetzen.
+   ```bash
+   uv run --env-file .env python manage.py emergency_delete KENNUNG
+   ```
+   Danach: `„Sippe Irrtum“ ist gelöscht. Der Eintrag steht im Protokoll der Admin-Zugriffe.` Ist sie nicht leer, steht dort `CommandError: „Walhall“ ist nicht leer: …`; gibt es die Kennung nicht, `CommandError: Keine Organisation mit dieser Kennung. …`
 
 In der Testumgebung im Container steht statt `uv run --env-file .env python manage.py` wieder `docker compose -f testumgebung/docker-compose.yml exec tool python manage.py`.
 

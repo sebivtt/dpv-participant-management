@@ -43,6 +43,24 @@ GROUP_IN_TROOP = gettext_lazy("„%(unit)s“ (%(troop)s)")
 
 # Protokoll der Rollenänderungen (#91); „Befehl auf dem Server“ steht in core/actors.py.
 LOG_LOCKED = gettext_lazy("Einträge im Protokoll der Rollenänderungen lassen sich nicht ändern oder löschen.")
+# Protokoll der Admin-Zugriffe (#92)
+ACCESS_LOG_LOCKED = gettext_lazy("Einträge im Protokoll der Admin-Zugriffe lassen sich nicht ändern oder löschen.")
+
+# Support-Zugang der Admins (#92); die Organisation mit ihrer Art davor, etwa „Stamm Walhall“.
+SUPPORT_STARTED = gettext_lazy("Support-Zugang für %(unit)s gestartet.")
+SUPPORT_ENDED = gettext_lazy("Support-Zugang für %(unit)s beendet.")
+SUPPORT_EXPIRED = gettext_lazy("Dein Support-Zugang für %(unit)s ist nach 60 Minuten abgelaufen.")
+SUPPORT_UNSAVED = gettext_lazy("Was du gerade abgeschickt hast, ist nicht gespeichert.")
+SUPPORT_NOT_YOURSELF = gettext_lazy("Im Support-Zugang kannst du dir selbst keine Rolle geben.")
+SUPPORT_TITLE = gettext_lazy("Support-Zugang für %(unit)s starten")
+SUPPORT_TEXT = gettext_lazy(
+    "Du siehst und änderst danach höchstens 60 Minuten lang, was die Leitung von %(unit)s darf. "
+    "Jeder Schritt kommt ins Protokoll."
+)
+SUPPORT_REASON = gettext_lazy("Anlass")
+SUPPORT_CHOOSE_REASON = gettext_lazy("Bitte wähle einen Anlass.")
+SUPPORT_START = gettext_lazy("Support-Zugang starten")
+SUPPORT_END = gettext_lazy("beenden")
 
 # Befehl für Admins
 UNKNOWN_USERNAME = gettext_lazy(

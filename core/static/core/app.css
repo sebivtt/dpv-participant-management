@@ -547,3 +547,30 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
 .a-kachel-knopf { margin-top: 8px; }
+/* Balken „Support-Zugang aktiv“ (core/_supportbalken.html, #92, N1): dunkelblau mit weißer Schrift, Schild und weißem
+   Knopf „beenden“; nicht über die ganze Breite, weder Sonnengelb wie das Band der Testumgebung noch eine Meldungsart.
+   Am PC bleibt er beim Scrollen oben im Inhalt stehen; die Gliederung rückt dann darunter. Am Handy steht er oben. */
+.a-supportbalken { position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-klein); background: var(--dpv-tief); color: #fff; box-shadow: 0 6px 16px rgb(18 56 95 / 25%); }
+.a-supportbalken-ic { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: rgb(255 255 255 / 14%); }
+.a-supportbalken p { flex: 1; min-width: 180px; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.a-supportbalken-zeit { font-weight: 400; }
+.a-supportbalken form { margin: 0; }
+.a-supportbalken-knopf { --bs-btn-color: var(--dpv-tief); --bs-btn-bg: #fff; --bs-btn-border-color: #fff; --bs-btn-hover-color: var(--dpv-tief); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv-hauch); --bs-btn-active-color: var(--dpv-tief); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv-hauch); font-weight: 700; }
+/* Auf dem dunklen Balken ist der Fokusrahmen weiß, sonst wäre er kaum zu sehen. */
+.a-supportbalken .btn:focus-visible { outline-color: #fff; }
+.a-main-inhalt:has(.a-supportbalken) .a-gliederung { top: 84px; height: max(360px, calc(100vh - 124px)); }
+@media (max-width: 991px) {
+  .a-supportbalken { position: static; }
+}
+/* Zart blauer Knopf mit Symbol (#92, N4a), etwa „Support-Zugang starten“ mit Schild. */
+.btn-verschieben:has(.ic) { display: inline-flex; align-items: center; gap: 6px; }
+.btn-verschieben .ic { width: 16px; height: 16px; }
+/* Knopf oben rechts im Kopf einer Organisation (#92, N4b); am Handy unter dem Namen. */
+.a-orga-kopf-knopf { margin-left: auto; }
+/* Neben dem Knopf darf der Name schmaler werden, damit der Knopf am PC rechts neben dem Titel bleibt. */
+.a-orga-kopf-zeile:has(.a-orga-kopf-knopf) > div:first-child { flex: 1 1 8rem; min-width: 0; }
+@media (max-width: 700px) {
+  .a-orga-kopf-knopf { flex-basis: 100%; margin-left: 0; }
+}
+/* Im Bausteinkatalog steht der Balken an seinem Platz und bleibt nicht oben stehen. */
+.a-katalog-balken .a-supportbalken { position: static; }

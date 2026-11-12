@@ -25,6 +25,7 @@ Zugriff“ (403). Meldet eine Seite an einer Adresse mit Kennung trotzdem „kei
 import math
 import unicodedata
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import timedelta
 from functools import cached_property
 
@@ -47,6 +48,8 @@ from django.db.models import (
 )
 from django.db.models.functions import Concat
 from django.http import Http404
+from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 
@@ -54,7 +57,8 @@ from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS, ManagedPerson
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS, Role, after_leaving, leads_off_path, on_path
+from roles import texts as role_texts
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, AdminAccess, Role, after_leaving, leads_off_path, on_path
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
 from units.models import Unit
@@ -94,9 +98,15 @@ SEARCH_WINDOW = timedelta(minutes=60)
 MANAGE = "manage"  # im eigenen Bereich: Seite mit Mails, wo sie die Person sieht
 READ = "read"  # auf der Kette nach oben: Seite nur lesen
 NAME_ONLY = "name"  # sonst im eigenen Bund: nur der Name in der Gliederung
+HEAD = "head"  # Admins (#92): jede Organisation außer dem Verband, ihre Seite nur mit dem Kopf zum Starten
+# Die Anlässe eines Support-Zugangs, in der Reihenfolge des Dialogs; freien Text gibt es nicht (#92, Frage 4).
+SUPPORT_REASONS = (AdminAccess.Detail.LEAD_REQUEST, AdminAccess.Detail.DEBUGGING, AdminAccess.Detail.DATA_SUBJECT,
+                   AdminAccess.Detail.OTHER)
 # Die Wahl beim Austragen (#286, #65 Frage 17): „hoch“ heißt danach direkt zur Organisation darüber,
 # „ganz“ heißt danach keiner Organisation mehr; der Wert sagt, ob die Person ganz ausgetragen wird.
 EXPEL_CHOICES = {"hoch": False, "ganz": True}
+# Wo die Meldung nach Ablauf eines Support-Zugangs bis zur nächsten Seite wartet (#92, SA1, SA2).
+SUPPORT_EXPIRED_SESSION_KEY = "support_abgelaufen"
 
 
 class Rights:
@@ -104,13 +114,20 @@ class Rights:
 
     Für jede Anfrage entsteht ein neues Objekt (`RightsMiddleware`); es merkt sich die Rollen
     nur für diese Anfrage. Mehrere Rollen zählen zusammen: Die Person darf alles, was eine davon
-    erlaubt (#90). Admins bekommen hier keine Rechte; ihr Weg ist der Support-Zugang (#92).
+    erlaubt (#90). Die Rolle Admin gibt keine Rechte einer Leitung (#89); ihr Weg ist der
+    Support-Zugang (#92): Solange er läuft, zählt seine Organisation wie eine selbst geleitete,
+    mit allen Rechten ihrer Leitung über dieselben Prüfungen. Was ein Admin allein dadurch sieht
+    oder ändert, kommt ins Protokoll der Admin-Zugriffe (`record_view()`, `_record_change()`).
     """
 
-    def __init__(self, user) -> None:
+    def __init__(self, user, support: bool = True) -> None:
         # Ohne gespeichertes, aktives Konto gibt es keine Rechte, auch nicht auf sich selbst.
         valid = user is not None and getattr(user, "pk", None) is not None and getattr(user, "is_active", False)
         self.user = user if valid else None
+        # Mit `support=False` zählen nur die eigenen Rollen; so erkennt das Protokoll, was nur der Zugang erlaubt.
+        self._with_support = support
+        # Je Anfrage höchstens ein Eintrag „ansehen“: eine Suche zählt schon als Ansehen der Seite (#92).
+        self._viewed = False
 
     # Was einmal pro Anfrage aus der Datenbank kommt
 
@@ -149,8 +166,11 @@ class Rights:
 
     @cached_property
     def _led(self) -> frozenset[int]:
-        """Die Einheiten, die die Person selbst leitet (Gruppe, Stamm, Ring oder Bund)."""
-        return frozenset(unit for kind, unit in self._own_roles if kind in LEADS_IN_UNITS and unit is not None)
+        """Die Einheiten, die die Person leitet (Gruppe, Stamm, Ring oder Bund), dazu die eines laufenden Support-Zugangs (#92)."""
+        led = {unit for kind, unit in self._own_roles if kind in LEADS_IN_UNITS and unit is not None}
+        if self.support is not None:
+            led.add(self.support.unit.pk)
+        return frozenset(led)
 
     @cached_property
     def _membership(self) -> int | None:
@@ -273,16 +293,23 @@ class Rights:
     def sees_organisation(self) -> bool:
         """Gliederung und Seiten der Einheiten unter „Organisation“: jede Leitung von Gruppe bis Bund (EH-08).
 
-        Mitglieder ohne Leitungsrolle, Konten ohne Zuordnung, das DPV-Veranstaltungsteam, die
-        Verbandsleitung ohne weitere Rolle und Admins öffnen keine Einheit (EH-09; Admins mit #92,
-        Mitglieder mit #134). Den Menüpunkt hat zusätzlich die Verbandsleitung (`sees_menu()`, #94).
-        Endet die letzte Leitungsrolle, fehlt beides beim nächsten Klick.
+        Mitglieder ohne Leitungsrolle, Konten ohne Zuordnung, das DPV-Veranstaltungsteam und die
+        Verbandsleitung ohne weitere Rolle öffnen keine Einheit (EH-09; Mitglieder mit #134). Den
+        Menüpunkt haben zusätzlich die Verbandsleitung (`sees_menu()`, #94) und Admins; Admins
+        öffnen ohne Support-Zugang jede Seite nur mit dem Kopf (`unit_access()`, #92), im Zugang
+        zählt seine Organisation wie eine geleitete (`_led`). Endet die letzte Leitungsrolle oder der
+        Zugang, fehlt das beim nächsten Klick.
         """
         return bool(self._led)
 
     @cached_property
     def associations(self) -> frozenset[int]:
-        """Die eigenen Bünde: die Bünde auf der Kette nach oben (EH-01). Andere Bünde erscheinen nie (EH-03)."""
+        """Die eigenen Bünde: die Bünde auf der Kette nach oben (EH-01). Andere Bünde erscheinen nie (EH-03).
+
+        Admins sehen alle Bünde, nur mit Namen, damit sie eine Organisation für den Support-Zugang wählen (#92, S1).
+        """
+        if self.is_admin():
+            return frozenset(unit for unit, (_parent, kind) in self._tree.items() if kind == UnitKind.ASSOCIATION)
         return frozenset(unit for unit in self.chain if self._tree[unit][1] == UnitKind.ASSOCIATION)
 
     def unit_access(self, unit: Unit | None) -> str | None:
@@ -291,21 +318,26 @@ class Rights:
         `MANAGE` im eigenen Bereich (RO-03), `READ` auf der Kette nach oben (RO-01, Frage C),
         `NAME_ONLY` für den Rest des eigenen Bundes (EH-01, RO-04), sonst nichts: andere Bünde
         und der Verband (EH-03, N7). Ohne Leitungsrolle immer nichts, auch auf der eigenen Kette
-        (EH-09, AV9).
+        (EH-09, AV9). Admins haben überall sonst `HEAD`, außer im Verband: die Seite nur mit dem
+        Kopf und dem Knopf „Support-Zugang starten“ (#92, S1, SV5); im Support-Zugang und mit eigener
+        Leitungsrolle zählen Bereich und Kette wie bei jeder Leitung.
         """
-        if unit is None or not self.sees_organisation() or unit.pk not in self._tree:
+        if unit is None or unit.pk not in self._tree:
             return None
-        if unit.pk in self.area:
+        leads = self.sees_organisation()
+        if leads and unit.pk in self.area:
             return MANAGE
-        if unit.pk in self.chain:
+        if leads and unit.pk in self.chain:
             return READ
-        if self._association_of(unit.pk) in self.associations:
+        if self.is_admin():
+            return HEAD if self._tree[unit.pk][1] != UnitKind.FEDERATION else None
+        if leads and self._association_of(unit.pk) in self.associations:
             return NAME_ONLY
         return None
 
     def opens_unit(self, unit: Unit | None) -> bool:
-        """Öffnet sich die Seite dieser Einheit, zum Verwalten oder nur zum Lesen (#189)?"""
-        return self.unit_access(unit) in (MANAGE, READ)
+        """Öffnet sich die Seite dieser Einheit, zum Verwalten, nur zum Lesen oder für Admins nur mit dem Kopf (#189, #92)?"""
+        return self.unit_access(unit) in (MANAGE, READ, HEAD)
 
     def leads_itself(self, unit: Unit | None) -> bool:
         """Leitet die Person diese Einheit selbst? Die Übersicht zeigt am PC die oberste solche Einheit (#189)."""
@@ -365,8 +397,12 @@ class Rights:
         return any(kind == R.FEDERATION_LEAD for kind, _unit in self._own_roles)
 
     def sees_menu(self) -> bool:
-        """Menüpunkt und Bereich „Organisation“: Leitungen von Gruppe bis Bund und die Verbandsleitung (EH-08, EH-09)."""
-        return self.sees_organisation() or self.is_federation_lead()
+        """Menüpunkt und Bereich „Organisation“: Leitungen von Gruppe bis Bund, die Verbandsleitung (EH-08, EH-09) und Admins (#92)."""
+        return self.sees_organisation() or self.is_federation_lead() or self.is_admin()
+
+    def is_admin(self) -> bool:
+        """Hat die Person die Rolle Admin? Nur Admins starten einen Support-Zugang (SZ-01, SZ-02)."""
+        return any(kind == R.ADMIN for kind, _unit in self._own_roles)
 
     def has_roles(self) -> bool:
         """Hat die Person eine Mitgliedschaft oder irgendeine Rolle? Ohne beides steht der Hinweis „keiner Organisation zugeordnet“ (#9).
@@ -428,7 +464,8 @@ class Rights:
         `count_search()`, nicht diese Stelle.
         """
         text = text.strip()
-        if not self.sees_menu() or not text or set(text) <= WILDCARDS:
+        # Admins ohne Support-Zugang und ohne Leitungsrolle suchen nicht (SZ-06); im Zugang wie die Leitung (#92).
+        if not (self.sees_organisation() or self.is_federation_lead()) or not text or set(text) <= WILDCARDS:
             return []
         accounts = get_user_model().objects.filter(is_active=True, last_login__isnull=False)
         if "@" in text:
@@ -528,6 +565,8 @@ class Rights:
                       "role": kind.label, "unit": unit.name}
             roles = Role.objects.filter(user_id=target.pk)
             membership = roles.filter(kind=R.MEMBER).select_related("unit").first()
+            if target.pk == me.pk and fresh._only_via_support(lambda rights: rights.may_appoint(unit)):
+                return False, str(role_texts.SUPPORT_NOT_YOURSELF)
             if target.pk == me.pk:
                 own = membership.unit.name if membership else unit.name
                 return False, str(unit_texts.NOT_YOURSELF % {"unit": own})
@@ -542,6 +581,7 @@ class Rights:
                     raise
                 target_name = unit_texts.KIND_AND_NAME[unit.kind] % {"unit": unit.name}
                 return False, str(unit_texts.NOT_ON_PATH % {**values, "unit": membership.unit.name, "target": target_name})
+            fresh._record_change(lambda rights: rights.may_appoint(unit))
         return True, str(unit_texts.APPOINTED % values)
 
     def _lock_with(self, other: int):
@@ -612,6 +652,8 @@ class Rights:
             if target is None:
                 raise Http404
             name = display_name(target.first_name, target.last_name, target.scout_name) or target.username
+            if target.pk == me.pk and fresh._only_via_support(lambda rights: rights.may_admit(unit)):
+                return False, str(role_texts.SUPPORT_NOT_YOURSELF)
             membership = Role.objects.filter(user_id=target.pk, kind=R.MEMBER).select_related("unit").first()
             if membership is not None:
                 if membership.unit_id in fresh.area or target.pk == me.pk:
@@ -620,6 +662,7 @@ class Rights:
             if target.pk == me.pk:
                 raise Http404
             Role(user=target, kind=R.MEMBER, unit=unit).save(by=me)
+            fresh._record_change(lambda rights: rights.may_admit(unit))
         return True, str(unit_texts.ADMITTED % {"person": name, "unit": unit_label(unit)})
 
     # Austragen und Austreten (#286, Teil 2 von #65)
@@ -690,11 +733,13 @@ class Rights:
             if owner is None:
                 raise Http404
             me = self._lock_with(owner)
-            membership = Rights(me)._expellable(unit, person_key)
+            fresh = Rights(me)
+            membership = fresh._expellable(unit, person_key)
             user = membership.user
             name = display_name(user.first_name, user.last_name, user.scout_name) or user.username
             if not membership.leave(unit, by=me, entirely=entirely):
                 raise Http404
+            fresh._record_change(lambda rights: rights.may_expel(unit))
         return str(unit_texts.EXPELLED % {"person": name, "unit": unit_label(unit)})
 
     # Verschieben (#287, Teil 3 von #65)
@@ -757,7 +802,8 @@ class Rights:
             if owner is None:
                 raise Http404
             me = self._lock_with(owner)
-            membership = Rights(me)._movable(unit, person_key)
+            fresh = Rights(me)
+            membership = fresh._movable(unit, person_key)
             target = next((entry for entry in self.move_targets(unit) if entry.key == target_key), None)
             if target is None:
                 raise Http404
@@ -771,6 +817,7 @@ class Rights:
                 return False, str(text % {"person": name, "roles": listed(roles), "target": unit_label(target)})
             membership.unit = target
             membership.save(by=me)
+            fresh._record_change(lambda rights: rights.may_move(unit))
         return True, str(unit_texts.MOVED % {"person": name, "unit": unit_label(target)})
 
     def own_membership(self) -> Role | None:
@@ -895,7 +942,8 @@ class Rights:
             raise ValidationError(person_texts.CONSENT_MISSING, code="consent")
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
-            if not Rights(me).may_add_managed(unit):
+            fresh = Rights(me)
+            if not fresh.may_add_managed(unit):
                 raise Http404
             if ManagedPerson.objects.filter(creation_key=creation_key).exists():
                 return ""
@@ -909,6 +957,7 @@ class Rights:
                 if ManagedPerson.objects.filter(creation_key=creation_key).exists():
                     return ""
                 raise
+            fresh._record_change(lambda rights: rights.may_add_managed(unit))
         return str(person_texts.ADDED % {"person": created.display_name, "unit": unit_label(unit)})
 
     def edit_managed(self, unit: Unit, person_key, values: dict, version) -> tuple[bool, ManagedPerson, str]:
@@ -934,6 +983,7 @@ class Rights:
                 setattr(entry, name, values[name])
             entry.version += 1
             entry.save()
+            fresh._record_change(lambda rights: rights._managed_entries().filter(pk=entry.pk).exists())
         return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
@@ -994,6 +1044,7 @@ class Rights:
             fresh = Rights(me)
             role = fresh._removable(unit, role_key)
             shown = fresh._describe(role)
+            fresh._record_change(lambda rights: rights.may_remove(role))
             role.delete(by=me)
         values = {**shown, "unit": unit.name}
         return str((unit_texts.GAVE_UP if shown["is_self"] else unit_texts.REMOVED) % values)
@@ -1034,10 +1085,13 @@ class Rights:
             # Erst den Bund sperren, dann das Recht prüfen: Ein gleichzeitiger Ringwechsel ist danach
             # entweder schon gespeichert oder wartet (unabhängige Prüfung, Befund 2).
             parent = self._lock_structure(parent)
-            if not Rights(me).may_create(parent):
+            fresh = Rights(me)
+            if not fresh.may_create(parent):
                 raise Http404
             created = Unit(kind=child_kind(parent), name=name, parent=parent)
             refused = _saved_or_reason(created, me)
+            if not refused:
+                fresh._record_change(lambda rights: rights.may_create(parent))
         if refused:
             return False, refused
         return True, str(unit_texts.CREATED % {"unit": unit_label(created)})
@@ -1119,6 +1173,8 @@ class Rights:
             result = _apply_edit(current, me, name, target, rings_on and not current.has_rings)
             if result["errors"]:
                 transaction.savepoint_rollback(saved)
+            elif result["messages"]:
+                fresh._record_change(lambda rights: rights.may_rename(current))
         return result
 
     def _ring_target(self, troop: Unit, ring_key: str | None) -> Unit | None:
@@ -1252,6 +1308,142 @@ class Rights:
                 return False
             role.delete(by=me)
         return True
+
+    # Support-Zugang der Admins (#92, BER-02)
+
+    @cached_property
+    def support(self) -> "Support | None":
+        """Der laufende Support-Zugang eines Admins: Organisation und Ende; sonst None (SZ-01, SZ-04).
+
+        Er gilt nur, solange die Person Admin ist und seine 60 Minuten nicht um sind, beim nächsten
+        Klick danach also nicht mehr (#90). Eine inzwischen gelöschte Organisation öffnet nichts mehr.
+        """
+        if not self._with_support or self.user is None or not self.is_admin():
+            return None
+        entry = AdminAccess.running(self.user.pk)
+        if entry is None or entry.ends_at <= timezone.now():
+            return None
+        unit = Unit.objects.filter(pk=entry.unit_id).exclude(kind=UnitKind.FEDERATION).first()
+        return Support(unit=unit, ends_at=entry.ends_at) if unit is not None else None
+
+    @cached_property
+    def _without_support(self) -> "Rights":
+        """Die Rechte allein aus den eigenen Rollen, für die Frage, was nur der Zugang erlaubt (#92, Frage 5)."""
+        return Rights(self.user, support=False)
+
+    def _only_via_support(self, allowed: Callable[["Rights"], bool]) -> bool:
+        """Erlaubt erst der laufende Support-Zugang, was `allowed` prüft? Dann kommt es ins Protokoll (S8)."""
+        return self.support is not None and allowed(self) and not allowed(self._without_support)
+
+    def may_support(self, unit: Unit | None) -> bool:
+        """Darf die Person für diese Organisation einen Support-Zugang starten? Admins, nie im Verband (SZ-01, SZ-02, SV5)."""
+        return (unit is not None and self.is_admin() and unit.pk in self._tree
+                and self._tree[unit.pk][1] != UnitKind.FEDERATION)
+
+    def shows_support_button(self, unit: Unit | None) -> bool:
+        """Steht „Support-Zugang starten“ auf der Seite? Wie `may_support()`, außer ein laufender Zugang umfasst sie schon (N4b)."""
+        if not self.may_support(unit):
+            return False
+        return self.support is None or unit.pk not in self._below(self.support.unit.pk)
+
+    def start_support(self, unit: Unit, reason: str) -> str:
+        """Startet einen Support-Zugang für `unit` mit Anlass; gibt die kurze Meldung zurück (SZ-01).
+
+        Läuft schon einer für eine andere Organisation, endet er dabei; beides steht im Protokoll (S7).
+        Läuft er schon für dieselbe, ändert sich nichts und die Meldung ist leer, etwa bei einem
+        Doppelklick (SG5). Ohne Rolle Admin, für den Verband oder mit einem Anlass außerhalb der festen
+        Liste „nicht gefunden“. Das eigene Konto bleibt bis zum Ende gesperrt, damit gleichzeitige
+        Starts nacheinander laufen.
+        """
+        if not self.may_support(unit) or reason not in SUPPORT_REASONS:
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            if not Rights(me).may_support(unit):
+                raise Http404
+            texts = []
+            running = AdminAccess.running(me.pk)
+            if running is not None and running.ends_at <= timezone.now():
+                _end(me, running, AdminAccess.Detail.EXPIRED)
+            elif running is not None and running.unit_id == unit.pk:
+                return ""
+            elif running is not None:
+                texts.append(str(role_texts.SUPPORT_ENDED % {"unit": _logged_label(running)}))
+                _end(me, running, AdminAccess.Detail.SWITCHED)
+            AdminAccess.record(me, AdminAccess.Action.STARTED, unit, detail=reason)
+            texts.append(str(role_texts.SUPPORT_STARTED % {"unit": unit_label(unit)}))
+        return " ".join(texts)
+
+    def end_support(self, detail: str = AdminAccess.Detail.BUTTON) -> str:
+        """Beendet den laufenden Support-Zugang, per Knopf oder beim Abmelden; gibt die kurze Meldung zurück.
+
+        Ohne laufenden Zugang leer. Ist er schon abgelaufen, steht das Ende mit dem Zeitpunkt des
+        Ablaufs im Protokoll, und die Meldung ist ebenso leer.
+        """
+        if self.user is None:
+            return ""
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            running = AdminAccess.running(me.pk) if me is not None else None
+            if running is None:
+                return ""
+            if running.ends_at <= timezone.now():
+                _end(me, running, AdminAccess.Detail.EXPIRED)
+                return ""
+            _end(me, running, detail)
+        return str(role_texts.SUPPORT_ENDED % {"unit": _logged_label(running)})
+
+    def close_expired(self) -> tuple[str, str | None] | None:
+        """Schließt einen abgelaufenen Support-Zugang ab; gibt Name und Kennung seiner Organisation zurück, sonst None (SA1).
+
+        Das Ende steht mit dem Zeitpunkt des Ablaufs im Protokoll. Für alle außer Admins fragt die
+        Stelle die Datenbank nicht zusätzlich; die Rollen lädt die Anfrage ohnehin.
+        """
+        if self.user is None or not self.is_admin():
+            return None
+        running = AdminAccess.running(self.user.pk)
+        if running is None or running.ends_at > timezone.now():
+            return None
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            running = AdminAccess.running(me.pk) if me is not None else None
+            if running is None or running.ends_at > timezone.now():
+                return None
+            _end(me, running, AdminAccess.Detail.EXPIRED)
+        unit = Unit.objects.filter(pk=running.unit_id).first()
+        return _logged_label(running), unit.key if unit is not None else None
+
+    def record_view(self, unit: Unit) -> None:
+        """Schreibt „ansehen“, wenn die Seite dieser Organisation Personendaten nur über den Support-Zugang zeigt (S3, S8).
+
+        Höchstens einmal je Anfrage. Gelingt der Eintrag nicht, scheitert die Seite (SG1).
+        """
+        if self._viewed or not self._only_via_support(lambda rights: rights.unit_access(unit) in (MANAGE, READ)):
+            return
+        AdminAccess.record(self.user, AdminAccess.Action.VIEWED, self.support.unit)
+        self._viewed = True
+
+    def record_outline(self) -> None:
+        """Schreibt „ansehen“ für eine Seite nur mit dem Kopf, solange ein Zugang läuft: Ihre Gliederung zeigt seine Leitungen.
+
+        Was die eigenen Rollen ohnehin zeigen, zählt nicht (S8); höchstens ein Eintrag je Anfrage.
+        """
+        if self._viewed or self.support is None:
+            return
+        self.record_view(self.support.unit)
+
+    def record_search(self, allowed: Callable[["Rights"], bool]) -> None:
+        """Schreibt „ansehen · Kontosuche“, ohne Suchbegriff, wenn erst der Zugang die Suche erlaubt (#92, Frage 1)."""
+        if not self._only_via_support(allowed):
+            return
+        AdminAccess.record(self.user, AdminAccess.Action.VIEWED, self.support.unit,
+                           detail=AdminAccess.Detail.ACCOUNT_SEARCH)
+        self._viewed = True
+
+    def _record_change(self, allowed: Callable[["Rights"], bool]) -> None:
+        """Schreibt „ändern“ in der Transaktion der Änderung, wenn erst der Zugang sie erlaubt; scheitert er, scheitert sie (SG1)."""
+        if self._only_via_support(allowed):
+            AdminAccess.record(self.user, AdminAccess.Action.CHANGED, self.support.unit)
 
     # Leitungen (BER-01, Grund 3)
 
@@ -1419,6 +1611,28 @@ def on_lead_path(person, unit: Unit | None) -> bool:
     return membership is not None and on_path(membership.unit, unit)
 
 
+@dataclass(frozen=True)
+class Support:
+    """Ein laufender Support-Zugang: die Organisation und wann er endet (#92)."""
+
+    unit: Unit
+    ends_at: object
+
+
+def _end(by, running: AdminAccess, detail: str) -> None:
+    """Schreibt das Ende eines Zugangs zu seinem Start; nach Ablauf mit dem Zeitpunkt des Ablaufs (SA1)."""
+    at = running.ends_at if detail == AdminAccess.Detail.EXPIRED else None
+    running.record_end(by, detail, at=at)
+
+
+def _logged_label(entry: AdminAccess) -> str:
+    """Wie die Organisation eines Eintrags in Meldungen heißt, etwa „Stamm Walhall“; gelöscht so, wie sie dort steht."""
+    found = Unit.objects.filter(pk=entry.unit_id).first()
+    if found is None:
+        return str(unit_texts.MEMBER_UNIT_NAME[entry.unit_kind] % {"unit": entry.unit_name})
+    return unit_label(found)
+
+
 class RightsMiddleware:
     """Gibt jeder Anfrage ihre eigenen Rechte als `request.rights`, erst beim ersten Zugriff geladen.
 
@@ -1431,7 +1645,32 @@ class RightsMiddleware:
 
     def __call__(self, request):
         request.rights = SimpleLazyObject(lambda: Rights(getattr(request, "user", None)))
+        after_expiry = self._after_expiry(request)
+        if after_expiry is not None:
+            return after_expiry
         return self.get_response(request)
+
+    @staticmethod
+    def _after_expiry(request):
+        """Ist ein Support-Zugang abgelaufen, führt der nächste Klick zur Seite seiner Organisation (SA1, SA2).
+
+        Dort steht dann fest oben die Meldung aus `SUPPORT_EXPIRED_SESSION_KEY`; ein abgeschicktes
+        Formular wird nicht verarbeitet, also auch nichts gespeichert. Nur das Abmelden läuft weiter,
+        damit es nie an einem abgelaufenen Zugang hängt.
+        """
+        closed = request.rights.close_expired()
+        if closed is None:
+            return None
+        label, key = closed
+        # „beenden“ nach Ablauf und Vorschläge beim Tippen aus dem Skript speichern nichts; dafür reicht die
+        # Information (Befunde 2 und 4).
+        unsaved = (request.method not in ("GET", "HEAD", "OPTIONS") and request.path != reverse("support_end")
+                   and request.headers.get("Sec-Fetch-Dest") != "empty")
+        request.session[SUPPORT_EXPIRED_SESSION_KEY] = {"unit": label, "unsaved": unsaved}
+        request.rights = SimpleLazyObject(lambda: Rights(getattr(request, "user", None)))
+        if request.path == reverse("account_logout"):
+            return None
+        return redirect(reverse("organisation_unit", args=[key]) if key else reverse("organisation"))
 
     def process_exception(self, request, exception):
         """Macht aus „kein Zugriff“ einer Seite mit Kennung in der Adresse „nicht gefunden“ (#64)."""

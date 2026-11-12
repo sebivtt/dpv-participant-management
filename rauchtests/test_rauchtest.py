@@ -192,7 +192,7 @@ def test_eingaben_wie_am_handy_bleiben_stehen(handy):
         }"""
     )
     field.press_sequentially(" 2027")
-    handy.get_by_label("Ort").focus()
+    handy.get_by_label("Ort", exact=True).focus()
 
     expect(field).to_have_value("Pfingstlager Sommer 2027")
 

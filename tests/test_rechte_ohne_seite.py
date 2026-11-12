@@ -27,7 +27,9 @@ from django.core.management import call_command
 from django.db import connection
 from django.test import Client
 
-from roles.models import Role, RoleChange
+from django.utils import timezone
+
+from roles.models import AdminAccess, Role, RoleChange
 from tests.keycloak_fake import login
 from tests.test_rollen import BY, build_org, give
 from tests import urls as test_urls
@@ -43,6 +45,8 @@ User = get_user_model()
 # Was zuerst vergeben war und nur noch im Protokoll steht (alter Name von Person und Einheit).
 OLD_PERSON_NAME = "Ronja Altname"
 OLD_UNIT_NAME = "Sippe Altname"
+# Ein Bereich, der nur im Protokoll der Admin-Zugriffe steht (#92).
+OLD_ACCESS_NAME = "Sippe Nurprotokoll"
 KEYCLOAK_DETAIL = "nur-im-login-baustein-7f3q9"
 
 
@@ -227,6 +231,18 @@ def test_rollenaenderungen_werden_weiter_ins_protokoll_geschrieben(org):
     give(org.max, R.GROUP_LEAD, org.falken)
 
     assert RoleChange.objects.count() == before + 1
+
+
+@pytest.mark.rechtematrix("PR-05")
+def test_keine_adresse_zeigt_das_protokoll_der_admin_zugriffe(org):
+    """#92: In P2 wird das Protokoll der Admin-Zugriffe nur geschrieben (W4); der Bereich steht nur dort."""
+    AdminAccess.objects.create(at=timezone.now(), actor_id=org.admin.pk, actor_name="Ada Admin",
+                               action=AdminAccess.Action.STARTED, detail=AdminAccess.Detail.DEBUGGING,
+                               unit_id=org.falken.pk, unit_kind=Unit.Kind.GROUP, unit_name=OLD_ACCESS_NAME)
+
+    shown = [address for address, text in page_texts(org) if OLD_ACCESS_NAME in text]
+
+    assert shown == []
 
 
 @pytest.mark.rechtematrix("PR-03")

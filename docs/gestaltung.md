@@ -160,6 +160,18 @@ Zielbild ist der Regler aus `docs/zielbilder/mein-profil.html` („Profil freige
 - **Schalter** (Sebastian, 12.11.2026: „Schalter erweitern“): Er kann ohne Satz unter dem Titel stehen, wie ein Ankreuzfeld angesagt werden, wenn er erst mit dem Knopf des Dialogs wirkt, und den Fehler am Feld rot unter der Zeile zeigen, mit ihm verbunden. Aus einem Formular eingebunden mit `{% schalter form.feld %}` (`core/templatetags/layout.py`). „Hat Ringe“ bleibt, wie er ist.
 - **„Verwaltete Person anlegen“:** unter den vier Feldern der Schalter mit dem Satz aus DSG-02, ohne Hilfesatz und ohne „i“, beim Öffnen immer auf „aus“. Ohne ihn steht nach „Anlegen“ „Bitte bestätige die Einwilligung. Ohne sie wird die Person nicht gespeichert.“ darunter, und die Eingaben bleiben stehen. Beim Bearbeiten gibt es ihn nicht.
 
+### Support-Zugang der Admins (#92, 12.11.2026)
+
+Zielbild als `docs/zielbilder/support-zugang.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 12.11.2026 zu #92. Ein Baustein neu, drei erweitert:
+
+- **Balken Support-Zugang** (neu, N1): auf jeder Seite, solange ein Admin im Support-Zugang ist; dunkelblau mit weißer Schrift, Schild-Symbol, „Support-Zugang für Stamm Walhall aktiv bis 14:35“ und rechts der weiße Knopf „beenden“. Am PC bleibt er beim Scrollen oben im Inhalt stehen, am Handy steht er oben auf der Seite und bricht um. Er läuft nicht über die ganze Breite (kein Banner) und ist weder Sonnengelb noch eine der vier Meldungsarten.
+- **Zart blauer Knopf** (bisher „Knopf ‚Verschieben‘“, erweitert, N4a): Beschriftung und Symbol sind wählbar, und er kann so groß sein wie die übrigen Knöpfe; „Verschieben“ und „Bearbeiten“ sehen aus wie bisher.
+- **Kopf einer Organisationsseite** (erweitert, N4b): oben rechts neben dem Titel ein Knopf, am Handy unter dem Namen; für Admins „Support-Zugang starten“ mit Schild, nicht, solange ein laufender Zugang die Organisation umfasst. Ohne Zugang steht für Admins nur dieser Kopf auf der Seite.
+- **Auswahl im Dialog** (erweitert, Frage 4): Es darf keine Möglichkeit vorgewählt sein, etwa beim Anlass eines Support-Zugangs.
+- **Gliederung** (wie im Zielbild): Admins sehen alle Bünde; neben der Überschrift steht dann „alle Bünde“ statt der Namen.
+- **„Support-Zugang für … starten“:** Dialog mit dem Satz zu Dauer und Protokoll, darunter sichtbar „Anlass“ mit vier Möglichkeiten ohne Vorwahl, unten „Abbrechen“ und der dunkelblaue Knopf „Support-Zugang starten“. Ohne Wahl steht „Bitte wähle einen Anlass.“ als Fehlermeldung im Dialog unter der Wahl. Danach eine kurze Meldung (#186).
+- **Nach Ablauf** (N2): fest oben auf der nächsten Seite die Informationsmeldung „Dein Support-Zugang für … ist nach 60 Minuten abgelaufen.“; war ein Formular abgeschickt, eine Warnmeldung mit diesem Satz fett und darunter „Was du gerade abgeschickt hast, ist nicht gespeichert.“
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

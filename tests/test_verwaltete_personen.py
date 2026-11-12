@@ -477,7 +477,9 @@ def test_mv3_finn_otto_vera_tom_und_max_sehen_keine_verwalteten_personen(org, le
     for user in (org.falke, org.ohne, org.verbandsleitung, org.team, org.max):
         assert_like_missing(user, edit_address(org.falken, lena))
         assert_like_missing(user, add_address(org.falken))
-        assert client_for(user).get(unit_address(org.falken)).status_code == 404, user.username
+        # Admins öffnen die Seite seit #92 nur mit dem Kopf (S1); alle anderen gar nicht.
+        expected = 200 if user == org.max else 404
+        assert client_for(user).get(unit_address(org.falken)).status_code == expected, user.username
         for address in ("/", "/profil/", "/organisation/"):
             content = client_for(user).get(address).content.decode()
             assert "Kiwi" not in content and "Probe" not in content, (user.username, address)

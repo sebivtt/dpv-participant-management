@@ -28,6 +28,9 @@
     {# Der Inhalt füllt den freien Platz, damit der Fußbereich bei kurzen Seiten am unteren Fensterrand steht (#206). #}
     <div class="a-main-inhalt">
       {% testumgebung_band %}
+      {# Support-Zugang (#92): der Balken auf jeder Seite, solange er läuft, und nach Ablauf einmal fest oben die Meldung (N1, N2). #}
+      {% if support.bar %}{% include "core/_supportbalken.html" with bar=support.bar %}{% endif %}
+      {% if support.expired %}{% if support.expired.unsaved %}{% meldung "warning" title=support.expired.text text=support.expired.unsaved_text %}{% else %}{% meldung "info" text=support.expired.text %}{% endif %}{% endif %}
       {% block content %}{% endblock %}
     </div>
     {# Liste am Seitenende (#281): dasselbe wie im Menü, für das Handy ohne Skript. Am PC ausgeblendet; mit Skript entfernt es sie. Grundsatz „ohne Skript bedienbar“: docs/entscheidungen.md. #}

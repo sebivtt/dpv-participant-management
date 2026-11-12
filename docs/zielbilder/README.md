@@ -155,3 +155,20 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 4. **Marke „verwaltet“ in der zweiten Zeile,** wo bei Personen mit Konto die Rollen und „gesperrt“ stehen (Baustein „Person in einer Liste“), nicht hinter dem Namen.
 5. **„Bearbeiten“ ohne Stift,** als Baustein „Knopf „Verschieben““: gleiche zarte blaue Fläche, aber ohne Symbol.
 6. **Kein Kasten „Zum Ausprobieren“:** Er gehört wie das Steuerband nicht zur Seite.
+
+## Support-Zugang
+
+- **Datei:** [`support-zugang.html`](support-zugang.html)
+- **Stand:** 11.11.2026, grober Entwurf der Klärung von #92, von Sebastian am 12.11.2026 unverändert als Zielbild übernommen („Entwurf passt so“, [Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6819555590)), eingespielt mit #92 unter dem neuen Namen `support-zugang.html` (vorher `entwurf-92-support-zugang.html`).
+- **Prüfsumme (SHA-256):** `5563c461945c2872b2e317386483d28cf46447383152040b5f967825c0449c4c`
+- **Inhalt der Datei:** nur erfundene Personen und Organisationen (Max, Pfadfinderbund Boreas, Wanda Muster, Lena Probe „Kiwi“ …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen den Zuständen um; ins Tool ist davon nichts übernommen.
+- **Orientierung, keine Anforderung.** Geklärt in #92 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6819688530), N1 bis N4b; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6819688970)). Es zeigt den Kopf einer Organisation mit „Support-Zugang starten“, den Dialog, den Balken und die Meldungen nach Ablauf; Leitungen und Personen deutet es nur an, sie kommen aus `organisation.html`, `personen.html` und `verwaltete-personen.html`.
+
+### Abweichungen vom Zielbild (#92)
+
+Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbindet (`docs/gestaltung.md`), statt das Aussehen des Zielbilds nachzubauen.
+
+1. **Eigene Adresse:** Der Dialog „Support-Zugang für … starten“ ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie die übrigen Dialoge der Seite.
+2. **„Bitte wähle einen Anlass.“ als Baustein „Meldungen“** (Art Fehler) unter der Wahl statt einer roten Zeile mit ×, wie die Fehlermeldung beim Verschieben (#287).
+3. **Gliederung wie auf der Seite „Organisation“:** Marken, Leitungen und zugeklappte Teile kommen aus dem Baustein „Gliederung“ (#189); neben der Überschrift steht wie im Zielbild „alle Bünde“. Auf „Organisation“ steht neben der Gliederung zuerst der erste Bund nach dem Alphabet, nur mit dem Kopf.
+4. **Kein Steuerband und kein Hinweiskasten:** Beide gehören nicht zur Seite.
