@@ -783,8 +783,15 @@ def test_o10_im_gemischten_uebergang_springt_bruno_fuer_die_zugvoegel_ein(org):
 # ---------- Allgemein ----------
 
 
+# Seit #118 gibt es genau eine Adresse zum Löschen: die einer verwalteten Person (VP-09). Organisationen löscht
+# weiter keine Adresse (EH-21); jede weitere Adresse mit „loesch“ macht die Tests unten rot.
+MANAGED_DELETE_ROUTE = "organisation/<key:unit>/verwaltete-person/<key:person>/loeschen/"
+
+
 def _routes() -> list[str]:
-    return [str(pattern.pattern) for pattern in get_resolver().url_patterns]
+    """Alle Adressen des Tools außer der zum Löschen einer verwalteten Person (#118)."""
+    return [str(pattern.pattern) for pattern in get_resolver().url_patterns
+            if str(pattern.pattern) != MANAGED_DELETE_ROUTE]
 
 
 @pytest.mark.rechtematrix("EH-21")

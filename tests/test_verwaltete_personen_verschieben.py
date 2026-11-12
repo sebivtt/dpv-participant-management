@@ -613,6 +613,7 @@ def test_u3_eintraege_zu_verwalteten_personen_lassen_sich_nicht_aendern_oder_loe
     assert RoleChange.objects.get(pk=entry.pk).person_name == "Lena Probe"
 
 
+@pytest.mark.rechtematrix("EH-18", "VP-08", "VP-10")
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize("action", ["verschieben", "austragen", "löschen"])
 def test_kai_aendert_nichts_in_leuchtturm_waehrend_mona_ihn_nach_nord_verschiebt(action):
