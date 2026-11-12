@@ -384,7 +384,9 @@ def test_mw2_frida_sieht_lena_nach_dem_benennen_und_kann_sie_bearbeiten(org, len
     assert appointed.status_code == 302
 
     shown = entries(page_tree(frida, unit_address(org.falken)))
-    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}
+    # Seit #118 trägt die Gruppenleitung verwaltete Personen auch aus (VP-18).
+    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena),
+                                        "Austragen": f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"}
     _found, version = open_edit(frida, org.falken, lena)
     assert save(frida, org.falken, lena, version, scout_name="Kiwi Frida").status_code == 302
 
@@ -570,7 +572,10 @@ def test_mv6_gesundheitsangaben_werden_nicht_gespeichert(org):
 
 
 def test_mv7_im_dialog_bearbeiten_gibt_es_keinen_loeschknopf(org, lena):
-    for user in (org.falken_leitung, org.walhall_leitung):
+    """MV7 ist seit #118 abgelöst (Szenario U2 dort): Den Löschknopf hat jetzt die Leitung der eigenen Organisation
+    der Person, hier Fiete (`tests/test_verwaltete_personen_verschieben.py`). Wer nur bearbeiten darf, wie Wanda,
+    hat ihn weiter nicht."""
+    for user in (org.walhall_leitung,):
         found, _version = open_edit(user, org.falken, lena)
         assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Speichern"]
         assert "Löschen" not in _visible_text(found)
