@@ -24,6 +24,7 @@ from django.test import Client
 from access.rights import Rights
 from persons.models import DisplayedLead, ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
+from units.models import Unit
 from tests import test_verwaltete_personen
 from tests.test_benennen import _one_after_the_other, appoint_address, dialog_of, hits, notices, search
 from tests.test_benennen import short_notices, suggest
@@ -555,3 +556,39 @@ def test_wer_die_leitungen_einer_organisation_nicht_sieht_sieht_auch_ihre_angeze
     # Fiete sieht die Meute Wölfe nicht: Tim steht für ihn nirgends.
     assert {entry["first_name"] for entry in Rights(org.falken_leitung).displayed_leads()} == {"Paul"}
     assert client_for(org.zugvoegel_leitung).get(unit_address(org.woelfe)).status_code == 404
+
+
+# ---------- Ringwechsel (LG5, „Szenarien (12.11.2026)“) ----------
+
+RITA_BLOCKS_RING = ("Rita Probe ist Stammesleitung von Stamm Leuchtturm. Nach dem Wechsel passt diese Rolle nicht mehr "
+                    "zu der Mitgliedschaft in Ring Küste. Sie kann zuerst beendet werden.")
+
+
+@pytest.mark.rechtematrix("VP-14")
+def test_lg5_ringwechsel_mit_angezeigter_rolle_ausserhalb_des_pfads_wird_abgelehnt(org):
+    from tests.test_einheiten_anlegen import change_ring, dialog_notices
+
+    rita = managed("Rita", "Probe", org.kueste)
+    entry = show(rita, R.TROOP_LEAD, org.leuchtturm)
+
+    response = change_ring(org.mosaik_leitung, org.leuchtturm, org.nord)
+
+    assert dialog_notices(response) == [RITA_BLOCKS_RING]
+    assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.kueste.pk
+
+    # Gegenprobe: Ohne die angezeigte Rolle gelingt der Wechsel.
+    assert client_for(org.mosaik_leitung).post(remove_address(org.leuchtturm, entry)).status_code == 302
+    assert change_ring(org.mosaik_leitung, org.leuchtturm, org.nord).status_code == 302
+    assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.nord.pk
+
+
+def test_lg5_auch_das_datenmodell_lehnt_den_ringwechsel_ab(org):
+    rita = managed("Rita", "Probe", org.kueste)
+    show(rita, R.TROOP_LEAD, org.leuchtturm)
+    leuchtturm = Unit.objects.get(pk=org.leuchtturm.pk)
+    leuchtturm.parent = org.nord
+
+    with pytest.raises(ValidationError, match="Stammesleitung Leuchtturm"):
+        leuchtturm.save(by=org.mosaik_leitung)
+
+    assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.kueste.pk
