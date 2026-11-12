@@ -121,10 +121,10 @@ KIND_AND_NAME = {
 }
 
 # Abschnitt „Personen“ und „Person aufnehmen“ (#285, Teil 1 von #65), Wortlaut nach dem Issue und
-# der Nachklärung N1 bis N3. Knopf und Satz bei leerer Liste ersetzt #117 später.
+# der Nachklärung N1 bis N3. Knopf und Satz bei leerer Liste kommen seit #117 aus N6 und N7 (Satz in persons/texts.py).
 PERSONS_COUNT = ngettext_lazy("%(count)s Person", "%(count)s Personen", "count")
-NOBODY_DIRECTLY = gettext_lazy("Zu %(unit)s gehört direkt noch niemand.")
-ADMIT_TITLE = gettext_lazy("Person aufnehmen")
+# Seit #117 (N6) heißen Knopf und Dialog „Person mit Konto aufnehmen“, neben „Verwaltete Person anlegen“.
+ADMIT_TITLE = gettext_lazy("Person mit Konto aufnehmen")
 ADMIT_FOR = gettext_lazy("in %(unit)s")
 ADMIT_HELP = gettext_lazy(
     "Die Person muss sich schon einmal im Tool angemeldet haben. Gefunden wird sie nur über die genaue Mail oder "

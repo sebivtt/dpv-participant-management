@@ -1,0 +1,6 @@
+{% load i18n %}{# Datumsfeld (#117, N3: das Feld des Browsers, nicht der Kalender aus dem Zielbild „Mein Profil“): ein Datum mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt darunter, mit dem Feld verknüpft, wie beim Textfeld. Der Browser zeigt das Datum in seiner Schreibweise und bietet seinen Kalender an, am Handy die Drehräder; Tage nach dem Wert von „max“ lässt er nicht wählen. Eingebunden mit {% datumsfeld form.feld %} (core/templatetags/layout.py); das Formular legt das Feld als Datum fest. #}
+<div class="a-textfeld a-datumsfeld">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if required %} <span class="a-pflicht">{% translate "(Pflicht)" %}</span>{% endif %}</label>
+  {{ widget }}
+  {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
+</div>

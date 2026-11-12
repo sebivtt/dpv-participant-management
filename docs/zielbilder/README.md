@@ -126,3 +126,22 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
 1. **Eigene Adresse:** Der Dialog ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie „Austragen“ (oben, Punkt 2).
 2. **Wahl als Baustein „Auswahl im Dialog“ ohne Vorschau** (Sebastian bei der Umsetzung, 10.11.2026, „2a“): Optionsfeld und Beschriftung nebeneinander in einer umrandeten Zeile, wie beim Austragen.
 3. **Fehlermeldung als Baustein „Meldungen“** (Art Fehler) unter der Wahl statt einer roten Zeile mit ×, damit sie aussieht wie jede Fehlermeldung an der Stelle der Handlung (#186). Die abgelehnte Organisation bleibt gewählt, wie im Zielbild (Sebastian: „Ja, gewählt lassen“).
+
+## Verwaltete Personen
+
+- **Datei:** [`verwaltete-personen.html`](verwaltete-personen.html)
+- **Stand:** 28.10.2026, Fassung 2: Sebastians Fassung 1 (`entwurf-117-v3.html`, aus dem groben Entwurf der Klärung), von der KI an die Nachklärung N1 bis N7 angepasst; Sebastian hat sie gewählt („Ja, Fassung 2“). Übernommen in #117 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/117#issuecomment-6478711946)), eingespielt mit #117.
+- **Prüfsumme (SHA-256):** `be89525874bdcbb10c4c2bc5a37170c98d59eb868013040278ced48a590b005b`
+- **Inhalt der Datei:** nur erfundene Personen und Organisationen (Pfadfinderbund Boreas, Lena Probe „Kiwi“, Wanda …), alle Mails auf `example.org`. Nichts von fremden Servern: Gestaltung und Symbole stehen in der Datei, die Schrift ist die Systemschrift. Ein eingebettetes Skript schaltet nur zwischen Personen und Fällen um; ins Tool ist davon nichts übernommen.
+- **Orientierung, keine Anforderung.** Geklärt in #117 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/117#issuecomment-6478724205), N1 bis N7; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/117#issuecomment-6478724730)). Es zeigt den Abschnitt „Personen“ und den Dialog; der Rest der Seite kommt aus `organisation.html` und `personen.html`.
+
+### Abweichungen vom Zielbild (#117)
+
+Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbindet (`docs/gestaltung.md`), statt das Aussehen des Zielbilds nachzubauen.
+
+1. **Eigene Adresse:** Beide Dialoge sind eigene Seiten über der Organisation, damit sie ohne Skript gehen, wie „Person mit Konto aufnehmen“. Nach dem Dialog führen ×, „Abbrechen“, Escape und das Speichern zur Seite mit der Kennung des Knopfs, der ihn geöffnet hat, in der Adresse; das Skript gibt diesem Knopf wieder den Fokus.
+2. **Felder aus den Bausteinen „Textfeld“ und „Datumsfeld“:** Pflichtfelder tragen „(Pflicht)“ statt eines Sternchens, der Satz „* Pflichtangabe“ fehlt, und der Fahrtenname steht ohne „(freiwillig)“. Unter Vorname, Nachname und Fahrtenname steht beim Tippen die Zahl der Zeichen (#215); nichts wird beim Einfügen abgeschnitten, das Zielbild schneidet mit `maxlength` ab. Der Fehler steht rot unter dem Feld wie bei jedem Textfeld, ohne × davor.
+3. **„… wurde inzwischen von jemand anderem geändert …“** steht wie im Zielbild oben im Dialog, im Aussehen des Bausteins „Meldungen“ (Art Fehler).
+4. **Marke „verwaltet“ in der zweiten Zeile,** wo bei Personen mit Konto die Rollen und „gesperrt“ stehen (Baustein „Person in einer Liste“), nicht hinter dem Namen.
+5. **„Bearbeiten“ ohne Stift,** als Baustein „Knopf „Verschieben““: gleiche zarte blaue Fläche, aber ohne Symbol.
+6. **Kein Kasten „Zum Ausprobieren“:** Er gehört wie das Steuerband nicht zur Seite.

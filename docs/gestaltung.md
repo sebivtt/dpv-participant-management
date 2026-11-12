@@ -8,7 +8,7 @@ Wer eine Seite baut, nimmt die Bausteine aus dem Bausteinkatalog (unten) und die
 
 Protokoll und Szenarien in #176, Entscheidung mit Begründung in `docs/entscheidungen.md`, Eintrag vom 27.10.2026 zu #176. Jeder Baustein steht einmal als Vorlagenstück unter `core/templates/core/`, sein Aussehen in `core/static/core/app.css`. Der Katalog unter `/bausteine/` (`core/templates/core/bausteine.html`) zeigt jeden über dasselbe Vorlagenstück wie die echten Seiten, mit erfundenen Daten, je Baustein mit einem Satz zum Zweck, dem Issue, das ihn entschieden hat, und den Seiten, die ihn nutzen. Es gibt ihn nur für Angemeldete auf dem eigenen Rechner und in der Testumgebung; im Betrieb zeigt die Adresse allen „Diese Seite gibt es nicht.“
 
-- **Regel: einbinden, nicht kopieren.** Eine Seite bindet den Baustein ein, statt sein Aussehen nachzubauen. Eingabefelder kommen immer aus einem Baustein (Textfeld, Feld zum Antippen). Zwei Tests in `tests/test_bausteinkatalog.py` werden rot, wenn eine Seite ein eigenes Eingabefeld hat oder ein Vorlagenstück einbindet, das nicht im Katalog steht.
+- **Regel: einbinden, nicht kopieren.** Eine Seite bindet den Baustein ein, statt sein Aussehen nachzubauen. Eingabefelder kommen immer aus einem Baustein (Textfeld, Datumsfeld, Feld zum Antippen, Auswahl im Dialog). Zwei Tests in `tests/test_bausteinkatalog.py` werden rot, wenn eine Seite ein eigenes Eingabefeld hat oder ein Vorlagenstück einbindet, das nicht im Katalog steht.
 - **Nur Entschiedenes:** ein Baustein, den Sebastian an einem Zielbild (#162) oder in einer Klärung mit `grill-me` ausdrücklich freigegeben hat und den das Issue dazu nennt. Er kommt in den Katalog, sobald Sebastian ihn entschieden hat, spätestens mit seiner ersten Seite. Bis eine Seite ihn einbindet, trägt er den Vermerk „noch auf keiner Seite“.
 - **Passt ein vorhandener Baustein nicht genau,** wird er erweitert oder es entsteht ein neuer; das entscheidet Sebastian, nie eine stille Kopie (für die KI: `CLAUDE.md`, „Ablauf je Aufgabe“).
 - **Prüfung:** Im Katalog läuft die Prüfung auf Barrierefreiheit am PC und am Handy, am Handy auch mit offenem Menü. Mit der Tastatur geprüft wird ein Baustein auf seiner ersten echten Seite.
@@ -140,6 +140,19 @@ Kein Zielbild (Frage 14 in #95); Entscheidungen in `docs/entscheidungen.md`, Ein
 - **„… bearbeiten“:** Textfeld „Name“; beim Stamm für die Bundesleitung „Ring“ als „Auswahl im Dialog“ ohne Vorschau, bei einem Stamm ohne Ring zuerst „ohne Ring (bisher)“; beim Bund für die Bundesleitung der Schalter „Hat Ringe“. Wird er eingeschaltet, kommt vor dem Speichern die Rückfrage „Ringe für … einführen?“. Der Knopf zum Bestätigen ist überall dunkelblau. Ein doppelter oder leerer Name steht als Fehler am Feld, eine Ablehnung beim Ringwechsel fest im Dialog unter der Wahl.
 - **Danach** je Änderung eine kurze Meldung (#186), etwa „Sippe Kraniche ist angelegt.“
 
+### Verwaltete Personen (#117, 11.11.2026)
+
+Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 11.11.2026 zu #117. Ein Baustein neu, fünf erweitert:
+
+- **Datumsfeld** (neu, N3): das Datumsfeld des Browsers, mit Beschriftung und Fehler am Feld wie das Textfeld, ohne Zahl der Zeichen. Der Browser zeigt das Datum in seiner Schreibweise, am PC mit kleinem Kalender, am Handy mit Drehrädern; Tage nach „heute“ lässt er beim Geburtsdatum nicht wählen. Der Kalender aus `docs/zielbilder/mein-profil.html` entfällt hier.
+- **Überschrift einer Fläche:** links neben dem Knopf darf ein zweiter stehen, zart blau wie „Verschieben“, etwa „Verwaltete Person anlegen“ neben „Person mit Konto aufnehmen“ (N6); am Handy untereinander.
+- **Person in einer Liste:** Eine verwaltete Person hat einen grauen Kreis, in der zweiten Zeile die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Mail und Geburtsdatum stehen nicht in der Liste.
+- **Marke:** neu „verwaltet“, grau wie „nur lesen“, ohne Schloss.
+- **Knopf „Verschieben“:** auch für „Bearbeiten“ bei einer verwalteten Person, ohne Symbol.
+- **Dialog:** Nach dem Dialog bekommt der Knopf, der ihn geöffnet hat, wieder den Fokus; dafür trägt der Knopf eine Kennung, und der Dialog führt zur Seite mit dieser Kennung in der Adresse zurück. Bisher nur bei verwalteten Personen. Dort prüft der Browser die Felder nicht selbst (`novalidate`), damit die Meldungen des Tools am Feld erscheinen statt der Blase des Browsers.
+- **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
+- **Danach** eine kurze Meldung (#186): „Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.“, „Die Angaben zu Kiwi (Lena Probe) sind gespeichert.“ Hat inzwischen jemand anderes gespeichert, steht die Fehlermeldung oben im Dialog, und er zeigt den neuen Stand.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
@@ -149,7 +162,7 @@ Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% t
 - **Passende Handy-Tastatur:** Das Formular legt sie am Feld fest, z. B. bei Namen Großbuchstabe am Wortanfang, ohne Autokorrektur. Jedes neue Feld wird auch wie am Handy geprüft, mit Autokorrektur und Wortvorschlägen (Rauchtest).
 - **Weiß** auf grauem oder weißem Grund, damit es sich von gesperrten Feldern (grau, mit Schloss) abhebt.
 - **Zahl der Zeichen** (#215) nur bei fachlicher Grenze: beim Tippen rechts unter der Eingabe „12/30“, zu lang rot mit der Meldung darunter; nichts wird abgeschnitten. Gilt ebenso im Feld zum Antippen, dort nur bei offener Eingabe. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 31.10.2026 zu #215.
-- Gleiches gilt später für Datumsfelder (#100) und das Adressfeld (#163).
+- Gleiches gilt für Datumsfelder (seit #117 der Baustein „Datumsfeld“) und später das Adressfeld (#163).
 
 ### Felder zum Antippen (#180, 26.10.2026)
 

@@ -1,6 +1,7 @@
 """Seiten der App „core“."""
 
 import logging
+from datetime import date
 
 from django.conf import settings
 from django.contrib import messages
@@ -9,16 +10,20 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
 
 from access.addresses import checks_rights, without_personal_data
+from access.keys import is_key, new_key
 from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import AccountSearchForm, FederationSearchForm, PatternForm, UnitNameForm
+from core.forms import AccountSearchForm, FederationSearchForm, ManagedPersonForm, PatternForm, UnitNameForm
+from persons.models import EDITABLE_FIELDS
 from roles.models import Role
 from units.models import Unit
 from units import texts
 from units.organisation import (
+    ADD_MANAGED_ID,
     FEDERATION_SLUGS,
     SLUG_OF,
     Federation,
@@ -36,6 +41,8 @@ from units.organisation import (
     move_dialog,
     federation_done,
     hits,
+    edit_anchor,
+    managed_dialog,
     rings_question,
 )
 
@@ -201,7 +208,7 @@ READING = ("GET", "HEAD")
 # Die Adresse hat keine Kennung: Sie zeigt immer die Gliederung der angemeldeten Person (EH-01)
 # oder, für die Verbandsleitung, die Seite „Verband“ (#94).
 @checks_rights("EH-01", "EH-03", "EH-04", "EH-05", "EH-07", "EH-08", "EH-09", "RO-01", "RO-03", "RO-04", "RO-05",
-               "RO-21", "RO-22")
+               "RO-21", "RO-22", "VP-02", "VP-06")
 def organisation(request: HttpRequest) -> HttpResponse:
     """„Organisation“: die Gliederung des eigenen Bundes, am PC daneben die Seite der eigenen Organisation.
 
@@ -223,7 +230,8 @@ def organisation(request: HttpRequest) -> HttpResponse:
 
 
 # Die Organisation kommt nur aus der Adresse, über ihre Kennung (CONTRIBUTING.md, Abschnitt 4).
-@checks_rights("EH-01", "EH-03", "EH-07", "EH-09", "EH-28", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22")
+@checks_rights("EH-01", "EH-03", "EH-07", "EH-09", "EH-28", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22", "VP-02", "VP-03",
+               "VP-06")
 def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
     """Seite einer Organisation: im eigenen Bereich zum Verwalten, auf der Kette nach oben nur zum Lesen (Frage C).
 
@@ -622,6 +630,82 @@ def organisation_edit(request: HttpRequest, unit: str) -> HttpResponse:
     return _with_dialog(request, found, dialog)
 
 
+# Verwaltete Personen anlegen und bearbeiten (#117, PER-02). Wie die übrigen Dialoge der Seite hat jeder eine
+# eigene Adresse unter der Seite der Organisation, damit er auch ohne Skript geht. Die Organisation kommt immer
+# aus der Adresse, die Person über ihre Kennung, nie aus dem Formular (MV4).
+ADD_MANAGED_ROWS = ("VP-01", "VP-03", "VP-06", "VP-17", "EH-18")
+EDIT_MANAGED_ROWS = ("VP-02", "VP-03", "VP-04", "VP-05", "VP-06")
+
+
+@checks_rights(*ADD_MANAGED_ROWS)
+@never_cache
+def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Verwaltete Person anlegen“ zeigen und die Person in dieser Organisation anlegen (VP-01, EH-18).
+
+    Den Knopf und die Adresse hat nur, wer dort anlegen darf (VP-17). Der Dialog bekommt beim Öffnen eine
+    eigene Kennung (`creation_key`), damit ein Doppelklick niemanden zweimal anlegt (MG7). Danach geht es
+    zurück zur Seite, zum Knopf, mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog mit
+    den Eingaben und dem Fehler am Feld offen. Eine Kennung des Dialogs in falscher Form ist „nicht gefunden“.
+    Der Browser speichert den Dialog nicht: Nach „Zurück“ kommt er neu, mit neuer Kennung, sonst legte ein
+    zweites Anlegen daraus stillschweigend niemanden an (unabhängige Prüfung, Befund 2).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_add_managed)
+    if request.method == "POST":
+        creation_key = request.POST.get("creation_key", "")
+        if not is_key(creation_key):
+            raise Http404
+        form = ManagedPersonForm(request.POST)
+        if form.is_valid():
+            text = rights.add_managed(found, form.cleaned_data, creation_key)
+            if text:
+                messages.success(request, text)
+            return redirect(f"{reverse('organisation_unit', args=[found.key])}#{ADD_MANAGED_ID}")
+    elif request.method in READING:
+        form, creation_key = ManagedPersonForm(), new_key()
+    else:
+        raise Http404
+    dialog = managed_dialog(found, form, action=request.path, hidden=[("creation_key", creation_key)])
+    return _with_dialog(request, found, dialog)
+
+
+@checks_rights(*EDIT_MANAGED_ROWS)
+def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „… bearbeiten“ einer verwalteten Person zeigen und ihre Angaben speichern (VP-02).
+
+    Die Organisation kommt aus der Adresse, die Person über ihre Kennung; gehört sie nicht direkt zu dieser
+    Organisation oder darf die Person sie nicht sehen, ist das „nicht gefunden“ (VP-03, MV4, MV5), auch
+    für eine gerade entfernte Leitung im schon offenen Dialog (MW1). Der Dialog schickt den Stand beim
+    Öffnen mit (`version`); hat inzwischen jemand anderes gespeichert, zeigt er dessen Stand mit dem Satz
+    aus MG6 und überschreibt nichts. Danach geht es zurück zur Seite, zum Knopf „Bearbeiten“.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit)
+    entry = rights.managed_person(found, person)
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("version", "")
+        form = ManagedPersonForm(request.POST)
+        if form.is_valid():
+            done, entry, text = rights.edit_managed(found, person, form.cleaned_data, version)
+            if done:
+                messages.success(request, text)
+                return redirect(f"{reverse('organisation_unit', args=[found.key])}#{edit_anchor(entry)}")
+            form, version, conflict = ManagedPersonForm(initial=_managed_values(entry)), entry.version, text
+    elif request.method in READING:
+        form, version = ManagedPersonForm(initial=_managed_values(entry)), entry.version
+    else:
+        raise Http404
+    dialog = managed_dialog(found, form, action=request.path, entry=entry, hidden=[("version", version)],
+                            conflict=conflict)
+    return _with_dialog(request, found, dialog)
+
+
+def _managed_values(entry) -> dict:
+    """Die gespeicherten Angaben einer verwalteten Person für den Dialog „… bearbeiten“."""
+    return {name: getattr(entry, name) for name in EDITABLE_FIELDS}
+
+
 # Seite „Verband“ der Verbandsleitung (#94). Benennen und Entfernen haben wie auf der Seite einer
 # Organisation eigene Adressen, damit die Dialoge ohne Skript gehen; sie liegen unter
 # „/organisation/verband/“, weil die Verbandsleitung die Seite eines Bundes nicht öffnet (EH-05).
@@ -811,6 +895,14 @@ BUILDING_BLOCKS = {
                      "sobald der Text zu lang ist."),
         "pages": [_("Organisation")],
     },
+    "datumsfeld": {
+        "name": _("Datumsfeld"), "template": "core/_datumsfeld.html", "issues": [117],
+        "purpose": _("Ein Datum über das Feld des Browsers, mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und "
+                     "dem Fehler rot direkt darunter, wie beim Textfeld. Der Browser zeigt das Datum in seiner "
+                     "Schreibweise und bietet seinen Kalender an, am Handy die Drehräder; Tage in der Zukunft lässt "
+                     "er nicht wählen, wo das Formular es so festlegt."),
+        "pages": [_("Organisation")],
+    },
     "kurzmeldung": {
         "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
         "purpose": _("Bestätigt eine eigene Handlung, etwa „gespeichert“: erscheint als Erfolg oder Information "
@@ -837,9 +929,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil")],
     },
     "flaechenkopf": {
-        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html", "issues": [161, 190, 94, 218, 285],
+        "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html",
+        "issues": [161, 190, 94, 218, 285, 117],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
-                     "stehen, etwa „Gruppenleitung benennen“. Der Titel darf ein Link sein, etwa der eigene Bund "
+                     "stehen, etwa „Gruppenleitung benennen“, links daneben ein zweiter zart blauer, etwa "
+                     "„Verwaltete Person anlegen“. Der Titel darf ein Link sein, etwa der eigene Bund "
                      "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
                      "„4 Personen“."),
         "pages": [_("Mein Profil"), _("Organisation")],
@@ -859,19 +953,20 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "kennmarke": {
-        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218],
-        "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Leitung: „Du springst ein“, „nur "
-                     "lesen“ oder „gesperrt“."),
+        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218, 117],
+        "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Person: „Du springst ein“, „nur "
+                     "lesen“, „gesperrt“ oder „verwaltet“."),
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287],
+        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287, 117],
         "purpose": _("Eine Leitung oder Person mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, "
                      "darunter links die Rollen und rechts die Mail, wo die Seite sie zeigen darf. Eine Leitung hat "
                      "genau eine Rolle, eine Person im Abschnitt „Personen“ keine, eine oder mehrere "
                      "Leitungsrollen. Ganz rechts ist Platz für Knöpfe; wo man Leitungen entfernen darf, steht dort "
                      "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“; wo man Personen verschieben oder "
-                     "austragen darf, „Verschieben“ und „Austragen“."),
+                     "austragen darf, „Verschieben“ und „Austragen“. Eine verwaltete Person hat einen grauen Kreis, "
+                     "die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“."),
         "pages": [_("Organisation")],
     },
     "knopfentfernen": {
@@ -882,10 +977,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "knopfverschieben": {
-        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287],
+        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287, 117],
         "purpose": _("Für Handlungen, die etwas umstellen, ohne etwas wegzunehmen, etwa „Verschieben“ bei einer "
-                     "Person: kleiner Knopf mit zarter blauer Fläche und blauer Schrift, die Farben der "
-                     "Informationsmeldung. Er führt zum Dialog, nie gleich zur Handlung."),
+                     "Person oder „Bearbeiten“ bei einer verwalteten Person: kleiner Knopf mit zarter blauer Fläche "
+                     "und blauer Schrift, die Farben der Informationsmeldung. Er führt zum Dialog, nie gleich zur "
+                     "Handlung."),
         "pages": [_("Organisation")],
     },
     "stift": {
@@ -912,12 +1008,14 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
                      "„Entfernen“, oder, wo nichts weggenommen wird, ein dunkelblauer, etwa „Verschieben“; er "
-                     "schickt eine Wahl aus der „Auswahl im Dialog“ oder ein Textfeld mit, etwa den Namen beim Anlegen."),
+                     "schickt eine Wahl aus der „Auswahl im Dialog“ oder Felder mit, etwa den Namen beim Anlegen. "
+                     "Danach bekommt der Knopf, der den Dialog geöffnet hat, wieder den Fokus, wo die Seite ihm eine "
+                     "Kennung gibt, etwa bei verwalteten Personen."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
@@ -1044,6 +1142,9 @@ def _organisation_examples() -> dict:
              role_names=["Gruppenleitung Meute Wölfe"]),
         Lead(name="Wilma Muster", extra="", role="", mail="wilma.muster@example.org", locked=False, is_self=False,
              move_href="#h-leitung", expel_href="#h-leitung"),
+        # Eine verwaltete Person (#117): grauer Kreis, Marke „verwaltet“, ohne Mail, mit „Bearbeiten“.
+        Lead(name="Kiwi", extra="Lena Probe", role="", mail="", locked=False, is_self=False, managed=True,
+             edit_href="#h-leitung"),
     ]
     # Verschieben mit Wahl ohne Vorschau und blauem Knopf (#287), erfunden wie im Beispiel des Issues.
     moving = {
@@ -1067,7 +1168,7 @@ def _organisation_examples() -> dict:
     edit_example = {"name": "Sippe Falken", "label": texts.EDIT_TITLE % {"unit": "Sippe Falken"}}
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
@@ -1086,6 +1187,8 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
         # Feld zum Antippen (#180) mit erfundenem Fahrtennamen; eigene Kennungen, damit nichts mit
         # anderen Feldern der Seite zusammenfällt. Das Formular hier schickt nichts ab.
         "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="katalog_%s"),
+        # Datumsfeld (#117) mit erfundenem Datum; der Fehler am Feld sieht aus wie beim Textfeld darüber.
+        "date_form": ManagedPersonForm(initial={"birth_date": date(2015, 5, 14)}, auto_id="katalog_datum_%s"),
         "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
         # Rollen ohne zweite Zeile (#219); die lange Organisation zeigt den Umbruch.
         "tiles": [

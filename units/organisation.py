@@ -14,10 +14,13 @@ from django.urls import reverse
 
 from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, child_kind, listed, unit_label
 from accounts.models import display_name
+from persons import texts as person_texts
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
 from units import texts
 from units.models import Kind, Unit
 
+# Die Kennung des Knopfs „Verwaltete Person anlegen“; dorthin führt sein Dialog zurück (#117).
+ADD_MANAGED_ID = "verwaltete-person-anlegen"
 # Was unter jeder Ebene hängt, für „… hat noch keine …“ (A11); ein Bund mit Ringen bekommt Ringe.
 CHILDREN_WORD = {Kind.TROOP: texts.GROUPS, Kind.RING: texts.TROOPS, Kind.ASSOCIATION: texts.TROOPS}
 
@@ -54,6 +57,12 @@ class Lead:
     # Davor der Knopf „Verschieben“, nur wo die Person verschieben darf (#287).
     move_href: str | None = None
     move_label: str = texts.MOVE_BUTTON
+    # Eine verwaltete Person (#117): Marke „verwaltet“ und der Knopf „Bearbeiten“ mit seiner Kennung, zu
+    # der der Dialog danach zurückführt.
+    managed: bool = False
+    edit_href: str | None = None
+    edit_label: str = person_texts.EDIT_BUTTON
+    edit_id: str = ""
 
     @property
     def shown_roles(self) -> list[str]:
@@ -64,6 +73,11 @@ class Lead:
     def locked_mark(self) -> Mark | None:
         """Die Marke „gesperrt“; nur Verwaltende bekommen gesperrte Leitungen überhaupt zu sehen (Frage B)."""
         return Mark(texts.MARK_LOCKED, "gesperrt") if self.locked else None
+
+    @property
+    def managed_mark(self) -> Mark | None:
+        """Die Marke „verwaltet“ bei einer verwalteten Person im Abschnitt „Personen“ (#117)."""
+        return Mark(person_texts.MARK_MANAGED, "verwaltet") if self.managed else None
 
     @property
     def initial(self) -> str:
@@ -122,9 +136,13 @@ class Page:
     persons: list[Lead] | None = None
     persons_count: str = ""
     persons_empty: str = ""
-    # Der Knopf „Person aufnehmen“, nur wo die Person aufnehmen darf (PK-17, PK-26, EH-18).
+    # Der Knopf „Person mit Konto aufnehmen“, nur wo die Person aufnehmen darf (PK-17, PK-26, EH-18).
     admit_href: str | None = None
     admit_label: str = texts.ADMIT_TITLE
+    # Daneben „Verwaltete Person anlegen“, nur wo die Person anlegen darf (VP-01, VP-17, EH-18; #117).
+    add_managed_href: str | None = None
+    add_managed_label: str = person_texts.ADD_TITLE
+    add_managed_id: str = ADD_MANAGED_ID
     # Der Knopf „… anlegen“ unter „Organisationen darunter“, nur wo die Person anlegen darf (#95).
     create_href: str | None = None
     create_label: str = ""
@@ -169,6 +187,11 @@ def _by_name(entry: dict) -> tuple:
 def _user_by_name(user) -> tuple:
     """Personen wie Leitungen nach Nachnamen, dann Vornamen; ohne Namen am Ende, nach dem Benutzernamen."""
     return (not user.last_name, alphabetical(user.last_name), alphabetical(user.first_name), user.username)
+
+
+def _managed_by_name(entry) -> tuple:
+    """Verwaltete Personen in derselben Ordnung wie Personen mit Konto; sie haben immer einen Nachnamen (#117)."""
+    return (False, alphabetical(entry.last_name), alphabetical(entry.first_name), "")
 
 
 def _full_name(entry: dict) -> str:
@@ -327,17 +350,49 @@ class Organisation:
         }
 
     def _persons_section(self, unit: Unit, access: str) -> dict:
-        """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1)."""
+        """Der Abschnitt „Personen“ nur im eigenen Bereich; auf der Leseseite gibt es ihn nicht (#285, U1).
+
+        Personen mit Konto und verwaltete Personen stehen gemischt, alle nach Nachname, dann Vorname;
+        die Zahl im Kopf zählt alle (#117, Frage 2). Ohne Personen steht der Satz aus N7, der zweite Satz
+        nur, wo die Person dort anlegen darf.
+        """
         if access != MANAGE:
             return {}
         may = {"expel": self.rights.may_expel(unit), "move": self.rights.may_move(unit)}
-        persons = [self._person(user, unit, **may) for user in sorted(self.rights.members(unit), key=_user_by_name)]
+        may_add = self.rights.may_add_managed(unit)
+        people = [(_user_by_name(user), self._person(user, unit, **may)) for user in self.rights.members(unit)]
+        people += [(_managed_by_name(entry), self._managed(entry, unit)) for entry in self.rights.managed_in(unit)]
+        persons = [lead for _order, lead in sorted(people, key=lambda pair: pair[0])]
+        empty = str(person_texts.NOBODY_YET)
+        if may_add:
+            empty = f"{empty} {person_texts.NOBODY_YET_ADD}"
         return {
             "persons": persons,
             "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
-            "persons_empty": texts.NOBODY_DIRECTLY % {"unit": unit_label(unit)},
+            "persons_empty": empty,
             "admit_href": reverse("organisation_admit", args=[unit.key]) if self.rights.may_admit(unit) else None,
+            "add_managed_href": reverse("organisation_add_managed", args=[unit.key]) if may_add else None,
         }
+
+    @staticmethod
+    def _managed(entry, unit: Unit) -> Lead:
+        """Eine verwaltete Person im Abschnitt „Personen“: wie eine Person mit Konto, ohne Mail und Geburtsdatum (#117).
+
+        Mit der Marke „verwaltet“ und dem Knopf „Bearbeiten“; den hat, wer den Abschnitt sieht, denn
+        sehen und bearbeiten gehen zusammen im ganzen Bereich (VP-02).
+        """
+        full_name = f"{entry.first_name} {entry.last_name}"
+        return Lead(
+            name=entry.scout_name or full_name,
+            extra=full_name if entry.scout_name else "",
+            role="",
+            mail="",
+            locked=False,
+            is_self=False,
+            managed=True,
+            edit_href=reverse("organisation_edit_managed", args=[unit.key, entry.key]),
+            edit_id=edit_anchor(entry),
+        )
 
     def _person(self, user, unit: Unit, expel: bool, move: bool) -> Lead:
         """Eine Person im Abschnitt „Personen“ mit ihren Leitungsrollen von der Gruppe bis zum Bund (#65 N1).
@@ -524,6 +579,37 @@ def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: 
         "form_id": "f-dialog",
         "choice": _choice("ziel", str(texts.MOVE_QUESTION), options, chosen=chosen),
         "notice": notice,
+    }
+
+
+def edit_anchor(entry) -> str:
+    """Die Kennung des Knopfs „Bearbeiten“ einer verwalteten Person; dorthin führt ihr Dialog zurück (#117)."""
+    return f"bearbeiten-{entry.key}"
+
+
+def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = (), conflict: str = "") -> dict:
+    """Der Dialog „Verwaltete Person anlegen“ oder, mit `entry`, „… bearbeiten“ (#117, Zielbild).
+
+    Darunter „in … · ohne Konto, verwaltet“, die vier Felder und der dunkelblaue Knopf „Anlegen“ oder
+    „Speichern“; einen Knopf zum Löschen gibt es nicht (N5, #118). × und „Abbrechen“ führen zur Seite
+    zurück, mit der Kennung des Knopfs, der den Dialog geöffnet hat, in der Adresse; dort bekommt er den
+    Fokus wieder. `hidden` sind die versteckten Felder (Kennung des Dialogs oder Stand), `conflict`
+    der Satz, wenn inzwischen jemand anderes gespeichert hat (MG6).
+    """
+    back = f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry) if entry else ADD_MANAGED_ID}"
+    return {
+        "title": person_texts.EDIT_TITLE % {"person": entry.display_name} if entry else person_texts.ADD_TITLE,
+        "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
+        "close_href": back,
+        "confirm_action": action,
+        "confirm_label": person_texts.SAVE_BUTTON if entry else person_texts.ADD_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        # Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (MG1, MG4).
+        "novalidate": True,
+        "person_form": form,
+        "hidden": list(hidden),
+        "conflict": conflict,
     }
 
 

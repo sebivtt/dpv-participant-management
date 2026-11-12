@@ -424,6 +424,16 @@
     });
   });
 
+  // Zurück aus einem Dialog (#117): Führt der Dialog zur Seite mit der Kennung eines Knopfs in der Adresse
+  // („#…“), etwa „Bearbeiten“ bei einer verwalteten Person, bekommt dieser Knopf wieder den Fokus. Ohne
+  // Skript beginnt die Tastatur dort, weil der Browser zu ihm springt.
+  if (window.location.hash.length > 1 && !document.querySelector("dialog[data-dialog]")) {
+    var returnTo = document.getElementById(window.location.hash.slice(1));
+    if (returnTo && returnTo.matches("a[href], button")) {
+      returnTo.focus();
+    }
+  }
+
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
   // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
   // ältere Antwort, die erst nach einer neueren ankommt, wird verworfen. „Suchen“ und Enter schicken

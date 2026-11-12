@@ -39,6 +39,27 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-11 · Verwaltete Personen anlegen, sehen und bearbeiten (#117, PER-02)
+
+**Entscheidung** (Sebastian; Klärung von #117 am 22.10. und 28.10.2026, Nachklärung nach dem Zielbild N1 bis N7, Änderung vom 30.10.2026; maßgeblich sind Text und Szenarien des Issues):
+
+1. **VP-02 bekommt einen neuen Wortlaut** (Frage 1 vom 28.10.2026, Sebastians Bestätigung „Ja, stimmt“): Leitungen sehen verwaltete Personen ihres Bereichs „im Abschnitt ‚Personen‘ der Organisationen ihres Bereichs“ statt „auch in der Liste ‚Personen‘ und ihrer Suche“. Eine bereichsweite Liste mit Suche gibt es nicht.
+2. **Knopf und Dialog „Person mit Konto aufnehmen“** statt „Person aufnehmen“, daneben „Verwaltete Person anlegen“ (N6). Der Satz bei leerer Liste heißt „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit „Du kannst oben eine verwaltete Person anlegen oder eine bereits registrierte Person aufnehmen.“; das ersetzt den Satz „Zu … gehört direkt noch niemand.“ aus #65 (N7).
+3. **Datumsfeld des Browsers** (N3) als neuer Baustein „Datumsfeld“ (`docs/gestaltung.md`).
+
+**Technische Wahl** (KI):
+
+1. **Eigene App `persons`** für das neue Modell `ManagedPerson`; Rechte und Seiten bleiben wie für Personen mit Konto in `access/rights.py` und `core/views.py` (`docs/aufbau.md`). Die Organisation hängt mit `PROTECT` an der Person, damit sie sich mit verwalteter Person nicht löschen lässt (MG8); im Verband lehnt `ManagedPerson.save()` ab (#88).
+2. **Wer anlegt und wer bearbeitet:** Anlegen genau wie Aufnehmen (`Rights.leads_unit()`, VP-01, VP-17, EH-18); sehen und bearbeiten im ganzen Bereich (`Rights.area`, VP-02), unabhängig davon, wer die Person angelegt hat (VP-05). Die Organisation kommt aus der Adresse, die Person über ihre Kennung und muss direkt zu dieser Organisation gehören (MV4).
+3. **Gleichzeitig bearbeiten** (MG6): Jede Person trägt einen Stand (`version`), den jedes Speichern hochzählt. Der Dialog schickt den Stand beim Öffnen mit; gespeichert wird unter Sperre von eigenem Konto und Person, und nur, wenn der Stand noch stimmt. Sonst zeigt der Dialog den neuen Stand mit der Meldung. Keine Sperre über die Zeit, in der der Dialog offen ist (wie in der Nachklärung festgehalten).
+4. **Doppelklick** (MG7): Der Dialog „Verwaltete Person anlegen“ bekommt beim Öffnen eine zufällige Kennung (`creation_key`), die mit der Person gespeichert wird und in der Datenbank eindeutig ist. Ein zweites Abschicken desselben Dialogs, auch gleichzeitig, legt niemanden an; ein neu geöffneter Dialog legt dagegen auch eine gleichnamige Person an (MG5). Der Browser speichert den Dialog nicht (`no-store`), damit „Zurück“ einen neuen Dialog mit neuer Kennung bringt (unabhängige Prüfung, Befund 2).
+5. **Fokus zurück** (Zielbild): ×, „Abbrechen“, Escape und Speichern führen zur Seite mit der Kennung des Knopfs, der den Dialog geöffnet hat, in der Adresse (`#verwaltete-person-anlegen`, `#bearbeiten-…`); das Skript gibt diesem Knopf den Fokus. So geht es auch mit den Dialogen mit eigener Adresse. Die Felder prüft nur das Tool, nicht der Browser (`novalidate`), damit die vereinbarten Meldungen am Feld erscheinen (MG1, MG4). Ein Datum, das das Datumsfeld des Browsers nicht versteht, kommt leer an; dann heißt es „Bitte gib das Geburtsdatum ein.“, „Bitte gib ein gültiges Geburtsdatum ein.“ kommt nur bei Anfragen am Browser vorbei (Folge von N3).
+6. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): verwaltete Person `managed person` (`ManagedPerson`, App `persons`), Geburtsdatum `birth_date`, anlegen `add_managed`, bearbeiten `edit_managed`, Stand `version`, Kennung des Dialogs beim Anlegen `creation_key`.
+
+**Umsetzung:** `persons/` (Modell, Migration, Texte), `.dockerignore` (gibt `persons/` für das Container-Abbild frei), `access/rights.py`, `core/forms.py`, `core/views.py`, `config/urls.py`, `config/settings.py`, `units/organisation.py`, `units/texts.py`, `core/templatetags/layout.py`, `core/templates/core/organisation.html`, `_datumsfeld.html`, `_leitung.html`, `_flaechenkopf.html`, `_kennmarke.html`, `_knopf_verschieben.html`, `bausteine.html`, `core/static/core/app.css`, `core/static/core/app.js`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/aufbau.md`, Zielbild `docs/zielbilder/verwaltete-personen.html`; Tests in `tests/test_verwaltete_personen.py` und `rauchtests/test_verwaltete_personen.py`; `tests/test_testumgebung_aufbau.py` nennt die neue App.
+
+---
+
 ## 2026-11-11 · Organisationen anlegen und bearbeiten durch die Ebene darüber (#95, ORG-06)
 
 **Entscheidung** (Sebastian; Klärung von #95 am 22.10., 23.10., 28.10. und 03.11.2026, Fragen 1 bis 3 und 13 bis 16; Antworten bei der Umsetzung am 11.11.2026, [Kommentar in #95](https://github.com/sebivtt/dpv-participant-management/issues/95#issuecomment-6790041476)):
