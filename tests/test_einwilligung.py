@@ -322,9 +322,10 @@ def test_der_schalter_fuer_hat_ringe_bleibt_ein_schalter(org, settings):
 
     roles = [_attr(field, "role") for field in _by_tag(section, "input", type="checkbox")]
     assert "switch" in roles
-    # Der Katalog zeigt auch die Erweiterung aus #98: als Ankreuzfeld, mit dem Fehler am Feld.
+    # Der Katalog zeigt auch die Erweiterung aus #98 als Ankreuzfeld. Den Fehler am Feld zeigt er dort nicht,
+    # weil der Katalog nur ein Feld mit Fehler hat (tests/test_gestaltung.py, Szenario 9); ihn prüft EV1 am Dialog.
     assert None in roles
-    assert MISSING in _visible_text(section)
+    assert MISSING not in _visible_text(section)
     assert "#98" in _visible_text(section)
 
 
