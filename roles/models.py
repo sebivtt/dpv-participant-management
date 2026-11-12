@@ -6,11 +6,14 @@ die Datenbank „höchstens eine Mitgliedschaft“ selbst durchsetzt. Admin ist 
 Einheit und bewusst nicht Djangos „Superuser“, weil der automatisch alle Rechte hätte.
 """
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy
 
 from access.keys import key_field
@@ -402,8 +405,32 @@ class RoleChange(models.Model):
         raise ValidationError(texts.LOG_LOCKED)
 
 
+# Wie lange ein Support-Zugang höchstens läuft (#92, SZ-01).
+SUPPORT_DURATION = timedelta(minutes=60)
+
+
 class AdminAccess(models.Model):
-    """Ein Eintrag im Protokoll der Admin-Zugriffe (#92, BER-02, ADM-03)."""
+    """Ein Eintrag im Protokoll der Admin-Zugriffe (#92, BER-02, ADM-03).
+
+    Regeln (Klärung von #92 am 22.10.2026, 11.11.2026 und 12.11.2026):
+    - Einträge entstehen beim Starten eines Support-Zugangs (mit Anlass), beim Beenden (per Knopf,
+      nach Ablauf, beim Abmelden oder durch einen neuen Start), für jede Seite mit Personendaten und
+      jede Kontosuche („ansehen“), für jede Änderung („ändern“) und beim Notfall-Löschen einer leeren
+      Organisation per Befehl auf dem Server. Was ein Admin über eine eigene Rolle sieht, kommt nicht
+      hinein; das entscheidet die Rechteprüfung (`access/rights.py`).
+    - Ein Eintrag nennt Zeitpunkt, Admin, Art des Zugriffs und Bereich: die Organisation des Zugangs,
+      beim Notfall-Löschen die gelöschte. Namen einzelner Personen, Suchbegriffe und freien Text gibt
+      es nicht; der Zusatz kommt nur aus einer festen Liste (ADM-03, SG3).
+    - Welcher Zugang gerade läuft, steht nur hier: der letzte Start eines Admins ohne Ende danach,
+      höchstens `SUPPORT_DURATION` lang (`running()`). So gibt es keinen zweiten Ort, der vom
+      Protokoll abweichen könnte.
+    - Namen und Kennungen wie bei `RoleChange`: so, wie sie zum Zeitpunkt hießen, ohne Verweise.
+      Die Zeit setzt das Tool selbst, damit das Ende nach Ablauf die Zeit des Ablaufs trägt (SA1).
+    - Einträge lassen sich nicht ändern oder löschen: hier im Programm und zusätzlich per Regel in
+      der Datenbank (Migration 0004), auch Sammeländerungen. Das vollständige Leeren der Datenbank
+      bleibt möglich (#103); im Tool gibt es dafür keinen Weg.
+    - In P2 sieht niemand das Protokoll im Tool (Entscheidung W4); die Einsicht kommt mit ADM-03.
+    """
 
     class Action(models.TextChoices):
         STARTED = "started", gettext_lazy("Support-Zugang gestartet")
@@ -431,6 +458,63 @@ class AdminAccess(models.Model):
     unit_id = models.BigIntegerField()
     unit_kind = models.CharField(max_length=20, choices=UnitKind)
     unit_name = models.TextField()
+
+    class Meta:
+        # Jede Anfrage eines Admins fragt nach seinem laufenden Zugang (`running()`).
+        indexes = [models.Index(fields=["actor_id", "id"], name="adminaccess_actor")]
+
+    @classmethod
+    def record(cls, by, action: str, unit: Unit, detail: str = "", at=None) -> "AdminAccess":
+        """Schreibt einen Eintrag; gelingt das nicht, scheitert der Aufruf und mit ihm Seite oder Änderung (SG1)."""
+        entry = cls(
+            at=at or timezone.now(),
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
+            action=action,
+            detail=detail,
+            unit_id=unit.pk,
+            unit_kind=unit.kind,
+            unit_name=logged_name(unit),
+        )
+        entry.save()
+        return entry
+
+    def record_end(self, by, detail: str, at=None) -> "AdminAccess":
+        """Schreibt das Ende zu diesem Start, mit seinem Bereich, auch wenn es die Organisation nicht mehr gibt."""
+        entry = AdminAccess(
+            at=at or timezone.now(),
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
+            action=self.Action.ENDED,
+            detail=detail,
+            unit_id=self.unit_id,
+            unit_kind=self.unit_kind,
+            unit_name=self.unit_name,
+        )
+        entry.save()
+        return entry
+
+    @classmethod
+    def running(cls, user_id: int) -> "AdminAccess | None":
+        """Der letzte Start dieses Admins, wenn danach kein Ende kam, auch wenn er schon abgelaufen ist; sonst None."""
+        last = cls.objects.filter(actor_id=user_id, action__in=(cls.Action.STARTED, cls.Action.ENDED)).order_by("-id").first()
+        return last if last is not None and last.action == cls.Action.STARTED else None
+
+    @property
+    def ends_at(self):
+        """Wann ein Start abläuft: 60 Minuten nach dem Start (SZ-01)."""
+        return self.at + SUPPORT_DURATION
+
+    def save(self, *args, **kwargs) -> None:
+        """Schreibt einen neuen Eintrag; einen bestehenden zu ändern lehnt das Tool ab."""
+        if not self._state.adding:
+            raise ValidationError(texts.ACCESS_LOG_LOCKED)
+        kwargs["force_insert"] = True
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Einträge lassen sich nicht löschen."""
+        raise ValidationError(texts.ACCESS_LOG_LOCKED)
 
 
 def on_path(member_unit: Unit, target: Unit) -> bool:

@@ -511,4 +511,5 @@ def test_der_bausteinkatalog_zeigt_den_knopf_verschieben(settings, org):
     names = [_text(_one(_by_tag(entry, "h2")))
              for entry in _all(root, lambda e: e.name == "section" and "a-baustein" in _classes(e))]
 
-    assert "Knopf „Verschieben“" in names
+    # Seit #92 (N4a) heißt der Baustein „Zart blauer Knopf“; „Verschieben“ bindet ihn weiter ein.
+    assert "Zart blauer Knopf" in names

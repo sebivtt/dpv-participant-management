@@ -2,6 +2,24 @@
 
 from django.db import migrations, models
 
+# Wie beim Protokoll der Rollenänderungen (#91): Die Datenbank lehnt jedes Ändern und Löschen eines
+# Eintrags im Protokoll der Admin-Zugriffe ab, auch Sammeländerungen am Programm vorbei (#92, PR-06).
+# TRUNCATE, also das vollständige Leeren, bleibt erlaubt: Das brauchen der Testdaten-Befehl (#103)
+# und der Testlauf.
+LOCK = """
+CREATE FUNCTION roles_adminaccess_locked() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Einträge im Protokoll der Admin-Zugriffe lassen sich nicht ändern oder löschen.';
+END;
+$$;
+CREATE TRIGGER roles_adminaccess_locked BEFORE UPDATE OR DELETE ON roles_adminaccess
+    FOR EACH ROW EXECUTE FUNCTION roles_adminaccess_locked();
+"""
+UNLOCK = """
+DROP TRIGGER roles_adminaccess_locked ON roles_adminaccess;
+DROP FUNCTION roles_adminaccess_locked();
+"""
+
 
 class Migration(migrations.Migration):
 
@@ -23,5 +41,9 @@ class Migration(migrations.Migration):
                 ('unit_kind', models.CharField(choices=[('federation', 'Verband'), ('association', 'Bund'), ('ring', 'Ring'), ('troop', 'Stamm'), ('group', 'Gruppe')], max_length=20)),
                 ('unit_name', models.TextField()),
             ],
+            options={
+                'indexes': [models.Index(fields=['actor_id', 'id'], name='adminaccess_actor')],
+            },
         ),
+        migrations.RunSQL(LOCK, UNLOCK),
     ]

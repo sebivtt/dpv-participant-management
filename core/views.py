@@ -14,7 +14,7 @@ from django.views.decorators.cache import never_cache
 
 from access.addresses import checks_rights, without_personal_data
 from access.keys import is_key, new_key
-from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
+from access.rights import SUGGESTION_MIN, SUPPORT_REASONS, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from core.forms import (
@@ -27,6 +27,7 @@ from core.forms import (
 )
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
+from roles import texts as role_texts
 from roles.models import Role
 from units.models import Unit
 from units import texts
@@ -52,6 +53,7 @@ from units.organisation import (
     edit_anchor,
     managed_dialog,
     rings_question,
+    support_dialog,
 )
 
 logger = logging.getLogger(__name__)
@@ -234,7 +236,7 @@ def organisation(request: HttpRequest) -> HttpResponse:
     shown = Organisation(rights, request.user)
     start = shown.start_unit()
     return render(request, "core/organisation.html", {"outline": shown.outline(current=start),
-                                                       "page": shown.page(start), "start": True})
+                                                       "page": shown.page(start) if start else None, "start": True})
 
 
 # Die Organisation kommt nur aus der Adresse, über ihre Kennung (CONTRIBUTING.md, Abschnitt 4).
@@ -336,6 +338,7 @@ def organisation_search(request: HttpRequest, unit: str) -> HttpResponse:
     wait = rights.count_search()
     if wait:
         return _appoint_page(request, found, form=form, notice=("error", texts.SEARCH_LIMIT % {"minutes": wait}))
+    rights.record_search(lambda checked: checked.may_appoint(found))
     entries = rights.find_accounts(text)
     if not entries:
         return _appoint_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
@@ -354,6 +357,9 @@ def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
     if request.method != "POST":
         raise Http404
     text = request.POST.get("suche", "").strip()
+    if len(text) >= SUGGESTION_MIN:
+        # Vorschläge zeigen Namen von Personen; im Support-Zugang zählen sie wie eine Seite (#92).
+        request.rights.record_view(found)
     entries = request.rights.suggestions(text)
     context = {"hits": hits(entries, found), "hits_title": texts.SUGGESTIONS_TITLE,
                "empty": texts.NO_SUGGESTIONS if len(text) >= SUGGESTION_MIN else "",
@@ -480,6 +486,7 @@ def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
     wait = rights.count_search()
     if wait:
         return _admit_page(request, found, form=form, notice=("error", texts.SEARCH_LIMIT % {"minutes": wait}))
+    rights.record_search(lambda checked: checked.may_admit(found))
     entries = rights.find_accounts(text)
     if not entries:
         return _admit_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
@@ -865,20 +872,54 @@ def federation_remove(request: HttpRequest, role: str) -> HttpResponse:
     return _federation_page(request, removal=removal)
 
 
-# Support-Zugang der Admins (#92): Starten im Dialog auf der Seite einer Organisation, Beenden im Balken.
+# Support-Zugang der Admins (#92, BER-02). Der Dialog hat wie die übrigen eine eigene Adresse unter der Seite der
+# Organisation, damit er auch ohne Skript geht; die Organisation kommt nur aus der Adresse. „beenden“ im Balken
+# schickt ein Formular an eine Adresse ohne Kennung. Wer nicht Admin ist, bekommt beim Starten „nicht gefunden“
+# und beim Beenden „kein Zugriff“, auch per Skript (SZ-02, SV3).
 SUPPORT_ROWS = ("SZ-01", "SZ-02", "SZ-03", "SZ-04", "SZ-05", "SZ-06", "PR-05", "PR-06")
 
 
 @checks_rights(*SUPPORT_ROWS)
 def organisation_support(request: HttpRequest, unit: str) -> HttpResponse:
-    """Dialog „Support-Zugang für … starten“ zeigen und den Zugang starten (SZ-01); Gerüst."""
-    raise Http404
+    """Dialog „Support-Zugang für … starten“ zeigen und den Zugang mit Anlass starten (SZ-01).
+
+    Ohne gewählten Anlass oder mit einem Wert außerhalb der festen Liste bleibt der Dialog offen und
+    sagt „Bitte wähle einen Anlass.“; es startet nichts (SV6). Danach geht es zur Seite der
+    Organisation mit der kurzen Meldung, bei einem Wechsel mit beiden Sätzen (S7).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.select_related("parent"), unit, allowed=rights.may_support)
+    notice = ""
+    if request.method == "POST":
+        reason = request.POST.get("anlass", "")
+        if reason in SUPPORT_REASONS:
+            text = rights.start_support(found, reason)
+            if text:
+                messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        notice = role_texts.SUPPORT_CHOOSE_REASON
+    elif request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, support_dialog(found, action=request.path, notice=notice))
 
 
 @checks_rights(*SUPPORT_ROWS)
 def support_end(request: HttpRequest) -> HttpResponse:
-    """Den laufenden Support-Zugang beenden (SZ-01); Gerüst."""
-    raise Http404
+    """„beenden“ im Balken: den laufenden Support-Zugang beenden; danach zur Seite seiner Organisation (S6).
+
+    Nur per Formular. Läuft keiner mehr, etwa nach „beenden“ in einem zweiten Fenster, geht es ohne
+    Meldung zu „Organisation“.
+    """
+    rights = request.rights
+    rights.require_section(rights.is_admin())
+    if request.method != "POST":
+        raise Http404
+    support = rights.support
+    text = rights.end_support()
+    if not text:
+        return redirect("organisation")
+    messages.success(request, text)
+    return redirect("organisation_unit", unit=support.unit.key)
 
 
 def _tile(role: Role, label=None) -> dict:
@@ -1002,11 +1043,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "knopfverschieben": {
-        "name": _("Knopf „Verschieben“"), "template": "core/_knopf_verschieben.html", "issues": [287, 117],
-        "purpose": _("Für Handlungen, die etwas umstellen, ohne etwas wegzunehmen, etwa „Verschieben“ bei einer "
-                     "Person oder „Bearbeiten“ bei einer verwalteten Person: kleiner Knopf mit zarter blauer Fläche "
-                     "und blauer Schrift, die Farben der Informationsmeldung. Er führt zum Dialog, nie gleich zur "
-                     "Handlung."),
+        "name": _("Zart blauer Knopf"), "template": "core/_knopf_verschieben.html", "issues": [287, 117, 92],
+        "purpose": _("Für Handlungen, die etwas umstellen oder öffnen, ohne etwas wegzunehmen, etwa „Verschieben“ bei "
+                     "einer Person oder „Bearbeiten“ bei einer verwalteten Person: Knopf mit zarter blauer Fläche und "
+                     "blauer Schrift, die Farben der Informationsmeldung, meist klein. Beschriftung und Symbol sind "
+                     "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
+                     "Er führt zum Dialog, nie gleich zur Handlung."),
         "pages": [_("Organisation")],
     },
     "stift": {
@@ -1027,11 +1069,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "orgakopf": {
-        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95],
+        "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95, 92],
         "purpose": _("Steht oben auf der Seite einer Organisation: der Pfad nach oben, der Name groß, darunter "
                      "Art und Organisation darüber, rechts die Marke. Wo man die Organisation bearbeiten darf, "
                      "steht oben rechts der Stift. Für die Verbandsleitung steht der Verband als erste Ebene im "
-                     "Pfad und führt zur Seite „Verband“ (zweites Beispiel)."),
+                     "Pfad und führt zur Seite „Verband“ (zweites Beispiel). Für Admins steht rechts neben dem "
+                     "Titel „Support-Zugang starten“, am Handy unter dem Namen (drittes Beispiel)."),
         "pages": [_("Organisation")],
     },
     "dialog": {
@@ -1046,8 +1089,9 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
-        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95],
-        "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt; darunter "
+        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95, 92],
+        "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt oder, etwa "
+                     "beim Anlass eines Support-Zugangs, keine; darunter "
                      "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Die "
                      "Vorschau ist freiwillig, beim Verschieben gibt es keine. Die Überschrift darf sichtbar sein, etwa "
                      "„Ring“ im Dialog „… bearbeiten“. Nach einer Ablehnung bleibt die "
@@ -1068,6 +1112,14 @@ BUILDING_BLOCKS = {
         "purpose": _("Führt zu „Mein Profil“: der Kreis mit dem Anfangsbuchstaben, in der Seitenleiste mit dem "
                      "Vornamen; ohne Namen ein Personensymbol."),
         "pages": [_("jede Seite mit Login")],
+    },
+    "supportbalken": {
+        "name": _("Balken Support-Zugang"), "template": "core/_supportbalken.html", "issues": [92],
+        "purpose": _("Steht auf jeder Seite, solange ein Admin im Support-Zugang ist: dunkelblau mit weißer Schrift "
+                     "und Schild, die Organisation und bis wann der Zugang läuft, rechts der weiße Knopf „beenden“. "
+                     "Am PC bleibt er beim Scrollen oben im Inhalt, am Handy steht er oben auf der Seite und bricht "
+                     "um. Er ist weder Sonnengelb wie das Band der Testumgebung noch eine der vier Meldungsarten."),
+        "pages": [_("jede Seite mit Login im Support-Zugang")],
     },
     "testband": {
         "name": _("Band der Testumgebung"), "template": "core/_testband.html", "issues": [58, 165],
@@ -1196,8 +1248,13 @@ def _organisation_examples() -> dict:
         {"name": "katalog-einwilligung", "value": "an", "title": person_texts.CONSENT, "checkbox": True},
     ]
     edit_example = {"name": "Sippe Falken", "label": texts.EDIT_TITLE % {"unit": "Sippe Falken"}}
+    # Wie ein Admin ohne Support-Zugang den Kopf sieht (#92): nur Pfad, Name und Art, rechts der zart blaue Knopf.
+    support_page = Page(unit=Unit(kind=kind.TROOP, name="Zugvögel"), access="head",
+                        path=[("Pfadfinderbund Boreas", "#h-orgakopf")], kind_line="Stamm in Pfadfinderbund Boreas",
+                        mark=None, leads=[], notice="", tiles=None, empty="", support_href="#h-orgakopf")
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
-            "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_leads": leads, "org_tiles": tiles,
+            "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_support_page": support_page,
+            "support_bar": {"label": "Stamm Walhall", "until": "14:35", "end_action": "#h-supportbalken"}, "org_leads": leads, "org_tiles": tiles,
             "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 

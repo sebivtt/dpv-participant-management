@@ -152,7 +152,7 @@ def page_text(user, where, client=None) -> str:
 # ---------- Erlaubt ----------
 
 
-@pytest.mark.rechtematrix("SZ-01", "SZ-06")
+@pytest.mark.rechtematrix("SZ-01", "SZ-06", "EH-06", "EH-08")
 def test_s1_max_sieht_alle_buende_nur_mit_namen(org):
     root = page_tree(org.max, "/organisation/")
 
@@ -164,7 +164,7 @@ def test_s1_max_sieht_alle_buende_nur_mit_namen(org):
     assert "Wirbelwind" not in _visible_text(root)
 
 
-@pytest.mark.rechtematrix("SZ-01", "SZ-06")
+@pytest.mark.rechtematrix("SZ-01", "SZ-06", "PK-08", "EH-06")
 def test_s1_auf_walhall_steht_nur_der_kopf_mit_dem_knopf(org):
     root = page_tree(org.max, unit_address(org.walhall))
 
@@ -215,7 +215,8 @@ def test_s2_max_startet_mit_anlass_und_sieht_den_balken(org):
     form = _one(_by_tag(shown, "form", method="post"))
     assert _attr(form, "action") == END_ADDRESS
     assert _visible_text(_one(_by_tag(form, "button"))) == "beenden"
-    entry = AdminAccess.objects.get()
+    # Danach kommt die Seite von Walhall als „ansehen“ dazu (S3); hier zählt der Start.
+    entry = AdminAccess.objects.get(action=A.STARTED)
     assert (entry.action, entry.detail, entry.actor_id, entry.actor_name) == (A.STARTED, D.LEAD_REQUEST, org.max.pk,
                                                                               "Max Admin")
     assert (entry.unit_id, entry.unit_kind, entry.unit_name) == (org.walhall.pk, Unit.Kind.TROOP, "Walhall")
@@ -243,7 +244,7 @@ def test_s2_im_zugang_kein_knopf_auf_walhall_und_darunter(org):
     assert start_button(_tree(client.get(unit_address(org.zugvoegel)))) is not None
 
 
-@pytest.mark.rechtematrix("SZ-03", "SZ-06")
+@pytest.mark.rechtematrix("SZ-03", "SZ-06", "PK-08")
 def test_s3_im_zugang_sieht_max_walhall_wie_wanda_mit_protokoll_je_seite(org):
     client = client_for(org.max)
     start(org.max, org.walhall, client=client)
@@ -296,7 +297,7 @@ def test_s5_max_springt_in_der_meute_woelfe_ein_wie_wanda(org):
 @pytest.mark.rechtematrix("SZ-01", "SZ-04")
 def test_s6_beenden_nimmt_den_balken_und_die_rechte(org):
     client = client_for(org.max)
-    start(org.max, org.walhall, client=client)
+    follow(start(org.max, org.walhall, client=client), client)
 
     page = follow(end(org.max, client=client), client)
 
@@ -311,13 +312,14 @@ def test_s6_beenden_nimmt_den_balken_und_die_rechte(org):
 
 def test_s7_ein_neuer_start_beendet_den_alten(org):
     client = client_for(org.max)
-    start(org.max, org.walhall, client=client)
+    follow(start(org.max, org.walhall, client=client), client)
 
     page = follow(start(org.max, org.zugvoegel, reason="debugging", client=client), client)
 
     assert short_notices(page) == ["Support-Zugang für Stamm Walhall beendet. Support-Zugang für Stamm Zugvögel gestartet."]
     assert log() == [
         (A.STARTED, D.LEAD_REQUEST, "Max Admin", "Walhall"),
+        (A.VIEWED, "", "Max Admin", "Walhall"),
         (A.ENDED, D.SWITCHED, "Max Admin", "Walhall"),
         (A.STARTED, D.DEBUGGING, "Max Admin", "Zugvögel"),
         (A.VIEWED, "", "Max Admin", "Zugvögel"),
@@ -381,8 +383,7 @@ def test_sa1_bis_zum_ende_der_60_minuten_gilt_der_zugang(org, clock):
 def test_sa2_nach_ablauf_wird_ein_abgeschicktes_formular_nicht_gespeichert(org, clock):
     client = client_for(org.max)
     start(org.max, org.walhall, client=client)
-    _root, dialog = open_edit(org.max, org.falken, org.lena, client=client)
-    version = _attr(_one(_by_tag(dialog, "input", name="version")), "value")
+    _dialog, version = open_edit(org.max, org.falken, org.lena, client=client)
     clock["now"] += timedelta(minutes=61)
 
     response = save(org.max, org.falken, org.lena, version, client=client, first_name="Lenchen", last_name="Probe",
@@ -416,7 +417,7 @@ ADDRESSES_IN_WALHALL = [
 ]
 
 
-@pytest.mark.rechtematrix("SZ-06")
+@pytest.mark.rechtematrix("SZ-06", "PK-08")
 def test_sv1_ohne_zugang_keine_personen_und_keine_leitungen(org):
     client = client_for(org.max)
     rights = Rights(org.max)
@@ -501,7 +502,7 @@ def test_sv4_max_nimmt_sich_im_zugang_nicht_selbst_auf(org):
     assert A.CHANGED not in [entry[0] for entry in log()]
 
 
-@pytest.mark.rechtematrix("SZ-01")
+@pytest.mark.rechtematrix("SZ-01", "EH-06")
 def test_sv5_kein_zugang_fuer_den_verband(org):
     client = client_for(org.max)
 
@@ -528,7 +529,7 @@ def test_sv7_im_zugang_keine_gesundheitsangaben(org):
     start(org.max, org.walhall, client=client)
 
     text = page_text(org.max, org.falken, client=client)
-    _root, dialog = open_edit(org.max, org.falken, org.lena, client=client)
+    dialog, _version = open_edit(org.max, org.falken, org.lena, client=client)
 
     assert "Gesundheit" not in text
     assert "Gesundheit" not in _visible_text(dialog)
@@ -633,8 +634,7 @@ def test_sg3_das_protokoll_enthaelt_keine_namen_von_personen_und_keinen_suchbegr
     page_text(org.max, org.falken, client=client)
     find(org.max, org.walhall, "otto.ohne@example.org", client=client)
     admit(org.max, org.walhall, org.ohne, client=client)
-    _root, dialog = open_edit(org.max, org.falken, org.lena, client=client)
-    version = _attr(_one(_by_tag(dialog, "input", name="version")), "value")
+    _dialog, version = open_edit(org.max, org.falken, org.lena, client=client)
     save(org.max, org.falken, org.lena, version, client=client, first_name="Lena", last_name="Probe",
          birth_date="2015-05-15", scout_name="Kiwi")
     end(org.max, client=client)
@@ -764,6 +764,21 @@ def test_u4_fuer_andere_rollen_bleibt_die_seite_ohne_knopf_und_balken(org):
         assert start_button(root) is None
         assert bar(root) is None
         assert "h-leitungen" in sections(root)
+
+
+@pytest.mark.rechtematrix("EP-04")
+def test_im_zugang_aendert_max_nur_den_eigenen_fahrtennamen(org):
+    """EP-04: Auch der Support-Zugang gibt kein Recht auf den Fahrtennamen anderer, auch nicht per manipuliertem Formular."""
+    from tests.test_fahrtenname import foreign_fields
+    from tests.test_fahrtenname import save as save_scout_name
+
+    client = client_for(org.max)
+    start(org.max, org.walhall, client=client)
+
+    save_scout_name(org.max, "Gekapert", client=client, **foreign_fields(org.walhall_mitglied))
+
+    assert User.objects.get(pk=org.walhall_mitglied.pk).scout_name == org.walhall_mitglied.scout_name
+    assert User.objects.get(pk=org.max.pk).scout_name == "Gekapert"
 
 
 # ---------- Bausteine ----------

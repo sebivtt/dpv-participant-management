@@ -23,6 +23,8 @@ from django.views.decorators.http import require_POST
 from requests import RequestException
 
 from access.addresses import checks_rights, without_personal_data
+from access.rights import Rights
+from roles.models import AdminAccess
 from accounts import texts
 from accounts.adapter import logger
 from accounts.session import (
@@ -167,6 +169,8 @@ def logout(request: HttpRequest) -> HttpResponse:
     speichert der Browser nicht. Keycloak schickt danach zurück zur Login-Seite.
     """
     id_token = request.session.get(LOGOUT_HINT_SESSION_KEY, "")
+    # Abmelden beendet einen laufenden Support-Zugang, mit Eintrag im Protokoll (#92, SA3).
+    Rights(request.user).end_support(AdminAccess.Detail.LOGOUT)
     django_logout(request)
     fields = {
         "client_id": settings.KEYCLOAK_CLIENT_ID,

@@ -12,10 +12,22 @@ from dataclasses import dataclass, field
 from django.db.models import Q
 from django.urls import reverse
 
-from access.rights import MANAGE, NAME_ONLY, READ, Rights, alphabetical, child_kind, listed, unit_label
+from access.rights import (
+    HEAD,
+    MANAGE,
+    NAME_ONLY,
+    READ,
+    SUPPORT_REASONS,
+    Rights,
+    alphabetical,
+    child_kind,
+    listed,
+    unit_label,
+)
 from accounts.models import display_name
 from persons import texts as person_texts
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS, RoleKind
+from roles import texts as role_texts
+from roles.models import LEAD_ROLE, LEADS_IN_UNITS, AdminAccess, RoleKind
 from units import texts
 from units.models import Kind, Unit
 
@@ -149,6 +161,15 @@ class Page:
     # Der Stift oben rechts im Kopf, nur wo die Person umbenennen darf; er öffnet „… bearbeiten“ (#95).
     edit_href: str | None = None
     edit_label: str = ""
+    # Oben rechts neben dem Titel „Support-Zugang starten“, nur für Admins und nur, solange kein laufender
+    # Zugang die Organisation umfasst (#92, N4, N4b).
+    support_href: str | None = None
+    support_label: str = role_texts.SUPPORT_START
+
+    @property
+    def head_only(self) -> bool:
+        """Steht nur der Kopf da? So sieht ein Admin ohne Support-Zugang jede Organisation (#92, S1)."""
+        return self.access == HEAD
 
 
 @dataclass
@@ -223,7 +244,7 @@ class Organisation:
 
     def href(self, unit: Unit) -> str | None:
         """Die Adresse der Seite, wenn sie sich öffnet; sonst ist die Organisation nicht anklickbar (RO-04)."""
-        if self.access(unit) in (MANAGE, READ):
+        if self.access(unit) in (MANAGE, READ, HEAD):
             return reverse("organisation_unit", args=[unit.key])
         return None
 
@@ -267,9 +288,17 @@ class Organisation:
 
     # Gliederung
 
-    def start_unit(self) -> Unit:
-        """Die Organisation, die neben der Gliederung zuerst steht: die oberste, die die Person leitet."""
+    def start_unit(self) -> Unit | None:
+        """Die Organisation, die neben der Gliederung zuerst steht: die oberste, die die Person leitet.
+
+        Ein Admin ohne Leitungsrolle und ohne Support-Zugang leitet keine; bei ihm steht der erste Bund
+        nach dem Alphabet, nur mit dem Kopf (#92, S1). Ohne Bund steht keine Seite da.
+        """
         led = [entry for entry in self.units.values() if self.rights.leads_itself(entry)]
+        if not led:
+            led = [entry for entry in self.units.values() if entry.kind == Kind.ASSOCIATION]
+        if not led:
+            return None
         return min(led, key=lambda entry: (len(self._above(entry)), alphabetical(entry.name)))
 
     def outline(self, current: Unit) -> list[Node]:
@@ -304,8 +333,18 @@ class Organisation:
     # Seite einer Organisation
 
     def page(self, unit: Unit) -> Page:
-        """Die Seite: Kopf mit Pfad und Marke, „Leitungen“, bei allen außer Gruppen „Organisationen darunter“."""
+        """Die Seite: Kopf mit Pfad und Marke, „Leitungen“, bei allen außer Gruppen „Organisationen darunter“.
+
+        Für Admins ohne Support-Zugang nur der Kopf mit „Support-Zugang starten“ (#92, S1). Zeigt die Seite
+        Personendaten nur über den Support-Zugang, kommt sie vorher ins Protokoll; gelingt das nicht,
+        gibt es die Seite nicht (S3, SG1).
+        """
         access = self.access(unit)
+        if access in (MANAGE, READ):
+            self.rights.record_view(unit)
+        support_href = reverse("organisation_support", args=[unit.key]) if self.rights.shows_support_button(unit) else None
+        if access == HEAD:
+            return self._head_only(unit, support_href)
         parent = self.units.get(unit.parent_id)
         kind_line = unit.get_kind_display()
         if parent is not None:
@@ -334,9 +373,19 @@ class Organisation:
             appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
             appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
             back_label=back_label,
+            support_href=support_href,
             **self._structure_buttons(unit),
             **self._persons_section(unit, access),
         )
+
+    def _head_only(self, unit: Unit, support_href: str | None) -> Page:
+        """Die Seite für Admins ohne Support-Zugang: Pfad, Name und Art, sonst nichts (#92, S1, SV1)."""
+        parent = self.units.get(unit.parent_id)
+        kind_line = unit.get_kind_display()
+        if parent is not None:
+            kind_line = texts.KIND_IN % {"kind": kind_line, "parent": parent.name}
+        return Page(unit=unit, access=HEAD, path=[(entry.name, self.href(entry)) for entry in self._above(unit)],
+                    kind_line=kind_line, mark=None, leads=[], notice="", tiles=None, empty="", support_href=support_href)
 
     def _structure_buttons(self, unit: Unit) -> dict:
         """Die Knöpfe zum Anlegen und Bearbeiten, je nur wo die Rechteprüfung es erlaubt (#95)."""
@@ -578,6 +627,30 @@ def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: 
         "confirm_primary": True,
         "form_id": "f-dialog",
         "choice": _choice("ziel", str(texts.MOVE_QUESTION), options, chosen=chosen),
+        "notice": notice,
+    }
+
+
+def support_dialog(unit: Unit, action: str, notice: str = "") -> dict:
+    """Der Dialog „Support-Zugang für … starten“ (#92, Frage 4, Zielbild).
+
+    Darunter der Satz zu Dauer und Protokoll, dann „Anlass“ aus der festen Liste ohne Vorwahl (Baustein
+    „Auswahl im Dialog“), unten „Abbrechen“ und der dunkelblaue Knopf. `notice` ist „Bitte wähle einen
+    Anlass.“, wenn ohne Wahl abgeschickt wurde; es steht im Dialog an der Stelle der Handlung.
+    """
+    label = unit_label(unit)
+    options = [{"value": value, "label": AdminAccess.Detail(value).label, "lines": [], "checked": False}
+               for value in SUPPORT_REASONS]
+    return {
+        "title": role_texts.SUPPORT_TITLE % {"unit": label},
+        "lines": [role_texts.SUPPORT_TEXT % {"unit": label}],
+        "close_href": reverse("organisation_unit", args=[unit.key]),
+        "confirm_action": action,
+        "confirm_label": role_texts.SUPPORT_START,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "choice": {"name": "anlass", "legend": role_texts.SUPPORT_REASON, "legend_shown": True, "none_chosen": True,
+                   "options": options},
         "notice": notice,
     }
 

@@ -39,6 +39,28 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-12 · Support-Zugang der Admins und Protokoll der Admin-Zugriffe (#92, BER-02)
+
+**Entscheidung** (Sebastian; Bestandsaufnahme P2 vom 22.10.2026, W4 und W5 in #106; Klärung von #92 am 22.10.2026, Nachklärung P2 vom 22.10.2026; [Klärung vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6789905784); [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6819688530) N1 bis N4b; maßgeblich sind Text und Szenarien des Issues):
+
+1. **W4 gilt auch für dieses Protokoll:** Es wird in P2 nur geschrieben; die Einsicht für Admins und Verbandsleitung kommt mit ADM-03 in P8. Wortlaut im Eintrag vom 23.10.2026 zu #91, Nr. 1.
+2. **Auslegung von BER-02:** Der „technische Vollzugriff“ der Admins besteht im Tool nur als Support-Zugang mit genau den Rechten der Leitung einer Organisation (Bund, Ring, Stamm oder Gruppe, nie der Verband), höchstens 60 Minuten, mit Anlass aus einer festen Liste und Protokoll. Ohne Zugang sieht ein Admin keine Personendaten. **Keine Rolle für sich selbst:** Im Zugang gibt der Admin anderen Rollen, sich selbst keine („Im Support-Zugang kannst du dir selbst keine Rolle geben.“), sonst sähe er danach Personendaten über die eigene Rolle, ohne Eintrag.
+3. **Antworten vom 11.11.2026:** Im Zugang findet der Admin Konten über die genaue bestätigte Mail oder den Benutzernamen wie die Leitung, mit derselben Grenze; jede Suche kommt als „ansehen · Kontosuche“ ohne Suchbegriff ins Protokoll (Frage 1). Gestartet wird an der Seite der Organisation, oben rechts neben dem Titel; ohne Zugang zeigt sie nur den Kopf, „Organisation“ die ganze Gliederung nur mit Namen (Frage 2). Ins Protokoll kommt nur, was der Admin allein durch den Zugang darf, nicht, was eine eigene Leitungsrolle erlaubt (Frage 5).
+4. **Bausteine** (N1, N4a, N4b): neuer Baustein „Balken Support-Zugang“; „Knopf Verschieben“ wird zum „Zart blauen Knopf“ mit wählbarer Beschriftung und Symbol; „Kopf einer Organisationsseite“ bekommt oben rechts den Platz für einen Knopf, am Handy unter dem Namen.
+
+**Technische Wahl** (KI):
+
+1. **Der laufende Zugang steht nur im Protokoll:** Es gibt keine zweite Tabelle für Zugänge. Laufend ist der letzte Start eines Admins ohne Ende danach, höchstens 60 Minuten lang (`roles.AdminAccess.running()`). So kann kein Zugang laufen, der nicht im Protokoll steht. Gestartet und beendet wird unter Sperre des eigenen Kontos; ein Doppelklick ergibt einen Eintrag (SG5).
+2. **Rechte über dieselbe zentrale Prüfung:** `access/rights.py` zählt die Organisation eines laufenden Zugangs wie eine selbst geleitete (`Rights._led`); Bereich, Einspringen (EH-18), Kette nach oben und jede Seite folgen daraus ohne eigene Regeln. Was nur der Zugang erlaubt, erkennt der Vergleich mit den Rechten ohne Zugang (`Rights._only_via_support()`); nur das kommt ins Protokoll.
+3. **Einträge zusammen mit Seite oder Änderung:** „ansehen“ schreibt die Aufbereitung der Seite einer Organisation, bevor sie gezeigt wird, höchstens einmal je Klick; eine Suche zählt als dieses „ansehen“. „ändern“ steht in derselben Transaktion wie die Änderung. Scheitert der Eintrag, gibt es weder Seite noch Änderung (SG1). Vorschläge beim Tippen zeigen Namen und zählen deshalb im Zugang wie eine Seite.
+4. **Ablauf:** Beim ersten Klick nach 60 Minuten schreibt das Tool das Ende mit dem Zeitpunkt des Ablaufs und führt zur Seite der Organisation; ein dabei abgeschicktes Formular wird nicht verarbeitet (SA1, SA2). Kommt der Admin nicht wieder, steht das Ende erst beim nächsten Klick, Start oder Abmelden im Protokoll; dass der Zugang nach 60 Minuten nichts mehr öffnete, gilt trotzdem.
+5. **Notfall-Löschen** (W5) per Befehl `emergency_delete` über die Kennung der Organisation aus der Adresse ihrer Seite; Urheber im Protokoll ist „Befehl auf dem Server“.
+6. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Support-Zugang `support` (`Rights.support`, `start_support`, `end_support`), Protokoll der Admin-Zugriffe `AdminAccess`, Anlass `reason`, Notfall-Löschen `emergency_delete`.
+
+**Umsetzung:** `roles/models.py` (`AdminAccess`), Migration `roles/migrations/0004_admin_access.py` (Tabelle und Sperre), `roles/texts.py`, `access/rights.py`, `accounts/views.py` (Abmelden), `core/views.py`, `config/urls.py`, `config/settings.py`, `core/navigation.py`, `units/organisation.py`, `units/texts.py`, `units/management/commands/emergency_delete.py`, `core/templates/base_app.html`, `core/templates/core/_supportbalken.html`, `_knopf_verschieben.html`, `_orgakopf.html`, `_auswahl.html`, `_symbole.svg`, `organisation.html`, `bausteine.html`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/`, `README.md`; Tests in `tests/test_support_zugang.py` und `rauchtests/test_support_zugang.py`.
+
+---
+
 ## 2026-11-12 · Bestätigung der Einwilligung beim Anlegen einer verwalteten Person (#98, DSG-02)
 
 **Entscheidung** (Sebastian; Klärung von #98 am 22.10. und 30.10.2026, Nachklärung nach dem Zielbild N1 bis N5; maßgeblich sind Text und Szenarien des Issues):

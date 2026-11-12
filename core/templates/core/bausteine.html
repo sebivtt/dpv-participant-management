@@ -140,7 +140,7 @@
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfverschieben">
     {% include "core/_katalogeintrag.html" with block=blocks.knopfverschieben %}
-    <div class="a-flaeche a-katalog-knoepfe">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=edit_label name="Kiwi" %}</div>
+    <div class="a-flaeche a-katalog-knoepfe">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=edit_label name="Kiwi" %}{% translate "Support-Zugang starten" as support_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=support_label symbol="schild" large=True %}</div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-stift">
@@ -157,6 +157,7 @@
     {% include "core/_katalogeintrag.html" with block=blocks.orgakopf %}
     {% include "core/_orgakopf.html" with page=examples.org_page heading=3 %}
     {% include "core/_orgakopf.html" with page=examples.org_federation_page heading=3 name_id="h-orga-verband" %}
+    {% include "core/_orgakopf.html" with page=examples.org_support_page heading=3 name_id="h-orga-support" %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-dialog">
@@ -204,6 +205,12 @@
       {% include "core/_profilkreis.html" with user=examples.named %}
       {% include "core/_profilkreis.html" with user=examples.unnamed %}
     </div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-supportbalken">
+    {% include "core/_katalogeintrag.html" with block=blocks.supportbalken %}
+    {# Hier an seinem Platz statt oben im Inhalt; der Knopf schickt nichts ab. #}
+    <div class="a-katalog-balken">{% include "core/_supportbalken.html" with bar=examples.support_bar preview=True %}</div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-testband">

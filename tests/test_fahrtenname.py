@@ -227,7 +227,7 @@ def test_direkte_adresse_mit_erikas_kennung_gibt_es_nicht(org):
 
 @pytest.mark.rechtematrix("EP-04")
 def test_admin_aendert_erikas_fahrtennamen_nicht(org):
-    """Szenario 6: Den Support-Zugang gibt es noch nicht (#92); auch als Admin ändert sich nur das eigene Konto."""
+    """Szenario 6: Auch als Admin ohne Support-Zugang (#92) ändert sich nur das eigene Konto."""
     admin = person("ada.admin", "Ada", "Admin")
     give(admin, R.ADMIN)
     set_stored(org.erika, "Kiwi")
