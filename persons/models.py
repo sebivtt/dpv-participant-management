@@ -172,3 +172,43 @@ def roles_blocking(person: ManagedPerson, blocking: list[DisplayedLead], target:
     listed = roles[0] if len(roles) == 1 else f"{', '.join(roles[:-1])} {unit_texts.AND} {roles[-1]}"
     text = unit_texts.MOVE_ROLE_DOES_NOT_FIT if len(roles) == 1 else unit_texts.MOVE_ROLES_DO_NOT_FIT
     return str(text % {"person": person.display_name, "roles": listed, "target": unit_label(target)})
+
+
+def displayed_off_path(troop: Unit, new_parent: Unit) -> list[tuple[ManagedPerson, list[DisplayedLead]]]:
+    """Wessen angezeigte Leitungsrollen nach einem Ringwechsel von `troop` nicht mehr auf dem Pfad lägen (#99, LG5).
+
+    Wie `roles.models.leads_off_path()` für Personen mit Konto (OG5): Gezählt werden nur Rollen im Stamm und
+    in seinen Gruppen, die heute auf dem Pfad liegen und es danach nicht mehr täten. Gibt je betroffener Person
+    sie und diese Rollen zurück, nach Namen geordnet. Ändert nichts; nur innerhalb der Transaktion mit gesperrtem
+    Bund verlässlich.
+    """
+    bund = troop.association_id
+    rows = Unit.objects.filter(Q(pk=bund) | Q(association_id=bund) | Q(parent__association_id=bund)).values_list(
+        "pk", "parent_id", "kind")
+    before = {pk: (parent, kind) for pk, parent, kind in rows}
+    after = {**before, troop.pk: (new_parent.pk, before[troop.pk][1])}
+    below = {troop.pk} | {pk for pk, (parent, _kind) in before.items() if parent == troop.pk}
+    found: dict[int, tuple[ManagedPerson, list[DisplayedLead]]] = {}
+    leads = DisplayedLead.objects.filter(unit_id__in=below).select_related("person", "unit__parent").order_by(
+        lead_order(), "unit__name")
+    for lead in leads:
+        on_before = _lies_on(before, lead.person.unit_id, lead.unit_id)
+        on_after = _lies_on(after, lead.person.unit_id, lead.unit_id)
+        if on_before and not on_after:
+            found.setdefault(lead.person_id, (lead.person, []))[1].append(lead)
+    return sorted(found.values(), key=lambda pair: (pair[0].last_name, pair[0].first_name, pair[0].pk))
+
+
+def _lies_on(tree: dict[int, tuple[int | None, str]], member_unit: int, target: int) -> bool:
+    """Wie `on_path()`, über einen Baum aus Nummern (Einheit → Einheit darüber und Ebene), etwa nach einem Wechsel."""
+
+    def upwards(unit):
+        found = set()
+        while unit is not None and unit in tree:
+            found.add(unit)
+            unit = tree[unit][0]
+        return found
+
+    parent, kind = tree.get(member_unit, (None, None))
+    anchor = parent if kind == Unit.Kind.GROUP else member_unit
+    return anchor is not None and (anchor in upwards(target) or target in upwards(anchor))

@@ -565,7 +565,7 @@ RITA_BLOCKS_RING = ("Rita Probe ist Stammesleitung von Stamm Leuchtturm. Nach de
 
 
 @pytest.mark.rechtematrix("VP-14")
-def test_lg5_ringwechsel_mit_angezeigter_rolle_ausserhalb_des_pfads_wird_abgelehnt(org):
+def test_lg5_ringwechsel_der_eine_angezeigte_rolle_unpassend_machte_wird_abgelehnt(org):
     from tests.test_einheiten_anlegen import change_ring, dialog_notices
 
     rita = managed("Rita", "Probe", org.kueste)
@@ -588,7 +588,7 @@ def test_lg5_auch_das_datenmodell_lehnt_den_ringwechsel_ab(org):
     leuchtturm = Unit.objects.get(pk=org.leuchtturm.pk)
     leuchtturm.parent = org.nord
 
-    with pytest.raises(ValidationError, match="Stammesleitung Leuchtturm"):
+    with pytest.raises(ValidationError, match="Stammesleitung „Leuchtturm“"):
         leuchtturm.save(by=org.mosaik_leitung)
 
     assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.kueste.pk

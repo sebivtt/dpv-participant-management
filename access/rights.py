@@ -56,7 +56,7 @@ from django.utils.functional import SimpleLazyObject
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from persons import texts as person_texts
-from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, roles_blocking
+from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, displayed_off_path, roles_blocking
 from roles import texts as role_texts
 from roles.models import (
     LEAD_ROLE,
@@ -1836,8 +1836,12 @@ def _apply_edit(unit: Unit, by, name: str | None, ring: Unit | None, rings_on: b
     # Zuerst prüfen, ob der Ring passt, solange der Name noch der alte ist; sonst nennte die Meldung
     # einen Namen, der wegen der Ablehnung gar nicht gespeichert wird.
     blocking = leads_off_path(unit, ring) if ring is not None else []
-    if blocking:
-        errors["ring"] = " ".join(_off_path_sentence(membership, leads) for membership, leads in blocking)
+    # Angezeigte Leitungsrollen verwalteter Personen ebenso, mit demselben Satz (#99, LG5).
+    shown = displayed_off_path(unit, ring) if ring is not None else []
+    if blocking or shown:
+        sentences = [_off_path_sentence(membership, leads) for membership, leads in blocking]
+        sentences += [_displayed_off_path_sentence(person, leads) for person, leads in shown]
+        errors["ring"] = " ".join(sentences)
     if name is not None and name.strip() != unit.name:
         old = unit_label(unit)
         unit.name = name
@@ -1871,6 +1875,13 @@ def _off_path_sentence(membership: Role, leads: list[Role]) -> str:
     text = unit_texts.RING_CHANGE_ROLE_BLOCKS if len(roles) == 1 else unit_texts.RING_CHANGE_ROLES_BLOCK
     name = display_name(user.first_name, user.last_name, user.scout_name) or user.username
     return str(text % {"person": name, "roles": listed(roles), "unit": unit_label(membership.unit)})
+
+
+def _displayed_off_path_sentence(person: ManagedPerson, leads: list[DisplayedLead]) -> str:
+    """Wie `_off_path_sentence()`, für eine verwaltete Person mit angezeigten Leitungsrollen (#99, LG5)."""
+    roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)}) for lead in leads]
+    text = unit_texts.RING_CHANGE_ROLE_BLOCKS if len(roles) == 1 else unit_texts.RING_CHANGE_ROLES_BLOCK
+    return str(text % {"person": person.display_name, "roles": listed(roles), "unit": unit_label(person.unit)})
 
 
 def unit_label(unit: Unit) -> str:

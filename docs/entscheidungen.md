@@ -41,9 +41,9 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ## 2026-11-12 · Angezeigte Leitungsrollen verwalteter Personen (#99, PER-07)
 
-**Entscheidung** (Sebastian; [Klärung vom 22.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/99#issuecomment-6349575867), [Klärung vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/99#issuecomment-6789881270), Fragen 1 bis 3; maßgeblich sind Text und Szenarien des Issues):
+**Entscheidung** (Sebastian; [Klärung vom 22.10.2026](https://github.com/sebivtt/dpv-participant-management/issues/99#issuecomment-6349575867), [Klärung vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/99#issuecomment-6789881270), Fragen 1 bis 3; Antwort bei der Vorschau vom 12.11.2026, [Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/99#issuecomment-6836649952); maßgeblich sind Text und Szenarien des Issues):
 
-1. **Nur auf dem Leitungspfad** (Frage 1): Eine angezeigte Leitungsrolle muss auf dem Leitungspfad der verwalteten Person liegen, wie eine Leitungsrolle bei Personen mit Konto (ROL-01, #89). Sonst lehnt das Tool ab und nennt den Grund; ein Verschieben, nach dem die Rolle nicht mehr passt, lehnt es ab wie PK-25.
+1. **Nur auf dem Leitungspfad** (Frage 1): Eine angezeigte Leitungsrolle muss auf dem Leitungspfad der verwalteten Person liegen, wie eine Leitungsrolle bei Personen mit Konto (ROL-01, #89). Sonst lehnt das Tool ab und nennt den Grund; ein Verschieben, nach dem die Rolle nicht mehr passt, lehnt es ab wie PK-25, ebenso einen Ringwechsel eines Stammes wie OG5 (Antwort vom 12.11.2026: „Passt, ablehnen“; Szenario LG5).
 2. **Eintragen im Dialog „… benennen“** (Frage 3): Die Vorschläge beim Tippen zeigen auch verwaltete Personen mit der Marke „verwaltet“; entfernt wird über „Entfernen“ in der Liste der Leitungen. Die Bausteine „Trefferliste“ und „Person in einer Liste“ wurden dafür erweitert.
 
 **Technische Wahl** (KI):
@@ -54,7 +54,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 4. **Wo sie steht:** in der Liste „Leitungen“ der Seite einer Organisation und auf der Seite „Verband“ (Bundesleitungen), im Abschnitt „Personen“ unter dem Namen. Gliederung, Kacheln und der Satz „… hat keine …“ zählen weiter nur Leitungen mit Konto.
 5. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): angezeigte Leitungsrolle `displayed lead` (`DisplayedLead`), eintragen `appoint_displayed`, entfernen `remove_displayed`, die sichtbaren `displayed_leads`.
 
-**Umsetzung:** `persons/models.py` und Migration `persons/migrations/0003_displayed_lead.py`, `persons/texts.py`, `access/rights.py`, `units/organisation.py`, `core/views.py`, `config/urls.py`, `core/templates/core/_leitung.html`, `_treffer.html`, `docs/rechtematrix.md` (VP-14 bis VP-16, RO-09); Tests in `tests/test_angezeigte_leitungsrollen.py`.
+**Umsetzung:** `persons/models.py` und Migration `persons/migrations/0003_displayed_lead.py`, `persons/texts.py`, `access/rights.py`, `units/models.py` (Ringwechsel), `units/organisation.py`, `core/views.py`, `config/urls.py`, `core/templates/core/_leitung.html`, `_treffer.html`, `docs/rechtematrix.md` (VP-14 bis VP-16, RO-09); Tests in `tests/test_angezeigte_leitungsrollen.py`, Rauchtest `rauchtests/test_angezeigte_leitungsrollen.py`; der Rundumtest (`tests/test_rundumtest.py`) zählt die neue Tabelle zu den Personendaten.
 
 ---
 

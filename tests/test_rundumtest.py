@@ -280,8 +280,9 @@ PERSONAL_MODELS = {
     "EmailAddress",
     # Wer wann über die genaue Mail oder den Benutzernamen gesucht hat (PK-24, #190).
     "AccountSearch",
-    # Verwaltete Personen (#117).
+    # Verwaltete Personen (#117) und ihre angezeigten Leitungsrollen (#99).
     "ManagedPerson",
+    "DisplayedLead",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
@@ -289,6 +290,9 @@ ALLOWED_FILES = {
     "access/rights.py",
     # Die Regeln beim Speichern und Löschen einer Rolle; sie zeigen nichts an.
     "roles/models.py",
+    # Die Regeln beim Speichern verwalteter Personen und ihrer angezeigten Leitungsrollen, auch beim
+    # Ringwechsel eines Stammes (#99); sie zeigen nichts an.
+    "persons/models.py",
     # Der Abgleich mit Keycloak beim Login: ändert nur das Konto, das sich gerade anmeldet,
     # und zeigt nichts an (#76).
     "accounts/keycloak_abgleich.py",
@@ -300,7 +304,8 @@ ALLOWED_FILES = {
 # filter(roles__user=…), order_by("-user__email"), filter(parent__roles__kind=…),
 # prefetch_related("roles"). Ein bloßes "roles" oder "user" zählt nur als Angabe an eine Abfrage;
 # sonst heißen so auch die App und das Konto der Anfrage.
-LOOKUP_THROUGH_PERSONS = re.compile(r"(^-?|__)(roles|user|managed_persons)__\w|__(roles|user|managed_persons)$")
+LOOKUP_THROUGH_PERSONS = re.compile(
+    r"(^-?|__)(roles|user|managed_persons|displayed_leads)__\w|__(roles|user|managed_persons|displayed_leads)$")
 QUERY_METHODS = {"select_related", "prefetch_related", "values", "values_list", "only", "order_by", "annotate"}
 # Ordner, die nur Tests enthalten; jeder andere Python-Ordner gehört zum Tool und wird durchsucht.
 ONLY_FOR_TESTS = {"tests", "rauchtests", "containertests"}
