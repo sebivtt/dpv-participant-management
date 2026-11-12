@@ -162,6 +162,9 @@ def test_s1_max_sieht_alle_buende_nur_mit_namen(org):
         assert shown[name]["leads"] == ""
         assert shown[name]["href"] is not None
     assert "Wirbelwind" not in _visible_text(root)
+    # Wie im Zielbild steht neben der Überschrift „alle Bünde“ statt der Namen.
+    head = _one(_all(root, lambda e: "a-gliederung-kopf" in _classes(e)))
+    assert _visible_text(head) == "Gliederung alle Bünde"
 
 
 @pytest.mark.rechtematrix("SZ-01", "SZ-06", "PK-08", "EH-06")

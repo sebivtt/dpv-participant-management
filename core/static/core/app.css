@@ -567,6 +567,8 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .btn-verschieben .ic { width: 16px; height: 16px; }
 /* Knopf oben rechts im Kopf einer Organisation (#92, N4b); am Handy unter dem Namen. */
 .a-orga-kopf-knopf { margin-left: auto; }
+/* Neben dem Knopf darf der Name schmaler werden, damit der Knopf am PC rechts neben dem Titel bleibt. */
+.a-orga-kopf-zeile:has(.a-orga-kopf-knopf) > div:first-child { flex: 1 1 8rem; min-width: 0; }
 @media (max-width: 700px) {
   .a-orga-kopf-knopf { flex-basis: 100%; margin-left: 0; }
 }

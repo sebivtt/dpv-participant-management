@@ -170,5 +170,5 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 
 1. **Eigene Adresse:** Der Dialog „Support-Zugang für … starten“ ist eine eigene Seite über der Organisation, damit er ohne Skript geht, wie die übrigen Dialoge der Seite.
 2. **„Bitte wähle einen Anlass.“ als Baustein „Meldungen“** (Art Fehler) unter der Wahl statt einer roten Zeile mit ×, wie die Fehlermeldung beim Verschieben (#287).
-3. **Gliederung wie auf der Seite „Organisation“:** Überschrift, Marken und zugeklappte Teile kommen aus dem Baustein „Gliederung“ (#189); den Zusatz „alle Bünde“ gibt es nicht. Ohne Support-Zugang steht neben der Gliederung zuerst der erste Bund nach dem Alphabet, nur mit dem Kopf.
+3. **Gliederung wie auf der Seite „Organisation“:** Marken, Leitungen und zugeklappte Teile kommen aus dem Baustein „Gliederung“ (#189); neben der Überschrift steht wie im Zielbild „alle Bünde“. Auf „Organisation“ steht neben der Gliederung zuerst der erste Bund nach dem Alphabet, nur mit dem Kopf.
 4. **Kein Steuerband und kein Hinweiskasten:** Beide gehören nicht zur Seite.

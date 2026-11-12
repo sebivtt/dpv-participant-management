@@ -168,6 +168,7 @@ Zielbild als `docs/zielbilder/support-zugang.html`, Abweichungen in `docs/zielbi
 - **Zart blauer Knopf** (bisher „Knopf ‚Verschieben‘“, erweitert, N4a): Beschriftung und Symbol sind wählbar, und er kann so groß sein wie die übrigen Knöpfe; „Verschieben“ und „Bearbeiten“ sehen aus wie bisher.
 - **Kopf einer Organisationsseite** (erweitert, N4b): oben rechts neben dem Titel ein Knopf, am Handy unter dem Namen; für Admins „Support-Zugang starten“ mit Schild, nicht, solange ein laufender Zugang die Organisation umfasst. Ohne Zugang steht für Admins nur dieser Kopf auf der Seite.
 - **Auswahl im Dialog** (erweitert, Frage 4): Es darf keine Möglichkeit vorgewählt sein, etwa beim Anlass eines Support-Zugangs.
+- **Gliederung** (wie im Zielbild): Admins sehen alle Bünde; neben der Überschrift steht dann „alle Bünde“ statt der Namen.
 - **„Support-Zugang für … starten“:** Dialog mit dem Satz zu Dauer und Protokoll, darunter sichtbar „Anlass“ mit vier Möglichkeiten ohne Vorwahl, unten „Abbrechen“ und der dunkelblaue Knopf „Support-Zugang starten“. Ohne Wahl steht „Bitte wähle einen Anlass.“ als Fehlermeldung im Dialog unter der Wahl. Danach eine kurze Meldung (#186).
 - **Nach Ablauf** (N2): fest oben auf der nächsten Seite die Informationsmeldung „Dein Support-Zugang für … ist nach 60 Minuten abgelaufen.“; war ein Formular abgeschickt, eine Warnmeldung mit diesem Satz fett und darunter „Was du gerade abgeschickt hast, ist nicht gespeichert.“
 
