@@ -1253,6 +1253,12 @@ class Rights:
             role.delete(by=me)
         return True
 
+    # Support-Zugang der Admins (#92)
+
+    def start_support(self, unit: Unit, reason: str) -> str:
+        """Startet einen Support-Zugang für `unit`; gibt die kurze Meldung zurück. Gerüst."""
+        return ""
+
     # Leitungen (BER-01, Grund 3)
 
     def leads(self) -> QuerySet:

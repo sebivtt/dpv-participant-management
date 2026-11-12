@@ -28,12 +28,14 @@ from core.views import (
     organisation_remove,
     organisation_search,
     organisation_suggestions,
+    organisation_support,
     organisation_unit,
     profile,
     profile_leave,
     profile_leave_team,
     profile_scout_name,
     start,
+    support_end,
 )
 
 # Eigene Fehlerseite statt der von Django: ohne technische Einzelheiten, mit Fehlernummer (#6).
@@ -79,6 +81,9 @@ urlpatterns = [
     path("organisation/<key:unit>/verwaltete-person/anlegen/", organisation_add_managed, name="organisation_add_managed"),
     path("organisation/<key:unit>/verwaltete-person/<key:person>/bearbeiten/", organisation_edit_managed,
          name="organisation_edit_managed"),
+    # Support-Zugang der Admins (#92): Starten an der Seite der Organisation, Beenden im Balken auf jeder Seite.
+    path("organisation/<key:unit>/support-zugang/", organisation_support, name="organisation_support"),
+    path("support-zugang/beenden/", support_end, name="support_end"),
     path("bausteine/", building_blocks, name="building_blocks"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),

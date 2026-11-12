@@ -865,6 +865,22 @@ def federation_remove(request: HttpRequest, role: str) -> HttpResponse:
     return _federation_page(request, removal=removal)
 
 
+# Support-Zugang der Admins (#92): Starten im Dialog auf der Seite einer Organisation, Beenden im Balken.
+SUPPORT_ROWS = ("SZ-01", "SZ-02", "SZ-03", "SZ-04", "SZ-05", "SZ-06", "PR-05", "PR-06")
+
+
+@checks_rights(*SUPPORT_ROWS)
+def organisation_support(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Support-Zugang für … starten“ zeigen und den Zugang starten (SZ-01); Gerüst."""
+    raise Http404
+
+
+@checks_rights(*SUPPORT_ROWS)
+def support_end(request: HttpRequest) -> HttpResponse:
+    """Den laufenden Support-Zugang beenden (SZ-01); Gerüst."""
+    raise Http404
+
+
 def _tile(role: Role, label=None) -> dict:
     """Was eine Kachel unter „Organisation und Rollen“ zeigt: klein die Rolle, groß die Organisation (#161).
 

@@ -22,7 +22,7 @@ from units.models import Kind as UnitKind
 from units.models import Unit, logged_name
 
 # SERVER_COMMAND bleibt hier erreichbar, wie seit #91; es steht jetzt in core/actors.py.
-__all__ = ["SERVER_COMMAND", "Role", "RoleChange"]
+__all__ = ["SERVER_COMMAND", "AdminAccess", "Role", "RoleChange"]
 
 
 class RoleKind(models.TextChoices):
@@ -400,6 +400,37 @@ class RoleChange(models.Model):
     def delete(self, *args, **kwargs):
         """Einträge lassen sich nicht löschen."""
         raise ValidationError(texts.LOG_LOCKED)
+
+
+class AdminAccess(models.Model):
+    """Ein Eintrag im Protokoll der Admin-Zugriffe (#92, BER-02, ADM-03)."""
+
+    class Action(models.TextChoices):
+        STARTED = "started", gettext_lazy("Support-Zugang gestartet")
+        ENDED = "ended", gettext_lazy("Support-Zugang beendet")
+        VIEWED = "viewed", gettext_lazy("ansehen")
+        CHANGED = "changed", gettext_lazy("ändern")
+        DELETED = "deleted", gettext_lazy("Organisation gelöscht")
+
+    class Detail(models.TextChoices):
+        LEAD_REQUEST = "lead_request", gettext_lazy("Anfrage einer Leitung")
+        DEBUGGING = "debugging", gettext_lazy("Fehlersuche")
+        DATA_SUBJECT = "data_subject", gettext_lazy("Anfrage einer betroffenen Person (Auskunft, Berichtigung)")
+        OTHER = "other", gettext_lazy("Sonstiges")
+        ACCOUNT_SEARCH = "account_search", gettext_lazy("Kontosuche")
+        BUTTON = "button", gettext_lazy("beendet")
+        EXPIRED = "expired", gettext_lazy("nach Ablauf")
+        LOGOUT = "logout", gettext_lazy("beim Abmelden")
+        SWITCHED = "switched", gettext_lazy("durch einen neuen Start")
+
+    at = models.DateTimeField()
+    actor_id = models.BigIntegerField(null=True)
+    actor_name = models.TextField()
+    action = models.CharField(max_length=10, choices=Action)
+    detail = models.CharField(max_length=20, choices=Detail, blank=True)
+    unit_id = models.BigIntegerField()
+    unit_kind = models.CharField(max_length=20, choices=UnitKind)
+    unit_name = models.TextField()
 
 
 def on_path(member_unit: Unit, target: Unit) -> bool:
