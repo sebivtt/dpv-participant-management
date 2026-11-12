@@ -41,8 +41,12 @@ def _managed_address(where, entry, action: str) -> str:
     return f"{_page_of(where)}verwaltete-person/{entry.key}/{action}/"
 
 
+def _link(entry, action: str) -> str:
+    return f'a[href$="/verwaltete-person/{entry.key}/{action}/"]'
+
+
 def _button(entry, action: str) -> str:
-    return f'{PERSONS} a[href$="/verwaltete-person/{entry.key}/{action}/"]'
+    return f"{PERSONS} {_link(entry, action)}"
 
 
 def _dialog(page: Page):
@@ -134,7 +138,8 @@ def test_am_pc_nicht_loeschen_fuehrt_zurueck_und_escape_schliesst(pc):
     units = _with_managed()
 
     pc.goto(_managed_address(units["falken"], units["lena"], "loeschen"))
-    stations = _stations_to_element(pc, 'dialog a:text("Nicht löschen")', steps=10)
+    stations = _stations_to_element(pc, 'dialog .a-dialog-fuss a[href$="/bearbeiten/"]', steps=10)
+    expect(pc.locator("dialog .a-dialog-fuss a.btn-zart")).to_have_text("Nicht löschen")
     _all_visible(stations)
     pc.keyboard.press("Enter")
     pc.wait_for_url(_managed_address(units["falken"], units["lena"], "bearbeiten"))
@@ -152,7 +157,7 @@ def test_am_handy_nur_mit_der_tastatur_loeschen(handy):
     units = _with_managed()
     handy.goto(_page_of(units["falken"]))
     _no_side_scroll(handy)
-    entry = handy.locator(f"{PERSONS} li", has=handy.locator(_button(units["lena"], "bearbeiten")))
+    entry = handy.locator(f"{PERSONS} li", has=handy.locator(_link(units["lena"], "bearbeiten")))
     expect(entry.locator(".btn")).to_have_text(["Bearbeiten: Kiwi", "Austragen: Kiwi"])
     _no_side_scroll(handy)
 
@@ -183,7 +188,7 @@ def test_am_handy_verschieben_ohne_seitliches_ueberstehen(handy):
     login(handy)
     units = _with_managed()
     handy.goto(_page_of(units["walhall"]))
-    entry = handy.locator(f"{PERSONS} li", has=handy.locator(_button(units["paul"], "verschieben")))
+    entry = handy.locator(f"{PERSONS} li", has=handy.locator(_link(units["paul"], "verschieben")))
     expect(entry.locator(".btn")).to_have_text(["Bearbeiten: Paul Probe", "Verschieben: Paul Probe",
                                                 "Austragen: Paul Probe"])
     _no_side_scroll(handy)
