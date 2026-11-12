@@ -360,6 +360,9 @@ class RoleChange(models.Model):
       Leeren der Datenbank bleibt möglich; das braucht der Testdaten-Befehl (#103) und der
       Testlauf. Im Tool gibt es dafür keinen Weg.
     - In P2 sieht niemand das Protokoll im Tool (Entscheidung W4); die Einsicht kommt mit ADM-03.
+    - Seit #118 stehen hier auch verwaltete Personen (PER-02): Anlegen ist „vergeben“, Löschen „entfernt“,
+      Verschieben und Austragen je „entfernt“ und „vergeben“, immer als Mitgliedschaft. Dann ist `managed`
+      gesetzt, und `person_id` ist die Nummer der verwalteten Person, nicht die eines Kontos.
     """
 
     class Action(models.TextChoices):
@@ -371,6 +374,8 @@ class RoleChange(models.Model):
     actor_name = models.TextField()
     person_id = models.BigIntegerField()
     person_name = models.TextField()
+    # Eine verwaltete Person statt eines Kontos (#118); `person_id` zählt dann in ihrer eigenen Tabelle.
+    managed = models.BooleanField(default=False, db_default=False)
     kind = models.CharField(max_length=20, choices=RoleKind)
     unit_id = models.BigIntegerField(null=True)
     unit_name = models.TextField(blank=True)

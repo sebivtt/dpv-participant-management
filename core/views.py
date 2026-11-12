@@ -717,6 +717,30 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
     return _with_dialog(request, found, dialog)
 
 
+# Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02). Gerüst: noch ohne Wirkung.
+MOVE_MANAGED_ROWS = ("VP-07", "VP-08", "EH-18", "EH-19")
+EXPEL_MANAGED_ROWS = ("VP-18", "EH-18", "EH-19")
+DELETE_MANAGED_ROWS = ("VP-09", "VP-10", "EH-18", "EH-19")
+
+
+@checks_rights(*MOVE_MANAGED_ROWS)
+def organisation_move_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „Verschieben“ einer verwalteten Person (VP-07); Gerüst."""
+    raise Http404
+
+
+@checks_rights(*EXPEL_MANAGED_ROWS)
+def organisation_expel_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „… austragen?“ einer verwalteten Person (VP-18); Gerüst."""
+    raise Http404
+
+
+@checks_rights(*DELETE_MANAGED_ROWS)
+def organisation_delete_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Rückfrage „… endgültig löschen?“ einer verwalteten Person (VP-09); Gerüst."""
+    raise Http404
+
+
 def _managed_values(entry) -> dict:
     """Die gespeicherten Angaben einer verwalteten Person für den Dialog „… bearbeiten“."""
     return {name: getattr(entry, name) for name in EDITABLE_FIELDS}

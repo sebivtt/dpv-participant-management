@@ -46,6 +46,15 @@ CHANGED_MEANWHILE = gettext_lazy(
     "%(person)s wurde inzwischen von jemand anderem geändert. Bitte prüfe die Angaben und speichere erneut."
 )
 
+# Löschen im Dialog „Bearbeiten“ (#118, Zielbild zu #117, Fassung 1, N5); Verschieben und Austragen
+# nutzen dieselben Sätze wie bei Personen mit Konto (units/texts.py, #286, #287).
+DELETE_BUTTON = gettext_lazy("Verwaltete Person löschen")
+DELETE_QUESTION = gettext_lazy("%(person)s endgültig löschen?")
+DELETE_CANNOT_UNDO = gettext_lazy("Das lässt sich nicht rückgängig machen.")
+DELETE_CONFIRM = gettext_lazy("Endgültig löschen")
+DELETE_KEEP = gettext_lazy("Nicht löschen")
+DELETED = gettext_lazy("%(person)s wurde gelöscht.")
+
 # Regel beim Speichern
 NOT_IN_FEDERATION = gettext_lazy("Eine verwaltete Person gehört zu einer Gruppe, einem Stamm, einem Ring oder einem Bund, nie zum Verband.")
 

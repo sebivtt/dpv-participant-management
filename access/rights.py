@@ -986,6 +986,20 @@ class Rights:
             fresh._record_change(lambda rights: rights._managed_entries().filter(pk=entry.pk).exists())
         return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
+    # Verschieben, Austragen und Löschen verwalteter Personen (#118). Gerüst: noch ohne Wirkung.
+
+    def move_managed(self, unit: Unit, person_key, target_key) -> str:
+        """Verschiebt eine verwaltete Person in eine Organisation direkt unter `unit` (VP-07); Gerüst."""
+        raise Http404
+
+    def expel_managed(self, unit: Unit, person_key, choice: str) -> str:
+        """Trägt eine verwaltete Person eine Ebene nach oben aus (VP-18); Gerüst."""
+        raise Http404
+
+    def delete_managed(self, unit: Unit, person_key) -> str:
+        """Löscht eine verwaltete Person endgültig (VP-09); Gerüst."""
+        raise Http404
+
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
     def may_remove(self, role: Role) -> bool:
