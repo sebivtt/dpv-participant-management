@@ -500,7 +500,9 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-dialog-kopf .a-schliessen { flex: none; padding: 6px; text-decoration: none; }
 .a-stift { position: absolute; top: 12px; right: 12px; padding: 6px; text-decoration: none; }
 .a-dialog-inhalt { padding: 18px 20px; }
-.a-dialog-fuss { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
+.a-dialog-fuss { display: flex; justify-content: flex-end; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--linie); background: var(--grund); }
+/* Knopf links unten im Dialog (#118), etwa „Verwaltete Person löschen“ wie im Zielbild zu #117 (.me-auto von Bootstrap). */
+.a-dialog-links { margin-right: auto; }
 /* Auswahl im Dialog (#286): Optionsfelder wie im Zielbild aus #285, darunter die Vorschau der gewählten Möglichkeit.
    Die Vorschau wechselt ohne Skript über :has(); ein Browser ohne :has() zeigt alle Vorschauen untereinander. */
 .a-auswahl fieldset { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }

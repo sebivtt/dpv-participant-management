@@ -39,6 +39,25 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-12 · Verwaltete Personen verschieben, austragen und löschen (#118, PER-02)
+
+**Entscheidung** (Sebastian; [Klärung vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/118#issuecomment-6789855626), Fragen 1 und 2; Antwort bei der Umsetzung vom 12.11.2026, [Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/118#issuecomment-6830881568); maßgeblich sind Text und Szenarien des Issues):
+
+1. **Austragen verwalteter Personen eine Ebene nach oben** (Frage 1): Die Leitung der eigenen Organisation der verwalteten Person, fehlt sie, die einspringende, trägt sie aus; danach gehört sie direkt zur Organisation darüber. Eine andere Möglichkeit gibt es nicht, weil eine verwaltete Person immer zu einer Organisation gehört; im Bund gibt es kein Austragen, nur Löschen. Ein Wechsel zwischen zwei Gruppen eines Stammes geht so in zwei Schritten: Austragen durch die Gruppenleitung, dann Verschieben durch die Stammesleitung (VP-07). Neue Zeile VP-18 in der Rechtematrix. Abgelehnt: Die Stammesleitung verschiebt direkt zwischen Gruppen (Ausnahme vom Grundsatz 1 aus #136); Löschen und neu anlegen (Angaben und Bestätigung der Einwilligung gingen verloren, kein Wechsel im Protokoll).
+2. **Bedienung** (Frage 2): „Verschieben“ und „Austragen“ wie bei Personen mit Konto (#286, #287), mit denselben Sätzen; Löschen im Dialog „Bearbeiten“ wie im Zielbild zu #117 (N5) mit Rückfrage „… endgültig löschen? Das lässt sich nicht rückgängig machen.“, „Endgültig löschen“ und „Nicht löschen“.
+3. **Baustein „Dialog“ erweitert** (Antwort vom 12.11.2026, „Dialog erweitern“): optional ein zart roter Knopf links unten und eine andere Beschriftung und ein anderes Ziel für „Abbrechen“. Alle übrigen Dialoge bleiben, wie sie sind.
+
+**Technische Wahl** (KI):
+
+1. **Eigene Adressen** unter `organisation/<Organisation>/verwaltete-person/<Person>/` (`verschieben/`, `austragen/`, `loeschen/`), neben `bearbeiten/` aus #117. Die Adressen für Personen mit Konto bleiben unverändert; eine Kennung eines Kontos findet unter den neuen Adressen nie etwas (VV6) und umgekehrt.
+2. **Protokoll der Rollenänderungen:** Einträge zu verwalteten Personen stehen in derselben Tabelle wie die zu Konten, als Mitgliedschaft, mit dem neuen Feld `managed`; `person_id` ist dann die Nummer der verwalteten Person. Das Feld kam per Migration dazu; bestehende Einträge und die Sperre in der Datenbank bleiben unverändert (U3). Name im Eintrag ist Vor- und Nachname zum Zeitpunkt der Änderung, wie bei Konten.
+3. **Gleichzeitige Änderungen:** gesperrt werden eigenes Konto, beim Verschieben und Austragen dann Bund und Organisation (wie beim Ringwechsel, #95), zuletzt die Person; das Recht wird unter der Sperre frisch geprüft. Von zwei Änderungen an derselben Person gelingt genau eine, die zweite sieht „nicht gefunden“ (VG1, VG2, VG3, VG5). Änderung und Protokolleintrag gelingen nur zusammen (VG4).
+4. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Verschieben `move_managed`, Austragen `expel_managed`, Löschen `delete_managed`, Protokolleintrag `RoleChange.record_managed`.
+
+**Umsetzung:** `access/rights.py`, `roles/models.py` und Migration `roles/migrations/0005_role_change_managed.py`, `persons/texts.py`, `core/views.py`, `config/urls.py`, `units/organisation.py`, `core/templates/core/_dialog_zu.html`, `_leitung.html`, `organisation.html`, `bausteine.html`, `core/static/core/app.css`, `docs/rechtematrix.md`; Tests in `tests/test_verwaltete_personen_verschieben.py` und `rauchtests/test_verwaltete_personen_verschieben.py`.
+
+---
+
 ## 2026-11-12 · Support-Zugang der Admins und Protokoll der Admin-Zugriffe (#92, BER-02)
 
 **Entscheidung** (Sebastian; Bestandsaufnahme P2 vom 22.10.2026, W4 und W5 in #106; Klärung von #92 am 22.10.2026, Nachklärung P2 vom 22.10.2026; [Klärung vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6789905784); [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/92#issuecomment-6819688530) N1 bis N4b; maßgeblich sind Text und Szenarien des Issues):

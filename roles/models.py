@@ -397,6 +397,28 @@ class RoleChange(models.Model):
         entry.save()
         return entry
 
+    @classmethod
+    def record_managed(cls, by, person, unit: Unit, action: str) -> "RoleChange":
+        """Schreibt einen Eintrag zu einer verwalteten Person (#118): immer als Mitgliedschaft in `unit`.
+
+        `person` ist die verwaltete Person mit Vor- und Nachname zum Zeitpunkt der Änderung, ohne Fahrtenname,
+        wie bei Konten. Nur innerhalb der Transaktion der Änderung aufrufen; scheitert der Eintrag, scheitert sie.
+        """
+        check_actor(by)
+        entry = cls(
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
+            person_id=person.pk,
+            person_name=f"{person.first_name} {person.last_name}",
+            kind=RoleKind.MEMBER,
+            unit_id=unit.pk,
+            unit_name=logged_name(unit),
+            action=action,
+            managed=True,
+        )
+        entry.save()
+        return entry
+
     def save(self, *args, **kwargs) -> None:
         """Schreibt einen neuen Eintrag; einen bestehenden zu ändern lehnt das Tool ab."""
         if not self._state.adding:

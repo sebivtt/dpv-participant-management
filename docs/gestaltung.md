@@ -150,8 +150,16 @@ Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/z
 - **Marke:** neu „verwaltet“, grau wie „nur lesen“, ohne Schloss.
 - **Knopf „Verschieben“:** auch für „Bearbeiten“ bei einer verwalteten Person, ohne Symbol.
 - **Dialog:** Nach dem Dialog bekommt der Knopf, der ihn geöffnet hat, wieder den Fokus; dafür trägt der Knopf eine Kennung, und der Dialog führt zur Seite mit dieser Kennung in der Adresse zurück. Bisher nur bei verwalteten Personen. Dort prüft der Browser die Felder nicht selbst (`novalidate`), damit die Meldungen des Tools am Feld erscheinen statt der Blase des Browsers.
-- **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
+- **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5; seit #118 im Dialog „Bearbeiten“ für wer löschen darf, Abschnitt unten). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
 - **Danach** eine kurze Meldung (#186): „Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.“, „Die Angaben zu Kiwi (Lena Probe) sind gespeichert.“ Hat inzwischen jemand anderes gespeichert, steht die Fehlermeldung oben im Dialog, und er zeigt den neuen Stand.
+
+### Verwaltete Personen verschieben, austragen und löschen (#118, 12.11.2026)
+
+Kein eigenes Zielbild; Vorlage für das Löschen ist das Zielbild zu #117, Fassung 1 (N5), Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 12.11.2026 zu #118. Kein neuer Baustein, zwei erweitert:
+
+- **Dialog** (Sebastian, 12.11.2026: „Dialog erweitern“): Links unten kann ein zart roter Knopf aus dem Baustein „Knopf „Entfernen““ stehen, etwa „Verwaltete Person löschen“ im Dialog „Bearbeiten“, nur für wer löschen darf. „Abbrechen“ kann anders heißen und woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“. Am Handy rutschen die Knöpfe bei Platzmangel in eine zweite Zeile.
+- **Person in einer Liste:** Bei einer verwalteten Person stehen nach „Bearbeiten“ „Verschieben“ und „Austragen“ wie bei Personen mit Konto, nur wo die Person das darf.
+- **Rückfrage vor dem Löschen:** Titel „… endgültig löschen?“, darunter „Das lässt sich nicht rückgängig machen.“, unten „Nicht löschen“ und der rote Knopf „Endgültig löschen“. Danach die kurze Meldung (#186) „… wurde gelöscht.“; nach dem Verschieben und Austragen dieselben Sätze wie bei Personen mit Konto.
 
 ### Einwilligung beim Anlegen (#98, 12.11.2026)
 

@@ -58,7 +58,16 @@ from accounts.models import AccountSearch, display_name
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS, ManagedPerson
 from roles import texts as role_texts
-from roles.models import LEAD_ROLE, LEADS_IN_UNITS, AdminAccess, Role, after_leaving, leads_off_path, on_path
+from roles.models import (
+    LEAD_ROLE,
+    LEADS_IN_UNITS,
+    AdminAccess,
+    Role,
+    RoleChange,
+    after_leaving,
+    leads_off_path,
+    on_path,
+)
 from units import texts as unit_texts
 from units.models import Kind as UnitKind
 from units.models import Unit
@@ -105,6 +114,8 @@ SUPPORT_REASONS = (AdminAccess.Detail.LEAD_REQUEST, AdminAccess.Detail.DEBUGGING
 # Die Wahl beim Austragen (#286, #65 Frage 17): „hoch“ heißt danach direkt zur Organisation darüber,
 # „ganz“ heißt danach keiner Organisation mehr; der Wert sagt, ob die Person ganz ausgetragen wird.
 EXPEL_CHOICES = {"hoch": False, "ganz": True}
+# Verwaltete Personen gehören immer zu einer Organisation: Beim Austragen gibt es nur „hoch“ (#118, Frage 1).
+MANAGED_EXPEL_CHOICE = "hoch"
 # Wo die Meldung nach Ablauf eines Support-Zugangs bis zur nächsten Seite wartet (#92, SA1, SA2).
 SUPPORT_EXPIRED_SESSION_KEY = "support_abgelaufen"
 
@@ -957,6 +968,9 @@ class Rights:
                 if ManagedPerson.objects.filter(creation_key=creation_key).exists():
                     return ""
                 raise
+            # Seit #118 steht das Anlegen als „vergeben“ im Protokoll der Rollenänderungen; scheitert der
+            # Eintrag, wird niemand angelegt (VG4).
+            RoleChange.record_managed(me, created, unit, RoleChange.Action.GRANTED)
             fresh._record_change(lambda rights: rights.may_add_managed(unit))
         return str(person_texts.ADDED % {"person": created.display_name, "unit": unit_label(unit)})
 
@@ -986,19 +1000,132 @@ class Rights:
             fresh._record_change(lambda rights: rights._managed_entries().filter(pk=entry.pk).exists())
         return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
-    # Verschieben, Austragen und Löschen verwalteter Personen (#118). Gerüst: noch ohne Wirkung.
+    # Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02)
+    #
+    # Wie bei Personen mit Konto (#286, #287) darf das nur die Leitung der eigenen Organisation der Person und,
+    # solange dort keine Leitung mit Konto ist, die einspringende Leitung darüber (`leads_unit()`); Leitungen
+    # darüber sonst nicht (EH-19). Verschieben nur in eine Organisation direkt darunter (VP-07, VP-08), Austragen
+    # nur eine Ebene nach oben (VP-18, Klärung vom 11.11.2026, Frage 1), Löschen endgültig (VP-09, VP-10).
+    # Die Person kommt immer über ihre Kennung direkt aus der Organisation der Adresse (`managed_person()`).
+
+    def may_expel_managed(self, unit: Unit | None) -> bool:
+        """Darf die Person verwaltete Personen dieser Organisation eine Ebene nach oben austragen (VP-18)?
+
+        Wie `may_expel()`, aber nie im Bund: Eine verwaltete Person gehört immer zu einer Organisation, und
+        über dem Bund gibt es keine (#88); dort bleibt nur Löschen.
+        """
+        return unit is not None and unit.kind != UnitKind.ASSOCIATION and self.may_expel(unit)
+
+    def may_delete_managed(self, unit: Unit | None) -> bool:
+        """Darf die Person verwaltete Personen dieser Organisation endgültig löschen (VP-09, VP-10)?
+
+        Nur die Leitung der Organisation selbst oder die einspringende, nicht jede, die bearbeiten darf (N5 aus #117).
+        """
+        return unit is not None and self.leads_unit(unit)
+
+    def moving_managed(self, unit: Unit, person_key) -> dict:
+        """Was der Dialog „Verschieben“ bei einer verwalteten Person zeigt, wie `moving()`; ohne Recht „nicht gefunden“."""
+        if not self.may_move(unit):
+            raise Http404
+        entry = self.managed_person(unit, person_key)
+        return {"person": entry.display_name, "targets": self.move_targets(unit)}
+
+    def expulsion_managed(self, unit: Unit, person_key) -> dict:
+        """Was der Dialog „Austragen“ bei einer verwalteten Person zeigt, wie `expulsion()`; ohne Recht „nicht gefunden“.
+
+        Es gibt nur die Möglichkeit „hoch“ (gehört danach direkt zur Organisation darüber); Leitungsrollen, die
+        enden, hat eine verwaltete Person nicht.
+        """
+        if not self.may_expel_managed(unit):
+            raise Http404
+        entry = self.managed_person(unit, person_key)
+        return {"person": entry.display_name,
+                "options": [{"value": MANAGED_EXPEL_CHOICE, "target": after_leaving(unit, False), "endings": []}]}
+
+    def deleting_managed(self, unit: Unit, person_key) -> ManagedPerson:
+        """Die verwaltete Person für die Rückfrage vor dem Löschen; ohne Recht „nicht gefunden“ (VP-10)."""
+        if not self.may_delete_managed(unit):
+            raise Http404
+        return self.managed_person(unit, person_key)
+
+    def _changing_managed(self, unit: Unit, person_key, allowed: Callable[["Rights"], bool], structure: bool = False):
+        """Sperrt das eigene Konto und die Person und prüft das Recht frisch; gibt Rechte, Konto, Organisation und Person zurück.
+
+        Nur innerhalb einer Transaktion aufrufen. Das Recht wird unter der Sperre des eigenen Kontos neu
+        berechnet: Wer gerade als Leitung entfernt wurde, ändert nichts mehr, auch aus einer schon offenen
+        Rückfrage (VG5). Mit `structure` sind danach Bund und Organisation gesperrt wie beim Ringwechsel (#95,
+        OG9), damit die Organisation darüber oder darunter nicht gleichzeitig woandershin wandert; die
+        Organisation kommt dann frisch zurück. Immer in der Reihenfolge Konto, Bund, Organisation, Person. Die
+        Person kommt mit Sperre direkt aus `unit`; wurde sie gleichzeitig verschoben, ausgetragen oder gelöscht,
+        ist sie „nicht gefunden“, und von zwei Änderungen gelingt genau eine (VG1, VG2).
+        """
+        if self.user is None or not is_key(person_key):
+            raise Http404
+        me = self._lock_with(self.user.pk)
+        fresh = Rights(me)
+        if not allowed(fresh):
+            raise Http404
+        if structure:
+            unit = fresh._lock_structure(unit)
+        entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
+        return fresh, me, unit, entry
 
     def move_managed(self, unit: Unit, person_key, target_key) -> str:
-        """Verschiebt eine verwaltete Person in eine Organisation direkt unter `unit` (VP-07); Gerüst."""
-        raise Http404
+        """Verschiebt eine verwaltete Person in eine Organisation direkt unter `unit`; gibt die kurze Meldung zurück (VP-07).
+
+        Das Ziel kommt nur aus den Organisationen direkt darunter, gelesen unter der Sperre des Bundes; jedes
+        andere ist „nicht gefunden“, und nichts ändert sich (VP-08, VV3). Ins Protokoll kommen „entfernt“ und „vergeben“ (#91) in derselben
+        Transaktion: Scheitert ein Eintrag, wird nicht verschoben (VG4). Die Bestätigung der Einwilligung bleibt (V9).
+        """
+        if not is_key(target_key):
+            raise Http404
+        with transaction.atomic():
+            fresh, me, unit, entry = self._changing_managed(unit, person_key, lambda rights: rights.may_move(unit),
+                                                            structure=True)
+            target = next((found for found in self.move_targets(unit) if found.key == target_key), None)
+            if target is None:
+                raise Http404
+            entry.unit = target
+            entry.save(update_fields=["unit"])
+            RoleChange.record_managed(me, entry, unit, RoleChange.Action.REMOVED)
+            RoleChange.record_managed(me, entry, target, RoleChange.Action.GRANTED)
+            fresh._record_change(lambda rights: rights.may_move(unit))
+        return str(unit_texts.MOVED % {"person": entry.display_name, "unit": unit_label(target)})
 
     def expel_managed(self, unit: Unit, person_key, choice: str) -> str:
-        """Trägt eine verwaltete Person eine Ebene nach oben aus (VP-18); Gerüst."""
-        raise Http404
+        """Trägt eine verwaltete Person eine Ebene nach oben aus; gibt die kurze Meldung zurück (VP-18).
+
+        Danach gehört sie direkt zur Organisation über `unit`. `choice` muss „hoch“ sein, die einzige Möglichkeit;
+        jede andere Wahl, auch „ganz“, ist „nicht gefunden“. Protokoll und Sperren wie bei `move_managed()`.
+        """
+        if choice != MANAGED_EXPEL_CHOICE:
+            raise Http404
+        with transaction.atomic():
+            fresh, me, unit, entry = self._changing_managed(unit, person_key,
+                                                            lambda rights: rights.may_expel_managed(unit), structure=True)
+            target = after_leaving(unit, False)
+            entry.unit = target
+            entry.save(update_fields=["unit"])
+            RoleChange.record_managed(me, entry, unit, RoleChange.Action.REMOVED)
+            RoleChange.record_managed(me, entry, target, RoleChange.Action.GRANTED)
+            fresh._record_change(lambda rights: rights.may_expel_managed(unit))
+        return str(unit_texts.EXPELLED % {"person": entry.display_name, "unit": unit_label(unit)})
 
     def delete_managed(self, unit: Unit, person_key) -> str:
-        """Löscht eine verwaltete Person endgültig (VP-09); Gerüst."""
-        raise Http404
+        """Löscht eine verwaltete Person endgültig, ohne Papierkorb; gibt die kurze Meldung zurück (VP-09).
+
+        Mit ihr verschwinden alle ihre Angaben und die Bestätigung der Einwilligung (#98), die in derselben
+        Zeile stehen. Im Protokoll bleibt „entfernt“ mit ihrem Namen; wie lange, klärt #66. Ein zweites
+        Abschicken, etwa ein Doppelklick, findet sie nicht mehr: „nicht gefunden“, ein Eintrag (VG3).
+        """
+        with transaction.atomic():
+            fresh, me, unit, entry = self._changing_managed(unit, person_key,
+                                                            lambda rights: rights.may_delete_managed(unit))
+            name = entry.display_name
+            RoleChange.record_managed(me, entry, unit, RoleChange.Action.REMOVED)
+            entry.delete()
+            fresh._record_change(lambda rights: rights.may_delete_managed(unit))
+        return str(person_texts.DELETED % {"person": name})
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
