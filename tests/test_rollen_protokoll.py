@@ -433,7 +433,10 @@ def test_protokoll_hat_kein_feld_fuer_freien_text():
         "unit_id",
         "unit_name",
         "action",
+        # Seit #118: ob der Eintrag eine verwaltete Person betrifft; nur ja oder nein, kein freier Text.
+        "managed",
     }
+    assert RoleChange._meta.get_field("managed").get_internal_type() == "BooleanField"
 
 
 def test_protokoll_erscheint_nicht_im_log(org, log_output):

@@ -238,7 +238,7 @@ def test_v4_ohne_stammesleitung_springt_bruno_ein_und_verschiebt_paul(org):
     assert unit_of(org.paul) == "Sippe Falken"
 
 
-@pytest.mark.rechtematrix("VP-09", "PR-02")
+@pytest.mark.rechtematrix("VP-09", "VP-10", "PR-02")
 def test_v5_fiete_loescht_lena_im_dialog_bearbeiten(org):
     client = client_for(org.falken_leitung)
     assert add(org.falken_leitung, org.falken, client=client).status_code == 302
@@ -343,6 +343,7 @@ def test_vv1_fiete_verschiebt_lena_nicht(org, lena):
     shown = entries(page_tree(org.falken_leitung, unit_address(org.falken)))
     assert "Verschieben" not in shown["Kiwi"]["buttons"]
 
+    assert_like_missing(org.falken_leitung, move_address(org.falken, lena))
     refused(org.falken_leitung, move_address(org.falken, lena), {"ziel": org.woelfe.key})
 
     assert unit_of(lena) == "Sippe Falken"
@@ -354,6 +355,7 @@ def test_vv2_wanda_verschiebt_und_traegt_lena_nicht_aus_solange_die_falken_fiete
     shown = entries(page_tree(org.walhall_leitung, unit_address(org.falken)))
     assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}
 
+    assert_like_missing(org.walhall_leitung, expel_address(org.falken, lena))
     refused(org.walhall_leitung, move_address(org.falken, lena), {"ziel": org.woelfe.key})
     refused(org.walhall_leitung, expel_address(org.falken, lena), {"wahl": "hoch"})
     # Mit Walhall in der Adresse ebenso: Lena gehört nicht direkt zu Walhall.
@@ -364,7 +366,7 @@ def test_vv2_wanda_verschiebt_und_traegt_lena_nicht_aus_solange_die_falken_fiete
     assert not RoleChange.objects.filter(person_id=lena.pk, managed=True).exists()
 
 
-@pytest.mark.rechtematrix("VP-08")
+@pytest.mark.rechtematrix("VP-07", "VP-08")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/verschieben/")
 def test_vv3_ein_manipuliertes_ziel_fuer_paul_ist_nicht_gefunden(org):
     client = client_for(org.walhall_leitung)
@@ -382,7 +384,7 @@ def test_vv3_ein_manipuliertes_ziel_fuer_paul_ist_nicht_gefunden(org):
     assert RoleChange.objects.count() == before
 
 
-@pytest.mark.rechtematrix("VP-10")
+@pytest.mark.rechtematrix("VP-09", "VP-10")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/loeschen/")
 def test_vv4_nur_die_leitung_der_falken_loescht_lena(org, lena):
     # Wanda und Bruno bearbeiten Lena, löschen sie aber nicht, solange die Falken Fiete haben.

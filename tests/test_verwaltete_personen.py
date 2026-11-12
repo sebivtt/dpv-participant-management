@@ -240,7 +240,11 @@ def test_m3_ohne_gruppenleitung_springt_wanda_in_den_woelfen_ein(org):
 def test_m4_wanda_willi_und_bruno_sehen_lena_und_koennen_sie_bearbeiten(org, lena):
     for user in (org.walhall_leitung, org.willi, org.bundesleitung, org.falken_leitung):
         shown = entries(page_tree(user, unit_address(org.falken)))
-        assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}, user.username
+        # Seit #118 trägt Fiete als Gruppenleitung der Falken Lena auch aus (VP-18); die anderen nicht.
+        expected = {"Bearbeiten": edit_address(org.falken, lena)}
+        if user == org.falken_leitung:
+            expected["Austragen"] = f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"
+        assert shown["Kiwi"]["buttons"] == expected, user.username
         found, version = open_edit(user, org.falken, lena)
         assert _text(_one(_by_tag(found, "h2"))) == "Kiwi (Lena Probe) bearbeiten"
         assert value_of(found, "birth_date") == "2015-05-14"
@@ -331,7 +335,8 @@ def test_nach_dem_dialog_kehrt_der_fokus_zum_knopf_zurueck(org, lena):
 
     for found, back in ((open_add(org.falken_leitung, org.falken)[0], back_from_add(org.falken)),
                         (open_edit(org.falken_leitung, org.falken, lena)[0], back_from_edit(org.falken, lena))):
-        closing = [_attr(link, "href") for link in _by_tag(found, "a")]
+        # Seit #118 steht im Dialog „Bearbeiten“ für Fiete auch „Verwaltete Person löschen“; das schließt nicht.
+        closing = [_attr(link, "href") for link in _by_tag(found, "a") if _visible_text(link) != "Verwaltete Person löschen"]
         assert closing == [back, back]
 
 
