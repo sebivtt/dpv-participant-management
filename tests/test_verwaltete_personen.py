@@ -628,6 +628,21 @@ def test_mg3_hoechstlaengen_von_namen_und_fahrtenname(org):
     assert ManagedPerson.objects.get(unit=org.falken).scout_name == "K" * 30
 
 
+def test_mg2_mg3_auch_beim_bearbeiten_fahrtenname_gekuerzt_und_hoechstens_30_zeichen(org, lena):
+    """Unabhängige Prüfung zu #98, Befund 1: Das Bearbeiten prüft den Fahrtennamen wie das Anlegen, statt mit
+    einem Fehler der Datenbank abzubrechen."""
+    _found, version = open_edit(org.falken_leitung, org.falken, lena)
+    response = save(org.falken_leitung, org.falken, lena, version, scout_name="  Kiwi Neu ")
+    assert response.status_code == 302
+    assert lena_now().scout_name == "Kiwi Neu"
+
+    _found, version = open_edit(org.falken_leitung, org.falken, lena)
+    response = save(org.falken_leitung, org.falken, lena, version, scout_name="K" * 31)
+    assert response.status_code == 200
+    assert field_error(dialog_of(_tree(response)), "scout_name") == "Der Fahrtenname darf höchstens 30 Zeichen lang sein."
+    assert lena_now().scout_name == "Kiwi Neu"
+
+
 def test_mg4_geburtsdatum_heute_geht_morgen_nicht(org):
     today = timezone.localdate()
 
