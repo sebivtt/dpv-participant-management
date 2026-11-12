@@ -1007,7 +1007,7 @@ BUILDING_BLOCKS = {
                      "sich etwas nicht zurücknehmen lässt (zweites Beispiel). Gespeichert wird erst mit dem Knopf "
                      "des Dialogs. Als Regler der Einwilligung (drittes Beispiel) steht er ohne Satz beim Öffnen "
                      "auf „aus“, Vorleseprogramme sagen ihn als Ankreuzfeld an, und fehlt die Bestätigung, steht "
-                     "der Fehler rot darunter."),
+                     "der Fehler rot darunter, wie beim Textfeld."),
         "pages": [_("Organisation")],
     },
     "orgakopf": {
@@ -1175,9 +1175,9 @@ def _organisation_examples() -> dict:
          "checked": False, "locked": False},
         {"name": "katalog-ringe-an", "value": "an", "title": texts.HAS_RINGS_TITLE, "text": texts.HAS_RINGS_LOCKED,
          "checked": True, "locked": True},
-        # Der Regler der Einwilligung (#98) nach „Anlegen“ ohne Bestätigung.
-        {"name": "katalog-einwilligung", "value": "an", "title": person_texts.CONSENT, "checkbox": True,
-         "error": person_texts.CONSENT_MISSING},
+        # Der Regler der Einwilligung (#98) beim Öffnen, ohne Satz, als Ankreuzfeld angesagt. Ohne Fehler: Der Katalog
+        # zeigt nur ein Feld mit Fehler (Textfeld); den Fehler am Regler zeigt der Dialog selbst.
+        {"name": "katalog-einwilligung", "value": "an", "title": person_texts.CONSENT, "checkbox": True},
     ]
     edit_example = {"name": "Sippe Falken", "label": texts.EDIT_TITLE % {"unit": "Sippe Falken"}}
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
