@@ -611,3 +611,33 @@ def test_u3_eintraege_zu_verwalteten_personen_lassen_sich_nicht_aendern_oder_loe
     with pytest.raises(DatabaseError), transaction.atomic():
         RoleChange.objects.filter(pk=entry.pk).delete()
     assert RoleChange.objects.get(pk=entry.pk).person_name == "Lena Probe"
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("action", ["verschieben", "austragen", "löschen"])
+def test_kai_aendert_nichts_in_leuchtturm_waehrend_mona_ihn_nach_nord_verschiebt(action):
+    """Befund B1 der unabhängigen Prüfung: Das Recht gilt für den Stand nach der Sperre des Bundes, nicht davor.
+
+    Kai leitet den Ring Küste und springt für Leuchtturm ein, der keine Stammesleitung hat. Wechselt Mona Leuchtturm
+    gleichzeitig nach Nord, springt Kai dort nicht mehr ein: „nicht gefunden“, und die Person bleibt, wie sie ist.
+    """
+    o = build_org()
+    mona = person("mona.mosaik", "Mona", "Mosaik")
+    kai = person("kai.kueste", "Kai", "Kueste")
+    give(mona, R.ASSOCIATION_LEAD, o.mosaik)
+    give(kai, R.RING_LEAD, o.kueste)
+    nele = person("nele.nord", "Nele", "Nord")
+    give(nele, R.RING_LEAD, o.nord)
+    lotta = managed("Lotta", "Probe", o.leuchtturm)
+    works = {
+        "verschieben": lambda: Rights(kai).move_managed(o.leuchtturm, lotta.key, o.moewen.key),
+        "austragen": lambda: Rights(kai).expel_managed(o.leuchtturm, lotta.key, "hoch"),
+        "löschen": lambda: Rights(kai).delete_managed(o.leuchtturm, lotta.key),
+    }
+
+    results = _one_after_the_other(lambda: Rights(mona).change_ring(o.leuchtturm, o.nord.key),
+                                   lambda: _outcome(works[action]))
+
+    assert "nicht gefunden" in results
+    assert ManagedPerson.objects.get(pk=lotta.pk).unit_id == o.leuchtturm.pk
+    assert not RoleChange.objects.filter(person_id=lotta.pk, managed=True).exists()
