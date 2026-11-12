@@ -172,6 +172,7 @@ def test_ins_abbild_kommt_nur_was_ausdruecklich_erlaubt_ist():
         "accounts",
         "config",
         "core",
+        "persons",
         "docker",
         "units",
         "roles",

@@ -9,6 +9,7 @@
 !docker
 !units
 !roles
+!persons
 !manage.py
 !pyproject.toml
 !uv.lock
