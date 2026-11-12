@@ -199,6 +199,12 @@ class ManagedPersonForm(forms.Form):
             raise forms.ValidationError(person_texts.BIRTH_DATE_TOO_OLD, code="too_old")
         return value
 
+    def clean_scout_name(self) -> str:
+        value = trimmed(self.cleaned_data["scout_name"])
+        if len(value) > SCOUT_NAME_MAX_LENGTH:
+            raise forms.ValidationError(person_texts.SCOUT_NAME_TOO_LONG, code="max_length")
+        return value
+
 
 class ManagedPersonAddForm(ManagedPersonForm):
     """Der Dialog „Verwaltete Person anlegen“: die vier Angaben und der Regler der Einwilligung (#98, DSG-02).
@@ -214,9 +220,3 @@ class ManagedPersonAddForm(ManagedPersonForm):
         error_messages={"required": person_texts.CONSENT_MISSING},
         widget=forms.CheckboxInput(attrs={"form": "f-dialog", "value": "an"}),
     )
-
-    def clean_scout_name(self) -> str:
-        value = trimmed(self.cleaned_data["scout_name"])
-        if len(value) > SCOUT_NAME_MAX_LENGTH:
-            raise forms.ValidationError(person_texts.SCOUT_NAME_TOO_LONG, code="max_length")
-        return value

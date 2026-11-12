@@ -878,7 +878,7 @@ class Rights:
     def add_managed(self, unit: Unit, values: dict, creation_key) -> str:
         """Legt eine verwaltete Person in `unit` an; gibt die kurze Meldung zurück, leer, wenn es sie schon gibt (VP-01).
 
-        `values` sind die geprüften Angaben aus `ManagedPersonForm`; die Organisation kommt nur aus der
+        `values` sind die geprüften Angaben aus `ManagedPersonAddForm`; die Organisation kommt nur aus der
         Adresse (MV4). `creation_key` ist die Kennung des Dialogs: Schickt jemand denselben Dialog zweimal
         ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Person, und die zweite
         Antwort hat keine Meldung (MG7). Ohne Recht oder mit einer Kennung in falscher Form „nicht
