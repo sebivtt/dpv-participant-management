@@ -72,6 +72,9 @@ class Lead:
     # Eine verwaltete Person (#117): Marke „verwaltet“ und der Knopf „Bearbeiten“ mit seiner Kennung, zu
     # der der Dialog danach zurückführt.
     managed: bool = False
+    # Eine angezeigte Leitungsrolle einer verwalteten Person unter „Leitungen“ (#99): grauer Kreis, hinter dem
+    # Namen „· ohne Konto, nur Anzeige“, nie eine Mail.
+    display_only: bool = False
     edit_href: str | None = None
     edit_label: str = person_texts.EDIT_BUTTON
     edit_id: str = ""
@@ -179,6 +182,7 @@ class Hit:
     `place` nennt die Organisation nur im eigenen Bereich, sonst „schon woanders Mitglied“ oder
     „noch nirgends Mitglied“ (PK-16). Den Knopf „Benennen“ gibt es nur ohne `note` (bei sich
     selbst) und ohne `warning` (schon woanders Mitglied); `hint` steht als Satz darunter.
+    Eine verwaltete Person (`managed`, #99) hat den Satz, dass die Rolle nur angezeigt wird.
     """
 
     key: str
@@ -188,10 +192,17 @@ class Hit:
     note: str
     warning: str
     hint: str
+    # Eine verwaltete Person (#99): Marke „verwaltet“, und der Knopf schickt sie als solche ab.
+    managed: bool = False
 
     @property
     def initial(self) -> str:
         return self.name[:1].upper()
+
+    @property
+    def managed_mark(self) -> Mark | None:
+        """Die Marke „verwaltet“ wie im Abschnitt „Personen“ (#117)."""
+        return Mark(person_texts.MARK_MANAGED, "verwaltet") if self.managed else None
 
 
 def short_name(entry: dict) -> str:
@@ -219,6 +230,25 @@ def _full_name(entry: dict) -> str:
     return " ".join(part for part in (entry["first_name"], entry["last_name"]) if part)
 
 
+def _displayed_lead(entry: dict, remove_href: str | None = None) -> Lead:
+    """Eine angezeigte Leitungsrolle einer verwalteten Person in einer Liste der Leitungen (#99, RO-09).
+
+    Nur Name bzw. Fahrtenname und Rolle, nie eine Mail; `remove_href` nur, wo die Person entfernen darf.
+    """
+    full_name = _full_name(entry)
+    return Lead(
+        name=entry["scout_name"] or full_name,
+        extra=full_name if entry["scout_name"] else "",
+        role=RoleKind(entry["kind"]).label,
+        mail="",
+        locked=False,
+        is_self=False,
+        display_only=True,
+        remove_href=remove_href,
+        remove_label=texts.REMOVE_BUTTON,
+    )
+
+
 class Organisation:
     """Gliederung und Seiten für die Person einer Anfrage; Grundlage sind ihre Rechte."""
 
@@ -236,6 +266,11 @@ class Organisation:
         for entry in sorted(rights.leads(), key=_by_name):
             if entry["kind"] in LEADS_IN_UNITS:
                 self.leads.setdefault(entry["unit_key"], []).append(entry)
+        # Angezeigte Leitungsrollen verwalteter Personen (#99) stehen nur in der Liste „Leitungen“ einer Seite;
+        # Gliederung, Kacheln und der Satz ohne Leitung zählen nur Leitungen mit Konto (VP-16).
+        self.displayed: dict[str, list[dict]] = {}
+        for entry in rights.displayed_leads():
+            self.displayed.setdefault(entry["unit_key"], []).append(entry)
 
     # Bausteine
 
@@ -434,13 +469,17 @@ class Organisation:
 
         Mit der Marke „verwaltet“ und dem Knopf „Bearbeiten“; den hat, wer den Abschnitt sieht, denn
         sehen und bearbeiten gehen zusammen im ganzen Bereich (VP-02). Dahinter seit #118 „Verschieben“ und
-        „Austragen“ wie bei Personen mit Konto, nur wo die Person das darf (VP-07, VP-18).
+        „Austragen“ wie bei Personen mit Konto, nur wo die Person das darf (VP-07, VP-18). Seit #99 stehen unter
+        dem Namen ihre angezeigten Leitungsrollen, z. B. „Gruppenleitung Meute Wölfe (nur Anzeige)“.
         """
         full_name = f"{entry.first_name} {entry.last_name}"
+        shown = sorted(entry.shown_leads, key=lambda lead: (LEADS_IN_UNITS.index(lead.kind), alphabetical(lead.unit.name)))
         return Lead(
             name=entry.scout_name or full_name,
             extra=full_name if entry.scout_name else "",
             role="",
+            role_names=[str(person_texts.DISPLAYED_ROLE_AT % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)})
+                        for lead in shown],
             mail="",
             locked=False,
             is_self=False,
@@ -484,7 +523,7 @@ class Organisation:
         for entry in entries:
             full_name = _full_name(entry)
             is_self = entry["user_key"] == self.user.key
-            found.append(Lead(
+            found.append((_by_name(entry), Lead(
                 name=entry["scout_name"] or full_name or entry["username"],
                 extra=full_name if entry["scout_name"] else "",
                 role=role,
@@ -493,8 +532,14 @@ class Organisation:
                 is_self=is_self,
                 remove_href=reverse("organisation_remove", args=[unit.key, entry["role_key"]]) if may_remove else None,
                 remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
-            ))
-        return found
+            )))
+        if access in (MANAGE, READ):
+            # Angezeigte Leitungsrollen (#99): gemischt nach Namen; „Entfernen“ wie bei Leitungen mit Konto (VP-14).
+            for entry in self.displayed.get(unit.key, []):
+                remove_href = reverse("organisation_remove_displayed", args=[unit.key, entry["role_key"]])
+                found.append((_by_name({**entry, "username": ""}),
+                              _displayed_lead(entry, remove_href if may_remove else None)))
+        return [lead for _order, lead in sorted(found, key=lambda pair: pair[0])]
 
     def removal(self, unit: Unit, shown: dict, action: str) -> dict:
         """Der Dialog zum Entfernen oder Abgeben aus dem, was `Rights.removal()` liefert (C1 bis C6, N6).
@@ -822,6 +867,9 @@ def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:
     der eigenen Organisation oder darüber. Wer außerhalb des eigenen Bereichs schon Mitglied ist,
     bekommt den Satz aus BV1 statt des Knopfs, ohne dass die Organisation genannt wird (PK-16).
 
+    Verwaltete Personen (`managed`, #99) bekommen die Marke „verwaltet“ und den Satz, dass die Rolle nur
+    angezeigt wird und keine Rechte gibt (Klärung vom 11.11.2026, Frage 3).
+
     Mit `kind` ist es der Dialog der Verbandsleitung auf der Seite „Verband“ (#94): Bei sich selbst
     steht, dass eine andere Verbandsleitung benennt; wer schon woanders Mitglied ist, behält den
     Knopf, weil die Rolle trotzdem auf ihrem Pfad liegen kann (V5); ob sie das tut, sagt erst das
@@ -841,6 +889,10 @@ def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:
             place = texts.ELSEWHERE
         else:
             place = entry["unit_name"] or texts.NOWHERE
+        managed = entry.get("managed", False)
+        if managed:
+            name = display_name(entry["first_name"], entry["last_name"], entry["scout_name"])
+            hint = person_texts.DISPLAYED_HINT % {"person": name}
         found.append(Hit(
             key=entry["key"],
             name=entry["scout_name"] or full_name or entry["username"],
@@ -849,6 +901,7 @@ def hits(entries: list[dict], unit: Unit, kind: str | None = None) -> list[Hit]:
             note=note,
             warning=warning,
             hint=hint,
+            managed=managed,
         ))
     return found
 
@@ -911,6 +964,12 @@ class Federation:
         self.leads: dict[tuple[str, str], list[dict]] = {}
         for entry in sorted(rights.leads(), key=_by_name):
             self.leads.setdefault((entry["kind"], entry["unit_key"]), []).append(entry)
+        # Angezeigte Bundesleitungen (#99, RO-09): nur Name und Rolle, ohne Knopf, weil die Verbandsleitung sie
+        # nicht einträgt und nicht entfernt (VP-15).
+        self.displayed: dict[str, list[dict]] = {}
+        for entry in rights.displayed_leads():
+            if entry["kind"] == RoleKind.ASSOCIATION_LEAD:
+                self.displayed.setdefault(entry["unit_key"], []).append(entry)
 
     def _people(self, kind: str, unit: Unit | None) -> list[Lead]:
         if unit is None:
@@ -919,7 +978,7 @@ class Federation:
         for entry in self.leads.get((kind, unit.key), []):
             full_name = _full_name(entry)
             is_self = entry["user_key"] == self.user.key
-            found.append(Lead(
+            found.append((_by_name(entry), Lead(
                 name=entry["scout_name"] or full_name or entry["username"],
                 extra=full_name if entry["scout_name"] else "",
                 role=RoleKind(kind).label,
@@ -928,8 +987,11 @@ class Federation:
                 is_self=is_self,
                 remove_href=reverse("federation_remove", args=[entry["role_key"]]),
                 remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
-            ))
-        return found
+            )))
+        if kind == RoleKind.ASSOCIATION_LEAD:
+            found += [(_by_name({**entry, "username": ""}), _displayed_lead(entry))
+                      for entry in self.displayed.get(unit.key, [])]
+        return [lead for _order, lead in sorted(found, key=lambda pair: pair[0])]
 
     def federation_leads(self) -> list[Lead]:
         return self._people(RoleKind.FEDERATION_LEAD, self.federation)

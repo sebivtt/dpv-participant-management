@@ -56,7 +56,7 @@ from django.utils.functional import SimpleLazyObject
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from persons import texts as person_texts
-from persons.models import EDITABLE_FIELDS, ManagedPerson
+from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, roles_blocking
 from roles import texts as role_texts
 from roles.models import (
     LEAD_ROLE,
@@ -437,13 +437,17 @@ class Rights:
         """
         return unit is not None and self.sees_organisation() and unit.pk in self.area
 
-    def suggestions(self, text: str) -> list[dict]:
+    def suggestions(self, text: str, unit: Unit | None = None) -> list[dict]:
         """Vorschläge beim Tippen: Personen mit Konto im eigenen Bereich nach Namen (PK-09, PK-10).
 
         Erst ab `SUGGESTION_MIN` Zeichen, höchstens `SUGGESTION_MOST`, gesucht in Vorname,
         Nachname, beidem zusammen und Fahrtenname, ohne Groß- und Kleinschreibung. Konten ohne
         Zuordnung und Personen außerhalb des Bereichs findet niemand über den Namen (PK-10 bis
         PK-12), gesperrte Konten erscheinen nicht (BV11). „%“ und „_“ stehen hier für sich selbst.
+
+        Mit `unit`, der Organisation des Dialogs „… benennen“, kommen verwaltete Personen dazu, bei denen
+        die Rolle auf dem Leitungspfad läge, mit `managed` gekennzeichnet (#99). Dann stehen alle nach
+        Nachname und Vorname gemischt; ohne solche Treffer bleibt die Liste, wie sie vor #99 war.
         """
         text = text.strip()
         if not self.sees_organisation() or len(text) < SUGGESTION_MIN:
@@ -454,7 +458,13 @@ class Rights:
         matches = (Q(first_name__icontains=text) | Q(last_name__icontains=text) | Q(full_name__icontains=text)
                    | Q(scout_name__icontains=text))
         found = named.filter(matches).order_by("last_name", "first_name", "username")[:SUGGESTION_MOST]
-        return self._hits(list(found))
+        accounts = self._hits(list(found))
+        managed = self._managed_suggestions(unit, text) if unit is not None and self.may_appoint(unit) else []
+        if not managed:
+            return accounts
+        mixed = sorted([*accounts, *managed], key=lambda entry: (alphabetical(entry["last_name"]),
+                                                                 alphabetical(entry["first_name"])))
+        return mixed[:SUGGESTION_MOST]
 
     def find_accounts(self, text: str) -> list[dict]:
         """Konten über die genaue bestätigte Mail oder den genauen Benutzernamen, ohne Groß- und Kleinschreibung (PK-13).
@@ -514,6 +524,7 @@ class Rights:
                 "unit_label": unit_label(units[unit]) if shown else "",
                 "elsewhere": unit is not None and not shown,
                 "is_self": is_self,
+                "managed": False,
             })
         return found
 
@@ -909,11 +920,14 @@ class Rights:
     def managed_in(self, unit: Unit | None) -> list[ManagedPerson]:
         """Die direkten verwalteten Personen einer Organisation im eigenen Bereich; sonst keine (#117, Frage 1).
 
-        Die einer Organisation darunter stehen auf deren Seite. Eine Abfrage, egal wie viele es sind (MG9).
+        Die einer Organisation darunter stehen auf deren Seite. Ihre angezeigten Leitungsrollen (#99) stehen
+        in `shown_leads`, mit ihren Organisationen vorab geladen; so bleiben es zwei Abfragen, egal wie viele
+        Personen und Rollen es sind (MG9).
         """
         if unit is None:
             return []
-        return list(self._managed_entries().filter(unit_id=unit.pk))
+        shown = Prefetch("displayed_leads", queryset=DisplayedLead.objects.select_related("unit"), to_attr="shown_leads")
+        return list(self._managed_entries().filter(unit_id=unit.pk).prefetch_related(shown))
 
     def may_add_managed(self, unit: Unit | None) -> bool:
         """Darf die Person in dieser Organisation eine verwaltete Person anlegen (VP-01, VP-17, EH-18)?
@@ -1033,8 +1047,9 @@ class Rights:
     def expulsion_managed(self, unit: Unit, person_key) -> dict:
         """Was der Dialog „Austragen“ bei einer verwalteten Person zeigt, wie `expulsion()`; ohne Recht „nicht gefunden“.
 
-        Es gibt nur die Möglichkeit „hoch“ (gehört danach direkt zur Organisation darüber); Leitungsrollen, die
-        enden, hat eine verwaltete Person nicht.
+        Es gibt nur die Möglichkeit „hoch“ (gehört danach direkt zur Organisation darüber). Leitungsrollen, die
+        enden, hat eine verwaltete Person nicht: Ihre angezeigten Leitungsrollen (#99) liegen nach einem Schritt
+        nach oben immer noch auf dem Pfad und bleiben.
         """
         if not self.may_expel_managed(unit):
             raise Http404
@@ -1069,11 +1084,13 @@ class Rights:
         entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
         return fresh, me, unit, entry
 
-    def move_managed(self, unit: Unit, person_key, target_key) -> str:
-        """Verschiebt eine verwaltete Person in eine Organisation direkt unter `unit`; gibt die kurze Meldung zurück (VP-07).
+    def move_managed(self, unit: Unit, person_key, target_key) -> tuple[bool, str]:
+        """Verschiebt eine verwaltete Person in eine Organisation direkt unter `unit` (VP-07).
 
-        Das Ziel kommt nur aus den Organisationen direkt darunter, gelesen unter der Sperre des Bundes; jedes
-        andere ist „nicht gefunden“, und nichts ändert sich (VP-08, VV3). Ins Protokoll kommen „entfernt“ und „vergeben“ (#91) in derselben
+        Gibt zurück, ob es geklappt hat, und die Meldung. Das Ziel kommt nur aus den Organisationen direkt
+        darunter, gelesen unter der Sperre des Bundes; jedes andere ist „nicht gefunden“, und nichts ändert
+        sich (VP-08, VV3). Läge danach eine angezeigte Leitungsrolle nicht mehr auf dem Pfad, lehnt das Tool
+        ab und nennt sie (#99, LG2, wie PK-25). Ins Protokoll kommen „entfernt“ und „vergeben“ (#91) in derselben
         Transaktion: Scheitert ein Eintrag, wird nicht verschoben (VG4). Die Bestätigung der Einwilligung bleibt (V9).
         """
         if not is_key(target_key):
@@ -1083,12 +1100,15 @@ class Rights:
             target = next((found for found in self.move_targets(unit) if found.key == target_key), None)
             if target is None:
                 raise Http404
+            blocking = entry.leads_outside(target)
+            if blocking:
+                return False, roles_blocking(entry, blocking, target)
             entry.unit = target
             entry.save(update_fields=["unit"])
             RoleChange.record_managed(me, entry, unit, RoleChange.Action.REMOVED)
             RoleChange.record_managed(me, entry, target, RoleChange.Action.GRANTED)
             fresh._record_change(lambda rights: rights.may_move(unit))
-        return str(unit_texts.MOVED % {"person": entry.display_name, "unit": unit_label(target)})
+        return True, str(unit_texts.MOVED % {"person": entry.display_name, "unit": unit_label(target)})
 
     def expel_managed(self, unit: Unit, person_key, choice: str) -> str:
         """Trägt eine verwaltete Person eine Ebene nach oben aus; gibt die kurze Meldung zurück (VP-18).
@@ -1126,18 +1146,144 @@ class Rights:
         return str(person_texts.DELETED % {"person": name})
 
     # Angezeigte Leitungsrollen verwalteter Personen (#99, PER-07)
+    #
+    # Eintragen und entfernen darf, wer in der Organisation Leitungen benennen darf (`may_appoint()`, VP-14):
+    # die Leitungen darüber in ihrem Bereich, Leitungen derselben Organisation und die einspringende Leitung,
+    # im Support-Zugang auch ein Admin; die Verbandsleitung nie (VP-15). Die Organisation kommt immer aus der
+    # Adresse. Die Rolle steht in einer eigenen Tabelle (`DisplayedLead`) und gibt deshalb nirgends Rechte
+    # (VP-16): `_units_with_lead`, `_led` und `_covered` lesen nur `Role`.
+
+    def _managed_suggestions(self, unit: Unit, text: str) -> list[dict]:
+        """Verwaltete Personen für die Vorschläge im Dialog „… benennen“ von `unit` (#99, Klärung vom 11.11.2026, Frage 3).
+
+        Nur Personen, die die Person ohnehin sieht (`_managed_entries()`), und nur solche, bei denen die Rolle
+        auf dem Leitungspfad läge (LV1). Gesucht wie bei Konten in Vorname, Nachname, beidem und Fahrtenname.
+        """
+        named = self._managed_entries().annotate(
+            full_name=Concat("first_name", Value(" "), "last_name", output_field=CharField()))
+        matches = (Q(first_name__icontains=text) | Q(last_name__icontains=text) | Q(full_name__icontains=text)
+                   | Q(scout_name__icontains=text))
+        found = named.filter(matches).select_related("unit").order_by("last_name", "first_name", "pk")
+        return [{
+            "key": entry.key,
+            "first_name": entry.first_name,
+            "last_name": entry.last_name,
+            "scout_name": entry.scout_name,
+            "username": "",
+            "unit_name": entry.unit.name,
+            "unit_label": unit_label(entry.unit),
+            "elsewhere": False,
+            "is_self": False,
+            "managed": True,
+        } for entry in found if self._lies_on_path(entry.unit_id, unit.pk)][:SUGGESTION_MOST]
+
+    def _lies_on_path(self, member_unit: int, target: int) -> bool:
+        """Wie `on_path()`, aber über die Einheiten, die die Anfrage ohnehin geladen hat; ohne weitere Abfragen."""
+        anchor = self._tree[member_unit][0] if self._tree[member_unit][1] == UnitKind.GROUP else member_unit
+        return anchor in self._all_above(target) or target in self._all_above(anchor)
+
+    def _all_above(self, unit: int | None) -> set[int]:
+        """Die Einheit und alle darüber, mit dem Verband."""
+        found = set()
+        while unit is not None and unit in self._tree:
+            found.add(unit)
+            unit = self._tree[unit][0]
+        return found
 
     def appoint_displayed(self, unit: Unit, person_key) -> tuple[bool, str]:
-        """Gerüst für #99: trägt eine angezeigte Leitungsrolle ein."""
-        raise Http404
+        """Trägt bei einer verwalteten Person eine angezeigte Leitungsrolle in `unit` ein (VP-14, #99).
+
+        Gibt zurück, ob es geklappt hat, und die Meldung. Die Rolle ist die Leitungsrolle der Ebene von
+        `unit`, nie eine aus dem Formular. Ohne Recht in `unit` oder mit einer Person, die die Person nicht
+        sieht oder die es nicht mehr gibt, ist das Ergebnis „nicht gefunden“ (LV2 bis LV4, LG4). Abgelehnt mit
+        Meldung wird eine Rolle, die es schon gibt (LG1), und eine außerhalb des Leitungspfads der Person
+        (LV1). Ins Protokoll der Rollenänderungen kommt nichts (L9), im Support-Zugang „ändern“ ins Protokoll
+        der Admin-Zugriffe (#92). Gesperrt werden eigenes Konto, Bund, Organisation und Person in dieser
+        Reihenfolge, wie beim Verschieben (#118); so laufen gleichzeitiges Eintragen, Verschieben und Löschen
+        derselben Person nacheinander, und von zweimal derselben Rolle gelingt genau eine (LG3).
+        """
+        if not self.may_appoint(unit) or not is_key(person_key):
+            raise Http404
+        kind = LEAD_ROLE[unit.kind]
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            unit = self._lock_structure(unit)
+            fresh = Rights(me)
+            if not fresh.may_appoint(unit):
+                raise Http404
+            entry = fresh.entry(fresh._managed_entries().select_for_update(of=("self",)).select_related("unit"), person_key)
+            values = {"person": entry.display_name, "role": kind.label, "unit": unit.name}
+            if DisplayedLead.objects.filter(person=entry, kind=kind, unit=unit).exists():
+                return False, str(unit_texts.ALREADY_LEAD % values)
+            if not fresh._lies_on_path(entry.unit_id, unit.pk):
+                return False, str(person_texts.DISPLAYED_OFF_PATH % {
+                    "person": entry.display_name, "unit": unit_label(entry.unit),
+                    "target": unit_texts.KIND_AND_NAME[unit.kind] % {"unit": unit.name}})
+            try:
+                with transaction.atomic():
+                    DisplayedLead(person=entry, kind=kind, unit=unit).save()
+            except IntegrityError:
+                # Nur am Tool vorbei möglich, weil die Sperre gleichzeitiges Eintragen nacheinander reiht.
+                return False, str(unit_texts.ALREADY_LEAD % values)
+            fresh._record_change(lambda rights: rights.may_appoint(unit))
+        return True, str(unit_texts.APPOINTED % values)
 
     def displayed_leads(self) -> list[dict]:
-        """Gerüst für #99: die angezeigten Leitungsrollen, die die Person sieht."""
-        return []
+        """Name und Rolle der angezeigten Leitungsrollen, die die Person sieht (RO-09, BER-01, Grund 3).
+
+        Wer die Leitungen einer Organisation sieht, sieht auch ihre angezeigten (wie `leads()`): die
+        Organisationen auf der Kette nach oben und im eigenen Bereich, die Verbandsleitung außerdem
+        angezeigte Bundesleitungen. Jeder Eintrag enthält nur Name, Fahrtenname, Rolle, Organisation und die
+        Kennungen von Organisation und Rolle, nie Geburtsdatum oder interne Nummern; mehr gibt die
+        Einwilligung nicht her (#149, Frage 5).
+        """
+        if self.user is None:
+            return []
+        seen = Q(unit_id__in=self.chain | self.area)
+        if self.is_federation_lead():
+            seen |= Q(kind=R.ASSOCIATION_LEAD)
+        found = DisplayedLead.objects.filter(seen, kind__in=LEADS_IN_UNITS).order_by(
+            "unit__name", "kind", "person__last_name", "person__first_name", "pk")
+        return list(found.values("kind", first_name=F("person__first_name"), last_name=F("person__last_name"),
+                                 scout_name=F("person__scout_name"), unit_name=F("unit__name"),
+                                 unit_key=F("unit__key"), role_key=F("key")))
+
+    def _displayed_removable(self, unit: Unit, role_key, entries: QuerySet | None = None) -> DisplayedLead:
+        """Die angezeigte Rolle mit dieser Kennung in genau dieser Organisation, wenn die Person sie entfernen darf.
+
+        Sonst „nicht gefunden“, auch für eine Rolle einer anderen Organisation (LV6).
+        """
+        entries = DisplayedLead.objects.all() if entries is None else entries
+        return self.entry(entries.filter(unit_id=unit.pk).select_related("person"), role_key,
+                          allowed=lambda _lead: self.may_appoint(unit))
+
+    def displayed_removal(self, unit: Unit, role_key) -> dict:
+        """Was die Bestätigung zum Entfernen einer angezeigten Rolle zeigt, wie `removal()` (L6).
+
+        Eine angezeigte Rolle ist nie die letzte Leitung, deshalb ohne den Satz dazu (VP-16).
+        """
+        entry = self._displayed_removable(unit, role_key)
+        return {"person": entry.person.display_name, "is_self": False, "role": entry.get_kind_display(),
+                "last": False, "cover": None}
 
     def remove_displayed(self, unit: Unit, role_key) -> str:
-        """Gerüst für #99: entfernt eine angezeigte Leitungsrolle."""
-        raise Http404
+        """Entfernt eine angezeigte Leitungsrolle; gibt die kurze Meldung zurück (VP-14, L6).
+
+        Die Person bleibt in ihrer Organisation. Ohne Recht, mit einer fremden Kennung oder wenn die Rolle
+        schon weg ist, „nicht gefunden“, und nichts ändert sich. Sperren wie beim Eintragen; ins Protokoll der
+        Rollenänderungen kommt nichts (L9).
+        """
+        if self.user is None or not is_key(role_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            unit = self._lock_structure(unit)
+            fresh = Rights(me)
+            entry = fresh._displayed_removable(unit, role_key, DisplayedLead.objects.select_for_update())
+            values = {"person": entry.person.display_name, "role": entry.get_kind_display(), "unit": unit.name}
+            entry.delete()
+            fresh._record_change(lambda rights: rights.may_appoint(unit))
+        return str(unit_texts.REMOVED % values)
 
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 

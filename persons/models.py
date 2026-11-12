@@ -9,7 +9,8 @@ from django.db.models.functions import Trim
 from access.keys import KEY_LENGTH, key_field, new_key
 from accounts.models import SCOUT_NAME_MAX_LENGTH, display_name
 from persons import texts
-from roles.models import RoleKind
+from roles.models import LEADS_IN_UNITS, UNIT_KINDS, RoleKind, on_path
+from units import texts as unit_texts
 from units.models import Unit
 
 # Höchstens 100 Zeichen für Vor- und Nachname, nach dem Entfernen der Leerzeichen am Rand (#117).
@@ -71,12 +72,27 @@ class ManagedPerson(models.Model):
     def save(self, *args, **kwargs) -> None:
         """Speichert die Person; im Verband lehnt es mit `ValidationError` ab (#88).
 
-        Die Datenbank kann die Ebene der Organisation nicht selbst prüfen, deshalb steht die Regel hier
-        und gilt so auch für Befehle und Testdaten.
+        Ebenso, wenn sie in eine Organisation wechselt, zu der eine ihrer angezeigten Leitungsrollen nicht
+        mehr passt (#99, LG2, wie PK-25); die Meldung nennt die Rollen, die zuerst beendet werden können.
+        Die Datenbank kann beides nicht selbst prüfen, deshalb stehen die Regeln hier und gelten so auch
+        für Befehle und Testdaten.
         """
         if Unit.objects.filter(pk=self.unit_id, kind=Unit.Kind.FEDERATION).exists():
             raise ValidationError(texts.NOT_IN_FEDERATION, code="federation")
+        if self.pk is not None:
+            target = Unit.objects.select_related("parent__parent__parent__parent").get(pk=self.unit_id)
+            blocking = self.leads_outside(target)
+            if blocking:
+                raise ValidationError(roles_blocking(self, blocking, target), code="remove_roles_first")
         super().save(*args, **kwargs)
+
+    def leads_outside(self, target: Unit) -> list["DisplayedLead"]:
+        """Die angezeigten Leitungsrollen, die nicht mehr auf dem Pfad lägen, gehörte die Person zu `target` (#99, LG2).
+
+        Wie `Role.leads_outside()` bei Personen mit Konto (PK-25). Ändert nichts.
+        """
+        leads = DisplayedLead.objects.filter(person_id=self.pk).select_related("unit__parent__parent__parent__parent")
+        return [lead for lead in leads.order_by(lead_order(), "unit__name") if not on_path(target, lead.unit)]
 
     @property
     def display_name(self) -> str:
@@ -87,7 +103,20 @@ class ManagedPerson(models.Model):
 class DisplayedLead(models.Model):
     """Eine angezeigte Leitungsrolle einer verwalteten Person: „nur Anzeige“, ohne Rechte (#99, PER-07).
 
-    Gerüst; Regeln und Prüfungen kommen mit der Umsetzung von #99.
+    Regeln (Klärungen von #99 am 22.10.2026 und 11.11.2026):
+    - Gruppen-, Stammes-, Ring- oder Bundesleitung an einer Organisation der passenden Ebene, dieselbe
+      Rolle dort höchstens einmal (LG1, LG3; die Datenbank setzt das selbst durch).
+    - Die Rolle liegt auf dem Leitungspfad der Person, wie bei Personen mit Konto (ROL-01, #89; Klärung
+      vom 11.11.2026, Frage 1). Wechselt die Person die Organisation, prüft `ManagedPerson.save()` das
+      erneut (LG2).
+    - Die Rolle gibt keine Rechte und zählt nie als Leitung (VP-16): Sie steht bewusst in einer eigenen
+      Tabelle, nicht bei den Rollen (`roles.Role`), die die Rechteprüfung liest. Ins Protokoll der
+      Rollenänderungen kommt sie nicht (#91, L9).
+    - Wird die Person gelöscht, verschwindet die Rolle mit (L8). Eine Organisation mit angezeigter Rolle
+      lässt sich nicht löschen, wie eine mit Rollen (`PROTECT`).
+
+    Eingetragen und entfernt wird nur über die zentrale Rechteprüfung (`Rights.appoint_displayed()`,
+    `Rights.remove_displayed()`), die auch die gleichzeitigen Änderungen ordnet.
     """
 
     # Zufällige Kennung für Adressen, etwa zum Entfernen (#64); nie die laufende Nummer.
@@ -100,3 +129,46 @@ class DisplayedLead(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["person", "kind", "unit"], name="displayed_lead_once_per_unit"),
         ]
+
+    def save(self, *args, **kwargs) -> None:
+        """Speichert eine neue Rolle; lehnt mit `ValidationError` ab, wenn Ebene oder Leitungspfad nicht passen.
+
+        Eine gespeicherte Rolle ändert sich nie; wer sie anders will, entfernt sie und trägt neu ein.
+        """
+        if not self._state.adding:
+            raise ValidationError(texts.DISPLAYED_FIXED)
+        unit = Unit.objects.select_related("parent__parent__parent__parent").get(pk=self.unit_id)
+        if self.kind not in LEADS_IN_UNITS or unit.kind not in UNIT_KINDS[self.kind]:
+            raise ValidationError(texts.DISPLAYED_WRONG_LEVEL, code="wrong_level")
+        # Die Person kommt über den Verweis, nicht über eine eigene Abfrage: Personendaten liest nur die
+        # zentrale Rechteprüfung (CONTRIBUTING.md, Abschnitt 4); ihre Organisation dagegen frisch.
+        person = self.person
+        member_unit = Unit.objects.select_related("parent__parent__parent__parent").get(pk=person.unit_id)
+        if not on_path(member_unit, unit):
+            values = {"person": person.display_name, "unit": unit_label(member_unit), "target": kind_and_name(unit)}
+            raise ValidationError(texts.DISPLAYED_OFF_PATH % values, code="outside_path")
+        super().save(*args, **kwargs)
+
+
+def lead_order() -> models.Case:
+    """Leitungsrollen in der Reihenfolge für Meldungen: Gruppe, Stamm, Ring, Bund."""
+    return models.Case(*(models.When(kind=kind, then=i) for i, kind in enumerate(LEADS_IN_UNITS)))
+
+
+def unit_label(unit: Unit) -> str:
+    """Eine Organisation wie im Abschnitt „Personen“: „Stamm Walhall“, Gruppen nur mit Namen („Sippe Falken“)."""
+    return str(unit_texts.MEMBER_UNIT_NAME[unit.kind] % {"unit": unit.name})
+
+
+def kind_and_name(unit: Unit) -> str:
+    """Eine Organisation mit ihrer Art davor, wie beim Benennen: „Stamm Zugvögel“ (#190)."""
+    return str(unit_texts.KIND_AND_NAME[unit.kind] % {"unit": unit.name})
+
+
+def roles_blocking(person: ManagedPerson, blocking: list[DisplayedLead], target: Unit) -> str:
+    """Der Satz wie bei Personen mit Konto (PK-25): „… ist Stammesleitung von Stamm Zugvögel. Diese Rolle passt …“."""
+    roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)})
+             for lead in blocking]
+    listed = roles[0] if len(roles) == 1 else f"{', '.join(roles[:-1])} {unit_texts.AND} {roles[-1]}"
+    text = unit_texts.MOVE_ROLE_DOES_NOT_FIT if len(roles) == 1 else unit_texts.MOVE_ROLES_DO_NOT_FIT
+    return str(text % {"person": person.display_name, "roles": listed, "target": unit_label(target)})

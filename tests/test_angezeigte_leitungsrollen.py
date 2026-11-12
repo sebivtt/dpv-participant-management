@@ -541,3 +541,17 @@ def test_die_liste_der_leitungen_fragt_die_datenbank_nicht_je_angezeigter_rolle(
         show(entry, R.GROUP_LEAD, org.woelfe)
 
     assert_queries_do_not_grow(add, lambda: client_for(org.walhall_leitung).get(unit_address(org.woelfe)))
+
+
+@pytest.mark.rechtematrix("RO-09")
+def test_wer_die_leitungen_einer_organisation_nicht_sieht_sieht_auch_ihre_angezeigten_nicht(org):
+    show(org.tim, R.GROUP_LEAD, org.woelfe)
+    show(org.paul, R.TROOP_LEAD, org.walhall)
+
+    for user in (org.zugvoegel_leitung, org.ohne, org.team, org.max, org.moewe):
+        assert Rights(user).displayed_leads() == [], user.username
+    # Die Verbandsleitung sieht nur angezeigte Bundesleitungen, keine von Gruppen oder Stämmen (RO-06).
+    assert Rights(org.verbandsleitung).displayed_leads() == []
+    # Fiete sieht die Meute Wölfe nicht: Tim steht für ihn nirgends.
+    assert {entry["first_name"] for entry in Rights(org.falken_leitung).displayed_leads()} == {"Paul"}
+    assert client_for(org.zugvoegel_leitung).get(unit_address(org.woelfe)).status_code == 404
