@@ -784,6 +784,69 @@ def test_im_zugang_aendert_max_nur_den_eigenen_fahrtennamen(org):
     assert User.objects.get(pk=org.max.pk).scout_name == "Gekapert"
 
 
+# ---------- Befunde der unabhängigen Prüfung ----------
+
+
+def test_befund1_kopfseite_mit_gliederung_aus_dem_zugang_kommt_ins_protokoll(org):
+    """Die Gliederung zeigt im Zugang die Leitungen von Walhall, auch neben einer Seite nur mit dem Kopf."""
+    client = client_for(org.max)
+    start(org.max, org.walhall, client=client)
+
+    for address in (unit_address(org.mosaik), support_address(org.zugvoegel)):
+        before = AdminAccess.objects.count()
+        response = client.get(address)
+        assert "Wirbelwind" in response.content.decode(), address
+        assert log()[before:] == [(A.VIEWED, "", "Max Admin", "Walhall")], address
+
+
+def test_befund1_gegenprobe_alma_auf_der_eigenen_sippe_ohne_eintrag(org):
+    """S8 bleibt: Was Alma über die eigene Rolle sieht, kommt nicht ins Protokoll."""
+    client = client_for(org.alma)
+    start(org.alma, org.walhall, client=client)
+    before = AdminAccess.objects.count()
+
+    page_text(org.alma, org.adler, client=client)
+
+    assert AdminAccess.objects.count() == before
+
+
+def test_befund2_ablauf_beim_tippen_verschluckt_die_meldung_nicht(org, clock):
+    client = client_for(org.max)
+    start(org.max, org.walhall, client=client)
+    clock["now"] += timedelta(minutes=61)
+
+    client.post(f"{unit_address(org.walhall)}benennen/vorschlaege/", {"suche": "Wir"}, follow=True,
+                headers={"Sec-Fetch-Dest": "empty"})
+    root = _tree(client.get(unit_address(org.walhall)))
+
+    assert [text for _classes_, text in fixed_notices(root) if text.endswith(EXPIRED)]
+
+
+def test_befund3_beenden_nach_dem_loeschen_der_organisation(org):
+    empty = Unit(kind=Unit.Kind.GROUP, name="Sippe Irrtum", parent=org.walhall)
+    empty.save(by=BY)
+    client = client_for(org.max)
+    start(org.max, empty, client=client)
+    call_command("emergency_delete", empty.key, stdout=io.StringIO())
+
+    response = end(org.max, client=client)
+
+    assert response.status_code == 302
+    assert log()[-1][:2] == (A.ENDED, D.BUTTON)
+
+
+def test_befund4_beenden_nach_ablauf_sagt_nicht_nicht_gespeichert(org, clock):
+    client = client_for(org.max)
+    start(org.max, org.walhall, client=client)
+    clock["now"] += timedelta(minutes=61)
+
+    root = _tree(follow(end(org.max, client=client), client))
+
+    shown = fixed_notices(root)
+    assert len(shown) == 1 and "ist-info" in shown[0][0]
+    assert UNSAVED not in shown[0][1]
+
+
 # ---------- Bausteine ----------
 
 
