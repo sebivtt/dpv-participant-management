@@ -1048,25 +1048,24 @@ class Rights:
             raise Http404
         return self.managed_person(unit, person_key)
 
-    def _changing_managed(self, unit: Unit, person_key, allowed: Callable[["Rights"], bool], structure: bool = False):
-        """Sperrt das eigene Konto und die Person und prüft das Recht frisch; gibt Rechte, Konto, Organisation und Person zurück.
+    def _changing_managed(self, unit: Unit, person_key, allowed: Callable[["Rights"], bool]):
+        """Sperrt Konto, Bund, Organisation und Person und prüft das Recht frisch; gibt Rechte, Konto, Organisation und Person zurück.
 
-        Nur innerhalb einer Transaktion aufrufen. Das Recht wird unter der Sperre des eigenen Kontos neu
-        berechnet: Wer gerade als Leitung entfernt wurde, ändert nichts mehr, auch aus einer schon offenen
-        Rückfrage (VG5). Mit `structure` sind danach Bund und Organisation gesperrt wie beim Ringwechsel (#95,
-        OG9), damit die Organisation darüber oder darunter nicht gleichzeitig woandershin wandert; die
-        Organisation kommt dann frisch zurück. Immer in der Reihenfolge Konto, Bund, Organisation, Person. Die
-        Person kommt mit Sperre direkt aus `unit`; wurde sie gleichzeitig verschoben, ausgetragen oder gelöscht,
-        ist sie „nicht gefunden“, und von zwei Änderungen gelingt genau eine (VG1, VG2).
+        Nur innerhalb einer Transaktion aufrufen. Gesperrt wird immer in der Reihenfolge Konto, Bund,
+        Organisation, Person, wie beim Ringwechsel (#95, OG9). Erst danach wird das Recht berechnet, wie bei
+        `create()`: Wer gerade als Leitung entfernt wurde, ändert nichts mehr, auch aus einer schon offenen
+        Rückfrage (VG5), und wer für eine Organisation nur einsprang, die gleichzeitig in einen anderen Ring
+        wechselt, auch nicht (unabhängige Prüfung, Befund B1). Die Organisation kommt frisch zurück. Die Person
+        kommt mit Sperre direkt aus `unit`; wurde sie gleichzeitig verschoben, ausgetragen oder gelöscht, ist sie
+        „nicht gefunden“, und von zwei Änderungen gelingt genau eine (VG1, VG2).
         """
         if self.user is None or not is_key(person_key):
             raise Http404
         me = self._lock_with(self.user.pk)
+        unit = self._lock_structure(unit)
         fresh = Rights(me)
         if not allowed(fresh):
             raise Http404
-        if structure:
-            unit = fresh._lock_structure(unit)
         entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
         return fresh, me, unit, entry
 
@@ -1080,8 +1079,7 @@ class Rights:
         if not is_key(target_key):
             raise Http404
         with transaction.atomic():
-            fresh, me, unit, entry = self._changing_managed(unit, person_key, lambda rights: rights.may_move(unit),
-                                                            structure=True)
+            fresh, me, unit, entry = self._changing_managed(unit, person_key, lambda rights: rights.may_move(unit))
             target = next((found for found in self.move_targets(unit) if found.key == target_key), None)
             if target is None:
                 raise Http404
@@ -1102,7 +1100,7 @@ class Rights:
             raise Http404
         with transaction.atomic():
             fresh, me, unit, entry = self._changing_managed(unit, person_key,
-                                                            lambda rights: rights.may_expel_managed(unit), structure=True)
+                                                            lambda rights: rights.may_expel_managed(unit))
             target = after_leaving(unit, False)
             entry.unit = target
             entry.save(update_fields=["unit"])
