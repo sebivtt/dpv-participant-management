@@ -58,6 +58,8 @@
       <div class="a-felder-nebeneinander">{% textfeld removal.person_form.first_name %}{% textfeld removal.person_form.last_name %}</div>
       {% datumsfeld removal.person_form.birth_date %}
       {% textfeld removal.person_form.scout_name %}
+      {# Der Regler der Einwilligung nur beim Anlegen (#98, DSG-02); beim Bearbeiten hat das Formular ihn nicht. #}
+      {% if "consent" in removal.person_form.fields %}{% schalter removal.person_form.consent %}{% endif %}
     {% endif %}
     {% if removal.choice %}{% include "core/_auswahl.html" with choice=removal.choice form_id=removal.form_id %}{% endif %}
     {% if removal.switch %}{% include "core/_schalter.html" with switch=removal.switch form_id=removal.form_id %}{% endif %}

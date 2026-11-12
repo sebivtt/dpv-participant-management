@@ -1,5 +1,6 @@
 """Datenmodell der verwalteten Personen (#117, PER-02)."""
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -41,6 +42,14 @@ class ManagedPerson(models.Model):
     # Kennung des Dialogs, aus dem die Person angelegt wurde: Ein zweites Abschicken desselben
     # Dialogs, etwa ein Doppelklick, legt niemanden ein zweites Mal an (MG7).
     creation_key = models.CharField(max_length=KEY_LENGTH, unique=True, default=new_key, editable=False)
+    # Bestätigung der Einwilligung (DSG-02, #98): welches Konto wann beim Anlegen bestätigt hat. Beides setzt
+    # nur `Rights.add_managed()` aus der Anmeldung und der Uhr des Servers, nie ein Formular; danach ändert es
+    # niemand mehr (VP-11, VP-13), und im Tool zeigt es keine Seite (VP-12). Wird das Konto gelöscht, bleiben
+    # Person und Zeitpunkt; nur der Verweis auf das Konto wird leer (EG4). Leer sind beide nur bei Personen,
+    # die vor #98 angelegt wurden.
+    consent_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+                                   related_name="+", editable=False)
+    consent_at = models.DateTimeField(null=True, editable=False)
 
     class Meta:
         constraints = [

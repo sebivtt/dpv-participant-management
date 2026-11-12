@@ -39,6 +39,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-12 · Bestätigung der Einwilligung beim Anlegen einer verwalteten Person (#98, DSG-02)
+
+**Entscheidung** (Sebastian; Klärung von #98 am 22.10. und 30.10.2026, Nachklärung nach dem Zielbild N1 bis N5; maßgeblich sind Text und Szenarien des Issues):
+
+1. **Der Regler ist der Baustein „Schalter“** aus #95, erweitert, kein neuer Baustein „Schieberegler“ (Frage bei der Umsetzung, Sebastian am 12.11.2026: „Schalter erweitern“, [Kommentar in #98](https://github.com/sebivtt/dpv-participant-management/issues/98#issuecomment-6819322761)). Bei der Klärung am 30.10.2026 gab es den Schalter noch nicht. Er kann jetzt zusätzlich als Ankreuzfeld angesagt werden (N4) und einen Fehler am Feld zeigen (N3); „Hat Ringe“ bleibt, wie er ist.
+
+**Technische Wahl** (KI):
+
+1. **Zwei Felder an der Person statt einer eigenen Tabelle:** `ManagedPerson.consent_by` (Konto) und `consent_at` (Zeitpunkt). Weil beides in derselben Zeile wie die Person steht, wird es nur zusammen gespeichert oder gar nicht (EG1), und beim Löschen der Person verschwindet es mit ihr (EG3). Wird das Konto gelöscht, wird nur der Verweis leer (`SET_NULL`); Person und Zeitpunkt bleiben (EG4). Personen, die vor #98 angelegt wurden, haben beide Felder leer; echte Daten gibt es vor Tor E3 nicht.
+2. **Gesetzt nur beim Anlegen, nur aus Anmeldung und Uhr des Servers:** `Rights.add_managed()` legt ohne Bestätigung niemanden an, auch wenn jemand das Formular umgeht, und trägt das eigene Konto und `timezone.now()` ein. Das Formular nimmt weder Konto noch Zeitpunkt an; der Dialog „… bearbeiten“ hat den Regler nicht, und `Rights.edit_managed()` ändert nur die vier Angaben (VP-11, VP-13). Keine Seite zeigt die Bestätigung (VP-12).
+3. **Ansage als Ankreuzfeld:** Das Feld ist ein Kontrollkästchen ohne die Rolle „switch“, weil es erst mit „Anlegen“ wirkt (N4). Aussehen wie der Schalter aus #95.
+4. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Einwilligung `consent`, bestätigt von `consent_by`, bestätigt am `consent_at`; das Formular „Verwaltete Person anlegen“ `ManagedPersonAddForm`, der Baustein aus einem Formularfeld `{% schalter %}`.
+
+**Umsetzung:** `persons/models.py`, Migration `persons/migrations/0002_einwilligung.py`, `persons/texts.py`, `access/rights.py`, `core/forms.py`, `core/views.py`, `core/templatetags/layout.py`, `core/templates/core/_schalter.html`, `core/templates/core/organisation.html`, `core/static/core/app.css`, `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/zielbilder/README.md`; Tests in `tests/test_einwilligung.py`, `tests/test_verwaltete_personen.py`, `tests/test_bausteinkatalog.py` und `rauchtests/test_verwaltete_personen.py`.
+
+---
+
 ## 2026-11-11 · Verwaltete Personen anlegen, sehen und bearbeiten (#117, PER-02)
 
 **Entscheidung** (Sebastian; Klärung von #117 am 22.10. und 28.10.2026, Nachklärung nach dem Zielbild N1 bis N7, Änderung vom 30.10.2026; maßgeblich sind Text und Szenarien des Issues):

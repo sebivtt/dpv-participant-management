@@ -33,6 +33,16 @@ Die Dateien liegen unverändert so im Repo, wie Sebastian sie geliefert hat; sie
     - **Lange Namen** brechen in Ruhe um wie in Punkt 8, statt mit „…“ abgeschnitten zu werden.
     - **Fehler am Feld** (mehr als 50 Zeichen; seit #214 mehr als 30) steht rot unter dem Feld, das offen bleibt; das Zielbild zeigt keinen Fehler.
 
+
+### Vorbild für den Regler der Einwilligung (#98)
+
+Der Regler bei „Profil freigeben“ (CSS-Klasse `toggle`) ist Vorbild für den Schalter der Einwilligung im Dialog „Verwaltete Person anlegen“ (#98, [Zielbild-Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/98#issuecomment-6522707882)); im Tool ist er der Baustein „Schalter“ aus #95, erweitert (Sebastian, 12.11.2026: „Schalter erweitern“). Bleibende Abweichungen nach der [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/98#issuecomment-6522708153) N1 bis N5:
+
+1. **Kein „i“-Hinweis**, nur der Satz aus DSG-02, ohne Hilfesatz.
+2. **Beim Öffnen immer auf „aus“:** Eine Einwilligung ist nie vorbelegt.
+3. **Fehlermeldung rot unter dem Regler**, mit ihm verbunden, wie bei den Textfeldern; das Zielbild zeigt keinen Fehler.
+4. **Wirkung erst beim Speichern:** Er zählt erst mit „Anlegen“; Vorleseprogramme sagen ihn deshalb als Ankreuzfeld an. Im Zielbild schaltet er sofort.
+5. **Ohne Kleintext und ohne gesperrten Zustand;** der Baustein kann beides für spätere Seiten (#137).
 ## Meldungen
 
 - **Datei:** [`meldungen.html`](meldungen.html)

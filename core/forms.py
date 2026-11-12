@@ -199,6 +199,22 @@ class ManagedPersonForm(forms.Form):
             raise forms.ValidationError(person_texts.BIRTH_DATE_TOO_OLD, code="too_old")
         return value
 
+
+class ManagedPersonAddForm(ManagedPersonForm):
+    """Der Dialog „Verwaltete Person anlegen“: die vier Angaben und der Regler der Einwilligung (#98, DSG-02).
+
+    Der Regler ist Pflicht und steht beim Öffnen immer auf „aus“ (N2): Ohne ihn wird niemand angelegt,
+    auch nicht über ein manipuliertes Formular. Welches Konto wann bestätigt hat, nimmt das Formular
+    nicht an; das setzt `Rights.add_managed()` aus der Anmeldung und der Uhr des Servers. Beim Bearbeiten
+    gibt es den Regler nicht (`ManagedPersonForm`), eine mitgeschickte Bestätigung zählt dort nicht.
+    """
+
+    consent = forms.BooleanField(
+        label=person_texts.CONSENT,
+        error_messages={"required": person_texts.CONSENT_MISSING},
+        widget=forms.CheckboxInput(attrs={"form": "f-dialog", "value": "an"}),
+    )
+
     def clean_scout_name(self) -> str:
         value = trimmed(self.cleaned_data["scout_name"])
         if len(value) > SCOUT_NAME_MAX_LENGTH:

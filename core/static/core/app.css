@@ -245,6 +245,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-schalter input:focus-visible + .a-schalter-bahn { outline: 3px solid var(--dpv); outline-offset: 3px; }
 .a-schalter input:disabled { cursor: default; }
 .a-schalter input:disabled + .a-schalter-bahn { opacity: .6; }
+/* Fehler am Schalter (#98): rot unter der Zeile wie beim Textfeld; die Bahn bekommt den roten Rand des Felds. */
+.a-schalter-fehler { display: block; }
+.a-schalter input[aria-invalid="true"] + .a-schalter-bahn { border-color: var(--bs-form-invalid-border-color); }
 @media (prefers-reduced-motion: reduce) { .a-schalter-bahn, .a-schalter-bahn::after { transition: none; } }
 /* Leitungen: je eine graue Zeile mit Kreis, Fahrtenname groß und Name grau dahinter, darunter die Rolle */
 /* minmax(0, 1fr): Eine Zeile darf schmaler werden als ihr breitester Inhalt, etwa bei der langen Rolle

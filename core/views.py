@@ -17,7 +17,15 @@ from access.keys import is_key, new_key
 from access.rights import SUGGESTION_MIN, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core.forms import AccountSearchForm, FederationSearchForm, ManagedPersonForm, PatternForm, UnitNameForm
+from core.forms import (
+    AccountSearchForm,
+    FederationSearchForm,
+    ManagedPersonAddForm,
+    ManagedPersonForm,
+    PatternForm,
+    UnitNameForm,
+)
+from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
 from roles.models import Role
 from units.models import Unit
@@ -648,6 +656,7 @@ def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
     den Eingaben und dem Fehler am Feld offen. Eine Kennung des Dialogs in falscher Form ist „nicht gefunden“.
     Der Browser speichert den Dialog nicht: Nach „Zurück“ kommt er neu, mit neuer Kennung, sonst legte ein
     zweites Anlegen daraus stillschweigend niemanden an (unabhängige Prüfung, Befund 2).
+    Unter den Feldern steht der Regler der Einwilligung, beim Öffnen auf „aus“ (#98, DSG-02).
     """
     rights = request.rights
     found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_add_managed)
@@ -655,14 +664,14 @@ def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
         creation_key = request.POST.get("creation_key", "")
         if not is_key(creation_key):
             raise Http404
-        form = ManagedPersonForm(request.POST)
+        form = ManagedPersonAddForm(request.POST)
         if form.is_valid():
             text = rights.add_managed(found, form.cleaned_data, creation_key)
             if text:
                 messages.success(request, text)
             return redirect(f"{reverse('organisation_unit', args=[found.key])}#{ADD_MANAGED_ID}")
     elif request.method in READING:
-        form, creation_key = ManagedPersonForm(), new_key()
+        form, creation_key = ManagedPersonAddForm(), new_key()
     else:
         raise Http404
     dialog = managed_dialog(found, form, action=request.path, hidden=[("creation_key", creation_key)])
@@ -992,11 +1001,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "schalter": {
-        "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95],
+        "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95, 98],
         "purpose": _("Schaltet etwas ein oder aus, nach dem Zielbild „Mein Profil“: links ein fetter Titel und ein "
                      "Satz, rechts der runde Schalter, eingeschaltet blau. Gesperrt steht er grau da, etwa wenn "
                      "sich etwas nicht zurücknehmen lässt (zweites Beispiel). Gespeichert wird erst mit dem Knopf "
-                     "des Dialogs."),
+                     "des Dialogs. Als Regler der Einwilligung (drittes Beispiel) steht er ohne Satz beim Öffnen "
+                     "auf „aus“, Vorleseprogramme sagen ihn als Ankreuzfeld an, und fehlt die Bestätigung, steht "
+                     "der Fehler rot darunter."),
         "pages": [_("Organisation")],
     },
     "orgakopf": {
@@ -1164,6 +1175,9 @@ def _organisation_examples() -> dict:
          "checked": False, "locked": False},
         {"name": "katalog-ringe-an", "value": "an", "title": texts.HAS_RINGS_TITLE, "text": texts.HAS_RINGS_LOCKED,
          "checked": True, "locked": True},
+        # Der Regler der Einwilligung (#98) nach „Anlegen“ ohne Bestätigung.
+        {"name": "katalog-einwilligung", "value": "an", "title": person_texts.CONSENT, "checkbox": True,
+         "error": person_texts.CONSENT_MISSING},
     ]
     edit_example = {"name": "Sippe Falken", "label": texts.EDIT_TITLE % {"unit": "Sippe Falken"}}
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
