@@ -1125,6 +1125,20 @@ class Rights:
             fresh._record_change(lambda rights: rights.may_delete_managed(unit))
         return str(person_texts.DELETED % {"person": name})
 
+    # Angezeigte Leitungsrollen verwalteter Personen (#99, PER-07)
+
+    def appoint_displayed(self, unit: Unit, person_key) -> tuple[bool, str]:
+        """Gerüst für #99: trägt eine angezeigte Leitungsrolle ein."""
+        raise Http404
+
+    def displayed_leads(self) -> list[dict]:
+        """Gerüst für #99: die angezeigten Leitungsrollen, die die Person sieht."""
+        return []
+
+    def remove_displayed(self, unit: Unit, role_key) -> str:
+        """Gerüst für #99: entfernt eine angezeigte Leitungsrolle."""
+        raise Http404
+
     # Leitungen entfernen und die eigene Rolle abgeben (#191)
 
     def may_remove(self, role: Role) -> bool:

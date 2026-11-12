@@ -9,6 +9,7 @@ from django.db.models.functions import Trim
 from access.keys import KEY_LENGTH, key_field, new_key
 from accounts.models import SCOUT_NAME_MAX_LENGTH, display_name
 from persons import texts
+from roles.models import RoleKind
 from units.models import Unit
 
 # Höchstens 100 Zeichen für Vor- und Nachname, nach dem Entfernen der Leerzeichen am Rand (#117).
@@ -81,3 +82,21 @@ class ManagedPerson(models.Model):
     def display_name(self) -> str:
         """Der Name wie überall im Tool: „Kiwi (Lena Probe)“, ohne Fahrtenname „Lena Probe“ (#111)."""
         return display_name(self.first_name, self.last_name, self.scout_name)
+
+
+class DisplayedLead(models.Model):
+    """Eine angezeigte Leitungsrolle einer verwalteten Person: „nur Anzeige“, ohne Rechte (#99, PER-07).
+
+    Gerüst; Regeln und Prüfungen kommen mit der Umsetzung von #99.
+    """
+
+    # Zufällige Kennung für Adressen, etwa zum Entfernen (#64); nie die laufende Nummer.
+    key = key_field()
+    person = models.ForeignKey(ManagedPerson, on_delete=models.CASCADE, related_name="displayed_leads")
+    kind = models.CharField(max_length=20, choices=RoleKind)
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT, related_name="displayed_leads")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["person", "kind", "unit"], name="displayed_lead_once_per_unit"),
+        ]

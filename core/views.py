@@ -398,6 +398,17 @@ def organisation_remove(request: HttpRequest, unit: str, role: str) -> HttpRespo
                                                        "start": False, "removal": removal})
 
 
+# Angezeigte Leitungsrollen verwalteter Personen entfernen (#99, PER-07). Eigene Adresse neben der für Rollen
+# mit Konto (#191), damit eine Kennung der einen Art unter der anderen nie etwas findet.
+DISPLAYED_ROWS = ("VP-14", "VP-15", "VP-16", "RO-09")
+
+
+@checks_rights(*DISPLAYED_ROWS)
+def organisation_remove_displayed(request: HttpRequest, unit: str, role: str) -> HttpResponse:
+    """Gerüst für #99: Bestätigung „… entfernen?“ zeigen und die angezeigte Leitungsrolle entfernen."""
+    raise Http404
+
+
 def _after_removal(request: HttpRequest, found: Unit) -> str:
     """Wohin es nach dem Entfernen geht; die Rechte frisch, weil die eigene Rolle gerade weg sein kann."""
     rights = Rights(request.user)
