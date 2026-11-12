@@ -413,7 +413,9 @@ class Organisation:
         may = {"expel": self.rights.may_expel(unit), "move": self.rights.may_move(unit)}
         may_add = self.rights.may_add_managed(unit)
         people = [(_user_by_name(user), self._person(user, unit, **may)) for user in self.rights.members(unit)]
-        people += [(_managed_by_name(entry), self._managed(entry, unit)) for entry in self.rights.managed_in(unit)]
+        # Verwaltete Personen trägt man nur eine Ebene nach oben aus, im Bund gar nicht (#118, VP-18).
+        may["expel"] = self.rights.may_expel_managed(unit)
+        people += [(_managed_by_name(entry), self._managed(entry, unit, **may)) for entry in self.rights.managed_in(unit)]
         persons = [lead for _order, lead in sorted(people, key=lambda pair: pair[0])]
         empty = str(person_texts.NOBODY_YET)
         if may_add:
@@ -427,11 +429,12 @@ class Organisation:
         }
 
     @staticmethod
-    def _managed(entry, unit: Unit) -> Lead:
+    def _managed(entry, unit: Unit, expel: bool, move: bool) -> Lead:
         """Eine verwaltete Person im Abschnitt „Personen“: wie eine Person mit Konto, ohne Mail und Geburtsdatum (#117).
 
         Mit der Marke „verwaltet“ und dem Knopf „Bearbeiten“; den hat, wer den Abschnitt sieht, denn
-        sehen und bearbeiten gehen zusammen im ganzen Bereich (VP-02).
+        sehen und bearbeiten gehen zusammen im ganzen Bereich (VP-02). Dahinter seit #118 „Verschieben“ und
+        „Austragen“ wie bei Personen mit Konto, nur wo die Person das darf (VP-07, VP-18).
         """
         full_name = f"{entry.first_name} {entry.last_name}"
         return Lead(
@@ -444,6 +447,8 @@ class Organisation:
             managed=True,
             edit_href=reverse("organisation_edit_managed", args=[unit.key, entry.key]),
             edit_id=edit_anchor(entry),
+            expel_href=reverse("organisation_expel_managed", args=[unit.key, entry.key]) if expel else None,
+            move_href=reverse("organisation_move_managed", args=[unit.key, entry.key]) if move else None,
         )
 
     def _person(self, user, unit: Unit, expel: bool, move: bool) -> Lead:
@@ -663,14 +668,15 @@ def edit_anchor(entry) -> str:
     return f"bearbeiten-{entry.key}"
 
 
-def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = (), conflict: str = "") -> dict:
+def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = (), conflict: str = "",
+                   delete_href: str | None = None) -> dict:
     """Der Dialog „Verwaltete Person anlegen“ oder, mit `entry`, „… bearbeiten“ (#117, Zielbild).
 
     Darunter „in … · ohne Konto, verwaltet“, die vier Felder und der dunkelblaue Knopf „Anlegen“ oder
-    „Speichern“; einen Knopf zum Löschen gibt es nicht (N5, #118). × und „Abbrechen“ führen zur Seite
-    zurück, mit der Kennung des Knopfs, der den Dialog geöffnet hat, in der Adresse; dort bekommt er den
-    Fokus wieder. `hidden` sind die versteckten Felder (Kennung des Dialogs oder Stand), `conflict`
-    der Satz, wenn inzwischen jemand anderes gespeichert hat (MG6).
+    „Speichern“. × und „Abbrechen“ führen zur Seite zurück, mit der Kennung des Knopfs, der den Dialog
+    geöffnet hat, in der Adresse; dort bekommt er den Fokus wieder. `hidden` sind die versteckten Felder
+    (Kennung des Dialogs oder Stand), `conflict` der Satz, wenn inzwischen jemand anderes gespeichert hat
+    (MG6). Mit `delete_href` steht links unten „Verwaltete Person löschen“ (#118, Zielbild zu #117, N5).
     """
     back = f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry) if entry else ADD_MANAGED_ID}"
     return {
@@ -686,6 +692,27 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
         "person_form": form,
         "hidden": list(hidden),
         "conflict": conflict,
+        "side_href": delete_href,
+        "side_label": person_texts.DELETE_BUTTON,
+    }
+
+
+def delete_dialog(unit: Unit, entry, action: str) -> dict:
+    """Die Rückfrage vor dem Löschen im Dialog „Bearbeiten“ (#118, Zielbild zu #117, Fassung 1, N5).
+
+    Titel ist die Frage „… endgültig löschen?“, darunter wie beim Bearbeiten „in … · ohne Konto, verwaltet“
+    und „Das lässt sich nicht rückgängig machen.“. Unten „Nicht löschen“ zurück in den Dialog „Bearbeiten“
+    und der rote Knopf „Endgültig löschen“; × führt zur Seite, zum Knopf „Bearbeiten“ der Person.
+    """
+    return {
+        "title": person_texts.DELETE_QUESTION % {"person": entry.display_name},
+        "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
+        "lines": [person_texts.DELETE_CANNOT_UNDO],
+        "close_href": f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry)}",
+        "cancel_href": reverse("organisation_edit_managed", args=[unit.key, entry.key]),
+        "cancel_label": person_texts.DELETE_KEEP,
+        "confirm_action": action,
+        "confirm_label": person_texts.DELETE_CONFIRM,
     }
 
 

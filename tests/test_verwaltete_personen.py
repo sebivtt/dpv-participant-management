@@ -240,7 +240,11 @@ def test_m3_ohne_gruppenleitung_springt_wanda_in_den_woelfen_ein(org):
 def test_m4_wanda_willi_und_bruno_sehen_lena_und_koennen_sie_bearbeiten(org, lena):
     for user in (org.walhall_leitung, org.willi, org.bundesleitung, org.falken_leitung):
         shown = entries(page_tree(user, unit_address(org.falken)))
-        assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}, user.username
+        # Seit #118 trägt Fiete als Gruppenleitung der Falken Lena auch aus (VP-18); die anderen nicht.
+        expected = {"Bearbeiten": edit_address(org.falken, lena)}
+        if user == org.falken_leitung:
+            expected["Austragen"] = f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"
+        assert shown["Kiwi"]["buttons"] == expected, user.username
         found, version = open_edit(user, org.falken, lena)
         assert _text(_one(_by_tag(found, "h2"))) == "Kiwi (Lena Probe) bearbeiten"
         assert value_of(found, "birth_date") == "2015-05-14"
@@ -331,7 +335,8 @@ def test_nach_dem_dialog_kehrt_der_fokus_zum_knopf_zurueck(org, lena):
 
     for found, back in ((open_add(org.falken_leitung, org.falken)[0], back_from_add(org.falken)),
                         (open_edit(org.falken_leitung, org.falken, lena)[0], back_from_edit(org.falken, lena))):
-        closing = [_attr(link, "href") for link in _by_tag(found, "a")]
+        # Seit #118 steht im Dialog „Bearbeiten“ für Fiete auch „Verwaltete Person löschen“; das schließt nicht.
+        closing = [_attr(link, "href") for link in _by_tag(found, "a") if _visible_text(link) != "Verwaltete Person löschen"]
         assert closing == [back, back]
 
 
@@ -384,7 +389,9 @@ def test_mw2_frida_sieht_lena_nach_dem_benennen_und_kann_sie_bearbeiten(org, len
     assert appointed.status_code == 302
 
     shown = entries(page_tree(frida, unit_address(org.falken)))
-    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}
+    # Seit #118 trägt die Gruppenleitung verwaltete Personen auch aus (VP-18).
+    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena),
+                                        "Austragen": f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"}
     _found, version = open_edit(frida, org.falken, lena)
     assert save(frida, org.falken, lena, version, scout_name="Kiwi Frida").status_code == 302
 
@@ -570,7 +577,10 @@ def test_mv6_gesundheitsangaben_werden_nicht_gespeichert(org):
 
 
 def test_mv7_im_dialog_bearbeiten_gibt_es_keinen_loeschknopf(org, lena):
-    for user in (org.falken_leitung, org.walhall_leitung):
+    """MV7 ist seit #118 abgelöst (Szenario U2 dort): Den Löschknopf hat jetzt die Leitung der eigenen Organisation
+    der Person, hier Fiete (`tests/test_verwaltete_personen_verschieben.py`). Wer nur bearbeiten darf, wie Wanda,
+    hat ihn weiter nicht."""
+    for user in (org.walhall_leitung,):
         found, _version = open_edit(user, org.falken, lena)
         assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Speichern"]
         assert "Löschen" not in _visible_text(found)

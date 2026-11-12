@@ -609,4 +609,6 @@ def test_der_katalog_zeigt_die_knoepfe_bei_den_leitungen_und_im_dialog(settings,
     remove_block = _one(_by_tag(root, "section", aria_labelledby="h-knopfentfernen"))
     assert [_visible_text(link) for link in _all(remove_block, lambda e: "btn-entfernen" in _classes(e))] == ["Entfernen"]
     dialog_block = _one(_by_tag(root, "section", aria_labelledby="h-dialog"))
-    assert [_visible_text(button) for button in _all(dialog_block, lambda e: "btn-gefahr" in _classes(e))] == ["Entfernen"]
+    # Seit #118 zeigt der Katalog dazu die Rückfrage vor dem Löschen einer verwalteten Person mit „Endgültig löschen“.
+    assert [_visible_text(button) for button in _all(dialog_block, lambda e: "btn-gefahr" in _classes(e))] == [
+        "Entfernen", "Endgültig löschen"]

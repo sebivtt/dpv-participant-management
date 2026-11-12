@@ -156,6 +156,15 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 5. **„Bearbeiten“ ohne Stift,** als Baustein „Knopf „Verschieben““: gleiche zarte blaue Fläche, aber ohne Symbol.
 6. **Kein Kasten „Zum Ausprobieren“:** Er gehört wie das Steuerband nicht zur Seite.
 
+### Abweichungen beim Löschen vom Zielbild zu #117, Fassung 1 (#118)
+
+Vorlage für das Löschen ist [Fassung 1 des Zielbilds zu #117](https://github.com/sebivtt/dpv-participant-management/issues/117#issuecomment-6478456757) (Nachklärung N5); im Repo liegt Fassung 2 ohne Löschen. Die Wortlaute hat #118 selbst geklärt ([Protokoll vom 11.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/118#issuecomment-6789855626), Frage 2).
+
+1. **Wortlaut der Rückfrage:** Titel „Kiwi (Lena Probe) endgültig löschen?“ und darunter „Das lässt sich nicht rückgängig machen.“ statt „… löschen?“ mit gelbem Warnkasten „… wirklich löschen? Die verwaltete Person wird dauerhaft … entfernt …“; die kurze Meldung danach heißt „Kiwi (Lena Probe) wurde gelöscht.“ statt „Die verwaltete Person … wurde gelöscht.“.
+2. **Eigene Adresse:** Die Rückfrage ist eine eigene Seite über der Organisation, damit sie ohne Skript geht; „Nicht löschen“ führt zurück in den Dialog „Bearbeiten“, × zur Seite. Im Zielbild wechselt derselbe Dialog nur die Knöpfe.
+3. **Knöpfe aus den Bausteinen:** „Verwaltete Person löschen“ ist der Baustein „Knopf „Entfernen““ (zart rot, klein), „Nicht löschen“ hat das Aussehen von „Abbrechen“, „Endgültig löschen“ ist der rote Knopf des Dialogs.
+4. **Nur für wer löschen darf** (N5): die Leitung der eigenen Organisation der Person oder die einspringende, nicht jede, die bearbeiten darf, wie es das Zielbild zeigt.
+
 ## Support-Zugang
 
 - **Datei:** [`support-zugang.html`](support-zugang.html)

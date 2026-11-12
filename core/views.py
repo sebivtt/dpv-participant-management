@@ -44,6 +44,7 @@ from units.organisation import (
     Page,
     admission,
     create_dialog,
+    delete_dialog,
     edit_dialog,
     exit_dialog,
     expulsion_dialog,
@@ -693,7 +694,8 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
     Organisation oder darf die Person sie nicht sehen, ist das „nicht gefunden“ (VP-03, MV4, MV5), auch
     für eine gerade entfernte Leitung im schon offenen Dialog (MW1). Der Dialog schickt den Stand beim
     Öffnen mit (`version`); hat inzwischen jemand anderes gespeichert, zeigt er dessen Stand mit dem Satz
-    aus MG6 und überschreibt nichts. Danach geht es zurück zur Seite, zum Knopf „Bearbeiten“.
+    aus MG6 und überschreibt nichts. Danach geht es zurück zur Seite, zum Knopf „Bearbeiten“. Seit #118
+    steht links unten „Verwaltete Person löschen“, nur für wer löschen darf (VP-09, VP-10).
     """
     rights = request.rights
     found = rights.entry(Unit.objects.all(), unit)
@@ -712,9 +714,74 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
         form, version = ManagedPersonForm(initial=_managed_values(entry)), entry.version
     else:
         raise Http404
+    # Den Knopf „Verwaltete Person löschen“ hat nur, wer löschen darf, nicht jede, die bearbeiten darf (#118, N5).
+    delete_href = (reverse("organisation_delete_managed", args=[found.key, entry.key])
+                   if rights.may_delete_managed(found) else None)
     dialog = managed_dialog(found, form, action=request.path, entry=entry, hidden=[("version", version)],
-                            conflict=conflict)
+                            conflict=conflict, delete_href=delete_href)
     return _with_dialog(request, found, dialog)
+
+
+# Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02). Wie bei Personen mit Konto (#286,
+# #287) hat jeder Dialog eine eigene Adresse unter der Seite der Organisation, damit er auch ohne Skript geht.
+# Die Organisation der Person kommt immer aus der Adresse, die Person über ihre Kennung, das Ziel beim
+# Verschieben nur aus den Organisationen direkt darunter. Wer dort nicht darf, bekommt „nicht gefunden“,
+# auch per Skript; Kennungen von Personen mit Konto finden hier nie etwas (VV6).
+MOVE_MANAGED_ROWS = ("VP-07", "VP-08", "EH-18", "EH-19")
+EXPEL_MANAGED_ROWS = ("VP-18", "EH-18", "EH-19")
+DELETE_MANAGED_ROWS = ("VP-09", "VP-10", "EH-18", "EH-19")
+
+
+@checks_rights(*MOVE_MANAGED_ROWS)
+def organisation_move_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „Verschieben“ einer verwalteten Person zeigen und sie in eine Organisation direkt darunter verschieben (VP-07).
+
+    Derselbe Dialog wie bei Personen mit Konto (#287). Danach geht es zurück zur Seite mit der kurzen Meldung;
+    eine Ablehnung wie PK-25 gibt es nicht, weil verwaltete Personen keine Leitungsrollen haben.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_move)
+    if request.method == "POST":
+        messages.success(request, rights.move_managed(found, person, request.POST.get("ziel", "")))
+        return redirect("organisation_unit", unit=found.key)
+    if request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, move_dialog(found, rights.moving_managed(found, person), action=request.path))
+
+
+@checks_rights(*EXPEL_MANAGED_ROWS)
+def organisation_expel_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Dialog „… austragen?“ einer verwalteten Person zeigen und sie eine Ebene nach oben austragen (VP-18).
+
+    Derselbe Dialog wie bei Personen mit Konto (#286), mit der einzigen Möglichkeit „gehört danach direkt zu …“.
+    Danach geht es zurück zur Seite mit der kurzen Meldung; die eigenen Rechte ändern sich dabei nicht.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_expel_managed)
+    if request.method == "POST":
+        messages.success(request, rights.expel_managed(found, person, request.POST.get("wahl", "")))
+        return redirect("organisation_unit", unit=found.key)
+    if request.method not in READING:
+        raise Http404
+    removal = expulsion_dialog(found, rights.expulsion_managed(found, person), action=request.path)
+    return _with_dialog(request, found, removal)
+
+
+@checks_rights(*DELETE_MANAGED_ROWS)
+def organisation_delete_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
+    """Rückfrage „… endgültig löschen?“ zeigen und die verwaltete Person endgültig löschen (VP-09).
+
+    Lesend zeigt die Adresse die Rückfrage im Dialog „Bearbeiten“; „Nicht löschen“ führt zurück in ihn, × zur
+    Seite. „Endgültig löschen“ löscht und führt zur Seite mit der kurzen Meldung „… wurde gelöscht.“.
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_delete_managed)
+    if request.method == "POST":
+        messages.success(request, rights.delete_managed(found, person))
+        return redirect("organisation_unit", unit=found.key)
+    if request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, delete_dialog(found, rights.deleting_managed(found, person), action=request.path))
 
 
 def _managed_values(entry) -> dict:
@@ -1080,14 +1147,16 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
                      "„Entfernen“, oder, wo nichts weggenommen wird, ein dunkelblauer, etwa „Verschieben“; er "
                      "schickt eine Wahl aus der „Auswahl im Dialog“ oder Felder mit, etwa den Namen beim Anlegen. "
                      "Danach bekommt der Knopf, der den Dialog geöffnet hat, wieder den Fokus, wo die Seite ihm eine "
-                     "Kennung gibt, etwa bei verwalteten Personen."),
+                     "Kennung gibt, etwa bei verwalteten Personen. Links unten kann ein zart roter Knopf stehen, etwa "
+                     "„Verwaltete Person löschen“ (drittes Beispiel), und „Abbrechen“ kann anders heißen und "
+                     "woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“ (viertes Beispiel)."),
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "auswahl": {
@@ -1194,6 +1263,17 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
+    # Löschen einer verwalteten Person (#118): der Knopf links unten im Dialog „Bearbeiten“ und die Rückfrage danach.
+    managed_edit = {"title": person_texts.EDIT_TITLE % {"person": "Kiwi (Lena Probe)"},
+                    "subtitle": person_texts.IN_UNIT % {"unit": "Sippe Falken"}, "close_href": "#h-dialog",
+                    "side_href": "#h-dialog", "side_label": person_texts.DELETE_BUTTON, "confirm_action": "#h-dialog",
+                    "confirm_label": person_texts.SAVE_BUTTON, "confirm_primary": True,
+                    "preview_id": "h-dialog-bearbeiten"}
+    deleting = {"title": person_texts.DELETE_QUESTION % {"person": "Kiwi (Lena Probe)"},
+                "subtitle": person_texts.IN_UNIT % {"unit": "Sippe Falken"}, "lines": [person_texts.DELETE_CANNOT_UNDO],
+                "close_href": "#h-dialog", "cancel_href": "#h-dialog", "cancel_label": person_texts.DELETE_KEEP,
+                "confirm_action": "#h-dialog", "confirm_label": person_texts.DELETE_CONFIRM,
+                "preview_id": "h-dialog-loeschen"}
     # Austragen mit Wahl und Vorschau (#286), erfunden wie im Beispiel des Issues.
     person = "Flink (Finn Muster)"
     expulsion = {
@@ -1223,9 +1303,10 @@ def _organisation_examples() -> dict:
              role_names=["Gruppenleitung Meute Wölfe"]),
         Lead(name="Wilma Muster", extra="", role="", mail="wilma.muster@example.org", locked=False, is_self=False,
              move_href="#h-leitung", expel_href="#h-leitung"),
-        # Eine verwaltete Person (#117): grauer Kreis, Marke „verwaltet“, ohne Mail, mit „Bearbeiten“.
+        # Eine verwaltete Person (#117): grauer Kreis, Marke „verwaltet“, ohne Mail, mit „Bearbeiten“; seit #118
+        # dahinter „Verschieben“ und „Austragen“ wie bei Personen mit Konto.
         Lead(name="Kiwi", extra="Lena Probe", role="", mail="", locked=False, is_self=False, managed=True,
-             edit_href="#h-leitung"),
+             edit_href="#h-leitung", move_href="#h-leitung", expel_href="#h-leitung"),
     ]
     # Verschieben mit Wahl ohne Vorschau und blauem Knopf (#287), erfunden wie im Beispiel des Issues.
     moving = {
@@ -1257,7 +1338,7 @@ def _organisation_examples() -> dict:
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_support_page": support_page,
             "support_bar": {"label": "Stamm Walhall", "until": "14:35", "end_action": "#h-supportbalken"}, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "expulsion": expulsion, "moving": moving, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "managed_edit": managed_edit, "deleting": deleting, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 

@@ -2,7 +2,7 @@
 
 Die Kennungen E1, E2, EV1 bis EV4 und EG1 bis EG6 verweisen auf die Szenarien vom 30.10.2026
 (https://github.com/sebivtt/dpv-participant-management/issues/98#issuecomment-6522708412). EG3
-(Verschieben und Löschen) prüft #118. Die Tastatur und das Antippen am Handy aus EG5 prüft der
+(Verschieben und Löschen) prüft #118 in `tests/test_verwaltete_personen_verschieben.py` (V5, V9). Die Tastatur und das Antippen am Handy aus EG5 prüft der
 Rauchtest `rauchtests/test_verwaltete_personen.py`; hier steht, was beim Browser ankommt und was
 danach in der Datenbank steht. Der Regler ist der Baustein „Schalter“ aus #95, erweitert um die
 Ansage als Ankreuzfeld und den Fehler am Feld (Sebastian, 12.11.2026: „Schalter erweitern“,

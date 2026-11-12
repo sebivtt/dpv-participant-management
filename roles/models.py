@@ -360,6 +360,9 @@ class RoleChange(models.Model):
       Leeren der Datenbank bleibt möglich; das braucht der Testdaten-Befehl (#103) und der
       Testlauf. Im Tool gibt es dafür keinen Weg.
     - In P2 sieht niemand das Protokoll im Tool (Entscheidung W4); die Einsicht kommt mit ADM-03.
+    - Seit #118 stehen hier auch verwaltete Personen (PER-02): Anlegen ist „vergeben“, Löschen „entfernt“,
+      Verschieben und Austragen je „entfernt“ und „vergeben“, immer als Mitgliedschaft. Dann ist `managed`
+      gesetzt, und `person_id` ist die Nummer der verwalteten Person, nicht die eines Kontos.
     """
 
     class Action(models.TextChoices):
@@ -371,6 +374,8 @@ class RoleChange(models.Model):
     actor_name = models.TextField()
     person_id = models.BigIntegerField()
     person_name = models.TextField()
+    # Eine verwaltete Person statt eines Kontos (#118); `person_id` zählt dann in ihrer eigenen Tabelle.
+    managed = models.BooleanField(default=False, db_default=False)
     kind = models.CharField(max_length=20, choices=RoleKind)
     unit_id = models.BigIntegerField(null=True)
     unit_name = models.TextField(blank=True)
@@ -388,6 +393,28 @@ class RoleChange(models.Model):
             unit_id=unit.pk if unit else None,
             unit_name=logged_name(unit) if unit else "",
             action=action,
+        )
+        entry.save()
+        return entry
+
+    @classmethod
+    def record_managed(cls, by, person, unit: Unit, action: str) -> "RoleChange":
+        """Schreibt einen Eintrag zu einer verwalteten Person (#118): immer als Mitgliedschaft in `unit`.
+
+        `person` ist die verwaltete Person mit Vor- und Nachname zum Zeitpunkt der Änderung, ohne Fahrtenname,
+        wie bei Konten. Nur innerhalb der Transaktion der Änderung aufrufen; scheitert der Eintrag, scheitert sie.
+        """
+        check_actor(by)
+        entry = cls(
+            actor_id=actors.actor_id(by),
+            actor_name=actors.actor_name(by),
+            person_id=person.pk,
+            person_name=f"{person.first_name} {person.last_name}",
+            kind=RoleKind.MEMBER,
+            unit_id=unit.pk,
+            unit_name=logged_name(unit),
+            action=action,
+            managed=True,
         )
         entry.save()
         return entry
