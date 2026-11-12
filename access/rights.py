@@ -1423,6 +1423,15 @@ class Rights:
         AdminAccess.record(self.user, AdminAccess.Action.VIEWED, self.support.unit)
         self._viewed = True
 
+    def record_outline(self) -> None:
+        """Schreibt „ansehen“ für eine Seite nur mit dem Kopf, solange ein Zugang läuft: Ihre Gliederung zeigt seine Leitungen.
+
+        Was die eigenen Rollen ohnehin zeigen, zählt nicht (S8); höchstens ein Eintrag je Anfrage.
+        """
+        if self._viewed or self.support is None:
+            return
+        self.record_view(self.support.unit)
+
     def record_search(self, allowed: Callable[["Rights"], bool]) -> None:
         """Schreibt „ansehen · Kontosuche“, ohne Suchbegriff, wenn erst der Zugang die Suche erlaubt (#92, Frage 1)."""
         if not self._only_via_support(allowed):
@@ -1653,7 +1662,10 @@ class RightsMiddleware:
         if closed is None:
             return None
         label, key = closed
-        unsaved = request.method not in ("GET", "HEAD", "OPTIONS")
+        # „beenden“ nach Ablauf und Vorschläge beim Tippen aus dem Skript speichern nichts; dafür reicht die
+        # Information (Befunde 2 und 4).
+        unsaved = (request.method not in ("GET", "HEAD", "OPTIONS") and request.path != reverse("support_end")
+                   and request.headers.get("Sec-Fetch-Dest") != "empty")
         request.session[SUPPORT_EXPIRED_SESSION_KEY] = {"unit": label, "unsaved": unsaved}
         request.rights = SimpleLazyObject(lambda: Rights(getattr(request, "user", None)))
         if request.path == reverse("account_logout"):

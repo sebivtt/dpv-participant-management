@@ -104,6 +104,9 @@ class SupportShown:
     def expired(self) -> dict | None:
         """Die Meldung nach Ablauf, einmal: ohne abgeschicktes Formular eine Information, sonst eine Warnung (SA1, SA2, N2)."""
         session = getattr(self.request, "session", None)
+        # Eine Anfrage aus dem Skript (etwa Vorschläge beim Tippen) zeigt die Meldung nicht; sie bleibt für die Seite (Befund 2).
+        if self.request.headers.get("Sec-Fetch-Dest") == "empty":
+            return None
         found = session.pop(SUPPORT_EXPIRED_SESSION_KEY, None) if session is not None else None
         if not found:
             return None

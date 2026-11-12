@@ -460,9 +460,10 @@
         // Als Formular mit Formularschutz, damit der Name nicht in der Adresse und in keinem Protokoll steht.
         fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin" })
           .then(function (response) {
-            // Abgelaufene Anmeldung: Statt der Login-Seite in der Liste lädt die Seite neu und führt zum Login.
+            // Abgelaufene Anmeldung oder abgelaufener Support-Zugang (#92): Statt der Seite in der Liste geht es
+            // dorthin, wohin das Tool weiterleitet, etwa zum Login oder zur Seite mit der Meldung nach Ablauf.
             if (response.redirected) {
-              window.location.reload();
+              window.location.assign(response.url);
               return "";
             }
             return response.ok ? response.text() : "";

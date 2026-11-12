@@ -342,6 +342,9 @@ class Organisation:
         access = self.access(unit)
         if access in (MANAGE, READ):
             self.rights.record_view(unit)
+        elif access == HEAD:
+            # Auch neben einer Seite nur mit dem Kopf zeigt die Gliederung die Leitungen aus dem Zugang (Befund 1).
+            self.rights.record_outline()
         support_href = reverse("organisation_support", args=[unit.key]) if self.rights.shows_support_button(unit) else None
         if access == HEAD:
             return self._head_only(unit, support_href)

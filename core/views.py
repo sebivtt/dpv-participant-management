@@ -916,9 +916,11 @@ def support_end(request: HttpRequest) -> HttpResponse:
         raise Http404
     support = rights.support
     text = rights.end_support()
-    if not text:
+    if text:
+        messages.success(request, text)
+    # Ohne Organisation, etwa nach dem Notfall-Löschen, geht es zu „Organisation“ (Befund 3).
+    if not text or support is None:
         return redirect("organisation")
-    messages.success(request, text)
     return redirect("organisation_unit", unit=support.unit.key)
 
 
