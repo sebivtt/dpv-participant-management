@@ -153,6 +153,13 @@ Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/z
 - **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
 - **Danach** eine kurze Meldung (#186): „Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.“, „Die Angaben zu Kiwi (Lena Probe) sind gespeichert.“ Hat inzwischen jemand anderes gespeichert, steht die Fehlermeldung oben im Dialog, und er zeigt den neuen Stand.
 
+### Einwilligung beim Anlegen (#98, 12.11.2026)
+
+Zielbild ist der Regler aus `docs/zielbilder/mein-profil.html` („Profil freigeben“), Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 12.11.2026 zu #98. Kein neuer Baustein, einer erweitert:
+
+- **Schalter** (Sebastian, 12.11.2026: „Schalter erweitern“): Er kann ohne Satz unter dem Titel stehen, wie ein Ankreuzfeld angesagt werden, wenn er erst mit dem Knopf des Dialogs wirkt, und den Fehler am Feld rot unter der Zeile zeigen, mit ihm verbunden. Aus einem Formular eingebunden mit `{% schalter form.feld %}` (`core/templatetags/layout.py`). „Hat Ringe“ bleibt, wie er ist.
+- **„Verwaltete Person anlegen“:** unter den vier Feldern der Schalter mit dem Satz aus DSG-02, ohne Hilfesatz und ohne „i“, beim Öffnen immer auf „aus“. Ohne ihn steht nach „Anlegen“ „Bitte bestätige die Einwilligung. Ohne sie wird die Person nicht gespeichert.“ darunter, und die Eingaben bleiben stehen. Beim Bearbeiten gibt es ihn nicht.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

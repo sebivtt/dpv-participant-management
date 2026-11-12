@@ -148,6 +148,31 @@ def datumsfeld(field) -> dict:
     return _textfeld(field)
 
 
+@register.inclusion_tag("core/_schalter.html")
+def schalter(field) -> dict:
+    """Baustein „Schalter“ (#95) für ein Ankreuzfeld eines Formulars, erweitert mit #98 (Regler der Einwilligung).
+
+    Er wirkt erst mit dem Knopf des Dialogs; Vorleseprogramme sagen ihn deshalb als Ankreuzfeld an,
+    nicht als Schalter, der sofort schaltet. Titel ist die Beschriftung des Felds, ohne Satz darunter.
+    Der Fehler steht rot unter der Zeile und ist mit dem Feld verbunden; nach einem Fehler bleibt er
+    gewählt, wie er war. Das Formular legt am Feld fest, zu welchem Formular es gehört (`form`) und
+    welchen Wert es schickt (`value`).
+    """
+    attrs = field.field.widget.attrs
+    return {
+        "switch": {
+            "id": field.auto_id,
+            "name": field.html_name,
+            "value": attrs.get("value", "on"),
+            "title": field.label,
+            "checked": bool(field.value()),
+            "checkbox": True,
+            "error": " ".join(field.errors),
+        },
+        "form_id": attrs.get("form", ""),
+    }
+
+
 @register.inclusion_tag("core/_antippfeld.html")
 def antippfeld(field, saved: str, icon: str, failure: str = "", focus: bool = False) -> dict:
     """Feld zum Antippen (#180, Zielbild „Mein Profil“): in Ruhe wie eine Angabe, angetippt eine Eingabe.

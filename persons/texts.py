@@ -33,6 +33,12 @@ BIRTH_DATE_FUTURE = gettext_lazy("Das Geburtsdatum liegt in der Zukunft.")
 BIRTH_DATE_TOO_OLD = gettext_lazy("Das Geburtsdatum liegt mehr als 120 Jahre zurück.")
 BIRTH_DATE_INVALID = gettext_lazy("Bitte gib ein gültiges Geburtsdatum ein.")
 
+# Bestätigung der Einwilligung (#98): genau der Satz aus DSG-02, ohne Hilfesatz (Klärung vom 22.10.2026, Frage 2).
+CONSENT = gettext_lazy(
+    "Die Person bzw. bei Minderjährigen die Erziehungsberechtigten haben der Speicherung der Daten zugestimmt."
+)
+CONSENT_MISSING = gettext_lazy("Bitte bestätige die Einwilligung. Ohne sie wird die Person nicht gespeichert.")
+
 # Kurze Meldungen und gleichzeitiges Bearbeiten
 ADDED = gettext_lazy("%(person)s gehört jetzt zu %(unit)s.")
 SAVED = gettext_lazy("Die Angaben zu %(person)s sind gespeichert.")

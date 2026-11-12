@@ -3,7 +3,8 @@
 Erika meldet sich wirklich bei der Keycloak-Testumgebung an und leitet danach Walhall; die Sippe Falken hat
 keine Gruppenleitung, also springt sie dort ein und darf anlegen (VP-01, EH-18), wie Wanda in M3.
 Geprüft werden die Teile, die nur ein Browser zeigt: Der Dialog ist modal und hält den Fokus, nach dem
-Dialog kehrt der Fokus auf den Knopf zurück, der ihn geöffnet hat, die Felder gehen auch wie am Handy
+Dialog kehrt der Fokus auf den Knopf zurück, der ihn geöffnet hat, der Regler der Einwilligung geht
+mit Tab und Leertaste und am Handy mit Antippen (#98, EG5), die Felder gehen auch wie am Handy
 mit Autokorrektur und Wortvorschlägen (MG10), das Datumsfeld ist das Feld des Browsers (N3), die kurze
 Meldung erscheint, nichts steht seitlich über, der Fokus ist zu sehen, und die Seiten bestehen die
 Prüfung auf Barrierefreiheit. Das Datum setzt der Test mit `fill`, weil jeder Browser sein Datumsfeld
@@ -21,6 +22,9 @@ from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_
 PERSONS = '[aria-labelledby="h-personen"]'
 ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href$="/verwaltete-person/anlegen/"]'
 EDIT_BUTTON = f'{PERSONS} a[href$="/bearbeiten/"]'
+# Der Regler der Einwilligung (#98, DSG-02): ein Ankreuzfeld im Baustein „Schalter“.
+CONSENT = 'dialog input[name="consent"]'
+SUBMIT = 'dialog button[type="submit"]'
 
 
 def _dialog(page: Page):
@@ -63,6 +67,17 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_bearbeiten(pc):
     stations = _stations_to_element(pc, 'input[name="scout_name"]', steps=6)
     _all_visible(stations)
     pc.keyboard.type("Kiwi")
+    # Nur mit der Tastatur zum Regler und mit der Leertaste auf „an“ (#98, EG5); er wirkt erst mit „Anlegen“.
+    stations = _stations_to_element(pc, CONSENT, steps=4)
+    _all_visible(stations)
+    consent = pc.locator(CONSENT)
+    expect(consent).not_to_be_checked()
+    expect(pc.get_by_role("checkbox", name="Die Person bzw. bei Minderjährigen die Erziehungsberechtigten "
+                                            "haben der Speicherung der Daten zugestimmt.")).to_have_count(1)
+    pc.keyboard.press("Space")
+    expect(consent).to_be_checked()
+    stations = _stations_to_element(pc, SUBMIT, steps=4)
+    _all_visible(stations)
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{page_address}#verwaltete-person-anlegen")
@@ -105,6 +120,11 @@ def test_am_pc_fehler_am_feld_und_escape_legt_niemanden_an(pc):
     expect(_dialog(pc)).to_contain_text("Bitte gib den Vornamen ein.")
     expect(pc.get_by_label("Vorname")).to_have_attribute("aria-invalid", "true")
     expect(pc.get_by_label("Fahrtenname")).to_have_value("Kiwi")
+    # Ohne Bestätigung steht der Fehler rot unter dem Regler und ist mit ihm verbunden (#98, EV1, EG5).
+    consent = pc.locator(CONSENT)
+    expect(consent).to_have_attribute("aria-invalid", "true")
+    expect(consent).to_have_accessible_description(
+        "Bitte bestätige die Einwilligung. Ohne sie wird die Person nicht gespeichert.")
     assert run_axe(pc) == []
 
     pc.keyboard.press("Escape")
@@ -141,8 +161,14 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     _type_like_a_phone(scout, "Ki", "w", "wi", "")
     expect(scout).to_have_value("Kiwi")
     _no_side_scroll(handy)
+    # Am Handy lässt sich der Regler antippen (#98, EG5).
+    consent = handy.locator(CONSENT)
+    expect(consent).not_to_be_checked()
+    handy.locator("dialog .a-schalter").tap()
+    expect(consent).to_be_checked()
+    _no_side_scroll(handy)
 
-    stations = _stations_to_element(handy, 'dialog button[type="submit"]', steps=6)
+    stations = _stations_to_element(handy, SUBMIT, steps=6)
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{page_address}#verwaltete-person-anlegen")

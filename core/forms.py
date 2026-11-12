@@ -204,3 +204,19 @@ class ManagedPersonForm(forms.Form):
         if len(value) > SCOUT_NAME_MAX_LENGTH:
             raise forms.ValidationError(person_texts.SCOUT_NAME_TOO_LONG, code="max_length")
         return value
+
+
+class ManagedPersonAddForm(ManagedPersonForm):
+    """Der Dialog „Verwaltete Person anlegen“: die vier Angaben und der Regler der Einwilligung (#98, DSG-02).
+
+    Der Regler ist Pflicht und steht beim Öffnen immer auf „aus“ (N2): Ohne ihn wird niemand angelegt,
+    auch nicht über ein manipuliertes Formular. Welches Konto wann bestätigt hat, nimmt das Formular
+    nicht an; das setzt `Rights.add_managed()` aus der Anmeldung und der Uhr des Servers. Beim Bearbeiten
+    gibt es den Regler nicht (`ManagedPersonForm`), eine mitgeschickte Bestätigung zählt dort nicht.
+    """
+
+    consent = forms.BooleanField(
+        label=person_texts.CONSENT,
+        error_messages={"required": person_texts.CONSENT_MISSING},
+        widget=forms.CheckboxInput(attrs={"form": "f-dialog", "value": "an"}),
+    )

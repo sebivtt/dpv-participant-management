@@ -878,22 +878,28 @@ class Rights:
     def add_managed(self, unit: Unit, values: dict, creation_key) -> str:
         """Legt eine verwaltete Person in `unit` an; gibt die kurze Meldung zurück, leer, wenn es sie schon gibt (VP-01).
 
-        `values` sind die geprüften Angaben aus `ManagedPersonForm`; die Organisation kommt nur aus der
+        `values` sind die geprüften Angaben aus `ManagedPersonAddForm`; die Organisation kommt nur aus der
         Adresse (MV4). `creation_key` ist die Kennung des Dialogs: Schickt jemand denselben Dialog zweimal
         ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Person, und die zweite
         Antwort hat keine Meldung (MG7). Ohne Recht oder mit einer Kennung in falscher Form „nicht
         gefunden“. Gesperrt ist das eigene Konto, und das Recht wird darunter frisch geprüft: Endet das
         Einspringen, während der Dialog offen ist, wird niemand angelegt (MW3).
+
+        Ohne `values["consent"]` legt es niemanden an (DSG-02, #98). Die Bestätigung trägt das eigene Konto
+        und die Uhrzeit des Servers, nie Angaben aus dem Formular (VP-11), und steht in derselben Zeile wie
+        die Person: Beides wird zusammen gespeichert oder gar nicht (EG1).
         """
         if not self.may_add_managed(unit) or not is_key(creation_key):
             raise Http404
+        if values.get("consent") is not True:
+            raise ValidationError(person_texts.CONSENT_MISSING, code="consent")
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
             if not Rights(me).may_add_managed(unit):
                 raise Http404
             if ManagedPerson.objects.filter(creation_key=creation_key).exists():
                 return ""
-            created = ManagedPerson(unit=unit, creation_key=creation_key,
+            created = ManagedPerson(unit=unit, creation_key=creation_key, consent_by=me, consent_at=timezone.now(),
                                     **{name: values[name] for name in EDITABLE_FIELDS})
             try:
                 with transaction.atomic():

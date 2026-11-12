@@ -105,10 +105,13 @@ def open_add(user, where, client=None) -> tuple:
 
 
 def add(user, where, client=None, **values):
-    """Öffnet den Dialog und schickt ihn ab, wie der Knopf „Anlegen“; `values` ersetzen Lenas Angaben."""
+    """Öffnet den Dialog und schickt ihn ab, wie der Knopf „Anlegen“; `values` ersetzen Lenas Angaben.
+
+    Seit #98 schiebt die Leitung dabei den Regler der Einwilligung auf „an“ (DSG-02).
+    """
     client = client or client_for(user)
     _dialog, creation_key = open_add(user, where, client=client)
-    return client.post(add_address(where), {**LENA, "creation_key": creation_key, **values})
+    return client.post(add_address(where), {**LENA, "consent": "an", "creation_key": creation_key, **values})
 
 
 def open_edit(user, where, entry, client=None) -> tuple:
@@ -184,7 +187,8 @@ def test_m1_fiete_legt_lena_in_den_falken_an(org):
     found, _creation_key = open_add(org.falken_leitung, org.falken, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Verwaltete Person anlegen"
     assert "in Sippe Falken · ohne Konto, verwaltet" in _visible_text(found)
-    assert field_names(found) == ["first_name", "last_name", "birth_date", "scout_name"]
+    # Seit #98 steht unter den vier Feldern der Regler der Einwilligung (DSG-02).
+    assert field_names(found) == ["first_name", "last_name", "birth_date", "scout_name", "consent"]
     assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Anlegen"]
 
     response = add(org.falken_leitung, org.falken, client=client)
@@ -395,7 +399,7 @@ def test_mw3_das_einspringen_endet_bei_offenem_dialog_und_niemand_wird_angelegt(
 
     give(org.woelfe_leitung, R.GROUP_LEAD, org.woelfe)
 
-    response = wanda.post(add_address(org.woelfe), {**LENA, "creation_key": creation_key})
+    response = wanda.post(add_address(org.woelfe), {**LENA, "consent": "an", "creation_key": creation_key})
     assert response.status_code == 404
     assert not ManagedPerson.objects.filter(first_name="Lena").exists()
     assert_like_missing(org.walhall_leitung, add_address(org.woelfe))
@@ -416,7 +420,7 @@ def test_mv1_ohne_einspringen_legt_niemand_in_einer_organisation_darunter_an(org
     for user, where in forbidden:
         assert "Verwaltete Person anlegen" not in head_buttons(page_tree(user, unit_address(where))), user.username
         assert_like_missing(user, add_address(where))
-        response = client_for(user).post(add_address(where), {**LENA, "creation_key": "b" * 20})
+        response = client_for(user).post(add_address(where), {**LENA, "consent": "an", "creation_key": "b" * 20})
         assert response.status_code == 404
 
     assert not ManagedPerson.objects.filter(first_name="Lena").exists()
@@ -489,7 +493,7 @@ def test_verbandsleitung_sieht_keine_verwalteten_personen_auch_nicht_ueber_den_b
         assert vera.get(edit_address(where, entry)).status_code == 404
         assert vera.post(edit_address(where, entry), {"first_name": "Gekapert", "version": "1"}).status_code == 404
         assert vera.get(unit_address(where)).status_code == 404
-    assert vera.post(add_address(org.boreas), {**LENA, "creation_key": "c" * 20}).status_code == 404
+    assert vera.post(add_address(org.boreas), {**LENA, "consent": "an", "creation_key": "c" * 20}).status_code == 404
     page = vera.get("/organisation/").content.decode()
     assert "Probe" not in page
     assert ManagedPerson.objects.filter(first_name="Lena", unit=org.boreas).count() == 0
@@ -555,11 +559,12 @@ def test_mv6_gesundheitsangaben_werden_nicht_gespeichert(org):
     assert response.status_code == 302
     created = lena_now()
     stored = {field.name for field in ManagedPerson._meta.concrete_fields}
+    # Seit #98 dazu, wer wann die Einwilligung bestätigt hat (DSG-02); Gesundheitsangaben weiter nicht.
     assert stored == {"id", "key", "first_name", "last_name", "birth_date", "scout_name", "unit", "version",
-                      "creation_key"}
+                      "creation_key", "consent_by", "consent_at"}
     assert all("Asthma" not in str(getattr(created, name)) for name in stored)
     found, _creation_key = open_add(org.falken_leitung, org.falken)
-    assert field_names(found) == ["first_name", "last_name", "birth_date", "scout_name"]
+    assert field_names(found) == ["first_name", "last_name", "birth_date", "scout_name", "consent"]
 
 
 def test_mv7_im_dialog_bearbeiten_gibt_es_keinen_loeschknopf(org, lena):
@@ -621,6 +626,21 @@ def test_mg3_hoechstlaengen_von_namen_und_fahrtenname(org):
 
     assert response.status_code == 302
     assert ManagedPerson.objects.get(unit=org.falken).scout_name == "K" * 30
+
+
+def test_mg2_mg3_auch_beim_bearbeiten_fahrtenname_gekuerzt_und_hoechstens_30_zeichen(org, lena):
+    """Unabhängige Prüfung zu #98, Befund 1: Das Bearbeiten prüft den Fahrtennamen wie das Anlegen, statt mit
+    einem Fehler der Datenbank abzubrechen."""
+    _found, version = open_edit(org.falken_leitung, org.falken, lena)
+    response = save(org.falken_leitung, org.falken, lena, version, scout_name="  Kiwi Neu ")
+    assert response.status_code == 302
+    assert lena_now().scout_name == "Kiwi Neu"
+
+    _found, version = open_edit(org.falken_leitung, org.falken, lena)
+    response = save(org.falken_leitung, org.falken, lena, version, scout_name="K" * 31)
+    assert response.status_code == 200
+    assert field_error(dialog_of(_tree(response)), "scout_name") == "Der Fahrtenname darf höchstens 30 Zeichen lang sein."
+    assert lena_now().scout_name == "Kiwi Neu"
 
 
 def test_mg4_geburtsdatum_heute_geht_morgen_nicht(org):
@@ -712,7 +732,7 @@ def test_mg6_gleichzeitig_gespeichert_gelingt_genau_eine_aenderung():
 def test_mg7_doppelklick_auf_anlegen_legt_lena_nur_einmal_an(org):
     client = client_for(org.falken_leitung)
     _found, creation_key = open_add(org.falken_leitung, org.falken, client=client)
-    form = {**LENA, "creation_key": creation_key}
+    form = {**LENA, "consent": "an", "creation_key": creation_key}
 
     first = client.post(add_address(org.falken), form)
     second = client.post(add_address(org.falken), form)
@@ -728,7 +748,8 @@ def test_mg7_gleichzeitig_abgeschickt_entsteht_lena_nur_einmal():
     o = build_org()
     fiete = person("fiete.falke", "Fiete", "Falke")
     give(fiete, R.GROUP_LEAD, o.falken)
-    values = {"first_name": "Lena", "last_name": "Probe", "birth_date": date(2015, 5, 14), "scout_name": "Kiwi"}
+    values = {"first_name": "Lena", "last_name": "Probe", "birth_date": date(2015, 5, 14), "scout_name": "Kiwi",
+              "consent": True}
     creation_key = "d" * 20
 
     _one_after_the_other(lambda: Rights(fiete).add_managed(o.falken, values, creation_key),
