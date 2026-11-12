@@ -349,7 +349,7 @@ def test_vv1_fiete_verschiebt_lena_nicht(org, lena):
     assert unit_of(lena) == "Sippe Falken"
 
 
-@pytest.mark.rechtematrix("VP-08", "VP-18")
+@pytest.mark.rechtematrix("VP-08", "VP-18", "EH-19")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/austragen/")
 def test_vv2_wanda_verschiebt_und_traegt_lena_nicht_aus_solange_die_falken_fiete_haben(org, lena):
     shown = entries(page_tree(org.walhall_leitung, unit_address(org.falken)))
@@ -384,7 +384,7 @@ def test_vv3_ein_manipuliertes_ziel_fuer_paul_ist_nicht_gefunden(org):
     assert RoleChange.objects.count() == before
 
 
-@pytest.mark.rechtematrix("VP-09", "VP-10")
+@pytest.mark.rechtematrix("VP-09", "VP-10", "EH-19")
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/loeschen/")
 def test_vv4_nur_die_leitung_der_falken_loescht_lena(org, lena):
     # Wanda und Bruno bearbeiten Lena, löschen sie aber nicht, solange die Falken Fiete haben.
