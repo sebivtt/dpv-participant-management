@@ -166,6 +166,22 @@ def test_g3_gehoert_ein_benutzername_einem_verknuepften_konto_bricht_der_zusatz_
     assert not Role.objects.filter(user=stranger).exists()
 
 
+def test_der_zusatz_laeuft_auch_in_der_testumgebung_ohne_angemeldete_bundesleitung(settings, monkeypatch):
+    """Akzeptanzkriterium „läuft lokal, auf GitHub und in der Testumgebung“, damit #145 dort von Hand messen kann."""
+    settings.LOCAL_ENVIRONMENT = False
+    settings.TEST_ENVIRONMENT = True
+    monkeypatch.setattr("core.management.mass_data.TROOPS", 2)
+    monkeypatch.setattr("core.management.mass_data.PERSONS", 60)
+    monkeypatch.setattr("core.management.mass_data.OUTLIER", 12)
+
+    out = run("--mass-data")
+
+    assert Role.objects.filter(kind=R.MEMBER, unit__in=probe_units()).count() \
+        + ManagedPerson.objects.filter(unit__in=probe_units()).count() == 60
+    assert not ManagedPerson.objects.filter(unit__in=probe_units(), consent_by__isnull=False).exists()
+    assert "Massendaten" in out
+
+
 # ---------- Was bleibt unverändert? ----------
 
 

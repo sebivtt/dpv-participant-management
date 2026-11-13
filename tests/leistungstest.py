@@ -121,7 +121,10 @@ def mass(django_db_setup, django_db_blocker):
     """Einmal je Lauf: die Testdaten aus #103 mit dem Zusatz für die Massendaten, wie lokal."""
     with django_db_blocker.unblock(), override_settings(LOCAL_ENVIRONMENT=True, TEST_ENVIRONMENT=False):
         call_command("testdata", "--mass-data", stdout=StringIO())
-    return None
+    yield
+    # Die Daten stehen außerhalb der Transaktion eines Tests; ohne Aufräumen fänden Tests danach sie vor.
+    with django_db_blocker.unblock():
+        call_command("flush", interactive=False, verbosity=0)
 
 
 @pytest.fixture
@@ -253,8 +256,9 @@ def test_m3_namensvorschlaege_beim_benennen_einer_leitung(data):
 
 def test_m4_suche_bei_person_aufnehmen_ueber_die_genaue_mail(data):
     client = client_for(data.bund)
-    address = f"{unit_address(data.outlier)}aufnehmen/suchen/"
-    account = mass_accounts().exclude(roles__unit=data.outlier).order_by("username").first()
+    # Aufnehmen darf die Bundesleitung nur in den eigenen Bund; die Probestämme haben eine eigene Leitung (PK-17).
+    address = f"{unit_address(data.boreas)}aufnehmen/suchen/"
+    account = mass_accounts().order_by("username").first()
     mail = EmailAddress.objects.get(user=account, verified=True).email
 
     def call():
@@ -262,9 +266,10 @@ def test_m4_suche_bei_person_aufnehmen_ueber_die_genaue_mail(data):
         assert response.status_code == 200
         return response
 
+    # Die Person ist schon Mitglied in einem Probestamm; der Dialog nennt sie dann mit ihrer Organisation (PG5).
     content = call().content.decode()
-    assert content.count('class="a-treffer"') == 1
-    assert account.first_name in content
+    assert f"{account.first_name} {account.last_name}" in content
+    assert "Probestamm 01" in content
     check_page("Suche bei „Person aufnehmen“", measure(call))
 
 
@@ -281,8 +286,13 @@ def test_r1_max_sieht_nur_seinen_stamm_und_ein_probestamm_ist_nicht_gefunden(dat
     assert accounts_seen(data.max_) == members_in("Zugvögel", "Sippe Kraniche") - {"max.testmann"}
     managed = {person.display_name for unit in Unit.objects.all() for person in rights.managed_in(unit)}
     assert managed == managed_names("Zugvögel", "Sippe Kraniche")
+    # Die Namen der Organisationen zeigt die Gliederung allen Leitungen im Bund; Personen daraus nicht.
+    probe_keys = {*ManagedPerson.objects.filter(unit__name__startswith="Probe").values_list("key", flat=True),
+                  *mass_accounts().values_list("key", flat=True)}
     for address in (ADDRESS, unit_address(data.zugvoegel)):
-        assert "Probestamm" not in client_for(data.max_).get(address).content.decode(), address
+        content = client_for(data.max_).get(address).content.decode()
+        assert "probe.0" not in content, address
+        assert not [key for key in probe_keys if key in content], address
     assert_like_missing(data.max_, unit_address(data.outlier))
 
 
