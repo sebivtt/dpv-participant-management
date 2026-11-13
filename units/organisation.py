@@ -774,6 +774,8 @@ def create_dialog(parent: Unit, form, action: str) -> dict:
         "confirm_label": texts.CREATE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
+        # Die Meldung am Feld kommt vom Tool, nicht als Blase des Browsers (#296).
+        "novalidate": True,
         "form": form,
     }
 
@@ -798,6 +800,8 @@ def edit_dialog(unit: Unit, form, action: str, rings: list[Unit] | None, rings_s
         "confirm_label": texts.SAVE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
+        # Die Meldung am Feld kommt vom Tool, nicht als Blase des Browsers (#296).
+        "novalidate": True,
         "form": form,
         "notice": ring_notice,
         "hidden": [("name_vorher", unit.name if shown_name is None else shown_name)],
