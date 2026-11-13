@@ -10,6 +10,10 @@ from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
 from core.views import (
     building_blocks,
+    event_create,
+    event_edit,
+    event_page,
+    events,
     federation_appoint,
     federation_appoint_lead,
     federation_remove,
@@ -98,6 +102,11 @@ urlpatterns = [
     # Support-Zugang der Admins (#92): Starten an der Seite der Organisation, Beenden im Balken auf jeder Seite.
     path("organisation/<key:unit>/support-zugang/", organisation_support, name="organisation_support"),
     path("support-zugang/beenden/", support_end, name="support_end"),
+    # Veranstaltungen (#100, Probe in P2): Liste, „Veranstaltung erstellen“, Seite und „… bearbeiten“ je Veranstaltung.
+    path("veranstaltungen/", events, name="events"),
+    path("veranstaltungen/erstellen/", event_create, name="event_create"),
+    path("veranstaltungen/<key:event>/", event_page, name="event_page"),
+    path("veranstaltungen/<key:event>/bearbeiten/", event_edit, name="event_edit"),
     path("bausteine/", building_blocks, name="building_blocks"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),

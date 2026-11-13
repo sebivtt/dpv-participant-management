@@ -1026,6 +1026,12 @@ class Rights:
             fresh._record_change(lambda rights: rights._managed_entries().filter(pk=entry.pk).exists())
         return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
+    # Veranstaltungen (#100, TEAM-01). Gerüst.
+
+    def create_event(self, values: dict, creation_key) -> tuple[object, str]:
+        """Legt eine Veranstaltung an (VA-01). Gerüst."""
+        return None, ""
+
     # Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02)
     #
     # Wie bei Personen mit Konto (#286, #287) darf das nur die Leitung der eigenen Organisation der Person und,

@@ -821,6 +821,34 @@ def organisation_delete_managed(request: HttpRequest, unit: str, person: str) ->
     return _with_dialog(request, found, delete_dialog(found, rights.deleting_managed(found, person), action=request.path))
 
 
+# Veranstaltungen (#100, Probe in P2). Gerüst: Adressen und Seiten, noch ohne Inhalt.
+EVENT_ROWS = ("VA-01", "VA-02", "VA-03", "VA-04", "VA-05")
+
+
+@checks_rights(*EVENT_ROWS)
+def events(request: HttpRequest) -> HttpResponse:
+    """Die Veranstaltungen, die die Person leitet (#100). Gerüst."""
+    return HttpResponse("")
+
+
+@checks_rights(*EVENT_ROWS)
+def event_create(request: HttpRequest) -> HttpResponse:
+    """„Veranstaltung erstellen“ (#100, VA-01). Gerüst."""
+    return HttpResponse("")
+
+
+@checks_rights(*EVENT_ROWS)
+def event_page(request: HttpRequest, event: str) -> HttpResponse:
+    """Die Seite einer Veranstaltung (#100, VA-02). Gerüst."""
+    return HttpResponse("")
+
+
+@checks_rights(*EVENT_ROWS)
+def event_edit(request: HttpRequest, event: str) -> HttpResponse:
+    """„… bearbeiten“ einer Veranstaltung (#100, VA-02). Gerüst."""
+    return HttpResponse("")
+
+
 def _managed_values(entry) -> dict:
     """Die gespeicherten Angaben einer verwalteten Person für den Dialog „… bearbeiten“."""
     return {name: getattr(entry, name) for name in EDITABLE_FIELDS}
