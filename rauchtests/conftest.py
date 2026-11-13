@@ -15,7 +15,13 @@ eigenen Tools aus README Schritt 9; beide können gleichzeitig laufen (#167). Ei
 einer anderen Arbeitskopie läuft erst, wenn dieser fertig ist (#184).
 
 Rauchtests haben keine eigene Zeitgrenze: Ein Test, der hängt, läuft lokal weiter, bis jemand den
-Lauf abbricht; auf GitHub beendet ihn erst das Zeitlimit des Schritts „Alle Prüfungen“ (#256).
+Lauf abbricht; auf GitHub beendet ihn erst das Zeitlimit des Schritts „Prüfungen dieses Teils“
+(#256, #307).
+
+Auf GitHub läuft jeder Browser in einem eigenen Teil auf einem eigenen Rechner (#307):
+`./pruefen.sh teil rauchtest-<browser>` setzt RAUCHTEST_BROWSER. Dann läuft nur dieser Browser,
+und Tests ohne Browser laufen nur im Teil des ersten Browsers, damit jeder Test genau einmal läuft.
+Ohne RAUCHTEST_BROWSER laufen wie bisher alle drei.
 """
 
 import os
@@ -45,10 +51,36 @@ PC = {"viewport": {"width": 1366, "height": 900}}
 HANDY = {"viewport": {"width": 390, "height": 844}, "has_touch": True}
 
 
+def _selected_browser() -> str | None:
+    """Der Browser aus RAUCHTEST_BROWSER (#307), ohne Angabe None für alle drei."""
+    selected = os.environ.get("RAUCHTEST_BROWSER", "")
+    if not selected:
+        return None
+    if selected not in BROWSERS:
+        raise pytest.UsageError(f"RAUCHTEST_BROWSER={selected!r} ist kein Browser des Rauchtests; erlaubt: {', '.join(BROWSERS)}.")
+    return selected
+
+
+def pytest_configure(config):
+    _selected_browser()
+
+
 def pytest_generate_tests(metafunc):
-    """Jeder Test, der einen Browser braucht, läuft in allen drei Browsern."""
+    """Jeder Test, der einen Browser braucht, läuft in allen drei Browsern, mit RAUCHTEST_BROWSER nur in diesem."""
     if "browser_name" in metafunc.fixturenames:
-        metafunc.parametrize("browser_name", BROWSERS, scope="session")
+        selected = _selected_browser()
+        metafunc.parametrize("browser_name", [selected] if selected else BROWSERS, scope="session")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Tests ohne Browser laufen nur im Teil des ersten Browsers (#307)."""
+    selected = _selected_browser()
+    if selected is None or selected == BROWSERS[0]:
+        return
+    without_browser = [item for item in items if "browser_name" not in getattr(item, "fixturenames", ())]
+    if without_browser:
+        config.hook.pytest_deselected(items=without_browser)
+        items[:] = [item for item in items if item not in without_browser]
 
 
 @pytest.fixture(scope="session", autouse=True)

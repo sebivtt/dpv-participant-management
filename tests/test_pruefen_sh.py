@@ -1,4 +1,4 @@
-"""Tests für das Prüfskript `pruefen.sh` (#235, `CLAUDE.md`, Ablauf je Aufgabe Nr. 4).
+"""Tests für das Prüfskript `pruefen.sh` (#235, `CLAUDE.md`, Ablauf je Aufgabe Nr. 4; Teile #307).
 
 Das Skript läuft hier in einer Wegwerf-Kopie. Statt `uv` steht im Suchpfad ein Platzhalter: Er
 schreibt jeden Aufruf mit seinen Argumenten in eine Protokolldatei, gibt erfundene pytest-
@@ -20,13 +20,20 @@ from pathlib import Path
 import pytest
 
 SCRIPT = Path(__file__).resolve().parent.parent / "pruefen.sh"
+# Die langsamen Testdateien, die im Teil tests-2 laufen, wie sie in pruefen.sh stehen (#307).
+LANGSAME = re.search(r'^SLOW_TEST_FILES="([^"]*)"$', SCRIPT.read_text(encoding="utf-8"), re.M).group(1).split()
+LANGSAM = LANGSAME[0]
 
 FAKE_UV = f"""#!{sys.executable}
 import json, os, sys
 args = sys.argv[1:]
 here = os.environ["FAKE_DIR"]
 with open(os.path.join(here, "aufrufe.jsonl"), "a", encoding="utf-8") as log:
-    log.write(json.dumps({{"args": args, "async": os.environ.get("DJANGO_ALLOW_ASYNC_UNSAFE")}}) + "\\n")
+    log.write(json.dumps({{
+        "args": args,
+        "async": os.environ.get("DJANGO_ALLOW_ASYNC_UNSAFE"),
+        "browser": os.environ.get("RAUCHTEST_BROWSER"),
+    }}) + "\\n")
 config = json.load(open(os.path.join(here, "fake.json"), encoding="utf-8"))
 line = " ".join(args)
 
@@ -77,7 +84,7 @@ class Lauf:
         self.root.mkdir()
         self.fake_dir.mkdir()
         shutil.copy(SCRIPT, self.root / "pruefen.sh")
-        for name in ["tests/test_a.py", "tests/test_b.py", "rauchtests/test_r.py", "containertests/test_c.py"]:
+        for name in ["tests/test_a.py", "tests/test_b.py", *LANGSAME, "rauchtests/test_r.py", "containertests/test_c.py"]:
             path = self.root / name
             path.parent.mkdir(exist_ok=True)
             path.write_text("", encoding="utf-8")
@@ -86,9 +93,11 @@ class Lauf:
         uv.chmod(uv.stat().st_mode | stat.S_IXUSR)
         self.config = {"ausgabe": {}, "rot": []}
 
-    def start(self, *args):
+    def start(self, *args, env_extra=None):
         (self.fake_dir / "fake.json").write_text(json.dumps(self.config), encoding="utf-8")
-        env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_ACTIONS", "DJANGO_ALLOW_ASYNC_UNSAFE")}
+        hidden = ("GITHUB_ACTIONS", "GITHUB_STEP_SUMMARY", "DJANGO_ALLOW_ASYNC_UNSAFE", "RAUCHTEST_BROWSER", "PRUEFTEIL_ERGEBNIS")
+        env = {k: v for k, v in os.environ.items() if k not in hidden}
+        env.update(env_extra or {})
         env["PATH"] = f"{self.fake_dir}{os.pathsep}{env['PATH']}"
         env["FAKE_DIR"] = str(self.fake_dir)
         done = subprocess.run(  # noqa: S603 -- fester Aufruf der Wegwerf-Kopie des Skripts mit erfundenen Argumenten
@@ -292,3 +301,327 @@ def test_unbekannte_datei_oder_option_laesst_das_skript_mit_meldung_scheitern(la
     assert lauf.calls == [], "es darf noch keine Prüfung gelaufen sein"
     assert lauf.out.strip(), "es braucht eine Meldung"
     assert "Alle" not in lauf.out and "grün" not in lauf.out
+
+
+# --- Teile für GitHub (#307) -------------------------------------------------------------------
+# Auf GitHub laufen die Prüfungen gleichzeitig in Teilen auf eigenen Rechnern; jeder Teil ruft
+# `./pruefen.sh teil <name>` auf. Am Ende fasst `./pruefen.sh gesamt <ordner>` die Ergebnisse
+# zusammen. Lokal bleiben `./pruefen.sh` und `./pruefen.sh schnell` unverändert (Tests oben).
+
+TEILE = ["grund", "tests-1", "tests-2", "rauchtest-chromium", "rauchtest-firefox", "rauchtest-webkit"]
+
+
+def _teile(lauf):
+    lauf.start("teile")
+    assert lauf.code == 0, lauf.out
+    assert lauf.calls == [], "die Liste der Teile startet keine Prüfung"
+    return lauf.out.split()
+
+
+def _alle_teile(lauf, env_extra=None):
+    """Startet jeden Teil einmal und gibt je Teil die Aufrufe zurück."""
+    calls = {}
+    for teil in _teile(lauf):
+        lauf.start("teil", teil, env_extra=env_extra)
+        assert lauf.code == 0, (teil, lauf.out)
+        calls[teil] = lauf.calls
+        (lauf.fake_dir / "aufrufe.jsonl").unlink(missing_ok=True)
+    return calls
+
+
+def _testdateien(call):
+    return [arg for arg in call["args"] if arg.startswith("tests/")]
+
+
+def test_es_gibt_genau_sechs_teile(lauf):
+    assert _teile(lauf) == TEILE
+
+
+def test_die_teile_starten_zusammen_jede_pruefung_des_vollen_laufs_genau_einmal(lauf):
+    calls = _alle_teile(lauf)
+    alle = [call for teil in calls.values() for call in teil]
+
+    for words in (["lock", "--check"], ["ruff", "check"], ["manage.py", "check"], ["makemigrations", "--check"], ["pip-audit"], ["export"]):
+        treffer = [call for call in alle if all(word in call["args"] for word in words)]
+        assert len(treffer) == 1, words
+    container = [call for call in alle if "containertests" in call["args"]]
+    assert len(container) == 1
+    assert container[0]["args"][-2:] == ["containertests", "-rsfE"]
+    assert container[0] in calls["grund"]
+
+
+def test_jeder_teil_mit_rauchtest_startet_genau_einen_browser_mit_der_ausnahme_fuer_playwright(lauf):
+    calls = _alle_teile(lauf)
+
+    for browser in ["chromium", "firefox", "webkit"]:
+        (rauch,) = calls[f"rauchtest-{browser}"]
+        assert rauch["args"][-2:] == ["rauchtests", "-rsfE"]
+        assert (rauch["async"], rauch["browser"]) == ("true", browser)
+    for teil in ["grund", "tests-1", "tests-2"]:
+        assert all(call["browser"] is None and call["async"] is None for call in calls[teil]), teil
+
+
+def test_jede_testdatei_laeuft_in_genau_einem_der_beiden_testteile_auch_eine_neue(lauf):
+    for name in ["tests/test_neu.py", "tests/unterordner/test_tief.py", "tests/unterordner/tief_test.py"]:
+        path = lauf.root / name
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    # Keine Testdateien nach den Regeln von pytest: Hilfsdateien, Daten, Zwischenspeicher.
+    for name in ["tests/hilfe.py", "tests/conftest.py", "tests/daten/test_daten.json", "tests/__pycache__/test_a.cpython-313.pyc"]:
+        path = lauf.root / name
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("", encoding="utf-8")
+    calls = _alle_teile(lauf)
+
+    erste = [datei for call in calls["tests-1"] for datei in _testdateien(call)]
+    zweite = [datei for call in calls["tests-2"] for datei in _testdateien(call)]
+    # Die langsamen Dateien laufen in tests-2; alle übrigen, auch neue, in tests-1.
+    assert zweite == LANGSAME
+    assert sorted(erste) == sorted(
+        {"tests/test_a.py", "tests/test_b.py", "tests/test_neu.py", "tests/unterordner/test_tief.py", "tests/unterordner/tief_test.py"}
+    )
+    for teil in ["tests-1", "tests-2"]:
+        (call,) = calls[teil]
+        assert call["args"][-len(_testdateien(call)) - 2 : -len(_testdateien(call))] == ["pytest", "-rsfE"]
+
+
+def test_ein_testteil_ohne_dateien_startet_pytest_nicht_ohne_dateien(lauf):
+    # Ohne Dateien würde pytest alle Tests sammeln; dann liefen sie doppelt.
+    for name in ["test_a.py", "test_b.py"]:
+        (lauf.root / "tests" / name).unlink()
+    calls = _alle_teile(lauf)
+
+    assert [call for call in calls["tests-1"] if "pytest" in call["args"]] == []
+    assert [datei for call in calls["tests-2"] for datei in _testdateien(call)] == LANGSAME
+
+
+def test_fehlt_die_langsame_datei_ist_der_teil_tests_2_rot_statt_still_leer(lauf, tmp_path):
+    # Etwa nach einem Umbenennen: Dann liefe die Datei unter neuem Namen in tests-1, und tests-2
+    # prüfte nichts mehr, ohne dass es jemand merkt.
+    (lauf.root / LANGSAM).unlink()
+    datei = tmp_path / "ergebnis"
+    lauf.start("teil", "tests-2", env_extra={"PRUEFTEIL_ERGEBNIS": str(datei)})
+
+    assert lauf.code == 1
+    assert LANGSAM in lauf.out.split("Nicht bestanden:", 1)[1]
+    assert "ergebnis=rot" in datei.read_text(encoding="utf-8")
+
+
+def test_ein_teil_schreibt_sein_ergebnis_mit_gelaufenen_und_uebersprungenen_tests(lauf, tmp_path):
+    datei = tmp_path / "ergebnis" / "tests-1"
+    datei.parent.mkdir()
+    lauf.config["ausgabe"]["pytest-tests"] = "====== 7 passed, 2 skipped, 1 xfailed, 3 deselected in 1.20s ======"
+    lauf.start("teil", "tests-1", env_extra={"PRUEFTEIL_ERGEBNIS": str(datei)})
+
+    assert lauf.code == 0
+    assert datei.read_text(encoding="utf-8").split() == ["teil=tests-1", "ergebnis=gruen", "gelaufen=8", "uebersprungen=2"]
+    assert "Teil tests-1 grün" in lauf.out
+    assert "8 Tests gelaufen" in lauf.out
+    assert "2 übersprungen" in lauf.out
+
+
+def test_ein_roter_teil_schreibt_rot_und_endet_rot(lauf, tmp_path):
+    datei = tmp_path / "rauch"
+    lauf.config["rot"] = ["pytest-rauch"]
+    lauf.config["ausgabe"]["pytest-rauch"] = "====== 1 failed, 170 passed in 9.99s ======"
+    lauf.start("teil", "rauchtest-webkit", env_extra={"PRUEFTEIL_ERGEBNIS": str(datei)})
+
+    assert lauf.code == 1
+    assert datei.read_text(encoding="utf-8").split() == ["teil=rauchtest-webkit", "ergebnis=rot", "gelaufen=171", "uebersprungen=0"]
+    assert "Nicht bestanden:" in lauf.out
+    assert "Teil rauchtest-webkit grün" not in lauf.out
+
+
+def test_ein_teil_ohne_zusammenfassung_von_pytest_meldet_die_zahl_unbekannt(lauf, tmp_path):
+    datei = tmp_path / "ergebnis"
+    lauf.config["ausgabe"]["pytest-container"] = "Der Lauf endete ohne Zusammenfassung."
+    lauf.start("teil", "grund", env_extra={"PRUEFTEIL_ERGEBNIS": str(datei)})
+
+    inhalt = datei.read_text(encoding="utf-8").split()
+    assert "gelaufen=unbekannt" in inhalt and "uebersprungen=unbekannt" in inhalt
+
+
+def test_auf_github_meldet_ein_roter_teil_den_roten_test_wie_bisher(lauf):
+    lauf.config["rot"] = ["pytest-tests"]
+    lauf.config["ausgabe"]["pytest-tests"] = (
+        "FAILED tests/test_a.py::test_kaputt - AssertionError: erfunden\n====== 1 failed, 4 passed in 1.20s ======"
+    )
+    lauf.start("teil", "tests-1", env_extra={"GITHUB_ACTIONS": "true"})
+
+    assert lauf.code == 1
+    assert "::error title=ROT::Tests (pytest)" in lauf.out
+    assert "::warning title=Test::FAILED tests/test_a.py::test_kaputt" in lauf.out
+
+
+@pytest.mark.parametrize("args", [("teil",), ("teil", "tests-3"), ("teil", "tests-1", "tests/test_a.py"), ("teile", "x"), ("gesamt",)])
+def test_unbekannter_teil_oder_zusaetzliche_angaben_scheitern_ohne_pruefung(lauf, args):
+    lauf.start(*args)
+
+    assert lauf.code == 2
+    assert lauf.calls == []
+    assert lauf.out.startswith("pruefen.sh: ")
+
+
+def _ergebnisse(ordner, **abweichend):
+    ordner.mkdir(exist_ok=True)
+    for nummer, teil in enumerate(TEILE):
+        werte = {"teil": teil, "ergebnis": "gruen", "gelaufen": str(100 + nummer), "uebersprungen": str(nummer % 2)}
+        werte.update(abweichend.get(teil, {}))
+        if werte.get("fehlt"):
+            continue
+        (ordner / teil).write_text("".join(f"{k}={v}\n" for k, v in werte.items()), encoding="utf-8")
+    return ordner
+
+
+def test_gesamt_ist_gruen_wenn_alle_teile_gruen_sind_und_nennt_die_summen(lauf, tmp_path):
+    ordner = _ergebnisse(tmp_path / "ergebnisse")
+    lauf.start("gesamt", str(ordner))
+
+    assert lauf.code == 0, lauf.out
+    assert lauf.calls == [], "die Gesamtprüfung startet keine Prüfung"
+    assert "Gelaufene Tests: 615" in lauf.out  # 100 + 101 + … + 105
+    assert "Übersprungene Tests: 3" in lauf.out
+    assert "Alle Teile grün" in lauf.out
+    for teil in TEILE:
+        assert teil in lauf.out
+
+
+def test_gesamt_schreibt_die_summen_in_den_bericht_des_laufs(lauf, tmp_path):
+    ordner = _ergebnisse(tmp_path / "ergebnisse")
+    bericht = tmp_path / "bericht.md"
+    lauf.start("gesamt", str(ordner), env_extra={"GITHUB_STEP_SUMMARY": str(bericht)})
+
+    text = bericht.read_text(encoding="utf-8")
+    assert "615" in text and "Gelaufene Tests" in text
+    assert "Übersprungene Tests: 3" in text
+
+
+def test_gesamt_ist_rot_wenn_ein_teil_rot_ist_und_nennt_ihn(lauf, tmp_path):
+    ordner = _ergebnisse(tmp_path / "ergebnisse", **{"rauchtest-webkit": {"ergebnis": "rot"}})
+    lauf.start("gesamt", str(ordner))
+
+    assert lauf.code == 1
+    schluss = lauf.out.split("Nicht bestanden:", 1)[1]
+    assert "rauchtest-webkit" in schluss
+    assert "tests-1" not in schluss
+    assert "Alle Teile grün" not in lauf.out
+
+
+@pytest.mark.parametrize("teil", TEILE)
+def test_gesamt_ist_rot_wenn_ein_teil_fehlt_also_abgebrochen_oder_nicht_gelaufen_ist(lauf, tmp_path, teil):
+    ordner = _ergebnisse(tmp_path / "ergebnisse", **{teil: {"fehlt": True}})
+    lauf.start("gesamt", str(ordner))
+
+    assert lauf.code == 1
+    schluss = lauf.out.split("Nicht bestanden:", 1)[1]
+    assert teil in schluss
+    assert "abgebrochen oder nicht gelaufen" in schluss
+    assert "Alle Teile grün" not in lauf.out
+
+
+def test_gesamt_ist_rot_ohne_ergebnisordner(lauf, tmp_path):
+    lauf.start("gesamt", str(tmp_path / "gibt-es-nicht"))
+
+    assert lauf.code == 1
+    assert "Alle Teile grün" not in lauf.out
+
+
+@pytest.mark.parametrize("falsch", [{"ergebnis": "gelb"}, {"teil": "tests-2"}, {"gelaufen": "viele"}])
+def test_gesamt_ist_rot_bei_einem_unlesbaren_ergebnis(lauf, tmp_path, falsch):
+    ordner = _ergebnisse(tmp_path / "ergebnisse", **{"tests-1": falsch})
+    lauf.start("gesamt", str(ordner))
+
+    assert lauf.code == 1
+    assert "tests-1" in lauf.out.split("Nicht bestanden:", 1)[1]
+
+
+def test_gesamt_nennt_unbekannte_zahl_nie_als_null(lauf, tmp_path):
+    ordner = _ergebnisse(tmp_path / "ergebnisse", grund={"gelaufen": "unbekannt", "uebersprungen": "unbekannt"})
+    lauf.start("gesamt", str(ordner))
+
+    assert lauf.code == 0
+    assert "Gelaufene Tests: Zahl unbekannt" in lauf.out
+    assert "Übersprungene Tests: Zahl unbekannt" in lauf.out
+
+
+# --- Jeder echte Test in genau einem Teil (#307) -----------------------------------------------
+# Die Tests oben prüfen das Skript mit erfundenen Dateien. Hier zählt, was pytest in diesem Repo
+# wirklich sammelt: Jeder Test aus tests/ und rauchtests/ muss in genau einem Teil laufen, auch
+# einer, der erst später dazukommt. Gesammelt wird nur, nichts ausgeführt.
+
+BASE_DIR = SCRIPT.parent
+
+
+def _gesammelt(*args, env_extra=None):
+    env = {k: v for k, v in os.environ.items() if k != "RAUCHTEST_BROWSER"}
+    env.update(env_extra or {})
+    done = subprocess.run(  # noqa: S603 -- fester Aufruf von pytest dieses Repos, nur Sammeln
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *args],
+        cwd=BASE_DIR,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=300,
+        check=False,
+    )
+    return done.returncode, [line for line in done.stdout.splitlines() if "::" in line], done.stdout + done.stderr
+
+
+def test_jede_echte_testdatei_aus_tests_laeuft_in_genau_einem_testteil(tmp_path):
+    lauf = Lauf(tmp_path)
+    for name in ["test_a.py", "test_b.py"]:
+        (lauf.root / "tests" / name).unlink()
+    for path in (BASE_DIR / "tests").rglob("*"):
+        if path.is_file() and "__pycache__" not in path.parts:
+            kopie = lauf.root / path.relative_to(BASE_DIR)
+            kopie.parent.mkdir(parents=True, exist_ok=True)
+            kopie.write_text("", encoding="utf-8")
+    calls = _alle_teile(lauf)
+    teile = {teil: [datei for call in calls[teil] for datei in _testdateien(call)] for teil in ["tests-1", "tests-2"]}
+
+    code, gesammelt, ausgabe = _gesammelt()
+    assert code == 0, ausgabe[-3000:]
+    dateien = {nodeid.split("::", 1)[0] for nodeid in gesammelt}
+    assert len(gesammelt) > 1000, "pytest hat die Tests aus tests/ gesammelt"
+    zaehlung = {datei: sum(teil.count(datei) for teil in teile.values()) for datei in dateien}
+    assert {datei: n for datei, n in zaehlung.items() if n != 1} == {}, "jede Datei mit Tests in genau einem Teil"
+    # Umgekehrt bekommt kein Teil eine Datei, die pytest im vollen Lauf nicht sammelt (etwa in einem
+    # Ordner, den pytest auslässt); sonst liefen in den Teilen mehr Tests als vorher. Eine Testdatei
+    # ganz ohne Tests fiele hier ebenfalls auf (Befund G3 der unabhängigen Prüfung).
+    assert sorted(datei for liste in teile.values() for datei in liste) == sorted(dateien)
+
+
+def test_jeder_echte_rauchtest_laeuft_in_genau_einem_browserteil():
+    code, alle, ausgabe = _gesammelt("rauchtests")
+    assert code == 0, ausgabe[-3000:]
+    assert len(alle) > 100
+
+    je_teil = {}
+    for browser in ["chromium", "firefox", "webkit"]:
+        code, ids, ausgabe = _gesammelt("rauchtests", env_extra={"RAUCHTEST_BROWSER": browser})
+        assert code == 0, (browser, ausgabe[-3000:])
+        je_teil[browser] = ids
+        andere = {"chromium", "firefox", "webkit"} - {browser}
+        assert not [nodeid for nodeid in ids if any(f"[{name}" in nodeid for name in andere)], browser
+
+    zaehlung = {nodeid: sum(ids.count(nodeid) for ids in je_teil.values()) for nodeid in alle}
+    assert {nodeid: n for nodeid, n in zaehlung.items() if n != 1} == {}, "jeder Rauchtest in genau einem Teil"
+    assert sorted(nodeid for ids in je_teil.values() for nodeid in ids) == sorted(alle), "kein Test kommt dazu"
+
+
+def test_ein_unbekannter_browser_fuer_den_rauchtest_bricht_mit_meldung_ab():
+    code, ids, ausgabe = _gesammelt("rauchtests", env_extra={"RAUCHTEST_BROWSER": "netscape"})
+
+    assert code != 0
+    assert ids == []
+    assert "RAUCHTEST_BROWSER" in ausgabe
+
+
+def test_die_meldung_bei_falschem_aufruf_bleibt_lokal_wie_bisher(lauf):
+    # Akzeptanzkriterium von #307: lokal dieselben Meldungen (Befund G1 der unabhängigen Prüfung).
+    lauf.start("langsam")
+
+    assert lauf.out.splitlines() == [
+        "pruefen.sh: Unbekannte Option: langsam",
+        "Aufruf: ./pruefen.sh   oder   ./pruefen.sh schnell [Testdatei aus tests/ oder rauchtests/ ...]",
+    ]
