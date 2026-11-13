@@ -331,6 +331,14 @@ def test_begrenzung_auf_mitwirkende_und_einstellungen_der_pruefablaeufe_aendern_
         "gh api -X PATCH repos/sebivtt/x --input einstellungen.json",
         # Kette und Vorsatz
         "cd x && timeout 30 gh repo edit --visibility private",
+        # zweiter Weg der API zu einem Repo und Adresse wie bei GitHub Enterprise
+        "gh api -X PUT repositories/123/rulesets/1 -f enforcement=disabled",
+        "gh api -X DELETE api/v3/repos/sebivtt/x/rulesets/1",
+        # Unabhängige Prüfung, Befunde 2 und 3: -i mit -X zusammengezogen, Protokoll groß, Anker in der Adresse
+        "gh api -iXDELETE repos/sebivtt/x/rulesets/1",
+        "gh api -iX DELETE repos/sebivtt/x/rulesets/1",
+        "gh api -X DELETE HTTPS://api.github.com/repos/sebivtt/x/rulesets/1",
+        "gh api -X POST 'repos/sebivtt/x/rulesets#x' -f name=Leer",
     ],
 )
 def test_einstellungen_in_anderer_schreibweise_werden_ebenfalls_abgewiesen(command):
