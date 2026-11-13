@@ -131,6 +131,28 @@ def test_fehlt_eine_ergebnisdatei_ist_die_auswertung_rot(tmp_path, capsys):
     assert "alt-1.json" in capsys.readouterr().out
 
 
+def test_ist_der_alte_stand_rot_steht_die_seite_nicht_als_neue_seite_da(tmp_path, capsys):
+    """Befund B2 der unabhängigen Prüfung: ohne Zeiten vom alten Stand gibt es keinen Vergleich, keine neue Seite."""
+    old = write(tmp_path, "alt-1.json", {})
+    new = write(tmp_path, "neu-1.json", {"Seite": [0.5]})
+
+    code = main(["auswerten", "--phase", "P3", "--vorige", "phasenende-p2", "--commit", "abc1234",
+                 "--alt", old, "--neu", new, "--alt-rot"])
+
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "| Seite | 0,50 s | – | kein Wert, alter Stand rot | im Rahmen |" in out
+    assert "neue Seite" not in out
+
+
+def test_ergebnis_passt_immer_zur_angezeigten_zahl():
+    """Befund B5 der unabhängigen Prüfung: Geprüft wird mit den Werten, die im Ergebnis stehen."""
+    rows = rows_by_page({"Knapp 25 %": [1.2504], "Knapp 2 s": [1.996]}, {"Knapp 25 %": [1.0]})
+
+    assert rows["Knapp 25 %"]["verdict"] == "gruen"  # angezeigt „+25,0 %“
+    assert rows["Knapp 2 s"]["verdict"] == "rot"  # angezeigt „2,00 s“
+
+
 # ---------- Markierung ----------
 
 
@@ -151,6 +173,7 @@ def test_eingaben_passen_zur_phase(phase, previous):
     ("p3", "phasenende-p2"),
     ("P3; echo x", "phasenende-p2"),
     ("P3", "main"),
+    ("P3\u0663", "phasenende-p32"),  # Ziffer aus einer anderen Schrift (Befund B8 der unabhängigen Prüfung)
 ])
 def test_falsche_eingaben_brechen_ab(phase, previous):
     with pytest.raises(ValueError):
@@ -200,10 +223,17 @@ def test_eingaben_kommen_nur_ueber_umgebungsvariablen_in_die_befehle():
 # ---------- Seiten mit Personen ohne Messung ----------
 
 
-def test_der_test_meldet_seiten_mit_personen_ohne_messung():
-    unmeasured = leistungstest.unmeasured_pages()
+def test_der_test_meldet_seiten_mit_personen_ohne_messung(monkeypatch):
+    # Ohne Eintrag in PAGES oder NOT_MEASURED ist jede Seite mit Personen gemeldet, ohne Personen keine.
+    monkeypatch.setattr(leistungstest, "PAGES", {})
+    monkeypatch.setattr(leistungstest, "NOT_MEASURED", {})
+    everything = leistungstest.unmeasured_pages()
+    assert {"organisation", "profile"} <= set(everything)
+    assert "building_blocks" not in everything
+    monkeypatch.undo()
 
-    assert "event_page" in unmeasured
+    unmeasured = leistungstest.unmeasured_pages()
+    assert set(unmeasured) < set(everything)
     for measured in ("organisation", "organisation_unit", "organisation_suggestions", "organisation_admit_search"):
         assert measured not in unmeasured
     assert "profile" not in unmeasured, "zeigt nur die angemeldete Person selbst"
@@ -258,3 +288,13 @@ def test_phase_steuern_nennt_den_leistungstest_am_phasenende():
         assert f"**{step}" in end, step
     assert "phasenende-p" in end
     assert "docs/leistungstest.md" in end
+
+
+def test_die_steuerungssession_darf_was_der_skill_ihr_am_abschluss_zuweist():
+    """Befund B1 der unabhängigen Prüfung: Messlauf und Markierung gehören zur Steuerungssession (Text von #145)."""
+    text = SKILL.read_text(encoding="utf-8")
+    allowed = next(line for line in text.splitlines() if "Was die Steuerungssession darf" in line)
+    end = text.split("## 5. Abschluss", 1)[1]
+
+    assert "Abschluss" in allowed
+    assert "startet die Steuerungssession" in end
