@@ -291,7 +291,8 @@ ALLOWED_FILES = {
     # Die Regeln beim Speichern und Löschen einer Rolle; sie zeigen nichts an.
     "roles/models.py",
     # Die Regeln beim Speichern verwalteter Personen und ihrer angezeigten Leitungsrollen, auch beim
-    # Ringwechsel eines Stammes (#99); sie zeigen nichts an.
+    # Ringwechsel eines Stammes (#99). Namen stehen nur in Ablehnungen für Leitungen, die die Person ohnehin
+    # sehen (unabhängige Prüfung, Befund B3); wie bei roles/models.py.
     "persons/models.py",
     # Der Abgleich mit Keycloak beim Login: ändert nur das Konto, das sich gerade anmeldet,
     # und zeigt nichts an (#76).

@@ -79,7 +79,10 @@ class ManagedPerson(models.Model):
         """
         if Unit.objects.filter(pk=self.unit_id, kind=Unit.Kind.FEDERATION).exists():
             raise ValidationError(texts.NOT_IN_FEDERATION, code="federation")
-        if self.pk is not None:
+        stored = ManagedPerson.objects.filter(pk=self.pk).values_list("unit_id", flat=True).first() if self.pk else None
+        if stored is not None and stored != self.unit_id:
+            # Nur bei einem Wechsel der Organisation; sonst bliebe nach einer Lücke anderswo selbst das Bearbeiten
+            # der Angaben gesperrt (unabhängige Prüfung, Befund B1).
             target = Unit.objects.select_related("parent__parent__parent__parent").get(pk=self.unit_id)
             blocking = self.leads_outside(target)
             if blocking:
@@ -177,8 +180,9 @@ def roles_blocking(person: ManagedPerson, blocking: list[DisplayedLead], target:
 def displayed_off_path(troop: Unit, new_parent: Unit) -> list[tuple[ManagedPerson, list[DisplayedLead]]]:
     """Wessen angezeigte Leitungsrollen nach einem Ringwechsel von `troop` nicht mehr auf dem Pfad lägen (#99, LG5).
 
-    Wie `roles.models.leads_off_path()` für Personen mit Konto (OG5): Gezählt werden nur Rollen im Stamm und
-    in seinen Gruppen, die heute auf dem Pfad liegen und es danach nicht mehr täten. Gibt je betroffener Person
+    Wie `roles.models.leads_off_path()` für Personen mit Konto (OG5): Betroffen sind Rollen im Stamm und in seinen
+    Gruppen und alle Rollen von Personen, die zum Stamm oder einer seiner Gruppen gehören. Gezählt werden nur
+    Rollen, die heute auf dem Pfad liegen und es danach nicht mehr täten. Gibt je betroffener Person
     sie und diese Rollen zurück, nach Namen geordnet. Ändert nichts; nur innerhalb der Transaktion mit gesperrtem
     Bund verlässlich.
     """
@@ -189,7 +193,10 @@ def displayed_off_path(troop: Unit, new_parent: Unit) -> list[tuple[ManagedPerso
     after = {**before, troop.pk: (new_parent.pk, before[troop.pk][1])}
     below = {troop.pk} | {pk for pk, (parent, _kind) in before.items() if parent == troop.pk}
     found: dict[int, tuple[ManagedPerson, list[DisplayedLead]]] = {}
-    leads = DisplayedLead.objects.filter(unit_id__in=below).select_related("person", "unit__parent").order_by(
+    # Rollen im Stamm und darunter, und alle Rollen von Personen, die zum Stamm oder einer seiner Gruppen gehören,
+    # etwa als angezeigte Ringleitung darüber (unabhängige Prüfung, Befund B1).
+    involved = Q(unit_id__in=below) | Q(person__unit_id__in=below)
+    leads = DisplayedLead.objects.filter(involved).select_related("person", "unit__parent").order_by(
         lead_order(), "unit__name")
     for lead in leads:
         on_before = _lies_on(before, lead.person.unit_id, lead.unit_id)
