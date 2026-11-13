@@ -8,6 +8,8 @@ schickt den Dialog ab, der Name bleibt beim Tippen wie am Handy mit Wortvorschla
 Meldung erscheint, auch ohne Skript, und die Seiten bestehen die Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_einheiten_anlegen.py. Alle Namen sind erfunden.
 """
 
+import re
+
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
@@ -115,6 +117,32 @@ def test_am_pc_nur_mit_der_tastatur_umbenennen_und_doppelten_namen_sehen(pc):
     pc.keyboard.press("Enter")
     expect(_dialog(pc).locator(".invalid-feedback")).to_have_text("Die Gruppe ‚Sippe Habichte‘ gibt es in Walhall schon.")
     assert run_axe(pc) == []
+
+
+def test_am_pc_leerer_name_zeigt_die_meldung_des_tools_statt_der_blase_des_browsers(pc):
+    """#296, N1 (Knopf „Anlegen“) und N2 (Enter im Feld „Name“ beim Bearbeiten): Der Browser hält das leere
+    Pflichtfeld nicht selbst an; die Meldung des Tools steht rot unter dem Feld und ist mit ihm verbunden."""
+    login(pc)
+    units = _boreas("walhall")
+
+    pc.goto(f"{_page_of(units['walhall'])}anlegen/")
+    pc.locator("dialog .btn-primary").click()
+    field = pc.get_by_label("Name (Pflicht)")
+    expect(_dialog(pc).locator(".invalid-feedback")).to_have_text("Der Name darf nicht leer sein.")
+    expect(field).to_have_attribute("aria-invalid", "true")
+    # Die Meldung steht zuerst in der Beschreibung des Feldes, danach die Zahl der Zeichen.
+    expect(field).to_have_accessible_description(re.compile(r"^Der Name darf nicht leer sein\."))
+    assert _children(units["walhall"]) == {"Sippe Falken"}
+    assert run_axe(pc) == []
+
+    pc.goto(f"{_page_of(units['falken'])}bearbeiten/")
+    field = pc.get_by_label("Name (Pflicht)")
+    field.fill("")
+    field.press("Enter")
+    expect(_dialog(pc).locator(".invalid-feedback")).to_have_text("Der Name darf nicht leer sein.")
+    expect(field).to_have_attribute("aria-invalid", "true")
+    expect(_dialog(pc).locator("h2")).to_have_text("Sippe Falken bearbeiten")
+    assert Unit.objects.get(pk=units["falken"].pk).name == "Sippe Falken"
 
 
 def test_am_pc_escape_fuehrt_zurueck_und_legt_nichts_an(pc):
