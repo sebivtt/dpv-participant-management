@@ -1,4 +1,4 @@
-"""Tests für das Prüfskript `pruefen.sh` (#235, `CLAUDE.md`, Ablauf je Aufgabe Nr. 4; Teile #307).
+"""Tests für das Prüfskript `pruefen.sh` (#235, `CLAUDE.md`, Ablauf je Aufgabe Nr. 4; Teile #307; Katalogtests #304).
 
 Das Skript läuft hier in einer Wegwerf-Kopie. Statt `uv` steht im Suchpfad ein Platzhalter: Er
 schreibt jeden Aufruf mit seinen Argumenten in eine Protokolldatei, gibt erfundene pytest-
