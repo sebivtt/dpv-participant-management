@@ -20,6 +20,8 @@ from pathlib import Path
 import pytest
 
 SCRIPT = Path(__file__).resolve().parent.parent / "pruefen.sh"
+# Die Datei, die auf GitHub allein mehrere Minuten braucht und deshalb im Teil tests-2 läuft (#307).
+LANGSAM = "tests/test_rechte_ohne_seite.py"
 
 FAKE_UV = f"""#!{sys.executable}
 import json, os, sys
@@ -81,7 +83,7 @@ class Lauf:
         self.root.mkdir()
         self.fake_dir.mkdir()
         shutil.copy(SCRIPT, self.root / "pruefen.sh")
-        for name in ["tests/test_a.py", "tests/test_b.py", "rauchtests/test_r.py", "containertests/test_c.py"]:
+        for name in ["tests/test_a.py", "tests/test_b.py", LANGSAM, "rauchtests/test_r.py", "containertests/test_c.py"]:
             path = self.root / name
             path.parent.mkdir(exist_ok=True)
             path.write_text("", encoding="utf-8")
@@ -372,9 +374,11 @@ def test_jede_testdatei_laeuft_in_genau_einem_der_beiden_testteile_auch_eine_neu
 
     erste = [datei for call in calls["tests-1"] for datei in _testdateien(call)]
     zweite = [datei for call in calls["tests-2"] for datei in _testdateien(call)]
-    erwartet = {"tests/test_a.py", "tests/test_b.py", "tests/test_neu.py", "tests/unterordner/test_tief.py", "tests/unterordner/tief_test.py"}
-    assert sorted(erste + zweite) == sorted(erwartet), "jede Datei genau einmal"
-    assert erste and zweite, "beide Teile bekommen Dateien"
+    # Die langsame Datei läuft allein in tests-2; alle übrigen, auch neue, in tests-1.
+    assert zweite == [LANGSAM]
+    assert sorted(erste) == sorted(
+        {"tests/test_a.py", "tests/test_b.py", "tests/test_neu.py", "tests/unterordner/test_tief.py", "tests/unterordner/tief_test.py"}
+    )
     for teil in ["tests-1", "tests-2"]:
         (call,) = calls[teil]
         assert call["args"][-len(_testdateien(call)) - 2 : -len(_testdateien(call))] == ["pytest", "-rsfE"]
@@ -382,15 +386,24 @@ def test_jede_testdatei_laeuft_in_genau_einem_der_beiden_testteile_auch_eine_neu
 
 def test_ein_testteil_ohne_dateien_startet_pytest_nicht_ohne_dateien(lauf):
     # Ohne Dateien würde pytest alle Tests sammeln; dann liefen sie doppelt.
-    (lauf.root / "tests" / "test_b.py").unlink()
+    for name in ["test_a.py", "test_b.py"]:
+        (lauf.root / "tests" / name).unlink()
     calls = _alle_teile(lauf)
 
-    gesamt = [datei for teil in ["tests-1", "tests-2"] for call in calls[teil] for datei in _testdateien(call)]
-    assert gesamt == ["tests/test_a.py"]
-    for teil in ["tests-1", "tests-2"]:
-        for call in calls[teil]:
-            if "pytest" in call["args"]:
-                assert _testdateien(call), teil
+    assert [call for call in calls["tests-1"] if "pytest" in call["args"]] == []
+    assert [datei for call in calls["tests-2"] for datei in _testdateien(call)] == [LANGSAM]
+
+
+def test_fehlt_die_langsame_datei_ist_der_teil_tests_2_rot_statt_still_leer(lauf, tmp_path):
+    # Etwa nach einem Umbenennen: Dann liefe die Datei unter neuem Namen in tests-1, und tests-2
+    # prüfte nichts mehr, ohne dass es jemand merkt.
+    (lauf.root / LANGSAM).unlink()
+    datei = tmp_path / "ergebnis"
+    lauf.start("teil", "tests-2", env_extra={"PRUEFTEIL_ERGEBNIS": str(datei)})
+
+    assert lauf.code == 1
+    assert LANGSAM in lauf.out.split("Nicht bestanden:", 1)[1]
+    assert "ergebnis=rot" in datei.read_text(encoding="utf-8")
 
 
 def test_ein_teil_schreibt_sein_ergebnis_mit_gelaufenen_und_uebersprungenen_tests(lauf, tmp_path):
