@@ -564,8 +564,9 @@ class Rights:
         #89). Wer noch nirgends Mitglied ist, wird Mitglied der Einheit (B7, B8). Die Rolle gilt
         sofort und steht im Protokoll (#91). Gleichzeitige Benennungen derselben Person laufen
         nacheinander, weil ihr Konto bis zum Ende gesperrt ist; die zweite sieht „schon …“ (BV12).
-        Gesperrt ist auch das eigene Konto, und das Recht wird unter der Sperre noch einmal geprüft:
-        Wer gerade als Leitung entfernt wird, benennt danach niemanden mehr (#191).
+        Gesperrt ist auch das eigene Konto, dann der Bund, und das Recht wird unter der Sperre noch einmal
+        geprüft: Wer gerade als Leitung entfernt wird, benennt danach niemanden mehr (#191), und wer nur
+        über einen Ring Recht hatte, aus dem die Einheit gleichzeitig wechselt, auch nicht (#295).
         """
         if not self.may_appoint(unit) or not is_key(person_key):
             raise Http404
@@ -576,6 +577,7 @@ class Rights:
             if found is None:
                 raise Http404
             me = self._lock_with(found)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             if not fresh.may_appoint(unit):
                 raise Http404
@@ -656,7 +658,8 @@ class Rights:
         die Mitgliedschaft gilt sofort und steht im Protokoll (#91). Niemand nimmt sich selbst auf
         (EP-08); eine Leitung ist ohnehin schon Mitglied. Gleichzeitige Aufnahmen derselben Person
         laufen nacheinander, weil ihr Konto bis zum Ende gesperrt ist: Die zweite sieht die erste
-        Mitgliedschaft (PG4). Das Recht wird unter der Sperre noch einmal geprüft, wie bei `appoint()`.
+        Mitgliedschaft (PG4). Das Recht wird unter der Sperre des Bundes noch einmal geprüft, wie bei
+        `appoint()` (#295).
         """
         if not self.may_admit(unit) or not is_key(person_key):
             raise Http404
@@ -666,6 +669,7 @@ class Rights:
             if found is None:
                 raise Http404
             me = self._lock_with(found)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             if not fresh.may_admit(unit):
                 raise Http404
@@ -741,9 +745,10 @@ class Rights:
         Wahl, ohne Recht, mit einer fremden Kennung oder wenn die Mitgliedschaft schon nicht mehr in
         dieser Organisation besteht, ist das Ergebnis „nicht gefunden“, und nichts ändert sich. Es enden
         die Leitungsrollen aus `Role.ending_leads()`, jede mit Eintrag im Protokoll (#91); eine Nachricht
-        gibt es nicht. Gesperrt sind das eigene Konto und das der Person, dann wird das Recht unter der
-        Sperre noch einmal geprüft: Von gleichzeitigen Änderungen an derselben Mitgliedschaft gelingt
-        genau eine, die zweite sieht „nicht gefunden“ (PG3).
+        gibt es nicht. Gesperrt sind das eigene Konto und das der Person, dann der Bund, und das Recht wird
+        unter der Sperre noch einmal geprüft: Von gleichzeitigen Änderungen an derselben Mitgliedschaft
+        gelingt genau eine, die zweite sieht „nicht gefunden“ (PG3); wechselt die Organisation gleichzeitig
+        den Ring, gilt der Stand danach, auch für das Ziel von „hoch“ (#295).
         """
         if self.user is None or choice not in EXPEL_CHOICES or not is_key(person_key):
             raise Http404
@@ -755,6 +760,7 @@ class Rights:
             if owner is None:
                 raise Http404
             me = self._lock_with(owner)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             membership = fresh._expellable(unit, person_key)
             user = membership.user
@@ -814,8 +820,9 @@ class Rights:
         besteht, ist „nicht gefunden“, und nichts ändert sich. Läge danach eine Leitungsrolle der
         Person nicht mehr auf ihrem Pfad, lehnt das Tool ab und nennt die Rollen (PK-25, #65 N4);
         Leitungsrollen enden beim Verschieben nie. Der Wechsel steht im Protokoll (#91). Gesperrt sind
-        das eigene Konto und das der Person, dann wird das Recht unter der Sperre noch einmal geprüft:
-        Von gleichzeitigen Änderungen an derselben Mitgliedschaft gelingt genau eine.
+        das eigene Konto und das der Person, dann der Bund, und das Recht wird unter der Sperre noch
+        einmal geprüft: Von gleichzeitigen Änderungen an derselben Mitgliedschaft gelingt genau eine, und
+        ein gleichzeitiger Ringwechsel ist entweder schon gespeichert oder wartet (#295).
         """
         if self.user is None or not is_key(person_key) or not is_key(target_key):
             raise Http404
@@ -824,6 +831,7 @@ class Rights:
             if owner is None:
                 raise Http404
             me = self._lock_with(owner)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             membership = fresh._movable(unit, person_key)
             target = next((entry for entry in self.move_targets(unit) if entry.key == target_key), None)
@@ -954,8 +962,9 @@ class Rights:
         Adresse (MV4). `creation_key` ist die Kennung des Dialogs: Schickt jemand denselben Dialog zweimal
         ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Person, und die zweite
         Antwort hat keine Meldung (MG7). Ohne Recht oder mit einer Kennung in falscher Form „nicht
-        gefunden“. Gesperrt ist das eigene Konto, und das Recht wird darunter frisch geprüft: Endet das
-        Einspringen, während der Dialog offen ist, wird niemand angelegt (MW3).
+        gefunden“. Gesperrt sind das eigene Konto und der Bund, und das Recht wird darunter frisch geprüft:
+        Endet das Einspringen, während der Dialog offen ist, wird niemand angelegt (MW3), auch nicht, weil
+        die Organisation gleichzeitig den Ring wechselt (#295).
 
         Ohne `values["consent"]` legt es niemanden an (DSG-02, #98). Die Bestätigung trägt das eigene Konto
         und die Uhrzeit des Servers, nie Angaben aus dem Formular (VP-11), und steht in derselben Zeile wie
@@ -967,6 +976,7 @@ class Rights:
             raise ValidationError(person_texts.CONSENT_MISSING, code="consent")
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             if not fresh.may_add_managed(unit):
                 raise Http404
@@ -995,14 +1005,16 @@ class Rights:
         gespeichert, wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Person, wie sie
         jetzt ist, und dem Satz „… wurde inzwischen von jemand anderem geändert. …“ (MG6). Ohne Recht, mit
         einer fremden Kennung oder einer Person einer anderen Organisation „nicht gefunden“ (VP-03, MV4,
-        MV5). Gesperrt sind das eigene Konto und die Person, und das Recht wird darunter frisch geprüft:
-        Wer gerade als Leitung entfernt wurde, speichert nichts mehr, auch im schon offenen Dialog (MW1,
-        VP-04); von zwei gleichzeitigen Änderungen gelingt genau eine.
+        MV5). Gesperrt sind das eigene Konto, der Bund und die Person, und das Recht wird darunter frisch
+        geprüft: Wer gerade als Leitung entfernt wurde, speichert nichts mehr, auch im schon offenen Dialog
+        (MW1, VP-04), ebenso wer nur über einen Ring Recht hatte, aus dem die Organisation gleichzeitig
+        wechselt (#295); von zwei gleichzeitigen Änderungen gelingt genau eine.
         """
         if self.user is None or not is_key(person_key):
             raise Http404
         with transaction.atomic():
             me = self._lock_with(self.user.pk)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
             if str(entry.version) != str(version):
@@ -1329,9 +1341,10 @@ class Rights:
         Ohne Recht, mit einer fremden Kennung oder wenn die Rolle schon entfernt ist, ist das Ergebnis
         „nicht gefunden“, und nichts ändert sich. Die Mitgliedschaft bleibt immer (C7, CV8, #89). Die
         Änderung steht im Protokoll, eine Nachricht gibt es nicht (#91, ROL-04). Gesperrt sind das
-        eigene Konto und das der Person mit der Rolle, dann wird das Recht unter der Sperre noch einmal
-        geprüft: Entfernen sich zwei Leitungen gleichzeitig gegenseitig, gelingt nur die erste
-        Änderung (CV5); entfernen zwei dieselbe Leitung, sieht die zweite „nicht gefunden“ (CV6).
+        eigene Konto und das der Person mit der Rolle, dann der Bund, und das Recht wird unter der Sperre
+        noch einmal geprüft: Entfernen sich zwei Leitungen gleichzeitig gegenseitig, gelingt nur die erste
+        Änderung (CV5); entfernen zwei dieselbe Leitung, sieht die zweite „nicht gefunden“ (CV6); bei
+        einem gleichzeitigen Ringwechsel gilt der Stand danach (#295).
         """
         if self.user is None or not is_key(role_key):
             raise Http404
@@ -1340,6 +1353,7 @@ class Rights:
             if owner is None:
                 raise Http404
             me = self._lock_with(owner)
+            unit = self._lock_structure(unit)
             fresh = Rights(me)
             role = fresh._removable(unit, role_key)
             shown = fresh._describe(role)
@@ -1495,7 +1509,9 @@ class Rights:
     def _lock_structure(self, unit: Unit) -> Unit:
         """Sperrt den Bund der Organisation und dann sie selbst; gibt sie frisch zurück (#95).
 
-        Dieselbe Reihenfolge wie beim Speichern einer Rolle oder Einheit: Konten, Bund, Einheit.
+        Dieselbe Reihenfolge wie beim Speichern einer Rolle oder Einheit: Konten, Bund, Einheit. Jeder
+        Handgriff, dessen Recht vom Ring abhängen kann, ruft das vor der Prüfung des Rechts auf: Ein
+        gleichzeitiger Ringwechsel ist danach entweder schon gespeichert oder wartet, nie halb (#95, #295).
         """
         bund = self._association_of(unit.pk)
         if bund is not None:
