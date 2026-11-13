@@ -331,7 +331,7 @@ Diese Anleitung funktioniert ohne KI und ohne Terminal. Alles geschieht in der V
 
 **Einmalig: Test-Realm anlegen** (der Admin des DPV oder Sebastian mit seinem Admin-Konto)
 
-K1. Sebastian oder der Admin öffnet die Datei `dpv-test-realm.json` auf GitHub (Ordner `testumgebung/keycloak/`) und lädt sie mit „Download raw file“ herunter; das Repo ist öffentlich, ein Konto bei GitHub ist dafür nicht nötig (#310).
+K1. Sebastian oder der Admin öffnet die Datei `dpv-test-realm.json` auf GitHub (Ordner `testumgebung/keycloak/`) und lädt sie mit „Download raw file“ herunter; sobald das Repo öffentlich ist (#310), ist dafür kein Konto bei GitHub nötig.
 K2. In der Verwaltung von Keycloak links „Manage realms“ öffnen, dann „Create realm“.
 K3. Unter „Resource file“ auf „Browse...“ klicken, die Datei aus K1 auswählen und „Create“ klicken.
    Danach: Unter „Manage realms“ steht `dpv-test`. Darin stehen unter „Users“ genau vier Konten: `erika.testfrau`, `max.testmann`, `ohne.name` und `ohne.nachname`.
