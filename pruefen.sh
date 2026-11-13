@@ -27,7 +27,6 @@ PARTS="grund tests-1 tests-2 rauchtest-chromium rauchtest-firefox rauchtest-webk
 usage_error() {
     echo "pruefen.sh: $1" >&2
     echo "Aufruf: ./pruefen.sh   oder   ./pruefen.sh schnell [Testdatei aus tests/ oder rauchtests/ ...]" >&2
-    echo "Auf GitHub: ./pruefen.sh teil <name>, ./pruefen.sh teile, ./pruefen.sh gesamt <ordner>" >&2
     exit 2
 }
 

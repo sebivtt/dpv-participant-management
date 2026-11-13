@@ -177,6 +177,10 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    # Lesen der Ergebnisse aller Teile über die Schnittstelle von GitHub.
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -184,14 +188,18 @@ jobs:
           # Nur das Skript; die Gesamtprüfung braucht weder Python noch Pakete.
           sparse-checkout: pruefen.sh
           sparse-checkout-cone-mode: false
+      # Über die Schnittstelle für den ganzen Lauf statt actions/download-artifact: Nach „Re-run
+      # failed jobs“ müssen auch die Ergebnisse der grünen Teile aus dem ersten Versuch da sein.
+      # Fehlt ein Ergebnis, meldet das der nächste Schritt für diesen Teil.
       - name: Ergebnisse der Teile holen
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        # Fehlt jedes Ergebnis, meldet das der nächste Schritt je Teil.
-        continue-on-error: true
-        with:
-          pattern: ergebnis-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/ergebnisse
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/ergebnisse"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'ergebnis-*' --dir "$RUNNER_TEMP/geholt" ||
+            echo "::warning title=Ergebnisse::Nicht alle Ergebnisse ließen sich holen; fehlende Teile sind gleich rot."
+          # Je Teil eine Datei mit seinem Namen, egal in welchem Unterordner gh sie ablegt.
+          [ ! -d "$RUNNER_TEMP/geholt" ] || find "$RUNNER_TEMP/geholt" -type f -exec cp {} "$RUNNER_TEMP/ergebnisse/" \;
       - name: Ergebnisse aller Teile zusammenfassen
         run: ./pruefen.sh gesamt "$RUNNER_TEMP/ergebnisse"
       - name: Alle Teile beendet und grün
