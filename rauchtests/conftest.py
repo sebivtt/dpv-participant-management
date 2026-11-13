@@ -36,6 +36,9 @@ from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playw
 
 from tests.check_ports import PORT_RELEASE_SECONDS, SMOKE_TEST_LOCK_PORT, SMOKE_TEST_PORT, fail_if_busy, tell, wait_for_turn
 
+# Das Kennzeichen der Tests zum Bausteinkatalog für den schnellen Lauf (#304), wie in tests/.
+pytest_plugins = ["tests.katalogtests"]
+
 # Keycloak lässt die Rückkehr zu diesem Port zu (dev/keycloak/dpv-realm.json), deshalb läuft das
 # Tool im Rauchtest genau dort. pytest-django liest die Adresse beim ersten Start.
 os.environ["DJANGO_LIVE_TEST_SERVER_ADDRESS"] = f"localhost:{SMOKE_TEST_PORT}"
