@@ -41,6 +41,7 @@ from access.keys import new_key
 from access.rights import Rights
 from core import texts
 from core.actors import SERVER_COMMAND
+from core.management import mass_data
 from persons.models import ManagedPerson
 from roles.models import LEADS_IN_UNITS, Role, RoleKind
 from units.models import Kind, Unit
@@ -129,6 +130,10 @@ class Command(BaseCommand):
 
     help = "Erfundene Testdaten anlegen; leert dafür die Datenbank bis auf die Konten. Nur lokal und in der Testumgebung."
 
+    def add_arguments(self, parser):
+        parser.add_argument("--mass-data", action="store_true",
+                            help="Zusätzlich die Massendaten für den Leistungstest anlegen (#104).")
+
     def handle(self, *args, **options):
         local = _allowed_environment()
         realm = _realm() if local else {}
@@ -146,6 +151,8 @@ class Command(BaseCommand):
                 if not Role.objects.filter(user=user, kind=RoleKind.ADMIN).exists():
                     Role(user=user, kind=RoleKind.ADMIN).save(by=SERVER_COMMAND)
             without_creator = _managed(units, accounts)
+            if options["mass_data"]:
+                mass_data.create(units["Pfadfinderbund Boreas"], accounts.get("ohne.nachname"))
         if admins:
             notes.append(texts.ADMINS_KEPT % {"usernames": ", ".join(user.username for user in admins)})
         if missing:
