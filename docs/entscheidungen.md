@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Testdaten für den Leistungstest | 13.11.2026, #104, Nr. 1 und 2 | 13.11.2026, #103, Nr. 4 und 5 (nur für die Massendaten des Zusatzes `--mass-data`) |
 | Sperre für rote Pull Requests | 13.11.2026, #16, Nr. 1 | 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur der Satz, dass die Regel die Sperre durch GitHub ersetzt); 03.11.2026, #239, und 03.11.2026, #237, „Grenzen“ (je nur der Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“) |
 | Sichtbarkeit des Repos | 13.11.2026, #310, Nr. 1 | 20.10.2026, „Offene Punkte aus der Bestandsaufnahme“, Nr. 4 |
 | Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht) |
@@ -40,6 +41,29 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-13 · Probe des Leistungstests: Massendaten in einem Rutsch, Konten ohne Login, Messung nur am Phasenende (#104, NFA-05)
+
+**Entscheidung** (Sebastian in der Klärung von #104 und #145 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/104#issuecomment-6862671404); was der Zusatz anlegt und was gemessen wird, steht im Text von #104 und in den [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/104#issuecomment-6862671822)):
+
+1. **Massendaten in einem Rutsch:** Der Zusatz `--mass-data` am Befehl `testdata` schreibt die erfundenen Probestämme, Konten, Rollen und verwalteten Personen in einem Rutsch, nicht einzeln über `save()` und die zentrale Rechteprüfung. Ersetzt für diese Daten den Eintrag vom 13.11.2026 (#103), Nr. 5: Die Einwilligung der verwalteten Personen trägt die Bundesleitung von Boreas mit festem Zeitpunkt, ohne dass sie jede anlegt; ist sie nicht angemeldet, etwa in der Testumgebung, bleibt nur der Zeitpunkt. Für die Massendaten entstehen keine Einträge in den Protokollen.
+2. **Erfundene Konten ohne Login:** Die Konten der Massendaten (`probe.0001` usw.) sind mit keinem Keycloak-Konto verknüpft und haben kein Passwort; anmelden kann sich mit ihnen niemand. Ersetzt für diese Konten den Eintrag vom 13.11.2026 (#103), Nr. 4 (Name, Mail und Kennung aus der Datei des lokalen Keycloak). Gehört einer ihrer Benutzernamen schon einem Konto mit Login, bricht der Zusatz ab, ohne etwas zu ändern.
+3. **Messung nur am Phasenende:** Der Leistungstest läuft nur am Ende einer Phase, als eigener Ablauf auf GitHub, der von Hand gestartet wird; ändert die Entscheidung vom 22.10.2026 in #104, Frage 2 (bei jedem Prüflauf). Die normalen Prüfläufe legen keine Massendaten an und messen keine Zeit; die Abfragegrenzen-Tests laufen weiter bei jedem Lauf.
+
+**Technische Wahl** (KI):
+
+4. **Wo:** Der Generator steht in `core/management/mass_data.py`, getrennt vom Befehl; so bleibt `testdata.py` ohne Zusatz bei den normalen Wegen (#103), und #145 erweitert den Generator an einer Stelle. Gemessen wird in `tests/leistungstest.py`. Der Name beginnt nicht mit `test_`, deshalb sammelt pytest die Datei nur, wenn sie ausdrücklich genannt ist. Gestartet wird sie über `.github/workflows/leistungstest.yml` (nur `workflow_dispatch`). Die Verteilung (Probestamm 01 mit 500 direkten Personen, die übrigen reihum, zwei von fünf mit Konto) und die Namen kommen aus festen Listen, wie bei #103 ohne Paket wie Faker (offen seit der Prüfung vom 20.10.2026, G18).
+5. **Wie gemessen wird:** mit dem Test-Client von Django, durch alle Bausteine einer Anfrage bis zur fertigen Antwort, ohne Netz und Browser. Je Seite ein Aufruf vorab, der nicht zählt, dann fünf gemessene; zählt der mittlere Wert (Median), damit ein einzelner Ausreißer des Rechners den Lauf nicht rot macht. Die Übersicht nennt zusätzlich den langsamsten.
+6. **Damit die Suche sie findet:** Die erfundenen Konten haben eine bestätigte Mail und einen festen Zeitpunkt des letzten Logins, wie Konten, die sich schon einmal angemeldet haben (`Rights.find_accounts()`). Jeder Lauf setzt Namen, Mail und Mail-Liste dieser Konten neu. Wie alle Konten bleiben sie über Läufe stehen, auch nach einem Lauf ohne Zusatz, dann ohne Rolle.
+7. **Kleiner Lauf bei jedem Prüflauf:** Der Generator läuft in `tests/test_massendaten.py` mit 2 Probestämmen und 60 Personen mit. Sonst fiele ein Fehler darin erst am Ende der Phase auf.
+
+**Begründung:** Zu 1: Einzeln gespeichert, mit Prüfungen, Sperren und Protokoll je Person, bräuchte jeder Lauf ein Vielfaches der Zeit. Die Regeln des Speicherns prüfen die Tests aus #103 weiter. Zu 2: Konten ohne Verknüpfung können nicht zu Zugängen für Unbefugte werden. Zu 3: Zeitmessungen auf den Rechnern von GitHub schwanken und machten normale Läufe ohne Fehler rot (vgl. #243); die häufigste Ursache langsamer Seiten, eine Abfrage je Person, prüft der Abfragegrenzen-Test.
+
+**Grenzen:** GitHub startet einen nur von Hand startbaren Ablauf erst, wenn er in `main` ist; im Pull Request zu #104 lief die Messung deshalb lokal. Die Zeit im Browser und auf dem Server der Testumgebung misst #145.
+
+**Umsetzung:** `core/management/mass_data.py`, `core/management/commands/testdata.py` (Zusatz `--mass-data`), `core/texts.py`, `.github/workflows/leistungstest.yml`, `docs/aufbau.md`, `README.md` („Leistungstest“); Tests in `tests/leistungstest.py` und `tests/test_massendaten.py`; `tests/test_rundumtest.py` kennt den Generator als Ausnahme.
 
 ---
 

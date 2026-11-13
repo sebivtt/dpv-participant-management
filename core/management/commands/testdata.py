@@ -18,8 +18,13 @@ die zentrale Rechteprüfung, angelegt und bestätigt von der Leitung, die das au
 dem Lauf Admin ist, wird es danach wieder, mit neuem Eintrag im Protokoll. Alles geschieht in einer
 Transaktion: Scheitert etwas, bleibt die Datenbank, wie sie war.
 
+Der Zusatz `--mass-data` legt danach die Massendaten für den Leistungstest an (#104,
+`core/management/mass_data.py`). Nur er schreibt in einem Rutsch an den normalen Wegen vorbei; ohne ihn
+legt der Befehl genau die Daten aus #103 an.
+
 Beispiel:
     python manage.py testdata
+    python manage.py testdata --mass-data
 """
 
 import json
@@ -41,6 +46,7 @@ from access.keys import new_key
 from access.rights import Rights
 from core import texts
 from core.actors import SERVER_COMMAND
+from core.management import mass_data
 from persons.models import ManagedPerson
 from roles.models import LEADS_IN_UNITS, Role, RoleKind
 from units.models import Kind, Unit
@@ -129,10 +135,15 @@ class Command(BaseCommand):
 
     help = "Erfundene Testdaten anlegen; leert dafür die Datenbank bis auf die Konten. Nur lokal und in der Testumgebung."
 
+    def add_arguments(self, parser):
+        parser.add_argument("--mass-data", action="store_true",
+                            help="Zusätzlich die Massendaten für den Leistungstest anlegen (#104).")
+
     def handle(self, *args, **options):
         local = _allowed_environment()
         realm = _realm() if local else {}
         notes = []
+        mass = None
         with transaction.atomic():
             admins = list(get_user_model().objects.filter(roles__kind=RoleKind.ADMIN).order_by("username"))
             _clear()
@@ -146,6 +157,8 @@ class Command(BaseCommand):
                 if not Role.objects.filter(user=user, kind=RoleKind.ADMIN).exists():
                     Role(user=user, kind=RoleKind.ADMIN).save(by=SERVER_COMMAND)
             without_creator = _managed(units, accounts)
+            if options["mass_data"]:
+                mass = mass_data.create(units["Pfadfinderbund Boreas"], accounts.get("ohne.nachname"))
         if admins:
             notes.append(texts.ADMINS_KEPT % {"usernames": ", ".join(user.username for user in admins)})
         if missing:
@@ -154,7 +167,13 @@ class Command(BaseCommand):
         if without_creator:
             notes.append(texts.NO_CREATOR % {"units": ", ".join(without_creator)})
         counts = {"units": len(units), "roles": Role.objects.count(), "managed": ManagedPerson.objects.count()}
+        if mass is not None:
+            # Die Zahlen oben ohne die Massendaten, damit sie zu README und #103 passen.
+            counts["roles"] -= mass["roles"]
+            counts["managed"] -= mass["managed"]
         self.stdout.write(texts.DONE % counts)
+        if mass is not None:
+            self.stdout.write(texts.MASS_DATA_DONE % mass)
         for note in notes:
             self.stdout.write(note)
 

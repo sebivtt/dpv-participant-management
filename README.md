@@ -287,6 +287,23 @@ D5. Die Testdaten in der Testumgebung im Container anlegen.
    ```
    Danach: `Testdaten angelegt: 11 Organisationen, …` mit weniger Rollen und verwalteten Personen als lokal, darunter `Ohne verwaltete Personen, weil dort niemand mit Konto sie anlegen darf: Sippe Möwen.` (und weitere Organisationen, solange dort keine Leitung angemeldet war). Fehlt ein Konto, steht dort zum Beispiel `Ohne Rolle, weil noch nie im Tool angemeldet: max.testmann. Diese Konten müssen sich zuerst einmal anmelden; danach den Befehl erneut ausführen.`
 
+## Leistungstest (am Ende einer Phase)
+
+Am Ende jeder Phase prüft der Leistungstest, ob jede Seite mit Personen auch bei 5.000 erfundenen Personen in unter 2 Sekunden vom Server kommt (#104). Er legt dafür mit dem Zusatz `--mass-data` am Befehl `testdata` zusätzlich 40 Probestämme mit je 5 Gruppen und 5.000 erfundene Personen im Pfadfinderbund Boreas an. Die normalen Prüfungen machen das nicht. Warum so, steht in `docs/entscheidungen.md` (13.11.2026, #104).
+
+L1. Auf GitHub starten: Im Repo oben auf „Actions“, links „Leistungstest“, rechts „Run workflow“ und darin noch einmal „Run workflow“.
+   Danach: Nach einigen Minuten ist der Lauf grün oder rot. Die Zeit je Seite steht auf der Seite des Laufs unter „Leistungstest (#104)“. Ist er rot, nennt er die zu langsame Seite und ihre Zeit.
+
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“; die Daten entstehen dabei nur in einer eigenen Test-Datenbank):
+
+L2. Den Leistungstest starten.
+   ```bash
+   uv run --env-file .env pytest tests/leistungstest.py -rsfE
+   ```
+   Danach: eine Tabelle „Leistungstest (#104), Grenze 2 s je Seite“ mit der Zeit je Seite und am Ende `10 passed`.
+
+Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen.` Anmelden kann sich mit diesen Konten niemand. Ein Lauf ohne Zusatz entfernt die Massendaten wieder bis auf die Konten, die dann ohne Rolle bleiben.
+
 ## Verband und Bünde anlegen (Admins)
 
 In P2 legen Admins den Verband und die Bünde per Befehl an, nicht über eine Seite im Tool (#88; eine Seite ist für später vorgemerkt, #107). Dieselben Befehle benennen um und schalten „hat Ringe“ ein; ausschalten lässt es sich bis #204 nicht. Ringe, Stämme und Gruppen legen die Leitungen im Tool an und benennen sie um, die Bundesleitung auch ihren Bund (#95). Löschen gibt es nicht (Entscheidung W5 in `docs/entscheidungen.md`). Die Befehle prüfen dieselben Regeln wie das Tool: genau ein Verband, keine leeren oder doppelten Namen, höchstens 100 Zeichen; „Boreas“ und „ boreas “ gelten als gleich. Jedes Anlegen, Umbenennen und Umschalten schreibt einen Eintrag ins Protokoll der Strukturänderungen, mit „Befehl auf dem Server“ als Urheber (#131); ein Befehl ohne Änderung schreibt keinen.
