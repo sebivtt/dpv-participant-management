@@ -820,6 +820,7 @@ def test_jedes_speichern_zaehlt_den_stand_hoch(org, lena):
 # ---------- Bausteinkatalog und Zielbild ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_der_bausteinkatalog_zeigt_das_datumsfeld_und_die_marke_verwaltet(org, settings):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = _tree(client_for(org.ohne).get("/bausteine/"))

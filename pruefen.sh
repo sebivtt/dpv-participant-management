@@ -3,9 +3,10 @@
 #   ./pruefen.sh                              alle acht Prüfungen nacheinander (lokal; GitHub
 #                                             startet dieselben in Teilen, siehe unten)
 #   ./pruefen.sh schnell [Testdatei ...]      lokal meist der schnelle Lauf: Paketliste, ruff,
-#                                             Django-Systemprüfung, Migrationen und nur die
-#                                             genannten Dateien aus tests/ und rauchtests/
-#                                             (CLAUDE.md, Ablauf je Aufgabe Nr. 4)
+#                                             Django-Systemprüfung, Migrationen, die genannten
+#                                             Dateien aus tests/ und rauchtests/ und immer die
+#                                             Katalogtests (CLAUDE.md, Ablauf je Aufgabe Nr. 4;
+#                                             #304, siehe unten)
 #   ./pruefen.sh teil <name>                  nur ein Teil des vollen Laufs; GitHub startet alle
 #                                             Teile gleichzeitig auf eigenen Rechnern (#307)
 #   ./pruefen.sh teile                        die Namen der Teile, je Zeile einer
@@ -14,7 +15,7 @@
 # die Teile. Zusammen starten die Teile jede Prüfung des vollen Laufs genau einmal. Jede Prüfung
 # läuft, auch wenn eine frühere rot war, damit man alle Befunde auf einmal sieht. Am Ende
 # steht, ob alles grün ist, wie viele Tests übersprungen wurden und, im schnellen Lauf, was
-# nicht ausgewählt war.
+# immer mitgelaufen und was nicht ausgewählt war.
 
 set -u
 cd "$(dirname "$0")"
@@ -317,8 +318,11 @@ elif [ "$mode" = "teil" ]; then
             ;;
     esac
 else
-    # shellcheck disable=SC2086  # Die Dateinamen sind absichtlich eine Liste (ohne Leerzeichen).
-    [ -z "$tests_files" ] || check_tests "Tests (pytest):$tests_files" $run pytest -rsfE $tests_files
+    # Schneller Lauf: die genannten Dateien und immer die Katalogtests, also jeder Test mit dem
+    # Kennzeichen „bausteinkatalog“ (#304, tests/katalogtests.py). pytest sammelt dafür den ganzen
+    # Ordner und behält nur diese Tests; so läuft jeder Test genau einmal.
+    check_tests "Tests (pytest):${tests_files:- keine Datei aus tests/ genannt}, dazu die Katalogtests" \
+        $run pytest -rsfE tests "--schnelle-auswahl=${tests_files# }"
 fi
 # Eigener Lauf: Playwright betreibt eine Ereignisschleife, neben der Django Datenbankzugriffe
 # sonst abbricht (rauchtests/conftest.py). Braucht die Browser (README.md, Schritt 10) und
@@ -335,8 +339,9 @@ elif [ "$mode" = "teil" ]; then
             ;;
     esac
 else
-    [ -z "$rauch_files" ] || check_tests "Rauchtest im Browser (Playwright, axe):$rauch_files" \
-        env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest -rsfE $rauch_files
+    # Die Katalog-Rauchtests nur, wenn ohnehin Rauchtests laufen (#304): sonst startet kein Browser.
+    [ -z "$rauch_files" ] || check_tests "Rauchtest im Browser (Playwright, axe):$rauch_files, dazu die Katalog-Rauchtests" \
+        env DJANGO_ALLOW_ASYNC_UNSAFE=true $run pytest -rsfE rauchtests "--schnelle-auswahl=${rauch_files# }"
 fi
 # Eigener Lauf: baut das Container-Abbild und startet die Testumgebung so, wie sie nach dem
 # README startet (#58). Braucht Docker und eigene Ports (tests/check_ports.py); das eigene Tool
@@ -348,15 +353,21 @@ if [ "$mode" = "voll" ] || [ "$part" = "grund" ]; then
 fi
 
 # Schlussmeldung für beide Betriebsarten: was gelaufen ist, was übersprungen wurde und, im
-# schnellen Lauf, was nicht ausgewählt war. Grün heißt „alles Ausgewählte ist gelaufen“.
+# schnellen Lauf, was immer mitgelaufen und was nicht ausgewählt war. Grün heißt „alles Ausgewählte ist gelaufen“.
 if [ "$skipped_unknown" = "1" ]; then
     skipped_text="Zahl unbekannt (die Zusammenfassung von pytest fehlt)"
 else
     skipped_text="$skipped_total"
 fi
 not_selected=""
+always_ran=""
 if [ "$mode" = "schnell" ]; then
-    if [ -z "$tests_files" ]; then not_selected="alle Tests"; else not_selected="übrige Tests"; fi
+    if [ -z "$rauch_files" ]; then
+        always_ran="die Katalogtests aus tests/"
+    else
+        always_ran="die Katalogtests aus tests/ und rauchtests/"
+    fi
+    not_selected="übrige Tests"
     if [ -z "$rauch_files" ]; then
         not_selected="$not_selected, alle Rauchtests"
     else
@@ -392,6 +403,7 @@ if [ "$mode" = "teil" ]; then
     fi
 fi
 if [ -n "$failed" ]; then
+    [ -z "$always_ran" ] || echo "Immer mitgelaufen: $always_ran."
     [ -z "$not_selected" ] || echo "Nicht ausgewählt: $not_selected"
     echo "ROT. Nicht bestanden:$failed"
     exit 1
@@ -405,7 +417,7 @@ else
     skipped_line=""
 fi
 if [ "$mode" = "schnell" ]; then
-    echo "Schneller Lauf grün$skipped_line. Nicht ausgewählt: $not_selected."
+    echo "Schneller Lauf grün$skipped_line. Immer mitgelaufen: $always_ran. Nicht ausgewählt: $not_selected."
 elif [ "$mode" = "teil" ]; then
     if [ "$skipped_unknown" = "1" ]; then
         echo "Teil $part grün, Zahl der Tests unbekannt (die Zusammenfassung von pytest fehlt)."

@@ -18,7 +18,8 @@ from tests.test_rechte_ohne_seite import org  # noqa: F401 -- Fixture mit Person
 from tests.test_rundumtest import ALL, PUBLIC, _example_address
 from tests.test_rollen import build_org
 
-pytestmark = pytest.mark.django_db
+# Jeder Test hier gehört zum Bausteinkatalog und läuft im schnellen Lauf immer mit (#304).
+pytestmark = [pytest.mark.django_db, pytest.mark.bausteinkatalog]
 
 ADDRESS = "/bausteine/"
 ROOT = Path(__file__).resolve().parent.parent

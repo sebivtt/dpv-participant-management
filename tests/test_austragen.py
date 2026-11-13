@@ -664,6 +664,7 @@ def test_u3_der_wechsel_der_mitgliedschaft_lehnt_mit_leitungsrolle_weiter_ab(org
 # ---------- Baustein „Auswahl im Dialog“ ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_der_bausteinkatalog_zeigt_die_auswahl_im_dialog(settings, org):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = page_tree(org.falke, "/bausteine/")

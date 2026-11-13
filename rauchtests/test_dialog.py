@@ -201,6 +201,7 @@ def test_am_pc_rollt_die_seite_nach_dem_schliessen_wieder(pc, weg):
 
 
 # G4, M7: Im Bausteinkatalog stehen die Dialoge als Vorschau an ihrer Stelle; die Seite rollt normal
+@pytest.mark.bausteinkatalog
 def test_im_bausteinkatalog_bleiben_die_vorschauen_in_der_seite_und_sie_rollt(pc):
     login(pc)
     pc.goto(f"{BASE}/bausteine/")

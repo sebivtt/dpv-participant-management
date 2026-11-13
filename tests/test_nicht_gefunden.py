@@ -320,26 +320,31 @@ def same_answers_for_real_and_missing_keys(org, real: dict) -> None:
             assert shown[forms_only] == expected[forms_only], (pattern, user.username)
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("EP-09")
 def test_konto_loeschen_mit_echter_kennung_antwortet_wie_mit_erfundener(org):
     same_answers_for_real_and_missing_keys(org, {"key": org.falke.key, "user": org.falke.key, "delete": org.falke.key})
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("RO-19")
 def test_rolle_admin_mit_echter_kennung_antwortet_wie_mit_erfundener(org):
     same_answers_for_real_and_missing_keys(org, {"person": org.falke.key, "admin": org.falke.key})
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("PR-01")
 def test_protokoll_der_rollen_mit_echter_kennung_antwortet_wie_mit_erfundener(org):
     same_answers_for_real_and_missing_keys(org, {"person": org.falke.key, "id": org.falke.key})
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("PR-03")
 def test_protokoll_der_einheiten_mit_echter_kennung_antwortet_wie_mit_erfundener(org):
     same_answers_for_real_and_missing_keys(org, {"unit": org.falken.key, "einheit": org.falken.key})
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("TD-01")
 def test_login_daten_mit_echter_kennung_antworten_wie_mit_erfundener(org):
     same_answers_for_real_and_missing_keys(org, {"user": org.falke.key, "pk": org.falke.key})

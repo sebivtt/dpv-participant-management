@@ -260,6 +260,7 @@ def test_ohne_skript_keine_zahl(pc, browser):
 
 
 # Szenario 16: der Bausteinkatalog zeigt das Feld zum Antippen mit Zahl
+@pytest.mark.bausteinkatalog
 def test_der_katalog_zeigt_die_zahl(pc, settings):
     settings.BUILDING_BLOCKS_VISIBLE = True
     login(pc)

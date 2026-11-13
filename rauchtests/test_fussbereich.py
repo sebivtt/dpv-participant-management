@@ -79,10 +79,12 @@ def _nach_dem_inhalt(page: Page) -> None:
     assert nach_dem_scrollen["oben"] == pytest.approx(lage["oben"], abs=1), "Der Fußbereich wandert beim Scrollen mit"
 
 
+@pytest.mark.bausteinkatalog
 def test_am_pc_steht_der_fussbereich_bei_langem_inhalt_nach_dem_inhalt(pc):
     _nach_dem_inhalt(pc)
 
 
+@pytest.mark.bausteinkatalog
 def test_am_handy_steht_der_fussbereich_bei_langem_inhalt_nach_dem_inhalt(handy):
     _nach_dem_inhalt(handy)
 

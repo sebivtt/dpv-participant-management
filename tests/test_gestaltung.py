@@ -178,6 +178,7 @@ def test_ohne_vornamen_zeigt_der_kreis_ein_personensymbol_und_keinen_leeren_name
 # ---------- Szenario 9: Pflichtfeld mit Fehlermeldung am Feld ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_pflichtfeld_ist_gekennzeichnet_und_die_fehlermeldung_haengt_am_feld():
     root = _tree(_logged_in().get("/bausteine/"))
 
@@ -196,6 +197,7 @@ def _footer(root) -> Element:
     return _one(_by_tag(root, "footer"))
 
 
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("address", ["/", "/bausteine/"])
 def test_fussbereich_auf_den_seiten_mit_login(address):
     footer = _footer(_tree(_logged_in().get(address)))

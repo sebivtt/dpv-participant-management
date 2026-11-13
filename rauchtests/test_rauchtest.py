@@ -170,6 +170,7 @@ def test_ohne_namen_personensymbol_im_kreis(pc):
 
 
 # Eingaben wie am Handy (Erfahrung aus dem Vorgänger-Repo, CLAUDE.md), am Baustein Textfeld im Katalog (#176)
+@pytest.mark.bausteinkatalog
 def test_eingaben_wie_am_handy_bleiben_stehen(handy):
     login(handy)
     handy.goto(f"{BASE}/bausteine/")
@@ -636,6 +637,7 @@ def test_nur_mit_der_tastatur_am_handy_von_der_anmeldung_bis_zum_abmelden(handy)
 
 
 # Szenario 10
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_seiten_bestehen_die_pruefung_auf_barrierefreiheit(request, browser_name, device, settings):
     settings.ROOT_URLCONF = "tests.urls"  # enthält eine Adresse, die die Fehlerseite auslöst
@@ -698,6 +700,7 @@ def _notices_fit(page: Page) -> list[str]:
     )
 
 
+@pytest.mark.bausteinkatalog
 def test_meldungen_am_handy_brechen_um_und_bestehen_die_pruefung(handy):
     """Konto ohne Namen und ohne Organisation: zwei getrennte Warnmeldungen und die Informationsmeldung."""
     login(handy, OHNE_NAME)

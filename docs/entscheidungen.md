@@ -21,6 +21,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Kontosuche über die Mail | 04.11.2026, #251, Nr. 1 und 2 | 24.10.2026, #136, Nr. 6 (nur „über die genaue Mail“ und Benutzernamen mit @); 28.10.2026, #190, Nr. 1 (nur „genaue Mail“ und Benutzernamen mit @) |
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
+| Auswahl im schnellen Lauf | 13.11.2026, #304, Nr. 1, 2 und 4 | 03.11.2026, #235, Nr. 1 (nur dass der schnelle Lauf nur die genannten Dateien ausführt) |
 | Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
 | Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge); 26.10.2026, #180, Nr. 4 |
 | Zweite Zeile der Rollenkacheln | 30.10.2026, #219, Nr. 1 | 25.10.2026, #161, Nr. 3 (Nachklärung Kacheln) |
@@ -38,6 +39,26 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-13 · Katalogtests laufen im schnellen Lauf immer mit (#304)
+
+**Entscheidung** (Sebastian; Klärung von #304 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/304#issuecomment-6847610945), Fragen 2 und 3, und [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/304#issuecomment-6852474511) vom selben Tag; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 03.11.2026 (#235), Punkt 1, teilweise: Der schnelle Lauf führt nicht mehr nur die genannten Dateien aus.
+
+1. **Immer mit** (Frage 2): Jeder Test, der den Bausteinkatalog (`/bausteine/`) aufruft, trägt das Kennzeichen `bausteinkatalog`. `./pruefen.sh schnell` führt alle so gekennzeichneten Tests aus `tests/` immer zusätzlich zu den genannten Dateien aus, auch ohne genannte Datei, unabhängig davon, was geändert wurde, und jeden Test nur einmal. Eine Erkennung, welcher Baustein geändert wurde, gibt es nicht.
+2. **Rauchtests nur mit Rauchtests** (Frage 3): Die gekennzeichneten Rauchtests aus `rauchtests/` laufen nur mit, wenn der schnelle Lauf ohnehin Rauchtests enthält; sonst startet kein Browser.
+3. **Schutz:** Ein Test, der den Katalog aufruft, ohne das Kennzeichen zu tragen, ist rot, und die Meldung nennt ihn.
+4. **Tests über jede Adresse** (Nachklärung, Sebastian: „Nein, eigenes Kennzeichen“): Tests, die der Reihe nach jede Adresse des Tools aufrufen und dabei auch den Katalog treffen (etwa zu Rechten oder „nicht gefunden“), tragen statt dessen das Kennzeichen `alle_adressen`. Der Schutz lässt sie gelten; im schnellen Lauf laufen sie nur, wenn ihre Datei genannt ist.
+5. Die Schlussmeldung des schnellen Laufs nennt die Katalogtests als immer mitgelaufen; der Bericht einer Umsetzung nennt sie in der Begründung der Auswahl (`CLAUDE.md`, Ablauf je Aufgabe Nr. 4).
+
+**Technische Wahl** (KI): Das Kennzeichen ist eine pytest-Markierung, registriert in `tests/katalogtests.py`, das `tests/conftest.py` und `rauchtests/conftest.py` laden. Im schnellen Lauf gibt `pruefen.sh` pytest den ganzen Ordner und die genannten Dateien (`--schnelle-auswahl=`); pytest behält davon die Tests dieser Dateien und die gekennzeichneten. So läuft jeder Test genau einmal, ohne dass jemand die Dateien mit Katalogtests kennen muss. Der Schutz erkennt den Aufruf an der Anfrage selbst (Signal `request_started` von Django), über den Test-Client wie über den Server des Rauchtests, gleich wie ein Test die Adresse schreibt; der Test wird beim Abbau rot. Ein Schutz, der den Quelltext durchsucht, hätte Adressen in Konstanten und Hilfsfunktionen übersehen.
+
+**Begründung:** Bei #118 (PR #303) war der Lauf auf GitHub zu `6d6953e` rot (1 von 2075 Tests), weil ein Katalogtest zum Baustein „Dialog“ in `tests/test_entfernen.py` lokal nicht ausgewählt war. 18 bestehende Dateien in `tests/` und 7 in `rauchtests/` rufen den Katalog gezielt auf (Stand 13.11.2026; die 18., `tests/test_zeichenzahl.py`, fand erst der Schutz), dazu der neue Test des Schutzes selbst; daran muss niemand mehr denken. Die Katalogtests aus `tests/` kosten je schnellem Lauf rund 20 s (gemessen bei der Klärung). Die 17 Tests über jede Adresse dauern zusammen rund 7,5 Minuten (gemessen beim Umsetzen); mit dem Katalog-Kennzeichen würde jeder schnelle Lauf so viel länger.
+
+**Grenzen:** Der Schutz prüft nur Tests, die laufen; ein Test, der lokal übersprungen wird, fällt erst im vollen Lauf auf GitHub auf. Ob ein Test das Kennzeichen `alle_adressen` zu Recht trägt, prüft keine Automatik, sondern die unabhängige Prüfung: Bei Tests, die je Adresse einzeln laufen, sieht jeder Durchgang nur eine Adresse. Eine Änderung an einem Baustein, die nur ein solcher Test bemerkt, fällt erst auf GitHub auf. Andere gemeinsame Teile als der Katalog haben keine solche Auswahl. Der volle Lauf, das Abweisen falscher Aufrufe und „ein roter Test macht den Lauf rot“ bleiben unverändert. Rücknahmeweg: den Pull Request rückgängig machen.
+
+**Umsetzung:** `pruefen.sh`, `tests/katalogtests.py`, `tests/conftest.py`, `rauchtests/conftest.py`, das Kennzeichen an den Katalogtests in `tests/` und `rauchtests/`, `tests/test_pruefen_sh.py`, `tests/test_katalogtests.py`, `README.md` (Schritt 11), `CLAUDE.md` (Ablauf je Aufgabe Nr. 4).
 
 ---
 

@@ -133,6 +133,7 @@ def test_browser_schickt_die_vorige_seite_nur_innerhalb_des_tools_mit():
 
 
 # Entschiedene Bausteine stehen im Bausteinkatalog (#176, docs/gestaltung.md)
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_die_knoepfe_der_fehlerseite():
     response = _logged_in_client().get("/bausteine/")
 

@@ -177,6 +177,7 @@ def test_ohne_schalter_kein_band(settings, client, keycloak):
     assert BAND not in client.get("/").content.decode()
 
 
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_das_band_als_baustein_auch_ohne_schalter(settings, client, keycloak):
     # Entschiedene Bausteine stehen im Bausteinkatalog (#176); dort prüft auch der Rauchtest
     # die Barrierefreiheit, z. B. den Kontrast des Bands.

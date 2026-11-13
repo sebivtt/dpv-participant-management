@@ -658,6 +658,7 @@ def test_vera_und_viktor_benennen_otto_gleichzeitig_ins_team():
     assert Role.objects.filter(user=otto, kind=R.EVENT_TEAM).count() == 1
 
 
+@pytest.mark.bausteinkatalog
 def test_der_bausteinkatalog_zeigt_die_rollenkachel_mit_rolle_abgeben(org):
     root = page_tree(org.verbandsleitung, "/bausteine/")
     block = section_of(root, "h-rollenkachel")
@@ -789,6 +790,7 @@ def test_218_auch_mit_offenem_dialog_steht_dpv_im_pfad(org):
         assert _back(root) == ("Verband", ADDRESS), address
 
 
+@pytest.mark.bausteinkatalog
 def test_218_der_bausteinkatalog_zeigt_den_kopf_auch_mit_verband_im_pfad(org):
     block = section_of(page_tree(org.verbandsleitung, "/bausteine/"), "h-orgakopf")
     heads = _all(block, lambda e: "a-orga-kopf" in _classes(e))
@@ -814,6 +816,7 @@ def test_218_m1_der_eigene_bund_ist_anklickbar_aber_ohne_marke(org):
     assert _all(page_tree(org.verbandsleitung, unit_address(org.boreas)), lambda e: "a-gliederung" in _classes(e))
 
 
+@pytest.mark.bausteinkatalog
 def test_218_m2_der_bausteinkatalog_zeigt_die_marke_nicht_mehr_der_titel_bleibt_ein_link(org):
     root = page_tree(org.verbandsleitung, "/bausteine/")
 

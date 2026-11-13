@@ -850,6 +850,7 @@ def test_befund4_beenden_nach_ablauf_sagt_nicht_nicht_gespeichert(org, clock):
 # ---------- Bausteine ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_bausteinkatalog_zeigt_den_balken_den_zart_blauen_knopf_und_den_kopf_mit_knopf(org):
     root = page_tree(org.walhall_leitung, "/bausteine/")
 

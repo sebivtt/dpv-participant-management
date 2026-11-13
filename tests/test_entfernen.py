@@ -599,6 +599,7 @@ def test_wer_gerade_entfernt_wird_entfernt_danach_niemanden_mehr():
 # ---------- Bausteinkatalog ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_der_katalog_zeigt_die_knoepfe_bei_den_leitungen_und_im_dialog(settings, org):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = _tree(client_for(org.walhall_leitung).get("/bausteine/"))

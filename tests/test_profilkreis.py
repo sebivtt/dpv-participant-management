@@ -38,6 +38,7 @@ def _circles(root) -> tuple:
 # ---------- Szenarien 1 bis 3: der Kreis führt auf jeder Seite zu „Mein Profil“ ----------
 
 
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("address", PAGES_WITH_SIDEBAR)
 def test_kreis_am_pc_und_am_handy_fuehrt_auf_jeder_seite_zu_mein_profil(address):
     client, _ = _client()
@@ -67,6 +68,7 @@ def test_auf_mein_profil_ist_der_kreis_die_aktuelle_seite():
         assert _attr(circle, "aria-current") == "page"
 
 
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("address", ["/", "/bausteine/"])
 def test_auf_anderen_seiten_ist_der_kreis_nicht_hervorgehoben(address):
     client, _ = _client()
