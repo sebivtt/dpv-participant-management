@@ -43,6 +43,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-13 · Befehl für erfundene Testdaten: wo er läuft, was bleibt, wer anlegt (#103)
+
+**Entscheidung** (technische Wahl der KI bei der Umsetzung von #103; was der Befehl können muss, steht im Text von #103 und in den Szenarien dort).
+
+1. **Name:** Der Befehl heißt `testdata` (`python manage.py testdata`) und liegt in `core/management/commands/`, weil er Einheiten, Rollen, Konten und verwaltete Personen zugleich anlegt. Im Code heißt „Testdaten“ also `testdata`.
+2. **„Lokal“ ist ein eigener Schalter:** `LOCAL_ENVIRONMENT=1` in der Umgebungsdatei des eigenen Rechners (`.env.example`). „Testumgebung“ ist der vorhandene Schalter `TEST_ENVIRONMENT=1` (#58). Sagen die Einstellungen beides, gilt die Testumgebung. Die Fehleranzeige für Entwickler (`DJANGO_DEBUG=1`) allein genügt nicht.
+3. **Was bleibt:** Konten mit ihrer Verknüpfung zu Keycloak, ihrer Mail-Liste und ihrer Anmeldung, dazu Djangos eigene Verzeichnisse. Alle anderen Tabellen leert der Befehl in einem Schritt und zählt ihre Nummern neu ab 1, auch Tabellen, die spätere Issues dazubringen (#101, #102). So ergibt jeder Lauf dieselben Daten.
+4. **Konten lokal:** Name, Mail und feste Kennung kommen aus `dev/keycloak/dpv-realm.json`, die Rollen aus der Besetzung im Befehl. Gehört ein Benutzername im Tool schon einem Konto mit anderer Kennung, bleibt dieses Konto unberührt und ohne Rolle, und die Ausgabe nennt es; verknüpft wird nie über den Benutzernamen (#5).
+5. **Verwaltete Personen** legt der Befehl über die zentrale Rechteprüfung an, durch die Leitung, die es im Tool dürfte (die Leitung der Organisation oder die einspringende darüber); sie bestätigt auch die Einwilligung (#98). Gibt es keine, etwa in der Testumgebung ohne angemeldete Leitung, bleibt die Organisation ohne verwaltete Personen, und die Ausgabe nennt sie.
+6. **Namen:** Die neuen lokalen Konten heißen mit Nachnamen „Beispiel“, die verwalteten Personen „Probe“ oder „Muster“; so sind alle erkennbar erfunden.
+
+**Begründung:** Zu 2: Der Befehl löscht alles außer den Konten. Die Fehleranzeige wird auch auf einem Server zur Fehlersuche eingeschaltet; ein eigener Schalter, den es nur auf dem eigenen Rechner gibt, macht ein versehentliches Leeren unwahrscheinlicher. Zu 3: Eine Liste dessen, was bleibt, statt einer Liste dessen, was geleert wird, vergisst keine neue Tabelle. Zu 4: Name und Kennung stehen so nur an einem Ort. Zu 5: So entstehen Einwilligung und Protokoll wie im echten Ablauf, ohne eigene Regel im Befehl.
+
+**Grenzen:** Ob der Befehl im echten Keycloak zusammen mit den neuen Konten funktioniert, prüfen die Tests nur mit nachgestelltem Keycloak; lokal braucht Keycloak dafür einmal einen Neustart (README, „Testdaten anlegen“). In der Testumgebung auf dem Server bleibt der Bund Nordstern ohne verwaltete Personen, weil dort keine Leitung mit Konto ist.
+
+---
+
 ## 2026-11-13 · GitHub sperrt das Übernehmen roter Pull Requests, die KI ändert keine Schutzregeln (#16)
 
 **Entscheidung** (Sebastian; Klärung von #16 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/16#issuecomment-6850485603), Fragen 1 und 2; maßgeblich ist der Text des Issues). Ersetzt teilweise den Eintrag vom 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur den Satz, dass die Regel die Sperre durch GitHub ersetzt), und in den Einträgen vom 03.11.2026 zu #239 und #237 je den Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“.

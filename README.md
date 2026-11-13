@@ -82,6 +82,20 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    | `ohne.name` | `testpasswort-ohne-name` | ohne Vor- und Nachnamen |
    | `ohne.nachname` | `testpasswort-ohne-nachname` | nur mit Vornamen |
    | `ohne.mail` | `testpasswort-ohne-mail` | ohne Mail; der Login wird abgelehnt |
+   | `verbandsleitung` | `testpasswort-vera` | Testdaten (#103) |
+   | `veranstaltungsteam` | `testpasswort-tom` | Testdaten (#103) |
+   | `mitglied.walhall` | `testpasswort-wilma` | Testdaten (#103) |
+   | `gruppenleitung.falken` | `testpasswort-fiete` | Testdaten (#103) |
+   | `mitglied.falken` | `testpasswort-finn` | Testdaten (#103) |
+   | `gruppenleitung.woelfe` | `testpasswort-wim` | Testdaten (#103) |
+   | `gruppenleitung.kraniche` | `testpasswort-kira` | Testdaten (#103) |
+   | `bundesleitung.nordstern` | `testpasswort-nils` | Testdaten (#103) |
+   | `ringleitung.kueste` | `testpasswort-kai` | Testdaten (#103) |
+   | `stammesleitung.leuchtturm` | `testpasswort-lars` | Testdaten (#103) |
+   | `gruppenleitung.moewen` | `testpasswort-mia` | Testdaten (#103) |
+   | `admin` | `testpasswort-adam` | Testdaten (#103) |
+
+   Welche Rolle jedes Konto nach dem Befehl für Testdaten hat, steht unter „Testdaten anlegen“; die Konten ab `verbandsleitung` heißen nach ihrer Rolle.
 
    Über „Noch kein Konto? Registrieren“ lassen sich weitere Konten anlegen. Die Verwaltung von Keycloak liegt unter http://localhost:8080/admin/ (Benutzername `admin`, Passwort `nur-lokal-nicht-geheim`).
 
@@ -121,7 +135,7 @@ Jede Arbeitskopie hat ihre eigene Test-Datenbank, Name `test_dpv_` und zwölf Ze
 
 **Lokale Datenbank neu anlegen** (nur bei Bedarf, etwa wenn es ein erfundenes Konto mehrfach gibt, mit einer Zahl im Benutzernamen wie `erika3`)
 
-Bis #199 bekamen die erfundenen Konten bei jedem Start von Keycloak eine neue Kennung, und das Tool legte beim nächsten Login jedes Mal ein neues Konto an. Seitdem haben sie feste Kennungen. Ein Keycloak, der schon lief, kennt sie aber erst, nachdem er einmal mit Schritt 12 angehalten und wieder gestartet wurde; die alten Doppelkonten bleiben, bis die Datenbank einmal neu angelegt ist. Beides erledigen die beiden Schritte hier. Das löscht alle Daten der normalen Entwicklung, also Konten, Rollen, Verband und Bünde (danach bei Bedarf wieder anlegen wie unter „Verband und Bünde anlegen“), dazu übrige Test-Datenbanken. Die Testumgebung im Container ist davon nicht betroffen; für sie gibt es Schritt T6. Voraussetzung: Docker läuft (Schritt 6), und gerade läuft kein `./pruefen.sh`.
+Bis #199 bekamen die erfundenen Konten bei jedem Start von Keycloak eine neue Kennung, und das Tool legte beim nächsten Login jedes Mal ein neues Konto an. Seitdem haben sie feste Kennungen. Ein Keycloak, der schon lief, kennt sie aber erst, nachdem er einmal mit Schritt 12 angehalten und wieder gestartet wurde; die alten Doppelkonten bleiben, bis die Datenbank einmal neu angelegt ist. Beides erledigen die beiden Schritte hier. Das löscht alle Daten der normalen Entwicklung, also Konten, Rollen, Verband und Bünde (danach bei Bedarf wieder anlegen wie unter „Testdaten anlegen“ oder „Verband und Bünde anlegen“), dazu übrige Test-Datenbanken. Die Testumgebung im Container ist davon nicht betroffen; für sie gibt es Schritt T6. Voraussetzung: Docker läuft (Schritt 6), und gerade läuft kein `./pruefen.sh`.
 
 1. Datenbank und Keycloak anhalten und die Datenbank löschen.
    ```bash
@@ -177,7 +191,7 @@ Setzt eine eingerichtete Umgebung voraus (Schritte 1 bis 5 unter „Projekt star
    uv run --env-file .env python manage.py migrate
    ```
    Danach: `Applying ... OK` oder `No migrations to apply.`
-8. Das Tool starten (Schritt 9 oben) und anmelden. Welche Rollen und Einheiten du zum Ausprobieren brauchst, nennt die Sitzung; einen festen Befehl für Testdaten bringt #103.
+8. Das Tool starten (Schritt 9 oben) und anmelden. Welche Rollen und Einheiten du zum Ausprobieren brauchst, nennt die Sitzung; die erfundene Grundausstattung legt der Befehl unter „Testdaten anlegen“ an.
    ```bash
    uv run --env-file .env python manage.py runserver
    ```
@@ -232,6 +246,28 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
    docker compose -f testumgebung/docker-compose.yml --profile lokal down --volumes
    ```
    Danach: je Container eine Zeile `Removed`, dazu `Volume dpv-test_daten Removed`.
+
+## Testdaten anlegen
+
+Ein Befehl legt erfundene Testdaten an, mit denen sich die Szenarien Walhall, Zugvögel und Boreas aus #103 nachspielen lassen: den Verband „DPV“, den Pfadfinderbund Boreas ohne Ringe mit den Stämmen Walhall (Sippe Falken, Meute Wölfe) und Zugvögel (Sippe Kraniche), den Bund Nordstern mit dem Ring „Küste“, dem Stamm Leuchtturm und der Sippe Möwen, je eine Leitung, ein Mitglied, das DPV-Veranstaltungsteam, einen Admin und 18 verwaltete Personen. Wer welche Rolle bekommt, steht in `core/management/commands/testdata.py` unter „Besetzung“ (`CAST`).
+
+**Achtung:** Jeder Lauf löscht vorher alles außer den Konten, auch Verband, Bünde, Rollen, verwaltete Personen und alle Protokolle, und legt dieselben Daten neu an. Wer vor dem Lauf Admin ist, ist es danach wieder. Der Befehl läuft nur, wenn die Einstellungen ausdrücklich „lokal“ (`LOCAL_ENVIRONMENT=1`) oder „Testumgebung“ sagen; sonst bricht er ab, ohne etwas zu löschen.
+
+Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
+
+D1. Nur einmal, wenn deine `.env` älter ist als #103: Schritt 4 wiederholen. Danach steht dort die Zeile `LOCAL_ENVIRONMENT=1`.
+D2. Nur einmal, damit Keycloak die neuen Konten aus der Tabelle unter Schritt 9 kennt: Keycloak anhalten (Schritt 12) und wieder starten (Schritt 7).
+D3. Die Testdaten anlegen.
+   ```bash
+   uv run --env-file .env python manage.py testdata
+   ```
+   Danach: `Testdaten angelegt: 11 Organisationen, 25 Rollen und 18 verwaltete Personen. Alle Daten außer den Konten wurden vorher gelöscht, auch die Protokolle.` War vorher jemand Admin, folgt `Wieder Admin wie vor dem Lauf: …`. Steht dort `CommandError: Der Befehl läuft nur lokal oder in der Testumgebung. …`, fehlt die Zeile aus D1. Danach anmelden, etwa als `erika.testfrau` (Stammesleitung Walhall) oder `gruppenleitung.falken`; jedes Konto landet beim ersten Login im Konto aus dem Befehl.
+
+In der Testumgebung im Container (zuerst Schritt T2) und auf dem Server legt der Befehl keine Konten an. Rollen bekommen dort nur die vier Konten des Test-Realms, mit derselben Rolle wie lokal, und nur, wenn sie sich schon einmal angemeldet haben. Verwaltete Personen entstehen nur, wo eine dieser Leitungen sie anlegen darf.
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml exec tool python manage.py testdata
+   ```
+   Danach: dieselbe erste Zeile mit kleineren Zahlen. Fehlt ein Konto, steht dort `Ohne Rolle, weil noch nie im Tool angemeldet: max.testmann. Diese Konten müssen sich zuerst einmal anmelden; danach den Befehl erneut ausführen.`
 
 ## Verband und Bünde anlegen (Admins)
 

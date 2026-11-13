@@ -118,6 +118,198 @@
       ],
       "firstName": "Olaf",
       "lastName": "Ohnemail"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "username": "verbandsleitung",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-vera",
+          "temporary": false
+        }
+      ],
+      "email": "verbandsleitung@example.org",
+      "firstName": "Vera",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "username": "veranstaltungsteam",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-tom",
+          "temporary": false
+        }
+      ],
+      "email": "veranstaltungsteam@example.org",
+      "firstName": "Tom",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "username": "mitglied.walhall",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-wilma",
+          "temporary": false
+        }
+      ],
+      "email": "mitglied.walhall@example.org",
+      "firstName": "Wilma",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "username": "gruppenleitung.falken",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-fiete",
+          "temporary": false
+        }
+      ],
+      "email": "gruppenleitung.falken@example.org",
+      "firstName": "Fiete",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "username": "mitglied.falken",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-finn",
+          "temporary": false
+        }
+      ],
+      "email": "mitglied.falken@example.org",
+      "firstName": "Finn",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "username": "gruppenleitung.woelfe",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-wim",
+          "temporary": false
+        }
+      ],
+      "email": "gruppenleitung.woelfe@example.org",
+      "firstName": "Wim",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "username": "gruppenleitung.kraniche",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-kira",
+          "temporary": false
+        }
+      ],
+      "email": "gruppenleitung.kraniche@example.org",
+      "firstName": "Kira",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "username": "bundesleitung.nordstern",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-nils",
+          "temporary": false
+        }
+      ],
+      "email": "bundesleitung.nordstern@example.org",
+      "firstName": "Nils",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "username": "ringleitung.kueste",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-kai",
+          "temporary": false
+        }
+      ],
+      "email": "ringleitung.kueste@example.org",
+      "firstName": "Kai",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "username": "stammesleitung.leuchtturm",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-lars",
+          "temporary": false
+        }
+      ],
+      "email": "stammesleitung.leuchtturm@example.org",
+      "firstName": "Lars",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "username": "gruppenleitung.moewen",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-mia",
+          "temporary": false
+        }
+      ],
+      "email": "gruppenleitung.moewen@example.org",
+      "firstName": "Mia",
+      "lastName": "Beispiel"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpasswort-adam",
+          "temporary": false
+        }
+      ],
+      "email": "admin@example.org",
+      "firstName": "Adam",
+      "lastName": "Beispiel"
     }
   ],
   "components": {
