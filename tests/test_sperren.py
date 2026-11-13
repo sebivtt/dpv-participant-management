@@ -3,7 +3,8 @@
 Claude Code ruft den Prüfschritt vor jedem Bash-Befehl auf und übergibt den Befehl als JSON.
 Exit 2 heißt: abgewiesen, Claude Code führt den Befehl nicht aus. Gesperrt sind nur die Handlungen,
 die allein Sebastian ausführt: Pull Request übernehmen, auf `main` oder mit Force hochladen,
-`.env` lesen, das Label `geklärt` setzen. Alles andere muss weiter gehen, vor allem den eigenen
+`.env` lesen, das Label `geklärt` setzen, Schutzregeln und Einstellungen des Repos auf GitHub
+ändern (#16). Alles andere muss weiter gehen, vor allem den eigenen
 Zweig hochladen, Pull Requests und Issues anlegen und `geklärt` wieder entfernen.
 
 Die Tests rufen den Prüfschritt so auf wie Claude Code: als eigenes Programm mit JSON auf der
@@ -237,6 +238,158 @@ def test_fehlerhafte_eingabe_wird_abgewiesen():
 
     assert result.returncode == BLOCKED
     assert "Prüfschritt" in result.stderr
+
+
+# --- Schutzregeln und Einstellungen des Repos (#16) --------------------------------------------
+# Die Sperre auf GitHub verhindert, dass ein roter Pull Request übernommen wird. Die KI darf sie
+# nicht ausschalten; Schutzregeln und Einstellungen ändert nur Sebastian, lesen darf sie
+# (Szenarien B1 bis B5 und C1 bis C3 zu #16).
+
+
+def _assert_blocked(command):
+    result = _check(command)
+
+    assert result.returncode == BLOCKED, (command, result.stderr)
+    assert MESSAGE in result.stderr, command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api -X PUT repos/sebivtt/x/rulesets/25530621 -f enforcement=disabled",
+        "gh api -X DELETE repos/sebivtt/x/rulesets/25530621",
+        "gh api -X POST repos/sebivtt/x/rulesets -f name=Leer -f enforcement=disabled",
+    ],
+)
+def test_schutzregel_aendern_ausschalten_anlegen_oder_loeschen_wird_abgewiesen(command):
+    """B1 (#16): Ein Ruleset ändern, ausschalten, anlegen oder löschen macht nur Sebastian."""
+    _assert_blocked(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api -X DELETE repos/sebivtt/x/branches/main/protection",
+        "gh api -X PUT repos/sebivtt/x/branches/main/protection -F enforce_admins=false",
+        "gh api -X DELETE repos/sebivtt/x/branches/main/protection/required_status_checks",
+    ],
+)
+def test_zweigschutz_aendern_oder_loeschen_wird_abgewiesen(command):
+    """B2 (#16): Den Zweigschutz eines Zweigs ändern oder löschen macht nur Sebastian."""
+    _assert_blocked(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api -X PATCH repos/sebivtt/x -f visibility=private",
+        "gh api -X PATCH repos/sebivtt/x -f name=anders",
+        "gh api -X PATCH repos/sebivtt/x -F archived=true",
+        "gh api -X DELETE repos/sebivtt/x",
+        "gh repo edit --visibility private --accept-visibility-change-consequences",
+        "gh repo edit sebivtt/x --default-branch anders",
+        "gh repo rename anders",
+        "gh -R sebivtt/x repo rename anders",
+        "gh repo archive sebivtt/x --yes",
+        "gh repo unarchive sebivtt/x --yes",
+        "gh repo delete sebivtt/x --yes",
+    ],
+)
+def test_repo_privat_machen_umbenennen_archivieren_oder_loeschen_wird_abgewiesen(command):
+    """B3 (#16): Grundeinstellungen eines Repos ändert nur Sebastian, über gh api wie über gh repo."""
+    _assert_blocked(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api -X DELETE repos/sebivtt/x/interaction-limits",
+        "gh api -X PUT repos/sebivtt/x/interaction-limits -f limit=existing_users",
+        "gh api -X PUT repos/sebivtt/x/actions/permissions/fork-pr-contributor-approval -f approval_policy=first_time_contributors",
+        "gh api -X PUT repos/sebivtt/x/actions/permissions -F enabled=false",
+        "gh api -X PUT repos/sebivtt/x/actions/permissions/workflow -f default_workflow_permissions=write",
+    ],
+)
+def test_begrenzung_auf_mitwirkende_und_einstellungen_der_pruefablaeufe_aendern_wird_abgewiesen(command):
+    """B4 (#16): Begrenzung auf Mitwirkende und Einstellungen der Prüfabläufe (#310) ändert nur Sebastian."""
+    _assert_blocked(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # volle Adresse und Methode in Kleinbuchstaben
+        "gh api --method=put https://api.github.com/repos/sebivtt/x/rulesets/25530621 -f enforcement=disabled",
+        "gh api -X delete /repos/sebivtt/x/branches/main/protection",
+        "gh api -Xpatch repos/sebivtt/x/ -f visibility=private",
+        # ohne -X: Felder machen aus der Anfrage ein POST
+        "gh api repos/sebivtt/x/rulesets -f name=Leer",
+        "gh api repos/{owner}/{repo}/interaction-limits -f limit=existing_users",
+        # Inhalt aus einer Datei, mit und ohne -X
+        "gh api repos/sebivtt/x/rulesets --input regel.json",
+        "gh api -X PUT repos/sebivtt/x/rulesets/25530621 --input regel.json",
+        "gh api -X PATCH repos/sebivtt/x --input einstellungen.json",
+        # Kette und Vorsatz
+        "cd x && timeout 30 gh repo edit --visibility private",
+    ],
+)
+def test_einstellungen_in_anderer_schreibweise_werden_ebenfalls_abgewiesen(command):
+    """B5 (#16): Volle Adresse, Kleinbuchstaben, Felder ohne -X und --input ändern nichts an der Abweisung."""
+    _assert_blocked(command)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api repos/sebivtt/dpv-participant-management/rulesets/25530621",
+        "gh api repos/sebivtt/dpv-participant-management/rules/branches/main",
+        "gh api repos/sebivtt/x/rulesets --jq '.[].enforcement'",
+        "gh api -X GET repos/sebivtt/x/rulesets -f includes_parents=true",
+        "gh api repos/sebivtt/x/branches/main/protection",
+        "gh api repos/sebivtt/x --jq .visibility",
+        "gh api repos/sebivtt/x/interaction-limits",
+        "gh api repos/sebivtt/x/actions/permissions/fork-pr-contributor-approval",
+        "gh repo view sebivtt/x --json visibility",
+        "gh ruleset view 25530621",
+    ],
+)
+def test_schutzregeln_und_einstellungen_lesen_geht_weiter(command):
+    """C1 (#16): Lesen bleibt erlaubt, etwa um Sebastians Einstellung nachzuprüfen."""
+    result = _check(command)
+
+    assert result.returncode == 0, (command, result.stderr)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api -X PATCH repos/sebivtt/x/issues/16 -F body=@datei.md",
+        "gh api repos/sebivtt/x/issues/16/comments -F body=@kommentar.md",
+        "gh issue comment 16 --body-file kommentar.md",
+        "gh pr create --title T --body-file pr.md --base main",
+        "gh pr edit 12 --body-file pr.md",
+        "gh api -X PATCH repos/sebivtt/x/pulls/12 -F body=@pr.md",
+    ],
+)
+def test_issues_kommentare_und_pull_requests_gehen_weiter(command):
+    """C2 (#16): Text eines Issues ändern, kommentieren und Pull Requests anlegen und bearbeiten bleibt erlaubt."""
+    result = _check(command)
+
+    assert result.returncode == 0, (command, result.stderr)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh run rerun 123456 --failed",
+        "gh api -X POST repos/sebivtt/x/actions/runs/123456/rerun-failed-jobs",
+    ],
+)
+def test_neustart_gescheiterter_pruefteile_geht_weiter(command):
+    """C3 (#16): Gescheiterte Prüfteile neu starten bleibt erlaubt (`CLAUDE.md`, Ablauf je Aufgabe Nr. 6, #307)."""
+    result = _check(command)
+
+    assert result.returncode == 0, (command, result.stderr)
 
 
 # --- Gegenfälle -------------------------------------------------------------------------------
