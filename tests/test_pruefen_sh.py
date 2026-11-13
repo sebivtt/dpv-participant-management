@@ -735,3 +735,15 @@ def test_s7_tests_mit_kennzeichen_alle_adressen_laufen_nicht_immer_mit(tmp_path)
     _, auswahl = _schnell_wie_pruefen_sh(tmp_path)
 
     assert not set(alle_adressen) & set(auswahl["tests"])
+
+
+def test_eine_genannte_datei_ohne_tests_macht_den_lauf_rot_statt_still_gruen():
+    # Befund G2 der unabhängigen Prüfung: Vorher bekam pytest die Datei direkt und war ohne Tests
+    # rot. Seit der Auswahl über den Ordner fiele eine Hilfsdatei wie tests/katalogtests.py still weg.
+    code, ids, ausgabe = _gesammelt("tests", "--schnelle-auswahl=tests/katalogtests.py tests/test_texte.py")
+
+    assert code != 0
+    assert ids == []
+    # Die Meldung nennt genau die Datei ohne Tests, nicht die mit Tests.
+    assert "Ohne Tests: tests/katalogtests.py" in ausgabe
+    assert "tests/test_texte.py" not in ausgabe.split("Ohne Tests:", 1)[1].splitlines()[0]
