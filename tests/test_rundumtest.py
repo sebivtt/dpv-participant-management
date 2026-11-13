@@ -284,6 +284,8 @@ PERSONAL_MODELS = {
     # Verwaltete Personen (#117) und ihre angezeigten Leitungsrollen (#99).
     "ManagedPerson",
     "DisplayedLead",
+    # Veranstaltungen mit ihrer Veranstaltungsleitung (#100).
+    "Event",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
@@ -331,7 +333,7 @@ def bypasses(source: str) -> list[str]:
             owner = ast.unparse(node.value)
             if node.attr in ("objects", "_default_manager", "_base_manager") and owner in PERSONAL_MODELS:
                 found.append(f"{owner}.{node.attr}")
-            elif node.attr in ("roles", "managed_persons") or node.attr in ("raw", "cursor"):
+            elif node.attr in ("roles", "managed_persons", "led_events") or node.attr in ("raw", "cursor"):
                 found.append(f"{owner}.{node.attr}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             if LOOKUP_THROUGH_PERSONS.search(node.value):
@@ -417,6 +419,9 @@ def test_ausnahmen_gibt_es_noch():
         "unit.managed_persons.all()",
         "Unit.objects.filter(managed_persons__first_name='Lena')",
         "Unit.objects.prefetch_related('managed_persons')",
+        # Veranstaltungen und die eigenen Veranstaltungen eines Kontos (#100).
+        "Event.objects.all()",
+        "request.user.led_events.all()",
     ],
 )
 def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):
