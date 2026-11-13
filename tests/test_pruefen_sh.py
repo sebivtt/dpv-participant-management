@@ -571,8 +571,10 @@ def test_jede_echte_testdatei_aus_tests_laeuft_in_genau_einem_testteil(tmp_path)
     assert len(gesammelt) > 1000, "pytest hat die Tests aus tests/ gesammelt"
     zaehlung = {datei: sum(teil.count(datei) for teil in teile.values()) for datei in dateien}
     assert {datei: n for datei, n in zaehlung.items() if n != 1} == {}, "jede Datei mit Tests in genau einem Teil"
-    for teil, liste in teile.items():
-        assert all((BASE_DIR / datei).is_file() for datei in liste), teil
+    # Umgekehrt bekommt kein Teil eine Datei, die pytest im vollen Lauf nicht sammelt (etwa in einem
+    # Ordner, den pytest auslässt); sonst liefen in den Teilen mehr Tests als vorher. Eine Testdatei
+    # ganz ohne Tests fiele hier ebenfalls auf (Befund G3 der unabhängigen Prüfung).
+    assert sorted(datei for liste in teile.values() for datei in liste) == sorted(dateien)
 
 
 def test_jeder_echte_rauchtest_laeuft_in_genau_einem_browserteil():
@@ -599,3 +601,13 @@ def test_ein_unbekannter_browser_fuer_den_rauchtest_bricht_mit_meldung_ab():
     assert code != 0
     assert ids == []
     assert "RAUCHTEST_BROWSER" in ausgabe
+
+
+def test_die_meldung_bei_falschem_aufruf_bleibt_lokal_wie_bisher(lauf):
+    # Akzeptanzkriterium von #307: lokal dieselben Meldungen (Befund G1 der unabhängigen Prüfung).
+    lauf.start("langsam")
+
+    assert lauf.out.splitlines() == [
+        "pruefen.sh: Unbekannte Option: langsam",
+        "Aufruf: ./pruefen.sh   oder   ./pruefen.sh schnell [Testdatei aus tests/ oder rauchtests/ ...]",
+    ]

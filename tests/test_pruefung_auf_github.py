@@ -227,17 +227,21 @@ def test_die_gesamtpruefung_wartet_auf_alle_teile_und_laeuft_immer():
 
 def test_die_gesamtpruefung_fasst_die_ergebnisse_aller_teile_mit_pruefen_sh_zusammen():
     steps = _gesamt()["steps"]
-    downloads = [step for step in steps if str(step.get("uses", "")).startswith("actions/download-artifact@")]
+    downloads = [step for step in steps if "gh run download" in step.get("run", "")]
     gesamt = [step for step in steps if "./pruefen.sh gesamt" in step.get("run", "")]
 
     assert len(downloads) == 1 and len(gesamt) == 1
     download, zusammenfassen = downloads[0], gesamt[0]
-    assert re.fullmatch(r"actions/download-artifact@[0-9a-f]{40}", download["uses"])
-    assert download["with"]["pattern"] == "ergebnis-*"
-    assert download["with"]["merge-multiple"] is True
-    assert zusammenfassen["run"].strip() == f'./pruefen.sh gesamt "{download["with"]["path"]}"'.replace(
-        "${{ runner.temp }}", "$RUNNER_TEMP"
-    )
+    # Über die Schnittstelle von GitHub für den ganzen Lauf, nicht über actions/download-artifact:
+    # Nach „Re-run failed jobs“ müssen auch die Ergebnisse der grünen Teile aus dem ersten Versuch
+    # da sein (Befund M1 der unabhängigen Prüfung).
+    assert not [step for step in steps if "download-artifact" in str(step.get("uses", ""))]
+    assert '"$GITHUB_RUN_ID"' in download["run"]
+    assert "--pattern 'ergebnis-*'" in download["run"]
+    assert download["env"]["GH_TOKEN"] == "${{ github.token }}"  # noqa: S105 -- Verweis auf den Schlüssel des Laufs, kein Passwort
+    assert _gesamt()["permissions"] == {"actions": "read", "contents": "read"}
+    assert zusammenfassen["run"].strip() == './pruefen.sh gesamt "$RUNNER_TEMP/ergebnisse"'
+    assert '"$RUNNER_TEMP/ergebnisse"' in download["run"]
     assert steps.index(download) < steps.index(zusammenfassen)
     assert "continue-on-error" not in zusammenfassen
 
