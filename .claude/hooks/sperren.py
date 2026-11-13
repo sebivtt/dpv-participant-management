@@ -5,11 +5,12 @@ und übergibt den Befehl als JSON auf der Standardeingabe. Exit 2 weist den Befe
 führt ihn dann nicht aus und zeigt der KI die Meldung. Exit 0 lässt ihn durch.
 
 Abgewiesen wird, was allein Sebastian tut: Pull Request übernehmen, auf `main` oder mit Force
-hochladen, `.env` lesen, das Label `geklärt` setzen. Geprüft wird nach Wirkung, nicht nach
-Wortlaut: Die Befehlskette wird in ihre Teile zerlegt, und je Teil zählt, was Git oder `gh`
-tatsächlich tun würden. `git push origin feature/main-menu` geht also durch, `git push origin
-HEAD:refs/heads/main` nicht. Das ist ein Schutz vor Versehen und Gewohnheit, keiner gegen
-absichtliches Verschleiern (Skript, Variable): Solche Befehle kann der Prüfschritt nicht sehen.
+hochladen, `.env` lesen, das Label `geklärt` setzen, Schutzregeln und Einstellungen eines Repos
+auf GitHub ändern (#16); lesen darf die KI sie. Geprüft wird nach Wirkung, nicht nach Wortlaut:
+Die Befehlskette wird in ihre Teile zerlegt, und je Teil zählt, was Git oder `gh` tatsächlich tun
+würden. `git push origin feature/main-menu` geht also durch, `git push origin HEAD:refs/heads/main`
+nicht. Das ist ein Schutz vor Versehen und Gewohnheit, keiner gegen absichtliches Verschleiern
+(Skript, Variable): Solche Befehle kann der Prüfschritt nicht sehen.
 
 Was sich nicht sicher zerlegen lässt (offenes Anführungszeichen, Ziel aus `$(…)` oder Variable,
 Inhalt aus einer Datei) und `git`, `gh` oder `.env` betrifft, wird abgewiesen. Scheitert der
@@ -487,6 +488,15 @@ ISSUE_OPTIONS_WITH_VALUE = {
     "--remove-project", "--add-reviewer", "--remove-reviewer", "--recover",
 }
 MERGE_PATH = re.compile(r"(^|/)pulls/[^/]+/merge/?$")
+# Schutzregeln und Einstellungen eines Repos (#16): das Repo selbst (Sichtbarkeit, Name, Archiv,
+# Löschen), Rulesets, Zweigschutz, Einstellungen der Prüfabläufe und Begrenzung auf Mitwirkende.
+# Für jedes Repo, auch über `repositories/<nummer>`, den zweiten Weg der API zu einem Repo.
+SETTINGS_PATH = re.compile(
+    r"^(api/v3/)?(repos/[^/]+/[^/]+|repositories/[^/]+)"
+    r"(/(rulesets|branches/.+/protection|actions/permissions|interaction-limits)(/.*)?)?/?$",
+    re.IGNORECASE,
+)
+REPO_COMMANDS = {"edit", "rename", "archive", "unarchive", "delete"}
 # Ziele, bei denen ein Inhalt aus `--input` Labels setzen, übernehmen oder GraphQL schreiben könnte.
 INPUT_PATH = re.compile(r"^graphql$|(^|/)(issues|pulls|labels)(/|$)")
 MUTATION = re.compile(r"\bmutation\b", re.IGNORECASE)
@@ -513,6 +523,8 @@ def _check_gh(words):
         _check_api(args[args.index("api") + 1 :])
     elif command == ["pr", "merge"]:
         raise Blocked("gh pr merge")
+    elif command[:1] == ["repo"] and command[1:] and command[1] in REPO_COMMANDS:
+        raise Blocked(f"Einstellungen des Repos ändern (gh repo {command[1]})")
     elif len(command) == 2 and command[0] in ("issue", "pr") and command[1] in ("create", "new", "edit"):
         _check_label_options(args)
 
@@ -546,6 +558,10 @@ def _check_api(args):
     """Prüft `gh api`; Inhalte liest der Prüfschritt nie aus Dateien, sie müssen im Befehl stehen."""
     endpoint, method, fields, inputs = _parse_api(args)
     path = re.sub(r"^https?://[^/]+/", "", endpoint or "").lstrip("/").split("?", 1)[0]
+    # Wie bei gh: ohne -X wird die Anfrage mit Feldern oder --input zum POST, sonst GET.
+    effective = (method or ("POST" if fields or inputs else "GET")).upper()
+    if SETTINGS_PATH.search(path) and effective != "GET":
+        raise Blocked(f"Schutzregeln oder Einstellungen des Repos ändern ({effective} {path})")
     if MERGE_PATH.search(path) and (method or "").upper() != "GET":
         raise Blocked("Pull Request über gh api übernehmen")
     for name, value, from_file in fields:
