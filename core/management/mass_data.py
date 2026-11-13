@@ -103,7 +103,7 @@ def _units(association: Unit) -> list[Unit]:
 def _accounts(usernames: list[str]) -> dict[str, object]:
     """Die erfundenen Konten nach Benutzername: vorhandene aus einem früheren Lauf wieder, fehlende neu.
 
-    Namen und Mail setzt jeder Lauf neu, damit das Ergebnis gleich ist, auch wenn sich ein Konto inzwischen
+    Namen, Mail und Mail-Liste setzt jeder Lauf neu, damit das Ergebnis gleich ist, auch wenn sich ein Konto inzwischen
     geändert hätte.
     """
     users = get_user_model().objects
@@ -122,10 +122,10 @@ def _accounts(usernames: list[str]) -> dict[str, object]:
                                         password=make_password(None)))
     for user in users.bulk_create(new):
         found[user.username] = user
-    with_mail = set(EmailAddress.objects.filter(user__in=found.values()).values_list("user_id", flat=True))
+    # Die Mail-Liste ebenso: genau eine bestätigte Mail je Konto, damit die Suche es findet und nur darüber.
+    EmailAddress.objects.filter(user__in=found.values()).delete()
     EmailAddress.objects.bulk_create([
-        EmailAddress(user=user, email=user.email, verified=True, primary=True)
-        for user in found.values() if user.pk not in with_mail
+        EmailAddress(user=found[name], email=found[name].email, verified=True, primary=True) for name in usernames
     ])
     return found
 
