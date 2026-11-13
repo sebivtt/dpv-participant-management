@@ -48,6 +48,9 @@ TEST_ENVIRONMENT = os.environ.get("TEST_ENVIRONMENT") == "1"
 # Testumgebung ist im Internet erreichbar.
 DEBUG = os.environ.get("DJANGO_DEBUG") == "1" and not TEST_ENVIRONMENT
 
+# Gerüst für den Testdaten-Befehl (#103); der Inhalt folgt nach den Tests.
+LOCAL_ENVIRONMENT = False
+
 # Bausteinkatalog unter /bausteine/ (#176): nur auf dem eigenen Rechner (DJANGO_DEBUG=1) und in
 # der Testumgebung. Im Betrieb ist keins von beiden gesetzt; dort gibt es die Seite nicht, auch
 # nicht für Admins, weil ihre erfundenen Namen Nutzende verwirren würden.
