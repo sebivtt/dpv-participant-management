@@ -14,6 +14,10 @@ Zwei Teile, geladen über ``pytest_plugins`` in tests/conftest.py und rauchtests
   die Meldung nennt ihn. Erkannt wird die Anfrage selbst (Signal ``request_started`` von Django),
   über den Test-Client wie über den Server des Rauchtests, gleich wie der Test die Adresse schreibt.
   Prüfen kann die Wache nur Tests, die laufen; im vollen Lauf auf GitHub sind das alle.
+- Ausnahme: Tests, die der Reihe nach jede Adresse des Tools aufrufen (etwa zu Rechten oder
+  „nicht gefunden“), treffen dabei auch den Katalog. Sie tragen statt des Katalog-Kennzeichens
+  ``@pytest.mark.alle_adressen``; die Wache lässt sie gelten, und der schnelle Lauf nimmt sie nicht
+  immer mit, weil sie zusammen Minuten dauern (Nachklärung zu #304 vom 13.11.2026).
 """
 
 import threading
@@ -23,6 +27,7 @@ import pytest
 from django.core.signals import request_started
 
 MARK = "bausteinkatalog"
+ALL_ADDRESSES = "alle_adressen"
 OPTION = "--schnelle-auswahl"
 CATALOG = "/bausteine/"
 
@@ -58,6 +63,10 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", f"{MARK}: Test ruft den Bausteinkatalog auf; läuft im schnellen Lauf immer mit (#304)")
+    config.addinivalue_line(
+        "markers",
+        f"{ALL_ADDRESSES}: Test ruft der Reihe nach jede Adresse auf, auch den Katalog; läuft nicht immer mit (#304)",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -85,10 +94,11 @@ def pytest_runtest_teardown(item, nextitem):
     # trylast: nach dem Abbau der Fixtures, damit auch deren Anfragen zählen.
     requested = _requested.is_set()
     _requested.clear()
-    if requested and item.get_closest_marker(MARK) is None:
+    if requested and item.get_closest_marker(MARK) is None and item.get_closest_marker(ALL_ADDRESSES) is None:
         pytest.fail(
             f"{item.nodeid} ruft den Bausteinkatalog ({CATALOG}) auf, trägt aber nicht das Kennzeichen "
             f"@pytest.mark.{MARK}. Ohne Kennzeichen läuft er im schnellen Lauf nicht immer mit "
-            "(tests/katalogtests.py, #304).",
+            f"(tests/katalogtests.py, #304). Ruft er der Reihe nach jede Adresse auf, gehört stattdessen "
+            f"@pytest.mark.{ALL_ADDRESSES} daran.",
             pytrace=False,
         )
