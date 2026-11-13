@@ -60,7 +60,9 @@ def test_s6_aufruf_des_katalogs_ohne_kennzeichen_ist_rot_und_nennt_den_test(pyte
     result.assert_outcomes(passed=4, errors=1)
     output = result.stdout.str()
     assert "ERROR test_innen.py::test_katalog_ohne_kennzeichen_erfunden" in output
-    assert "bausteinkatalog" in output.split("ERROR test_innen.py::test_katalog_ohne_kennzeichen_erfunden", 1)[1]
+    # Die volle Meldung (die Zeile darüber kürzt pytest auf die Breite des Fensters).
+    assert "test_innen.py::test_katalog_ohne_kennzeichen_erfunden ruft den Bausteinkatalog" in output
+    assert "@pytest.mark.bausteinkatalog" in output
     for name in ["test_katalog_mit_kennzeichen", "test_andere_seite_ohne_kennzeichen", "test_danach_ohne_anfrage"]:
         assert f"ERROR test_innen.py::{name}" not in output, name
 
