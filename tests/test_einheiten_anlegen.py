@@ -326,6 +326,15 @@ def test_zu_langer_name_wird_abgelehnt_und_nicht_abgeschnitten(org):
     assert len(children(org.walhall)) == 2
 
 
+def test_n1_n2_die_dialoge_anlegen_und_bearbeiten_pruefen_im_tool_nicht_im_browser(org):
+    """Leerer Name: die Meldung des Tools am Feld statt der Blase des Browsers (#296, N1 und N2, Szenarien
+    https://github.com/sebivtt/dpv-participant-management/issues/296#issuecomment-6819478124)."""
+    client = client_for(org.walhall_leitung)
+    for address in (create_address(org.walhall), edit_address(org.falken)):
+        form = _one(_by_tag(_tree(client.get(address)), "form", id="f-dialog"))
+        assert _attr(form, "novalidate") is not None, address
+
+
 # ---------- Umbenennen ----------
 
 
