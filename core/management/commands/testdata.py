@@ -184,7 +184,10 @@ def _clear() -> None:
     einzelner Einträge lehnen sie weiter ab, im Programm und in der Datenbank (#91, #92, #131).
     """
     kept = {get_user_model(), *KEPT}
-    tables = [model._meta.db_table for model in apps.get_models() if model not in kept and model._meta.managed]
+    # Verbindungstabellen, die Django selbst zu einem Feld anlegt, gehören zu dessen Tabelle: die Leitungen einer
+    # Veranstaltung (#100) werden mit ihr geleert, die Gruppen eines Kontos bleiben mit dem Konto.
+    tables = [model._meta.db_table for model in apps.get_models(include_auto_created=True)
+              if (model._meta.auto_created or model) not in kept and model._meta.managed]
     # Die Datenbank prüft Verweise erst am Ende der Transaktion; leeren lässt sie eine Tabelle nur ohne noch
     # offene Prüfung. Offen ist eine, wenn in derselben Transaktion schon geschrieben wurde, etwa in Tests.
     connection.check_constraints()

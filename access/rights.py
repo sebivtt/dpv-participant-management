@@ -1055,7 +1055,7 @@ class Rights:
             return Event.objects.none()
         return Event.objects.filter(leads=self.user.pk)
 
-    def led_events(self) -> list[Event]:
+    def own_events(self) -> list[Event]:
         """Die eigenen Veranstaltungen für die Liste „Veranstaltungen“, nach Beginn, die früheste zuerst (V5)."""
         return list(self.events().order_by("start", "end", "name", "pk"))
 

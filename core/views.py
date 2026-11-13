@@ -10,7 +10,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import cache_control, never_cache
 
 from access.addresses import checks_rights, without_personal_data
 from access.keys import is_key, new_key
@@ -841,7 +841,7 @@ def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpRespon
     """Die Liste „Veranstaltungen“, auf Wunsch mit offenem Dialog „Veranstaltung erstellen“."""
     rights = request.rights
     tiles = [{"label": period(entry), "org": entry.name, "href": reverse("event_page", args=[entry.key])}
-             for entry in rights.led_events()]
+             for entry in rights.own_events()]
     return render(request, "core/veranstaltungen.html", {
         "tiles": tiles,
         # Den Knopf gibt es nur mit Zuordnung, ohne auch keinen Ersatztext (#100).
@@ -894,7 +894,9 @@ def events(request: HttpRequest) -> HttpResponse:
 
 
 @checks_rights(*EVENT_ROWS)
-@never_cache
+# Wie `never_cache`, aber ohne die Kopfzeile „Expires“ mit der Uhrzeit: Seiten ohne Kennung antworten sonst je nach
+# Sekunde anders, und der Vergleich echter mit erfundenen Kennungen in tests/test_nicht_gefunden.py schlüge fehl.
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def event_create(request: HttpRequest) -> HttpResponse:
     """Dialog „Veranstaltung erstellen“ zeigen und die Veranstaltung anlegen; wer anlegt, leitet sie (VA-01, TEAM-01).
 

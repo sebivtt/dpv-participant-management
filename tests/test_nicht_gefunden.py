@@ -45,8 +45,9 @@ U = Unit.Kind
 MISSING = "a" * KEY_LENGTH
 NOT_FOUND_TEXT = "Diese Seite gibt es nicht."
 NO_ACCESS_TEXT = "Dafür fehlt dir die Berechtigung."
-# Der Formularschutz, der bei jeder Antwort anders aussieht (siehe oben).
-CSRF_VALUE = re.compile(rb'(name="csrfmiddlewaretoken" value=")[^"]*"')
+# Der Formularschutz, der bei jeder Antwort anders aussieht (siehe oben), und seit #100 die Kennung des Formulars
+# „Veranstaltung erstellen“ gegen den Doppelklick (VG8): Sie ist bei jedem Öffnen neu und verrät nichts über Einträge.
+CSRF_VALUE = re.compile(rb'(name="(?:csrfmiddlewaretoken|creation_key)" value=")[^"]*"')
 
 
 def client_for(user) -> Client:
@@ -56,7 +57,7 @@ def client_for(user) -> Client:
 
 
 def answer(response) -> tuple:
-    """Alles, was beim Browser ankommt: Statuscode, Inhalt und Kopfzeilen; nur der Formularschutz ist gleichgesetzt."""
+    """Alles, was beim Browser ankommt: Statuscode, Inhalt und Kopfzeilen; nur Formularschutz und Kennung des Formulars sind gleichgesetzt."""
     content = CSRF_VALUE.sub(rb'\1..."', response.content)
     return response.status_code, content, sorted(response.headers.items())
 
