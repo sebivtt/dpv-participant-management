@@ -1,5 +1,8 @@
 # Automatische Prüfungen bei jedem Pull Request und jeder Änderung an main.
-# Die Prüfungen selbst stehen in pruefen.sh, damit sie lokal genauso laufen.
+# Die Prüfungen selbst stehen in pruefen.sh, damit sie lokal genauso laufen. Auf GitHub laufen
+# sie in sechs Teilen gleichzeitig auf eigenen Rechnern (#307); jeder hat seine eigene Datenbank,
+# sein eigenes Keycloak und dieselben Ports wie lokal. Die Gesamtprüfung „Alle Prüfungen
+# (pruefen.sh)“ am Ende ist nur grün, wenn alle Teile grün sind.
 #
 # Übernommen aus sebivtt/scout-participant-management, .github/workflows/ci.yml, Stand 9df4513.
 # Angepasst: ohne Vue-Oberfläche; eine Python-Fassung (3.13, festgelegt in .python-version)
@@ -23,16 +26,32 @@ concurrency:
 
 jobs:
   pruefen:
-    name: Alle Prüfungen (pruefen.sh)
+    name: Teil ${{ matrix.teil }} (pruefen.sh)
     # Feste Ubuntu-Fassung statt „ubuntu-latest“: Als GitHub am 27.10.2026 auf Ubuntu 26.04
     # umstellte, startete WebKit von Playwright nicht mehr (fehlende Systembibliothek libicu 74),
     # und jeder Rauchtest in WebKit war rot (#192). Ein Wechsel der Fassung kommt bewusst mit
     # eigenem Pull Request, sobald Playwright sie unterstützt.
     runs-on: ubuntu-24.04
-    # 55 Minuten: Vorlauf, Installation der Browser (bis 5), Warten auf Keycloak und bis zu
-    # 45 Minuten Prüfungen müssen hineinpassen (#256, #276). Hängt die Installation, endet der
-    # Lauf ohnehin nach ihren 5 Minuten rot.
-    timeout-minutes: 55
+    # 35 Minuten je Teil: Vorlauf, Installation des Browsers (bis 5), Warten auf Keycloak und bis
+    # zu 25 Minuten Prüfungen müssen hineinpassen (#256, #276, #307). Hängt die Installation,
+    # endet der Teil ohnehin nach ihren 5 Minuten rot.
+    timeout-minutes: 35
+    strategy:
+      # Jeder Teil läuft zu Ende, auch wenn ein anderer rot ist; so sieht man alle Befunde auf einmal.
+      fail-fast: false
+      # Dieselben Teile wie in pruefen.sh („./pruefen.sh teile“); tests/test_pruefung_auf_github.py
+      # vergleicht beide. Nur die Teile mit Rauchtest brauchen einen Browser, jeder nur seinen.
+      matrix:
+        include:
+          - teil: grund
+          - teil: tests-1
+          - teil: tests-2
+          - teil: rauchtest-chromium
+            browser: chromium
+          - teil: rauchtest-firefox
+            browser: firefox
+          - teil: rauchtest-webkit
+            browser: webkit
     services:
       postgres:
         image: postgres:18
@@ -91,31 +110,36 @@ jobs:
       # jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein verhindert den Hänger also
       # nicht. Ein zweiter Versuch im selben Lauf half 3 von 7 Mal, ein Neustart des Laufs auf einem
       # neuen Rechner fast immer (#276). Klappt die Installation, dauert sie meist unter 1,2 Minuten,
-      # bisher höchstens 4,2.
+      # bisher höchstens 4,2. Seit #307 installiert jeder Teil mit Rauchtest nur seinen Browser, die
+      # anderen Teile keinen.
       - name: Playwright-Fassung aus uv.lock ermitteln
         id: playwright
+        if: matrix.browser
         run: |
           version="$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "ubuntu=$ImageOS" >> "$GITHUB_OUTPUT"
       - name: Browser aus dem Zwischenspeicher holen
+        if: matrix.browser
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           # Mit der Ubuntu-Fassung (ImageOS des Rechners, etwa „ubuntu24“) im Schlüssel, weil Playwright
           # je Fassung eigene Browser lädt; sonst kämen nach einem Wechsel die alten aus dem
-          # Zwischenspeicher (#192).
-          key: playwright-browser-${{ steps.playwright.outputs.ubuntu }}-${{ steps.playwright.outputs.version }}
+          # Zwischenspeicher (#192). Je Browser ein eigener Eintrag, weil jeder Teil nur seinen
+          # Browser installiert (#307).
+          key: playwright-browser-${{ steps.playwright.outputs.ubuntu }}-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
       - name: Browser für den Rauchtest installieren
         id: browser
+        if: matrix.browser
         timeout-minutes: 5
-        # Scheitert oder hängt die Installation, meldet das der nächste Schritt und beendet den Lauf.
+        # Scheitert oder hängt die Installation, meldet das der nächste Schritt und beendet den Teil.
         continue-on-error: true
-        run: uv run --locked playwright install --with-deps chromium firefox webkit
+        run: uv run --locked playwright install --with-deps ${{ matrix.browser }}
       - name: Browser-Installation gescheitert
         if: steps.browser.outcome == 'failure'
         run: |
-          echo "::error title=Browser-Installation gescheitert::Die Test-Browser ließen sich nicht in 5 Minuten installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen; am Code liegt es nicht. Ein Neustart des Laufs (Re-run jobs) hilft meist (#133, #276)."
+          echo "::error title=Browser-Installation gescheitert::Der Test-Browser ließ sich nicht in 5 Minuten installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen (betroffen ist nur dieser Teil); am Code liegt es nicht. Ein Neustart nur der gescheiterten Teile (Re-run failed jobs) hilft meist (#133, #276, #307)."
           exit 1
       - name: Warten, bis Keycloak bereit ist
         run: |
@@ -125,7 +149,53 @@ jobs:
           done
           docker logs keycloak
           exit 1
-      - name: Alle Prüfungen
-        # Eigenes Limit, damit ein hängender Test den Lauf nicht bis zum Limit des Laufs blockiert (#256).
-        timeout-minutes: 45
-        run: ./pruefen.sh
+      - name: Prüfungen dieses Teils
+        # Eigenes Limit, damit ein hängender Test den Teil nicht bis zum Limit des Teils blockiert
+        # (#256, #307).
+        timeout-minutes: 25
+        env:
+          # Hier schreibt pruefen.sh das Ergebnis des Teils für die Gesamtprüfung hin.
+          PRUEFTEIL_ERGEBNIS: ${{ runner.temp }}/${{ matrix.teil }}
+        run: ./pruefen.sh teil ${{ matrix.teil }}
+      # Auch bei Rot, damit die Gesamtprüfung den roten Teil nennt. Fehlt die Datei, weil der Teil
+      # vorher abgebrochen ist, findet die Gesamtprüfung kein Ergebnis und ist rot. Beim Neustart
+      # gescheiterter Teile ersetzt das neue Ergebnis das alte.
+      - name: Ergebnis des Teils weitergeben
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ergebnis-${{ matrix.teil }}
+          path: ${{ runner.temp }}/${{ matrix.teil }}
+          if-no-files-found: ignore
+          overwrite: true
+
+  gesamt:
+    # Gleicher Name wie früher der eine Lauf: „grün“ heißt weiter „alle Prüfungen grün“.
+    name: Alle Prüfungen (pruefen.sh)
+    needs: pruefen
+    # Läuft immer, auch wenn ein Teil rot, abgebrochen oder gar nicht gelaufen ist; dann ist sie rot.
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Nur das Skript; die Gesamtprüfung braucht weder Python noch Pakete.
+          sparse-checkout: pruefen.sh
+          sparse-checkout-cone-mode: false
+      - name: Ergebnisse der Teile holen
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        # Fehlt jedes Ergebnis, meldet das der nächste Schritt je Teil.
+        continue-on-error: true
+        with:
+          pattern: ergebnis-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/ergebnisse
+      - name: Ergebnisse aller Teile zusammenfassen
+        run: ./pruefen.sh gesamt "$RUNNER_TEMP/ergebnisse"
+      - name: Alle Teile beendet und grün
+        if: always() && needs.pruefen.result != 'success'
+        run: |
+          echo "::error title=ROT::Nicht alle Teile sind grün beendet (Ergebnis: ${{ needs.pruefen.result }}). Die roten oder abgebrochenen Teile stehen oben in der Liste des Laufs."
+          exit 1

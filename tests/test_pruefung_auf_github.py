@@ -8,12 +8,13 @@ der Lauf rot mit klarer Meldung.
 Issue #276 (06.11.2026): Ein zweiter Versuch im selben Lauf half 3 von 7 Mal, ein dritter nie, ein
 kompletter Neustart fast immer. Deshalb gibt es nur noch einen Versuch mit 5 Minuten; danach
 ist der Lauf rot, und ein Neustart bekommt einen neuen Rechner. Der Schritt „Alle Prüfungen“
-behält seine 45 Minuten (#256), der ganze Lauf hat 55; die Summe wird hier nachgerechnet.
+behielt damals seine 45 Minuten (#256), der ganze Lauf hatte 55.
 
 Issue #307 (13.11.2026): Die Prüfungen laufen in sechs Teilen gleichzeitig auf eigenen Rechnern
 (`./pruefen.sh teil <name>`); nur die drei Teile mit Rauchtest installieren einen Browser, je
 ihren eigenen. Jeder Teil läuft zu Ende, auch wenn ein anderer rot ist. Die Gesamtprüfung „Alle
-Prüfungen (pruefen.sh)“ ist nur grün, wenn alle Teile grün sind. Die Zeitlimits gelten je Teil.
+Prüfungen (pruefen.sh)“ ist nur grün, wenn alle Teile grün sind. Die Zeitlimits gelten je Teil;
+die Summe wird hier nachgerechnet.
 
 Diese Tests sorgen dafür, dass das nicht still aus ci.yml verschwindet. Ob GitHub es
 tatsächlich so ausführt, zeigt erst ein Lauf dort.
