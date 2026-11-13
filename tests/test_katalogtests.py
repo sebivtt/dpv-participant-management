@@ -67,6 +67,26 @@ def test_s6_aufruf_des_katalogs_ohne_kennzeichen_ist_rot_und_nennt_den_test(pyte
         assert f"ERROR test_innen.py::{name}" not in output, name
 
 
+INNER_ALLE_ADRESSEN = """
+import pytest
+from django.core.signals import request_started
+
+
+@pytest.mark.alle_adressen
+@pytest.mark.parametrize("adresse", ["/", "/profil/", "/bausteine/"])
+def test_jede_adresse_erfunden(adresse):
+    request_started.send(sender=None, environ={"PATH_INFO": adresse})
+"""
+
+
+def test_s7_ein_test_ueber_alle_adressen_mit_eigenem_kennzeichen_ist_nicht_rot(pytester, monkeypatch):
+    pytester.makepyfile(test_innen=INNER_ALLE_ADRESSEN)
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join(filter(None, [str(BASE_DIR), os.environ.get("PYTHONPATH")])))
+    result = pytester.runpytest_subprocess("-p", "no:django", "-p", "no:cacheprovider", "-p", "tests.katalogtests", "-rE", "-W", "error::pytest.PytestUnknownMarkWarning")
+
+    result.assert_outcomes(passed=3)
+
+
 def test_die_wache_kennt_die_adresse_des_katalogs():
     # Zieht der Katalog um, bliebe die Wache sonst still.
     assert reverse("building_blocks") == katalogtests.CATALOG

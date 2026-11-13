@@ -73,6 +73,7 @@ def test_nur_die_login_seiten_sind_als_oeffentlich_markiert():
     assert public == PUBLIC
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.django_db
 @pytest.mark.parametrize(("pattern", "entry"), [p for p in ALL if p[1].name not in PUBLIC], ids=lambda p: str(p))
 def test_jede_andere_adresse_leitet_ohne_login_zum_login(client, pattern, entry):

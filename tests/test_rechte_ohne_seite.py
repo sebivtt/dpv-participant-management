@@ -168,6 +168,7 @@ def page_texts(org) -> list[tuple[str, str]]:
 # EP-09: Konten im Tool anlegen oder löschen
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("EP-09")
 def test_keine_adresse_legt_ein_konto_an_oder_loescht_eines(org):
     before = snapshot(User, "pk", "username", "email", "is_superuser", "is_staff")
@@ -192,6 +193,7 @@ def test_konto_entsteht_beim_ersten_login(client, keycloak):
 # RO-19: Rolle Admin im Tool vergeben oder entfernen
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("RO-19")
 def test_keine_adresse_vergibt_oder_entfernt_die_rolle_admin(org):
     before = snapshot(Role, "user_id", "kind", "unit_id")
@@ -214,6 +216,7 @@ def test_admin_wird_per_befehl_auf_dem_server_ernannt(org):
 # PR-01 und PR-03: die Protokolle im Tool ansehen
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("PR-01")
 def test_keine_adresse_zeigt_das_protokoll_der_rollenaenderungen(org):
     assert RoleChange.objects.filter(person_name=OLD_PERSON_NAME).exists()
@@ -233,6 +236,7 @@ def test_rollenaenderungen_werden_weiter_ins_protokoll_geschrieben(org):
     assert RoleChange.objects.count() == before + 1
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("PR-05")
 def test_keine_adresse_zeigt_das_protokoll_der_admin_zugriffe(org):
     """#92: In P2 wird das Protokoll der Admin-Zugriffe nur geschrieben (W4); der Bereich steht nur dort."""
@@ -245,6 +249,7 @@ def test_keine_adresse_zeigt_das_protokoll_der_admin_zugriffe(org):
     assert shown == []
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("PR-03")
 def test_keine_adresse_zeigt_das_protokoll_der_strukturaenderungen(org):
     assert UnitChange.objects.filter(new_value=OLD_UNIT_NAME).exists()
@@ -280,6 +285,7 @@ LOGIN_TABLES = [
 ]
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("TD-01")
 def test_keine_adresse_aendert_die_technischen_daten_des_logins(org):
     before = {model: snapshot(model, *fields) for model, fields in LOGIN_TABLES}
@@ -289,6 +295,7 @@ def test_keine_adresse_aendert_die_technischen_daten_des_logins(org):
     assert {model: snapshot(model, *fields) for model, fields in LOGIN_TABLES} == before
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("TD-01")
 def test_keine_adresse_zeigt_die_technischen_daten_des_logins(org):
     shown = [address for address, text in page_texts(org) if KEYCLOAK_DETAIL in text or "nur-test-1" in text]
@@ -296,6 +303,7 @@ def test_keine_adresse_zeigt_die_technischen_daten_des_logins(org):
     assert shown == []
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("TD-01")
 def test_keine_adresse_zeigt_oder_aendert_eine_fremde_sitzung(org):
     """Sitzungen anderer bleiben unberührt, auch beim Abmelden über ein manipuliertes Formular."""
@@ -355,6 +363,7 @@ def test_konten_und_einheiten_haben_auffaellige_nummern(org):
     assert min(numbers) >= FIRST_USER_NUMBER
 
 
+@pytest.mark.alle_adressen
 def test_keine_antwort_enthaelt_eine_interne_nummer(org):
     """V6 und S7: keine Nummer einer Person oder Einheit, weder in Links noch in Formularfeldern noch im Text."""
     assert pages_with_numbers(org) == []

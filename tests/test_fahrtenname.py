@@ -238,6 +238,7 @@ def test_admin_aendert_erikas_fahrtennamen_nicht(org):
     assert stored(admin) == "Gekapert"
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("EP-04")
 def test_keine_adresse_aendert_den_fahrtennamen_einer_anderen_person(org):
     """Jede Adresse, als Mitglied, Leitung, Verbandsleitung, Admin, ohne Zuordnung und mit vielen Rollen."""

@@ -620,6 +620,7 @@ def test_formular_an_die_seite_aendert_nichts(org):
     assert snapshot(User, "pk", "username", "first_name", "last_name", "email") == before
 
 
+@pytest.mark.alle_adressen
 @pytest.mark.rechtematrix("EP-05")
 def test_keine_adresse_aendert_name_benutzername_oder_mail(org):
     """Jede Adresse, als Mitglied, Leitung, Verbandsleitung, Admin, ohne Zuordnung und mit vielen Rollen."""

@@ -724,3 +724,14 @@ def test_s4_eine_genannte_datei_mit_katalogtests_laeuft_jeden_test_genau_einmal(
     ids = auswahl["tests"]
     assert len(ids) == len(set(ids)), "jeder Test genau einmal"
     assert set(ids) == datei | _katalog_ids("tests")
+
+
+
+def test_s7_tests_mit_kennzeichen_alle_adressen_laufen_nicht_immer_mit(tmp_path):
+    # Sie rufen jede Adresse auf, auch den Katalog, und dauern zusammen Minuten (Nachklärung zu #304).
+    code, alle_adressen, ausgabe = _gesammelt("tests", "-m", "alle_adressen")
+    assert code == 0, ausgabe[-3000:]
+    assert alle_adressen, "es gibt Tests mit dem Kennzeichen „alle Adressen“"
+    _, auswahl = _schnell_wie_pruefen_sh(tmp_path)
+
+    assert not set(alle_adressen) & set(auswahl["tests"])
