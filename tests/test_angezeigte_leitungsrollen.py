@@ -592,3 +592,49 @@ def test_lg5_auch_das_datenmodell_lehnt_den_ringwechsel_ab(org):
         leuchtturm.save(by=org.mosaik_leitung)
 
     assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.kueste.pk
+
+
+# ---------- Unabhängige Prüfung (13.11.2026), Befunde B1 und B2 ----------
+
+
+@pytest.mark.parametrize("where", ["leuchtturm", "moewen"])
+def test_b1_ringwechsel_mit_angezeigter_ringleitung_einer_person_im_stamm_wird_abgelehnt(org, where):
+    """Befund B1: Paula gehört zum Stamm oder zu einer Gruppe darin und ist angezeigte Ringleitung darüber."""
+    from tests.test_einheiten_anlegen import change_ring, dialog_notices
+
+    paula = managed("Paula", "Probe", getattr(org, where))
+    show(paula, R.RING_LEAD, org.kueste)
+
+    notices = dialog_notices(change_ring(org.mosaik_leitung, org.leuchtturm, org.nord))
+
+    assert len(notices) == 1 and "Paula Probe ist Ringleitung von Ring Küste." in notices[0]
+    assert Unit.objects.get(pk=org.leuchtturm.pk).parent_id == org.kueste.pk
+    leuchtturm = Unit.objects.get(pk=org.leuchtturm.pk)
+    leuchtturm.parent = org.nord
+    with pytest.raises(ValidationError):
+        leuchtturm.save(by=org.mosaik_leitung)
+
+
+def test_b1_bearbeiten_bleibt_moeglich_wenn_sich_die_organisation_nicht_aendert(org):
+    """Befund B1, Folgeschaden: Speichern ohne Wechsel der Organisation prüft keine Rollen."""
+    entry = show(org.paul, R.TROOP_LEAD, org.walhall)
+    # Ein Zustand, den das Tool nicht mehr herstellt, etwa aus der Zeit vor einer Regel: die Rolle neben dem Pfad.
+    DisplayedLead.objects.filter(pk=entry.pk).update(unit=org.zugvoegel)
+    org.paul.first_name = "Pauline"
+
+    org.paul.save()
+
+    assert ManagedPerson.objects.get(pk=org.paul.pk).first_name == "Pauline"
+
+
+def test_b2_kennungen_der_einen_art_finden_beim_entfernen_unter_der_anderen_nichts(org):
+    entry = show(org.tim, R.GROUP_LEAD, org.woelfe)
+    wim = Role.objects.get(user=org.woelfe_leitung, kind=R.GROUP_LEAD, unit=org.woelfe)
+    wanda = client_for(org.walhall_leitung)
+
+    for address in (remove_address(org.woelfe, wim), f"{unit_address(org.woelfe)}entfernen/{entry.key}/"):
+        assert wanda.get(address).status_code == 404, address
+        assert wanda.post(address).status_code == 404, address
+
+    assert displayed(org.tim) == {(R.GROUP_LEAD, "Meute Wölfe")}
+    assert Role.objects.filter(pk=wim.pk).exists()
