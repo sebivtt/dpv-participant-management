@@ -53,6 +53,10 @@ OG5_MESSAGE = (
     "der Mitgliedschaft in Stamm Leuchtturm. Sie kann zuerst beendet werden."
 )
 NOT_ON_PATH_LARS = "Laterne (Lars Leuchtturm) ist Mitglied in Leuchtturm und kann deshalb keine Leitung bei Ring Küste sein."
+MEMBER_ELSEWHERE = (
+    "Diese Person gehört schon zu einer anderen Organisation und kann hier keine Leitung werden. Sie kann bei ihrer "
+    "bisherigen Leitung den Wechsel veranlassen."
+)
 
 
 def create_address(where) -> str:
@@ -716,7 +720,11 @@ def test_og9_mona_benennt_lars_und_verschiebt_leuchtturm_gleichzeitig(transactio
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize("moving_first", [True, False])
 def test_og9_auch_wenn_kai_benennt_und_mona_verschiebt(transactional_db, org, moving_first):
-    """Risikovariante zu OG9: Zwei verschiedene Konten sperren sich nicht gegenseitig; es zählt die gemeinsame Sperre."""
+    """Risikovariante zu OG9: Zwei verschiedene Konten sperren sich nicht gegenseitig; es zählt die gemeinsame Sperre.
+
+    Ist der Wechsel zuerst gespeichert, liegt Leuchtturm nicht mehr in Kais Bereich; Kai sieht dann dieselbe Meldung
+    wie bei Klicks nacheinander (OG9), seit #295 auch im selben Augenblick.
+    """
     first, second = (
         (lambda: Rights(org.mosaik_leitung).change_ring(org.leuchtturm, org.nord.key),
          lambda: Rights(org.kueste_leitung).appoint(org.kueste, org.leuchtturm_leitung.key))
@@ -726,16 +734,17 @@ def test_og9_auch_wenn_kai_benennt_und_mona_verschiebt(transactional_db, org, mo
 
     results = _one_after_the_other(first, second)
 
-    _assert_exactly_one(org, results, moving_first)
+    _assert_exactly_one(org, results, moving_first, refused=MEMBER_ELSEWHERE)
 
 
-def _assert_exactly_one(org, results, moving_first: bool) -> None:
+def _assert_exactly_one(org, results, moving_first: bool, refused: str = NOT_ON_PATH_LARS) -> None:
+    """`refused` ist die Meldung beim Benennen, wenn der Wechsel zuerst gespeichert ist, wie bei Klicks nacheinander."""
     move_result, appoint_result = results if moving_first else results[::-1]
     lars_leads_kueste = Role.objects.filter(user=org.leuchtturm_leitung, kind=R.RING_LEAD, unit=org.kueste).exists()
     in_nord = fresh(org.leuchtturm).parent_id == org.nord.pk
     if moving_first:
         assert move_result[0] is True
-        assert appoint_result == (False, NOT_ON_PATH_LARS)
+        assert appoint_result == (False, refused)
         assert (in_nord, lars_leads_kueste) == (True, False)
     else:
         assert appoint_result[0] is True
