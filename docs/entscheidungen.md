@@ -63,7 +63,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Begründung:** Zu 2: Die Rechner von GitHub wechseln von Lauf zu Lauf; nur im selben Lauf ist es wirklich derselbe Rechner. Zu 3: Messungen schwanken auch auf demselben Rechner um einige Prozent. Zu 4: Eine Pflicht in jedem Pull Request wäre aufwendig und eine weitere Regel. Zu 6: Der alte Stand kann ein anderes Datenmodell haben; mit eigenem Code und Generator entstehen bei beiden dieselben Daten für die Seiten, die es schon gab.
 
-**Grenzen:** Ein alter Stand muss Zeiten in eine Datei schreiben können; das kann `tests/leistungstest.py` ab diesem Pull Request, also ab der ersten Markierung `phasenende-p2`. Den ersten Lauf dieses Ablaufs gibt es erst am Ende von P2, weil GitHub einen nur von Hand startbaren Ablauf erst aus `main` kennt.
+**Grenzen:** Ein alter Stand muss Zeiten in eine Datei schreiben können; das kann `tests/leistungstest.py` ab diesem Pull Request, also ab der ersten Markierung `phasenende-p2`. Den Weg mit altem Stand gibt es erst, wenn `phasenende-p2` gesetzt ist; ausprobiert ist bis dahin nur der Lauf ohne vorige Phase (im Pull Request zu #145 auf seinem Zweig).
 
 **Umsetzung:** `.github/workflows/leistungstest.yml`, `tests/leistungsvergleich.py`, `tests/leistungstest.py` (`PAGES`, `NOT_MEASURED`, Ergebnisdatei), `docs/leistungstest.md`, `README.md` („Leistungstest“), Skill `phase-steuern`, Abschnitt 5; Tests in `tests/test_leistungsvergleich.py`.
 
