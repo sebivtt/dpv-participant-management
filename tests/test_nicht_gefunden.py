@@ -9,7 +9,9 @@ Die Tests nutzen Testadressen in `tests/urls.py`, die so gebaut sind, wie Seiten
 Einträge nur über die zentrale Rechteprüfung (`request.rights`). Verglichen wird die ganze Antwort:
 Statuscode, Inhalt Byte für Byte und alle Kopfzeilen. Ausgenommen ist nur der Wert des
 Formularschutzes (CSRF) auf Seiten mit Formular: Django verschlüsselt ihn bei jeder Antwort neu,
-auch bei zwei gleichen Aufrufen. Die Fehlerseiten haben kein Formular, dort ist nichts
+auch bei zwei gleichen Aufrufen. Ebenso seit #100 die Kennung des Formulars „Veranstaltung
+erstellen“ (`creation_key`, Schutz gegen den Doppelklick, VG8): Sie entsteht bei jedem Öffnen neu
+und gehört zu keinem Eintrag. Die Fehlerseiten haben kein Formular, dort ist nichts
 ausgenommen. Im Vergleich der Formulare fehlen außerdem die Login-Adressen: Sie antworten ohne
 Login, nehmen keine Einträge und schicken bei jedem Aufruf neue Zufallswerte für Keycloak.
 Alle Namen sind erfunden.

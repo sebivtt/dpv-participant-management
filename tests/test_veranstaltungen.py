@@ -55,6 +55,17 @@ def build_people() -> SimpleNamespace:
     give(o.vera, R.FEDERATION_LEAD, o.dpv)
     o.tom = person("tom.team", "Tom", "Team")
     give(o.tom, R.EVENT_TEAM, o.dpv)
+    # Weitere Ebenen der Zuordnung (VA-01) und Leitungen darüber (VA-03), unabhängige Prüfung, Befund G3.
+    o.rita = person("rita.ring", "Rita", "Ring")
+    give(o.rita, R.MEMBER, o.kueste)
+    give(o.rita, R.RING_LEAD, o.kueste)
+    o.bruno = person("bruno.bund", "Bruno", "Bund")
+    give(o.bruno, R.MEMBER, o.boreas)
+    give(o.bruno, R.ASSOCIATION_LEAD, o.boreas)
+    o.willi = person("willi.walhall", "Willi", "Walhall")
+    give(o.willi, R.MEMBER, o.walhall)
+    o.mia = person("mia.mosaik", "Mia", "Mosaik")
+    give(o.mia, R.MEMBER, o.mosaik)
     o.otto = person("otto.ohne", "Otto", "Ohne")
     o.max = person("max.admin", "Max", "Admin")
     give(o.max, R.ADMIN)
@@ -195,7 +206,7 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
 
 @pytest.mark.rechtematrix("VA-01", "VA-05")
 def test_v2_fiete_vera_und_tom_legen_ebenso_eine_veranstaltung_an(org):
-    for user in (org.fiete, org.vera, org.tom, org.wanda):
+    for user in (org.fiete, org.vera, org.tom, org.wanda, org.rita, org.bruno, org.willi, org.mia):
         assert NAV in nav_labels(page_tree(user, "/")), user.username
         assert create_button(user) == CREATE, user.username
 
@@ -304,7 +315,7 @@ def test_vv1_auch_im_support_zugang_legt_max_nichts_an(org):
 @pytest.mark.wie_nicht_vorhanden("veranstaltungen/<key:event>/")
 @pytest.mark.wie_nicht_vorhanden("veranstaltungen/<key:event>/bearbeiten/")
 def test_vv2_niemand_ausser_finn_sieht_oder_aendert_probelager_2027(org, probelager):
-    for user in (org.wanda, org.fiete, org.vera, org.tom, org.max, org.otto):
+    for user in (org.wanda, org.fiete, org.bruno, org.rita, org.vera, org.tom, org.max, org.otto):
         client = client_for(user)
         for address in ("/", "/profil/", "/organisation/", LIST):
             assert "Probelager" not in client.get(address).content.decode(), (user.username, address)
