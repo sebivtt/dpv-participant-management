@@ -57,6 +57,18 @@ BOREAS_FROM_103 = 6
 # Die gemessenen Zeiten je Seite, für die Übersicht am Ende des Laufs.
 RESULTS: dict[str, list[float]] = {}
 
+# Gerüst (#145): gemessene Seiten mit dem Namen ihrer Adresse, bewusst nicht gemessene mit Grund.
+PAGES: dict[str, str] = {}
+NOT_MEASURED: dict[str, str] = {}
+
+
+def unmeasured_pages() -> list[str]:
+    raise NotImplementedError
+
+
+def write_results(path: str) -> None:
+    raise NotImplementedError
+
 
 # ---------- Messen ----------
 
