@@ -343,18 +343,38 @@ def test_b5_auf_dem_server_bekommen_nur_angemeldete_konten_ihre_rolle(test_envir
     logged_in_before("erika.testfrau", "Erika", "Testfrau")
     logged_in_before("ohne.nachname", "Erika")
     ohne_name = logged_in_before("ohne.name")
+    # Gegenprobe (unabhängige Prüfung, G2): Auf dem Server bekommen nur die vier Konten aus #62 eine Rolle.
+    fiete = logged_in_before("gruppenleitung.falken", "Fiete")
 
     out = run()
 
-    assert set(User.objects.values_list("username", flat=True)) == {"erika.testfrau", "ohne.nachname", "ohne.name"}
+    assert set(User.objects.values_list("username", flat=True)) == {
+        "erika.testfrau", "ohne.nachname", "ohne.name", "gruppenleitung.falken"}
     leads = {role for role in roles_now() if role[1] != R.MEMBER}
     assert leads == SERVER_ROLES - {("max.testmann", R.TROOP_LEAD, "Zugvögel")}
     assert not Role.objects.filter(user=ohne_name).exists()
+    assert not Role.objects.filter(user=fiete).exists()
     assert units_now() == UNITS
     first_login = [line for line in out.splitlines() if "zuerst" in line]
     assert len(first_login) == 1, out
     assert "max.testmann" in first_login[0]
     assert not any(username in first_login[0] for username in ("erika.testfrau", "ohne.nachname", "ohne.name"))
+
+
+def test_b5_auf_dem_server_entstehen_verwaltete_personen_nur_wo_eine_leitung_sie_anlegen_darf(test_environment):
+    """Sebastian beim Umsetzen, 13.11.2026 (Kommentar in #103): „Nur wo eine Leitung“; die Ausgabe nennt den Rest."""
+    erika = logged_in_before("erika.testfrau", "Erika", "Testfrau")
+    bund = logged_in_before("ohne.nachname", "Erika")
+
+    out = run()
+
+    persons = ManagedPerson.objects.select_related("unit")
+    assert {person.consent_by_id for person in persons if person.unit.name in ("Walhall", *GROUPS[:2])} == {erika.pk}
+    # Ohne angemeldete Stammesleitung springt die Bundesleitung für Zugvögel und Kraniche ein (EH-18).
+    assert {person.consent_by_id for person in persons if person.unit.name == "Sippe Kraniche"} == {bund.pk}
+    assert managed_names("Sippe Möwen") == set()
+    assert managed_names("Sippe Falken") and managed_names("Sippe Kraniche")
+    assert [line for line in out.splitlines() if "Sippe Möwen" in line], out
 
 
 def test_b6_wer_vorher_admin_ist_ist_es_danach_wieder_mit_eintrag_im_protokoll(local):
@@ -483,9 +503,13 @@ def test_o4_vera_sieht_keine_personen_nur_die_bundesleitungen(data):
 
     assert accounts_seen(vera) == set()
     assert managed_seen(vera) == set()
-    leads = leads_seen(vera)
-    assert {("ohne.nachname", R.ASSOCIATION_LEAD), ("bundesleitung.nordstern", R.ASSOCIATION_LEAD)} <= leads
-    assert not {kind for _username, kind in leads} & {R.GROUP_LEAD, R.TROOP_LEAD, R.RING_LEAD}
+    # Neben den Bundesleitungen sieht sie sich selbst und das DPV-Veranstaltungsteam (RO-05), sonst niemanden.
+    assert leads_seen(vera) == {
+        ("ohne.nachname", R.ASSOCIATION_LEAD),
+        ("bundesleitung.nordstern", R.ASSOCIATION_LEAD),
+        ("verbandsleitung", R.FEDERATION_LEAD),
+        ("veranstaltungsteam", R.EVENT_TEAM),
+    }
     assert all(set(lead) >= {"first_name", "last_name", "scout_name", "kind"} for lead in Rights(vera).leads())
 
 

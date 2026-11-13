@@ -302,7 +302,7 @@ ALLOWED_FILES = {
     "roles/management/commands/admin.py",
     "roles/management/commands/federation_lead.py",
     # Der Befehl für Testdaten (#103): läuft nur lokal und in der Testumgebung, leert die Datenbank bis auf die
-    # Konten und zeigt keine Personendaten an; verwaltete Personen legt er über die zentrale Stelle an.
+    # Konten und zeigt höchstens Benutzernamen an; verwaltete Personen legt er über die zentrale Stelle an.
     "core/management/commands/testdata.py",
 }
 # Abfragen über einen Verweis auf Rollen, Konten oder verwaltete Personen (#117), auch über mehrere Stufen, z. B.

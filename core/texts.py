@@ -21,7 +21,7 @@ LOG_IN_FIRST = gettext_lazy(
 )
 USERNAME_TAKEN = gettext_lazy(
     "Ohne Rolle, weil der Benutzername im Tool schon zu einem Konto mit anderer Keycloak-Kennung gehört: "
-    "%(usernames)s. Der Befehl übernimmt nie ein Konto über den Benutzernamen; abhilft „Lokale Datenbank neu "
+    "%(usernames)s. Der Befehl übernimmt nie ein Konto über den Benutzernamen. Abhilfe: „Lokale Datenbank neu "
     "anlegen“ im README."
 )
 NO_CREATOR = gettext_lazy(

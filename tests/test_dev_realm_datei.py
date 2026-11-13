@@ -13,7 +13,7 @@ from pathlib import Path
 
 DEV_REALM_FILE = Path(__file__).resolve().parent.parent / "dev" / "keycloak" / "dpv-realm.json"
 
-# Erkennbar erfunden: lauter Nullen, nur die letzte Stelle zählt hoch. Die Form ist die übliche
+# Erkennbar erfunden: lauter Nullen, nur die letzten Stellen zählen hoch. Die Form ist die übliche
 # einer zufälligen Kennung (Fassung 4), damit Keycloak sie wie jede andere behandelt.
 ACCOUNT_IDS = {
     "erika.testfrau": "00000000-0000-4000-8000-000000000001",

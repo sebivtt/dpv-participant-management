@@ -95,7 +95,7 @@ Diese Anleitung funktioniert ohne KI. Je Schritt genau ein Befehl im Programm �
    | `gruppenleitung.moewen` | `testpasswort-mia` | Testdaten (#103) |
    | `admin` | `testpasswort-adam` | Testdaten (#103) |
 
-   Welche Rolle jedes Konto nach dem Befehl für Testdaten hat, steht unter „Testdaten anlegen“; die Konten ab `verbandsleitung` heißen nach ihrer Rolle.
+   Die Konten ab `verbandsleitung` heißen nach ihrer Rolle in den Testdaten; mehr dazu unter „Testdaten anlegen“.
 
    Über „Noch kein Konto? Registrieren“ lassen sich weitere Konten anlegen. Die Verwaltung von Keycloak liegt unter http://localhost:8080/admin/ (Benutzername `admin`, Passwort `nur-lokal-nicht-geheim`).
 
@@ -249,25 +249,43 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
 
 ## Testdaten anlegen
 
-Ein Befehl legt erfundene Testdaten an, mit denen sich die Szenarien Walhall, Zugvögel und Boreas aus #103 nachspielen lassen: den Verband „DPV“, den Pfadfinderbund Boreas ohne Ringe mit den Stämmen Walhall (Sippe Falken, Meute Wölfe) und Zugvögel (Sippe Kraniche), den Bund Nordstern mit dem Ring „Küste“, dem Stamm Leuchtturm und der Sippe Möwen, je eine Leitung, ein Mitglied, das DPV-Veranstaltungsteam, einen Admin und 18 verwaltete Personen. Wer welche Rolle bekommt, steht in `core/management/commands/testdata.py` unter „Besetzung“ (`CAST`).
+Ein Befehl legt erfundene Testdaten an, mit denen sich die Szenarien Walhall, Zugvögel und Boreas aus #103 nachspielen lassen: den Verband „DPV“, den Pfadfinderbund Boreas ohne Ringe mit den Stämmen Walhall (Sippe Falken, Meute Wölfe) und Zugvögel (Sippe Kraniche), den Bund Nordstern mit dem Ring „Küste“, dem Stamm Leuchtturm und der Sippe Möwen, je Organisation eine Leitung, zwei Mitglieder mit Konto, die Verbandsleitung, das DPV-Veranstaltungsteam, ein Konto ohne Organisation und Rolle, einen Admin und 18 verwaltete Personen. Wer welche Rolle bekommt, steht in der Besetzung im [Kommentar „Szenarien (12.11.2026)“](https://github.com/sebivtt/dpv-participant-management/issues/103#issuecomment-6826598949) in #103.
 
 **Achtung:** Jeder Lauf löscht vorher alles außer den Konten, auch Verband, Bünde, Rollen, verwaltete Personen und alle Protokolle, und legt dieselben Daten neu an. Wer vor dem Lauf Admin ist, ist es danach wieder. Der Befehl läuft nur, wenn die Einstellungen ausdrücklich „lokal“ (`LOCAL_ENVIRONMENT=1`) oder „Testumgebung“ sagen; sonst bricht er ab, ohne etwas zu löschen.
 
 Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“):
 
-D1. Nur einmal, wenn deine `.env` älter ist als #103: Schritt 4 wiederholen. Danach steht dort die Zeile `LOCAL_ENVIRONMENT=1`.
-D2. Nur einmal, damit Keycloak die neuen Konten aus der Tabelle unter Schritt 9 kennt: Keycloak anhalten (Schritt 12) und wieder starten (Schritt 7).
-D3. Die Testdaten anlegen.
+D1. Nur einmal, wenn deine `.env` älter ist als #103: die Umgebungsdatei neu aus der Vorlage anlegen (wie Schritt 4; sie enthält nur erfundene Werte).
+   ```bash
+   cp .env.example .env
+   ```
+   Danach: keine Ausgabe. In der Datei steht jetzt die Zeile `LOCAL_ENVIRONMENT=1`.
+
+D2. Nur einmal, damit Keycloak die neuen Konten aus der Tabelle unter Schritt 9 kennt: Datenbank und Keycloak anhalten. Die Daten der Datenbank bleiben erhalten.
+   ```bash
+   docker compose -f dev/docker-compose.yml down
+   ```
+   Danach: `Container dpv-dev-postgres-1 Removed` und `Container dpv-dev-keycloak-1 Removed`.
+
+D3. Nur einmal: beide wieder starten. Keycloak liest dabei die Konten neu ein.
+   ```bash
+   docker compose -f dev/docker-compose.yml up -d --wait
+   ```
+   Danach: `Container dpv-dev-postgres-1 Healthy` und `Container dpv-dev-keycloak-1 Healthy`.
+
+D4. Die Testdaten anlegen.
    ```bash
    uv run --env-file .env python manage.py testdata
    ```
-   Danach: `Testdaten angelegt: 11 Organisationen, 25 Rollen und 18 verwaltete Personen. Alle Daten außer den Konten wurden vorher gelöscht, auch die Protokolle.` War vorher jemand Admin, folgt `Wieder Admin wie vor dem Lauf: …`. Steht dort `CommandError: Der Befehl läuft nur lokal oder in der Testumgebung. …`, fehlt die Zeile aus D1. Danach anmelden, etwa als `erika.testfrau` (Stammesleitung Walhall) oder `gruppenleitung.falken`; jedes Konto landet beim ersten Login im Konto aus dem Befehl.
+   Danach: `Testdaten angelegt: 11 Organisationen, 25 Rollen und 18 verwaltete Personen. Alle Daten außer den Konten wurden vorher gelöscht, auch die Protokolle.` Ab dem zweiten Lauf folgt `Wieder Admin wie vor dem Lauf: admin` und alle, die vorher sonst noch Admin waren. Steht dort `CommandError: Der Befehl läuft nur lokal oder in der Testumgebung. …`, fehlt die Zeile aus D1. Danach anmelden, etwa als `erika.testfrau` (Stammesleitung Walhall) oder `gruppenleitung.falken`; jedes Konto landet beim ersten Login im Konto aus dem Befehl.
 
-In der Testumgebung im Container (zuerst Schritt T2) und auf dem Server legt der Befehl keine Konten an. Rollen bekommen dort nur die vier Konten des Test-Realms, mit derselben Rolle wie lokal, und nur, wenn sie sich schon einmal angemeldet haben. Verwaltete Personen entstehen nur, wo eine dieser Leitungen sie anlegen darf.
+In der Testumgebung im Container (zuerst Schritt T2) und auf dem Server legt der Befehl keine Konten an. Rollen bekommen dort nur die vier Konten des Test-Realms, mit derselben Rolle wie lokal, und nur, wenn sie sich schon einmal angemeldet haben. Verwaltete Personen entstehen nur, wo eine dieser Leitungen sie anlegen darf; die Sippe Möwen bleibt dort leer (Entscheidung von Sebastian, [Kommentar in #103](https://github.com/sebivtt/dpv-participant-management/issues/103#issuecomment-6861587463)).
+
+D5. Die Testdaten in der Testumgebung im Container anlegen.
    ```bash
    docker compose -f testumgebung/docker-compose.yml exec tool python manage.py testdata
    ```
-   Danach: dieselbe erste Zeile mit kleineren Zahlen. Fehlt ein Konto, steht dort `Ohne Rolle, weil noch nie im Tool angemeldet: max.testmann. Diese Konten müssen sich zuerst einmal anmelden; danach den Befehl erneut ausführen.`
+   Danach: `Testdaten angelegt: 11 Organisationen, …` mit weniger Rollen und verwalteten Personen als lokal, darunter `Ohne verwaltete Personen, weil dort niemand mit Konto sie anlegen darf: Sippe Möwen.` (und weitere Organisationen, solange dort keine Leitung angemeldet war). Fehlt ein Konto, steht dort zum Beispiel `Ohne Rolle, weil noch nie im Tool angemeldet: max.testmann. Diese Konten müssen sich zuerst einmal anmelden; danach den Befehl erneut ausführen.`
 
 ## Verband und Bünde anlegen (Admins)
 
