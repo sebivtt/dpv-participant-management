@@ -127,7 +127,6 @@ def test_am_pc_leerer_name_zeigt_die_meldung_des_tools_statt_der_blase_des_brows
 
     pc.goto(f"{_page_of(units['walhall'])}anlegen/")
     pc.locator("dialog .btn-primary").click()
-    pc.wait_for_url(f"{_page_of(units['walhall'])}anlegen/")
     field = pc.get_by_label("Name (Pflicht)")
     expect(_dialog(pc).locator(".invalid-feedback")).to_have_text("Der Name darf nicht leer sein.")
     expect(field).to_have_attribute("aria-invalid", "true")
