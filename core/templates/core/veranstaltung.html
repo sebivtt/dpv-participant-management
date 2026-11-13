@@ -1,0 +1,19 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Seite einer Veranstaltung (#100, Probe in P2, kein Zielbild): eine Fläche mit dem Namen und dem Zeitraum, oben rechts der Stift zu „… bearbeiten“ (#95). Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <div class="a-flaeche a-veranstaltung hat-stift">
+    {% include "core/_stift.html" with href=edit_href label=edit_label %}
+    <h1>{{ event.name }}</h1>
+    <p class="a-unterzeile">{{ period }}</p>
+  </div>
+  {% if dialog %}
+    {# Dialog „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen. #}
+    {% include "core/_dialog_auf.html" %}
+    {% textfeld dialog.event_form.name %}
+    <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start %}{% datumsfeld dialog.event_form.end %}</div>
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+{% endblock %}

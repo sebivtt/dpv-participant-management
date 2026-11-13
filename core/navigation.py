@@ -17,6 +17,7 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from access.rights import SUPPORT_EXPIRED_SESSION_KEY, unit_label
+from events import texts as event_texts
 from roles import texts as role_texts
 
 
@@ -39,6 +40,9 @@ NAV_ITEMS = [
             also_active=("organisation_unit", "federation_appoint_verbandsleitung", "federation_search_verbandsleitung",
                          "federation_appoint_team", "federation_search_team", "federation_appoint_lead",
                          "federation_search_lead", "federation_remove", "organisation_support")),
+    # Mit Zuordnung immer, ohne nur, solange die Person eine Veranstaltung leitet (#100); die Seiten prüfen selbst.
+    NavItem("events", event_texts.NAV, "kalender", lambda request: request.rights.sees_events(),
+            also_active=("event_create", "event_page", "event_edit")),
 ]
 
 

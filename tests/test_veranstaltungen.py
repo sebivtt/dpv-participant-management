@@ -213,7 +213,7 @@ def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     root = page_tree(org.finn, event_address(probelager))
     pencil = _one(_all(root, lambda e: "a-stift" in _classes(e)))
     assert _attr(pencil, "href") == edit_address(probelager)
-    assert _visible_text(pencil) == "Probelager 2027 bearbeiten"
+    assert _text(pencil) == "Probelager 2027 bearbeiten"
 
     found = open_edit(org.finn, probelager, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Probelager 2027 bearbeiten"
@@ -241,7 +241,7 @@ def test_v4_finn_verliert_die_zuordnung_und_leitet_seine_veranstaltung_weiter(or
     assert create_button(org.finn) is None
     assert listed(org.finn) == [("Probelager 2027", "15.05.2027 bis 17.05.2027")]
     # Ohne Zuordnung auch kein Ersatztext für den Knopf: nur die Überschrift und die Veranstaltung.
-    assert _visible_text(section) == "Veranstaltungen, die du leitest Probelager 2027 15.05.2027 bis 17.05.2027"
+    assert _visible_text(section) == "Veranstaltungen, die du leitest 15.05.2027 bis 17.05.2027 Probelager 2027"
     assert client_for(org.finn).get(event_address(probelager)).status_code == 200
     open_edit(org.finn, probelager)
     assert save(org.finn, probelager, end="2027-05-18").status_code == 302
@@ -598,7 +598,7 @@ def test_die_liste_waechst_nicht_mit_den_abfragen(org):
         assert client.get(LIST).status_code == 200
 
     assert_queries_do_not_grow(create_entry, load_list)
-    assert len(listed(org.finn)) == 11
+    assert len(listed(org.finn)) == 10
 
 
 def test_der_punkt_ist_auf_den_seiten_der_veranstaltungen_hervorgehoben(org, probelager):
@@ -606,4 +606,5 @@ def test_der_punkt_ist_auf_den_seiten_der_veranstaltungen_hervorgehoben(org, pro
         root = page_tree(org.finn, address)
         active = [_visible_text(link) for link in _all(root, lambda e: "a-navlink" in _classes(e))
                   if _attr(link, "aria-current") == "page"]
-        assert active == [NAV], address
+        # Die Navigation steht dreimal: Seitenleiste, Menü am Handy und Liste am Seitenende (#281).
+        assert set(active) == {NAV}, address

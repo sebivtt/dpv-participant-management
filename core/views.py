@@ -19,12 +19,15 @@ from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from core.forms import (
     AccountSearchForm,
+    EventForm,
     FederationSearchForm,
     ManagedPersonAddForm,
     ManagedPersonForm,
     PatternForm,
     UnitNameForm,
 )
+from events import texts as event_texts
+from events.models import EDITABLE_FIELDS as EVENT_FIELDS
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
 from roles import texts as role_texts
@@ -821,32 +824,142 @@ def organisation_delete_managed(request: HttpRequest, unit: str, person: str) ->
     return _with_dialog(request, found, delete_dialog(found, rights.deleting_managed(found, person), action=request.path))
 
 
-# Veranstaltungen (#100, Probe in P2). Gerüst: Adressen und Seiten, noch ohne Inhalt.
+# Veranstaltungen (#100, Probe in P2). Liste, Seite je Veranstaltung und zwei Dialoge mit eigener Adresse, damit
+# sie auch ohne Skript gehen. Eine Veranstaltung kommt immer über ihre Kennung aus der zentralen Rechteprüfung,
+# fremde sind „nicht gefunden“ (VA-03); die Bereiche ohne Kennung zeigen ohne Recht „kein Zugriff“ (VA-05, #64).
+# Löschen gibt es in P2 nicht (VA-04): keine Adresse, und andere Anfragen als Lesen ergeben „nicht gefunden“.
 EVENT_ROWS = ("VA-01", "VA-02", "VA-03", "VA-04", "VA-05")
+
+
+def period(entry) -> str:
+    """Der Zeitraum einer Veranstaltung wie in Liste und Seite: „15.05.2027 bis 17.05.2027“, ein Tag nur „05.06.2027“."""
+    start, end = entry.start.strftime("%d.%m.%Y"), entry.end.strftime("%d.%m.%Y")
+    return start if start == end else str(event_texts.PERIOD % {"start": start, "end": end})
+
+
+def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpResponse:
+    """Die Liste „Veranstaltungen“, auf Wunsch mit offenem Dialog „Veranstaltung erstellen“."""
+    rights = request.rights
+    tiles = [{"label": period(entry), "org": entry.name, "href": reverse("event_page", args=[entry.key])}
+             for entry in rights.led_events()]
+    return render(request, "core/veranstaltungen.html", {
+        "tiles": tiles,
+        # Den Knopf gibt es nur mit Zuordnung, ohne auch keinen Ersatztext (#100).
+        "create_href": reverse("event_create") if rights.may_create_event() else None,
+        "create_label": event_texts.CREATE_TITLE,
+        "list_title": event_texts.LIST_TITLE,
+        "none_yet": event_texts.NONE_YET,
+        "dialog": dialog,
+    })
+
+
+def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> HttpResponse:
+    """Die Seite einer Veranstaltung: Name und Zeitraum, der Stift zu „… bearbeiten“; auf Wunsch mit offenem Dialog."""
+    return render(request, "core/veranstaltung.html", {
+        "event": entry,
+        "period": period(entry),
+        "edit_href": reverse("event_edit", args=[entry.key]),
+        "edit_label": event_texts.EDIT_TITLE % {"event": entry.name},
+        "dialog": dialog,
+    })
+
+
+def _event_dialog(form: EventForm, action: str, close_href: str, entry=None, hidden: tuple = ()) -> dict:
+    """„Veranstaltung erstellen“ oder, mit `entry`, „… bearbeiten“: Name, Beginn und Ende, der blaue Knopf."""
+    return {
+        "title": event_texts.EDIT_TITLE % {"event": entry.name} if entry else event_texts.CREATE_TITLE,
+        "close_href": close_href,
+        "confirm_action": action,
+        "confirm_label": event_texts.SAVE_BUTTON if entry else event_texts.CREATE_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        # Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (wie #117 und #296).
+        "novalidate": True,
+        "event_form": form,
+        "hidden": list(hidden),
+    }
 
 
 @checks_rights(*EVENT_ROWS)
 def events(request: HttpRequest) -> HttpResponse:
-    """Die Veranstaltungen, die die Person leitet (#100). Gerüst."""
-    return HttpResponse("")
+    """Die Liste „Veranstaltungen“: die Veranstaltungen, die die Person leitet, nach Beginn (#100, V5).
+
+    Den Bereich hat, wer eine Zuordnung hat oder mindestens eine Veranstaltung leitet; sonst „kein Zugriff“.
+    Ohne eigene Veranstaltung steht dort „Du leitest noch keine Veranstaltung.“
+    """
+    request.rights.require_section(request.rights.sees_events())
+    if request.method not in READING:
+        raise Http404
+    return _events_page(request)
 
 
 @checks_rights(*EVENT_ROWS)
+@never_cache
 def event_create(request: HttpRequest) -> HttpResponse:
-    """„Veranstaltung erstellen“ (#100, VA-01). Gerüst."""
-    return HttpResponse("")
+    """Dialog „Veranstaltung erstellen“ zeigen und die Veranstaltung anlegen; wer anlegt, leitet sie (VA-01, TEAM-01).
+
+    Nur mit Zuordnung, sonst „kein Zugriff“, lesend wie beim Abschicken, auch wenn die Zuordnung endet, während
+    der Dialog offen ist (VA-05, VG9). Der Dialog bekommt beim Öffnen eine eigene Kennung (`creation_key`), damit
+    ein Doppelklick die Veranstaltung nur einmal anlegt (VG8); eine in falscher Form ist „nicht gefunden“. Der
+    Browser speichert den Dialog nicht, sonst legte ein zweites Anlegen nach „Zurück“ stillschweigend nichts an.
+    Danach geht es zur Seite der Veranstaltung mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog
+    mit den Eingaben und dem Fehler am Feld offen.
+    """
+    rights = request.rights
+    rights.require_section(rights.may_create_event())
+    if request.method == "POST":
+        creation_key = request.POST.get("creation_key", "")
+        if not is_key(creation_key):
+            raise Http404
+        form = EventForm(request.POST)
+        if form.is_valid():
+            entry, text = rights.create_event(form.cleaned_data, creation_key)
+            if text:
+                messages.success(request, text)
+            return redirect("event_page", event=entry.key)
+    elif request.method in READING:
+        form, creation_key = EventForm(), new_key()
+    else:
+        raise Http404
+    dialog = _event_dialog(form, action=request.path, close_href=reverse("events"),
+                           hidden=[("creation_key", creation_key)])
+    return _events_page(request, dialog)
 
 
 @checks_rights(*EVENT_ROWS)
 def event_page(request: HttpRequest, event: str) -> HttpResponse:
-    """Die Seite einer Veranstaltung (#100, VA-02). Gerüst."""
-    return HttpResponse("")
+    """Die Seite einer Veranstaltung mit Name, Beginn und Ende, nur für ihre Veranstaltungsleitung (VA-02, VA-03).
+
+    Eine Zuordnung braucht es zum Ansehen in P2 nicht (V4). Einen Knopf zum Löschen gibt es nicht (VA-04).
+    """
+    entry = request.rights.event(event)
+    if request.method not in READING:
+        raise Http404
+    return _event_page(request, entry)
 
 
 @checks_rights(*EVENT_ROWS)
 def event_edit(request: HttpRequest, event: str) -> HttpResponse:
-    """„… bearbeiten“ einer Veranstaltung (#100, VA-02). Gerüst."""
-    return HttpResponse("")
+    """Dialog „… bearbeiten“ zeigen und Name, Beginn und Ende speichern, mit denselben Regeln wie beim Anlegen (VA-02, VG6).
+
+    Nur die Veranstaltungsleitung, auch ohne Zuordnung (V4); sonst „nicht gefunden“ (VA-03). Danach geht es zur
+    Seite der Veranstaltung mit der kurzen Meldung; bei einem Fehler bleibt der Dialog mit den Eingaben offen,
+    und nichts wird gespeichert.
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    if request.method == "POST":
+        form = EventForm(request.POST)
+        if form.is_valid():
+            entry, text = rights.edit_event(event, form.cleaned_data)
+            messages.success(request, text)
+            return redirect("event_page", event=entry.key)
+    elif request.method in READING:
+        form = EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS})
+    else:
+        raise Http404
+    dialog = _event_dialog(form, action=request.path, close_href=reverse("event_page", args=[entry.key]), entry=entry)
+    return _event_page(request, entry, dialog)
 
 
 def _managed_values(entry) -> dict:
@@ -1093,7 +1206,7 @@ BUILDING_BLOCKS = {
                      "Abschicken rechts daneben und ein Satz darunter. Hat das Feld eine fachliche Grenze, "
                      "steht beim Tippen rechts darunter die Zahl der Zeichen, etwa „12/30“, rot mit Meldung, "
                      "sobald der Text zu lang ist."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "datumsfeld": {
         "name": _("Datumsfeld"), "template": "core/_datumsfeld.html", "issues": [117],
@@ -1101,7 +1214,7 @@ BUILDING_BLOCKS = {
                      "dem Fehler rot direkt darunter, wie beim Textfeld. Der Browser zeigt das Datum in seiner "
                      "Schreibweise und bietet seinen Kalender an, am Handy die Drehräder; Tage in der Zukunft lässt "
                      "er nicht wählen, wo das Formular es so festlegt."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "kurzmeldung": {
         "name": _("Kurze Meldung"), "template": "core/_kurzmeldung.html", "issues": [186],
@@ -1109,7 +1222,7 @@ BUILDING_BLOCKS = {
                      "unten über dem Inhalt, mit Schatten und ×, und verschwindet nach rund 6 Sekunden. Was einen "
                      "Zustand beschreibt, steht fest auf der Seite; eine Fehlermeldung steht fest an der Stelle "
                      "der Handlung."),
-        "pages": [_("Mein Profil")],
+        "pages": [_("Mein Profil"), _("Veranstaltungen")],
     },
     "antippfeld": {
         "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180, 207, 215],
@@ -1136,7 +1249,7 @@ BUILDING_BLOCKS = {
                      "„Verwaltete Person anlegen“. Der Titel darf ein Link sein, etwa der eigene Bund "
                      "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
                      "„4 Personen“."),
-        "pages": [_("Mein Profil"), _("Organisation")],
+        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "rollenkachel": {
         "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94, 219],
@@ -1144,7 +1257,7 @@ BUILDING_BLOCKS = {
                      "darüber, die übrigen Rollen als Kacheln ohne zweite Zeile. Unter „Organisationen darunter“ "
                      "ist die Kachel anklickbar und zeigt ihre Leitungen, ohne Zugriff grau ohne blauen Streifen. "
                      "Unten darf ein kleiner Knopf „Rolle abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
-        "pages": [_("Mein Profil"), _("Organisation")],
+        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "gliederungsbaum": {
         "name": _("Gliederung"), "template": "core/_gliederung.html", "issues": [189],
@@ -1188,11 +1301,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "stift": {
-        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95],
+        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95, 100],
         "purpose": _("Ein Stift oben rechts in einer Fläche, dort, wo ein Dialog sein × hat. Er öffnet den Dialog "
                      "„… bearbeiten“, in dem alle Einstellungen dieser Sache an einem Ort stehen, etwa Name und "
                      "Ring einer Organisation. Er steht nur, wo man bearbeiten darf."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "schalter": {
         "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95, 98],
@@ -1224,7 +1337,7 @@ BUILDING_BLOCKS = {
                      "Kennung gibt, etwa bei verwalteten Personen. Links unten kann ein zart roter Knopf stehen, etwa "
                      "„Verwaltete Person löschen“ (drittes Beispiel), und „Abbrechen“ kann anders heißen und "
                      "woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“ (viertes Beispiel)."),
-        "pages": [_("Mein Profil"), _("Organisation")],
+        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "auswahl": {
         "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95, 92],

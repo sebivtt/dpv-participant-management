@@ -10,6 +10,7 @@ Namen sind erfunden.
 """
 
 import json
+from datetime import date
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,6 +32,7 @@ from django.utils import timezone
 from access.keys import new_key
 from access.rights import Rights
 from accounts.models import AccountSearch
+from events.models import Event
 from persons.models import ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
 from tests.keycloak_fake import login
@@ -285,6 +287,23 @@ def test_b2_zweiter_lauf_ergibt_dieselben_daten_und_behaelt_alle_konten(local):
     assert User.objects.filter(pk=extra.pk).exists()
     assert not Role.objects.filter(user=extra).exists()
     assert SocialAccount.objects.get(user=extra).uid == "kennung-zusatz.konto"
+
+
+def test_ein_zweiter_lauf_leert_auch_veranstaltungen_und_ihre_leitungen(local):
+    """Seit #100 hängt an jeder Veranstaltung ihre Leitung in einer eigenen Verbindungstabelle; auch sie wird
+    geleert, sonst bräche das Leeren der Veranstaltungen ab und der Befehl liefe gar nicht mehr."""
+    run()
+    after_first = snapshot()
+    fiete = account("gruppenleitung.falken")
+    Rights(fiete).create_event({"name": "Probelager 2027", "start": date(2027, 5, 15), "end": date(2027, 5, 17)},
+                               new_key())
+    assert Event.objects.filter(leads=fiete).exists()
+
+    run()
+
+    assert not Event.objects.exists()
+    assert Event.leads.through.objects.count() == 0
+    assert snapshot() == after_first
 
 
 def test_b3_ohne_lokal_oder_testumgebung_bricht_der_befehl_ab_und_loescht_nichts(local):

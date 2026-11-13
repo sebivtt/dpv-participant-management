@@ -10,6 +10,7 @@
 !units
 !roles
 !persons
+!events
 !manage.py
 !pyproject.toml
 !uv.lock

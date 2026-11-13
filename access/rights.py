@@ -55,6 +55,9 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
+from events import texts as event_texts
+from events.models import EDITABLE_FIELDS as EVENT_FIELDS
+from events.models import Event
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, displayed_off_path, roles_blocking
 from roles import texts as role_texts
@@ -116,6 +119,9 @@ SUPPORT_REASONS = (AdminAccess.Detail.LEAD_REQUEST, AdminAccess.Detail.DEBUGGING
 EXPEL_CHOICES = {"hoch": False, "ganz": True}
 # Verwaltete Personen gehören immer zu einer Organisation: Beim Austragen gibt es nur „hoch“ (#118, Frage 1).
 MANAGED_EXPEL_CHOICE = "hoch"
+# Was als Zuordnung zählt (BER-03): Mitgliedschaft in Gruppe, Stamm, Ring oder Bund, auch mit Leitungsrolle, dazu
+# Verbandsleitung und DPV-Veranstaltungsteam. Admin zählt nicht (VA-05).
+ASSIGNMENT = (R.MEMBER, *LEADS_IN_UNITS, R.FEDERATION_LEAD, R.EVENT_TEAM)
 # Wo die Meldung nach Ablauf eines Support-Zugangs bis zur nächsten Seite wartet (#92, SA1, SA2).
 SUPPORT_EXPIRED_SESSION_KEY = "support_abgelaufen"
 
@@ -1026,11 +1032,103 @@ class Rights:
             fresh._record_change(lambda rights: rights._managed_entries().filter(pk=entry.pk).exists())
         return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
 
-    # Veranstaltungen (#100, TEAM-01). Gerüst.
+    # Veranstaltungen (#100, TEAM-01; Probe in P2)
+    #
+    # Eigene Rechte hat die Veranstaltungsleitung, nicht die Leitungen der Organisationen (Rechtematrix, „So liest
+    # man die Matrix“): Sehen und bearbeiten darf eine Veranstaltung in P2 nur, wer sie leitet (VA-02, VA-03), auch
+    # Admins im Support-Zugang nicht. Anlegen darf nur, wer eine Zuordnung hat (BER-03, VA-01, VA-05); wer sie
+    # anlegt, leitet sie. Eine Veranstaltung kommt immer über ihre Kennung aus `events()`, sonst „nicht gefunden“.
 
-    def create_event(self, values: dict, creation_key) -> tuple[object, str]:
-        """Legt eine Veranstaltung an (VA-01). Gerüst."""
-        return None, ""
+    def has_assignment(self) -> bool:
+        """Hat die Person eine Zuordnung (BER-03)? Mitgliedschaft oder Leitung in Gruppe, Stamm, Ring oder Bund,
+        Verbandsleitung oder DPV-Veranstaltungsteam.
+
+        Admin, Veranstaltungsleitung und Ansprechperson allein zählen nicht (VA-05), ebenso nicht ein laufender
+        Support-Zugang: Er gibt die Rechte einer Leitung, aber keine Rolle. Nutzt die Rollen, die die Anfrage
+        ohnehin einmal lädt.
+        """
+        return any(kind in ASSIGNMENT for kind, _unit in self._own_roles)
+
+    def events(self) -> QuerySet:
+        """Die Veranstaltungen, die die Person leitet (VA-02); andere sieht in P2 niemand (VA-03)."""
+        if self.user is None:
+            return Event.objects.none()
+        return Event.objects.filter(leads=self.user.pk)
+
+    def led_events(self) -> list[Event]:
+        """Die eigenen Veranstaltungen für die Liste „Veranstaltungen“, nach Beginn, die früheste zuerst (V5)."""
+        return list(self.events().order_by("start", "end", "name", "pk"))
+
+    def event(self, key) -> Event:
+        """Eine eigene Veranstaltung über ihre Kennung; sonst „nicht gefunden“ wie ohne Eintrag (VA-03, #64)."""
+        return self.entry(self.events(), key)
+
+    def sees_events(self) -> bool:
+        """Punkt und Bereich „Veranstaltungen“: mit Zuordnung immer, ohne nur, solange die Person eine leitet (#100)."""
+        return self.has_assignment() or self.events().exists()
+
+    def may_create_event(self) -> bool:
+        """Darf die Person eine Veranstaltung anlegen? Nur mit Zuordnung (BER-03, VA-01, VA-05)."""
+        return self.has_assignment()
+
+    def create_event(self, values: dict, creation_key) -> tuple[Event, str]:
+        """Legt eine Veranstaltung an; die Person ist danach ihre Veranstaltungsleitung (VA-01, TEAM-01).
+
+        Gibt die Veranstaltung und die kurze Meldung zurück. `values` sind die geprüften Angaben aus `EventForm`;
+        die Leitung kommt nur aus der Anmeldung, nie aus dem Formular (VV3). Ohne Zuordnung „kein Zugriff“ (VA-05).
+        Gesperrt ist das eigene Konto, und die Zuordnung wird darunter frisch geprüft: Endet die Mitgliedschaft,
+        während das Formular offen ist oder gleichzeitig, wird nichts angelegt (VG9); das Beenden einer Rolle
+        sperrt dasselbe Konto. `creation_key` ist die Kennung des Formulars: Schickt jemand dasselbe Formular zweimal
+        ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Veranstaltung, und die zweite Antwort
+        hat keine Meldung (VG8). Gehört die Kennung zu einer Veranstaltung, die die Person nicht leitet, oder hat sie
+        die falsche Form, ist das „nicht gefunden“.
+        """
+        self.require_section(self.may_create_event())
+        if not is_key(creation_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            fresh.require_section(fresh.may_create_event())
+            if Event.objects.filter(creation_key=creation_key).exists():
+                return fresh._created_before(creation_key), ""
+            created = Event(creation_key=creation_key, **{name: values[name] for name in EVENT_FIELDS})
+            try:
+                with transaction.atomic():
+                    created.save()
+            except IntegrityError:
+                # Dasselbe Formular wurde gleichzeitig ein zweites Mal abgeschickt (VG8).
+                if not Event.objects.filter(creation_key=creation_key).exists():
+                    raise
+                return fresh._created_before(creation_key), ""
+            created.leads.add(me)
+        return created, str(event_texts.CREATED % {"event": created.name})
+
+    def _created_before(self, creation_key: str) -> Event:
+        """Die Veranstaltung, die schon aus diesem Formular entstanden ist, wenn die Person sie leitet; sonst „nicht gefunden“."""
+        found = self.events().filter(creation_key=creation_key).first()
+        if found is None:
+            raise Http404
+        return found
+
+    def edit_event(self, key, values: dict) -> tuple[Event, str]:
+        """Speichert Name, Beginn und Ende einer eigenen Veranstaltung; gibt sie und die kurze Meldung zurück (VA-02).
+
+        Eine Zuordnung braucht es dafür in P2 nicht (V4; danach #146). Ohne Leitung „nicht gefunden“, auch für
+        eine Kennung, die die Person gerade nicht mehr leitet (VA-03). Gesperrt sind das eigene Konto und die
+        Veranstaltung; in P2 hat jede Veranstaltung genau eine Leitung, eine Regel für gleichzeitiges Bearbeiten
+        gibt es deshalb nicht (#100).
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            entry = fresh.entry(fresh.events().select_for_update(), key)
+            for name in EVENT_FIELDS:
+                setattr(entry, name, values[name])
+            entry.save()
+        return entry, str(event_texts.SAVED % {"event": entry.name})
 
     # Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02)
     #

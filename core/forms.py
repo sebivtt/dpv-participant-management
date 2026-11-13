@@ -1,4 +1,4 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95) und die Angaben einer verwalteten Person (#117)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95), die Angaben einer verwalteten Person (#117) und einer Veranstaltung (#100)."""
 
 from datetime import date
 
@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.keycloak_abgleich import trimmed
 from accounts.models import SCOUT_NAME_MAX_LENGTH
+from events import texts as event_texts
+from events.models import NAME_MAX_LENGTH as EVENT_NAME_MAX_LENGTH
 from persons import texts as person_texts
 from persons.models import NAME_MAX_LENGTH
 from units import texts as unit_texts
@@ -220,3 +222,63 @@ class ManagedPersonAddForm(ManagedPersonForm):
         error_messages={"required": person_texts.CONSENT_MISSING},
         widget=forms.CheckboxInput(attrs={"form": "f-dialog", "value": "an"}),
     )
+
+
+def _event_date(label, empty) -> forms.DateField:
+    """Beginn oder Ende einer Veranstaltung: Pflicht, ein Tag ohne Uhrzeit, im Baustein „Datumsfeld“ (#117, N3)."""
+    return forms.DateField(
+        label=label,
+        # Das Datumsfeld des Browsers schickt immer diese Form, egal wie es das Datum anzeigt (N3 zu #117).
+        input_formats=["%Y-%m-%d"],
+        error_messages={"required": empty, "invalid": event_texts.DATE_INVALID},
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date", "autocomplete": "off", "form": "f-dialog"}),
+    )
+
+
+class EventForm(forms.Form):
+    """Die drei Angaben in „Veranstaltung erstellen“ und „… bearbeiten“ (#100): Name, Beginn, Ende.
+
+    Der Name ist Pflicht, höchstens 100 Zeichen; Leerzeichen am Rand zählen wie bei #77 auch in unsichtbarer
+    Form nicht (`trimmed()`), nur Leerzeichen gilt als leer. Die Länge prüft erst der Server, damit beim Einfügen
+    nichts still abgeschnitten wird. Gleiche Namen sind erlaubt (VG7). Beginn und Ende sind Pflicht; das Ende
+    liegt nicht vor dem Beginn, gleich geht (VG4), und beide dürfen in der Vergangenheit liegen (VG5). Das
+    Formular nimmt nur diese drei Angaben an: Wer die Veranstaltung leitet, kommt aus der Anmeldung (VV3).
+    Alle Felder gehören über ihr Attribut „form“ zum Formular des Knopfs im Dialog.
+    """
+
+    name = forms.CharField(
+        label=event_texts.NAME,
+        strip=False,
+        error_messages={"required": event_texts.NAME_EMPTY},
+        widget=forms.TextInput(
+            attrs={
+                # Ein Name wie „Probelager 2027“: Großbuchstabe am Satzanfang, keine Korrektur in ein bekanntes Wort.
+                "autocomplete": "off",
+                "autocapitalize": "sentences",
+                "autocorrect": "off",
+                "spellcheck": "false",
+                "autofocus": True,
+                "form": "f-dialog",
+                "data-hoechstens": EVENT_NAME_MAX_LENGTH,
+                "data-zu-lang": event_texts.NAME_TOO_LONG,
+            }
+        ),
+    )
+    start = _event_date(event_texts.START, event_texts.START_EMPTY)
+    end = _event_date(event_texts.END, event_texts.END_EMPTY)
+
+    def clean_name(self) -> str:
+        value = trimmed(self.cleaned_data["name"])
+        if not value:
+            raise forms.ValidationError(event_texts.NAME_EMPTY, code="required")
+        if len(value) > EVENT_NAME_MAX_LENGTH:
+            raise forms.ValidationError(event_texts.NAME_TOO_LONG, code="max_length")
+        return value
+
+    def clean(self) -> dict:
+        """Das Ende liegt nicht vor dem Beginn; der Fehler steht am Feld „Ende“ (VG4)."""
+        cleaned = super().clean()
+        start, end = cleaned.get("start"), cleaned.get("end")
+        if start is not None and end is not None and end < start:
+            self.add_error("end", forms.ValidationError(event_texts.END_BEFORE_START, code="before_start"))
+        return cleaned
