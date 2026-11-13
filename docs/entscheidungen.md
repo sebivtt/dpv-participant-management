@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Sperre für rote Pull Requests | 13.11.2026, #16, Nr. 1 | 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur der Satz, dass die Regel die Sperre durch GitHub ersetzt); 03.11.2026, #239, und 03.11.2026, #237, „Grenzen“ (je nur der Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“) |
 | Sichtbarkeit des Repos | 13.11.2026, #310, Nr. 1 | 20.10.2026, „Offene Punkte aus der Bestandsaufnahme“, Nr. 4 |
 | Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht) |
 | Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
@@ -39,6 +40,27 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-13 · GitHub sperrt das Übernehmen roter Pull Requests, die KI ändert keine Schutzregeln (#16)
+
+**Entscheidung** (Sebastian; Klärung von #16 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/16#issuecomment-6850485603), Fragen 1 und 2; maßgeblich ist der Text des Issues). Ersetzt teilweise den Eintrag vom 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur den Satz, dass die Regel die Sperre durch GitHub ersetzt), und in den Einträgen vom 03.11.2026 zu #239 und #237 je den Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“.
+
+1. **Sperre ohne Ausnahme** (Frage 1): Ein Pull Request lässt sich auf GitHub erst übernehmen, wenn die Pflichtprüfungen „Alle Prüfungen (pruefen.sh)“ und „PR-Angaben“ für den letzten Stand grün sind und der Zweig auf dem Stand von `main` ist. Es gibt keine Ausnahme, auch nicht für Sebastian am Knopf. Im Notfall schaltet Sebastian die Regel in den Einstellungen bewusst aus und danach wieder ein; nichts Rotes übernehmen gilt auch dann. Die Regel „Link erst bei Grün, nichts Rotes übernehmen“ (`CONTRIBUTING.md`, Abschnitt 8) bleibt, weil „PR-Angaben“ nach einer Änderung am Issue nicht von selbst neu läuft und die Sperre dann ein altes Grün sieht.
+2. **Die KI ändert keine Schutzregeln** (Frage 2): Schutzregeln und Einstellungen des Repos auf GitHub ändert nur Sebastian (`CLAUDE.md`, „Was die KI nie allein entscheidet oder tut“). Die Sperrdatei `.claude/hooks/sperren.py` weist jede ändernde Anfrage (jede Methode außer GET, auch ohne `-X` durch mitgegebene Felder oder `--input`) an Rulesets, Zweigschutz, Grundeinstellungen eines Repos, Einstellungen der Prüfabläufe und Begrenzung auf Mitwirkende ab, für jedes Repo, dazu `gh repo edit`, `rename`, `archive`, `unarchive` und `delete`. Lesen bleibt erlaubt, ebenso Issues, Kommentare, Pull Requests und der Neustart gescheiterter Prüfteile.
+
+**Technische Wahl** (KI, in der Klärung bestätigt): Die Sperre steht im vorhandenen Ruleset „Standard“ (Nr. 25530621) statt im älteren Zweigschutz, mit Ziel „Default branch“. Beide Pflichtprüfungen gelten nur von der Quelle GitHub Actions, damit niemand von außen ein grünes Häkchen gleichen Namens setzt. Dazu: Änderungen an `main` nur über einen Pull Request (ohne Pflicht-Freigabe), Löschen und Force-Push gesperrt. In der Sperrdatei zählt die Methode wie bei `gh`: ohne `-X` mit Feldern oder `--input` POST, sonst GET; die Adresse auch als volle Adresse, mit `/` am Anfang oder über `repositories/<nummer>`.
+
+**Begründung:** Seit der Veröffentlichung (#310) kann GitHub das Übernehmen selbst sperren; vorher ging das bei einem privaten Repo ohne GitHub Pro nicht (Eintrag vom 21.10.2026). Zu 1: Ein Kästchen zum Umgehen direkt am Knopf wird leicht versehentlich angeklickt. „PR-Angaben“ ist Pflicht, damit ein Pull Request ohne `geklärt` am Issue nicht übernommen wird; das ist gewollt. Der aktuelle Zweig greift selten, weil Pull Requests nacheinander laufen; dann „Update branch“ und ein neuer Lauf (etwa 11 Minuten). Zu 2: Bisher sperrte die Sperrdatei das Übernehmen, aber nicht das Ausschalten der Sperre.
+
+**Grenzen:**
+
+- Wer später den Namen einer Pflichtprüfung ändert, muss die Sperre anpassen, sonst bleiben alle Pull Requests gesperrt.
+- Ob die Sperre auf GitHub noch eingeschaltet ist, prüft kein Lauf; die Sperrdatei verhindert nur das Ausschalten durch die KI. Sie ist ein Schutz vor Versehen, keiner gegen absichtliches Verschleiern (Skript, Variable), und andere KI-Werkzeuge haben sie nicht.
+- Nicht Teil: Pflicht-Freigaben (Reviews) durch eine zweite Person, weitere Einstellungen wie Geheimnisse, Variablen oder die Art des Übernehmens, Änderungen an Prüfabläufen und Namen der Prüfungen.
+
+**Umsetzung:** Einstellung auf GitHub durch Sebastian (Ruleset „Standard“), `.claude/hooks/sperren.py`, `tests/test_sperren.py`, `CONTRIBUTING.md` (Abschnitt 8), `CLAUDE.md` („Was die KI nie allein entscheidet oder tut“).
 
 ---
 
