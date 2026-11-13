@@ -20,8 +20,9 @@ from pathlib import Path
 import pytest
 
 SCRIPT = Path(__file__).resolve().parent.parent / "pruefen.sh"
-# Die Datei, die auf GitHub allein mehrere Minuten braucht und deshalb im Teil tests-2 läuft (#307).
-LANGSAM = "tests/test_rechte_ohne_seite.py"
+# Die langsamen Testdateien, die im Teil tests-2 laufen, wie sie in pruefen.sh stehen (#307).
+LANGSAME = re.search(r'^SLOW_TEST_FILES="([^"]*)"$', SCRIPT.read_text(encoding="utf-8"), re.M).group(1).split()
+LANGSAM = LANGSAME[0]
 
 FAKE_UV = f"""#!{sys.executable}
 import json, os, sys
@@ -83,7 +84,7 @@ class Lauf:
         self.root.mkdir()
         self.fake_dir.mkdir()
         shutil.copy(SCRIPT, self.root / "pruefen.sh")
-        for name in ["tests/test_a.py", "tests/test_b.py", LANGSAM, "rauchtests/test_r.py", "containertests/test_c.py"]:
+        for name in ["tests/test_a.py", "tests/test_b.py", *LANGSAME, "rauchtests/test_r.py", "containertests/test_c.py"]:
             path = self.root / name
             path.parent.mkdir(exist_ok=True)
             path.write_text("", encoding="utf-8")
@@ -374,8 +375,8 @@ def test_jede_testdatei_laeuft_in_genau_einem_der_beiden_testteile_auch_eine_neu
 
     erste = [datei for call in calls["tests-1"] for datei in _testdateien(call)]
     zweite = [datei for call in calls["tests-2"] for datei in _testdateien(call)]
-    # Die langsame Datei läuft allein in tests-2; alle übrigen, auch neue, in tests-1.
-    assert zweite == [LANGSAM]
+    # Die langsamen Dateien laufen in tests-2; alle übrigen, auch neue, in tests-1.
+    assert zweite == LANGSAME
     assert sorted(erste) == sorted(
         {"tests/test_a.py", "tests/test_b.py", "tests/test_neu.py", "tests/unterordner/test_tief.py", "tests/unterordner/tief_test.py"}
     )
@@ -391,7 +392,7 @@ def test_ein_testteil_ohne_dateien_startet_pytest_nicht_ohne_dateien(lauf):
     calls = _alle_teile(lauf)
 
     assert [call for call in calls["tests-1"] if "pytest" in call["args"]] == []
-    assert [datei for call in calls["tests-2"] for datei in _testdateien(call)] == [LANGSAM]
+    assert [datei for call in calls["tests-2"] for datei in _testdateien(call)] == LANGSAME
 
 
 def test_fehlt_die_langsame_datei_ist_der_teil_tests_2_rot_statt_still_leer(lauf, tmp_path):
