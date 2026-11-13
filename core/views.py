@@ -1272,9 +1272,9 @@ def _organisation_examples() -> dict:
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
         Lead(name="kim.ohne.namen", extra="", role="Stammesleitung", mail="", locked=False, is_self=False,
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
-        # Eine angezeigte Leitungsrolle einer verwalteten Person (#99): grauer Kreis, „ohne Konto, nur Anzeige“.
-        Lead(name="Tim Probe", extra="", role="Stammesleitung", mail="", locked=False, is_self=False, display_only=True,
-             remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
+        # Eine angezeigte Leitungsrolle einer verwalteten Person (#99): grauer Kreis, „ohne Konto, nur Anzeige“; hier
+        # wie auf der Leseseite ohne Knopf, „Entfernen“ sieht dort aus wie bei den Leitungen darüber.
+        Lead(name="Tim Probe", extra="", role="Stammesleitung", mail="", locked=False, is_self=False, display_only=True),
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
                 kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="",
