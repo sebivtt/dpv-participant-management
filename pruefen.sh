@@ -134,9 +134,10 @@ summarize_parts() {
 # Testdateien, die auf GitHub allein mehrere Minuten brauchen, laufen im Teil tests-2; alle
 # übrigen nach den Regeln von pytest (test_*.py, *_test.py), auch neue, im Teil tests-1. So
 # landet jede Datei in genau einem Teil, ohne dass jemand sie einträgt. Gemessen am 13.11.2026
-# (Lauf 43398286316): tests/test_rechte_ohne_seite.py 5,4 Minuten, alle übrigen zusammen gut 4.
-# Wird tests-1 deutlich länger als tests-2, kommt die nächste langsame Datei hierher.
-SLOW_TEST_FILES="tests/test_rechte_ohne_seite.py"
+# (Lauf 43401088510): alle Tests zusammen gut 13 Minuten; diese fünf Dateien davon etwa 6,5
+# (test_rechte_ohne_seite.py allein 3,5 bis 5,4). Wird tests-1 deutlich länger als tests-2, kommt
+# die nächste langsame Datei hierher.
+SLOW_TEST_FILES="tests/test_rechte_ohne_seite.py tests/test_nicht_gefunden.py tests/test_einheiten_anlegen.py tests/test_benennen.py tests/test_verband.py"
 
 part_test_files() {
     if [ "$1" = "2" ]; then
