@@ -4,7 +4,7 @@ Erika meldet sich wirklich bei der Keycloak-Testumgebung an und ist danach Mitgl
 also eine Zuordnung (VA-01). Geprüft werden die Teile, die nur ein Browser zeigt: der Punkt
 „Veranstaltungen“ in der Seitenleiste und im Menü, „Veranstaltung erstellen“ als Dialog, der den Fokus
 hält, Beginn und Ende als Baustein „Datumsfeld“ (das Feld des Browsers, N3 zu #117), der Name auch wie am
-Handy mit Autokorrektur und Wortvorschlägen, die kurze Meldung, der Stift zum Bearbeiten, nichts steht
+Handy mit Autokorrektur und Wortvorschlägen, die kurze Meldung, der Knopf „Bearbeiten“, nichts steht
 seitlich über, der Fokus ist zu sehen, und die Seiten bestehen die Prüfung auf Barrierefreiheit. Das Datum
 setzt der Test mit `fill`, weil jeder Browser sein Datumsfeld anders bedienen lässt; erreicht wird das
 Feld mit der Tastatur. Die Regeln selbst prüft tests/test_veranstaltungen.py. Alle Namen sind erfunden.
@@ -25,7 +25,7 @@ U = Unit.Kind
 LIST = f"{BASE}/veranstaltungen/"
 NAV_LINK = '.a-sidebar .a-navlink[href="/veranstaltungen/"]'
 CREATE_BUTTON = '[aria-labelledby="h-veranstaltungen"] .a-flaeche-aktion[href="/veranstaltungen/erstellen/"]'
-PENCIL = ".a-stift"
+EDIT_BUTTON = 'main a.btn-verschieben[href$="/bearbeiten/"]'
 SUBMIT = 'dialog button[type="submit"]'
 CREATED = "Probelager 2027 ist angelegt. Du leitest diese Veranstaltung."
 
@@ -90,7 +90,7 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     pc.wait_for_function("() => document.getAnimations().every(animation => animation.playState !== 'running')")
     assert run_axe(pc) == []
 
-    stations = _stations_to_element(pc, PENCIL, steps=20)
+    stations = _stations_to_element(pc, EDIT_BUTTON, steps=20)
     _all_visible(stations)
     pc.keyboard.press("Enter")
     expect(_dialog(pc).locator("h2")).to_have_text("Probelager 2027 bearbeiten")
@@ -156,5 +156,5 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     assert run_axe(handy) == []
 
     handy.goto(LIST)
-    expect(handy.locator(".a-orgakachel")).to_contain_text("Probelager 2027")
+    expect(handy.locator('[aria-labelledby="h-veranstaltungen"] li')).to_contain_text("Probelager 2027")
     _no_side_scroll(handy)

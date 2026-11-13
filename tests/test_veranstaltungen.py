@@ -131,10 +131,9 @@ def field_errors(root) -> dict[str, str]:
 
 def listed(user) -> list[tuple[str, str]]:
     """Die Veranstaltungen in der Liste „Veranstaltungen“: Name und Zeitraum, in ihrer Reihenfolge."""
-    root = page_tree(user, LIST)
-    tiles = _all(root, lambda e: e.name == "li" and "a-orgakachel" in _classes(e))
-    return [(_visible_text(_one(_all(tile, lambda e: "a-kachel-link" in _classes(e)))),
-             _visible_text(_one(_all(tile, lambda e: "a-rollenmarke" in _classes(e))))) for tile in tiles]
+    # Schlichte Aufzählung als Platzhalter bis #28 und #29 (Sebastian bei der Vorschau, 13.11.2026).
+    entries = _by_tag(list_section(user), "li")
+    return [(_visible_text(_one(_by_tag(entry, "a"))), _visible_text(_one(_by_tag(entry, "span")))) for entry in entries]
 
 
 def list_section(user):
@@ -211,9 +210,10 @@ def test_v2_fiete_vera_und_tom_legen_ebenso_eine_veranstaltung_an(org):
 def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     client = client_for(org.finn)
     root = page_tree(org.finn, event_address(probelager))
-    pencil = _one(_all(root, lambda e: "a-stift" in _classes(e)))
-    assert _attr(pencil, "href") == edit_address(probelager)
-    assert _text(pencil) == "Probelager 2027 bearbeiten"
+    # Der vorhandene zart blaue Knopf „Bearbeiten“ (Sebastian bei der Vorschau, 13.11.2026: schlichte Platzhalter).
+    edit = _one([link for link in _by_tag(root, "a") if _visible_text(link) == "Bearbeiten"])
+    assert _attr(edit, "href") == edit_address(probelager)
+    assert _text(edit) == "Bearbeiten: Probelager 2027"
 
     found = open_edit(org.finn, probelager, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Probelager 2027 bearbeiten"
@@ -241,7 +241,7 @@ def test_v4_finn_verliert_die_zuordnung_und_leitet_seine_veranstaltung_weiter(or
     assert create_button(org.finn) is None
     assert listed(org.finn) == [("Probelager 2027", "15.05.2027 bis 17.05.2027")]
     # Ohne Zuordnung auch kein Ersatztext für den Knopf: nur die Überschrift und die Veranstaltung.
-    assert _visible_text(section) == "Veranstaltungen, die du leitest 15.05.2027 bis 17.05.2027 Probelager 2027"
+    assert _visible_text(section) == "Veranstaltungen, die du leitest Probelager 2027 15.05.2027 bis 17.05.2027"
     assert client_for(org.finn).get(event_address(probelager)).status_code == 200
     open_edit(org.finn, probelager)
     assert save(org.finn, probelager, end="2027-05-18").status_code == 302
