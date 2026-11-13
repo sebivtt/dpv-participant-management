@@ -10,10 +10,11 @@ Django teilt das Tool in Apps, also Ordner mit je einem Fachbereich; `access` un
 | --- | --- |
 | `access/` | Rechteprüfung: wer welche Personen, Leitungen und Einheiten sehen und bearbeiten darf (`access/rights.py`), die Kennzeichnung jeder Seite (`access/addresses.py`) und die zufälligen Kennungen in Adressen (`access/keys.py`). |
 | `accounts/` | Konten und Login über Keycloak, Abmelden, Dauer der Sitzung, Fahrtenname. |
-| `core/` | Grundbausteine ohne eigenen Fachbereich (Urheber einer Änderung, Fehlerprotokoll, Mail, Band der Testumgebung), die gemeinsame Gestaltung (Vorlagen, Bausteinkatalog, Navigation) und alle Seiten außer Login und Abmelden: Startseite, „Mein Profil“, Organisation mit Verband, Leitungen und Personen, auch verwalteten (`core/views.py`). |
+| `core/` | Grundbausteine ohne eigenen Fachbereich (Urheber einer Änderung, Fehlerprotokoll, Mail, Band der Testumgebung), die gemeinsame Gestaltung (Vorlagen, Bausteinkatalog, Navigation) und alle Seiten außer Login und Abmelden: Startseite, „Mein Profil“, Organisation mit Verband, Leitungen und Personen, auch verwalteten, und Veranstaltungen (`core/views.py`). |
 | `units/` | Einheiten (Verband, Bund, Ring, Stamm, Gruppe) mit ihrem Protokoll, die Aufbereitung der Seite „Organisation“ (`units/organisation.py`) und die Befehle `federation` und `association`. |
 | `roles/` | Rollen (Leitungen, Mitglieder, Teams, Admin) mit ihrem Protokoll und die Befehle `admin` und `federation_lead`. |
 | `persons/` | Verwaltete Personen: Profile ohne Konto, die eine Leitung für ihre Organisation anlegt (#117, PER-02). |
+| `events/` | Veranstaltungen mit ihrer Veranstaltungsleitung; in P2 die Probe mit Name, Beginn und Ende (#100, TEAM-01). |
 | `config/` | Einstellungen (`config/settings.py`) und die Liste aller Adressen (`config/urls.py`). |
 
 Die Apps hängen gegenseitig voneinander ab, weil Grundbausteine in Apps liegen, die auch obere Teile enthalten (etwa `access/keys.py` neben `access/rights.py`). Die Richtung legen deshalb nicht die Apps fest, sondern die Schichten.
@@ -24,11 +25,11 @@ Jede Datei des Tools gehört zu genau einer Schicht. Sie bindet nur Dateien aus 
 
 | Nr. | Schicht | Aufgabe | Dateien |
 | --- | --- | --- | --- |
-| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak | `access/keys.py`, `core/actors.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `core/texts.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
-| 2 | Modelle | was in der Datenbank steht, mit den Regeln beim Speichern | `accounts/models.py`, `units/models.py`, `roles/models.py`, `persons/models.py` |
+| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak | `access/keys.py`, `core/actors.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `events/texts.py`, `core/texts.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
+| 2 | Modelle | was in der Datenbank steht, mit den Regeln beim Speichern | `accounts/models.py`, `units/models.py`, `roles/models.py`, `persons/models.py`, `events/models.py` |
 | 3 | Rechteprüfung | wer was darf; Kennzeichnung der Seiten | `access/rights.py`, `access/addresses.py` |
 | 4 | Aufbereitung | ordnet Daten für Seiten und Befehle, Formulare, Navigation, Bausteine für Vorlagen | `units/organisation.py`, `units/management/common.py`, `accounts/forms.py`, `core/forms.py`, `core/navigation.py`, `core/templatetags/layout.py` |
-| 5 | Seiten, Befehle und Adressen | was von außen aufgerufen wird: Seiten, Befehle auf dem Server, Login über allauth, Start von Django und Webserver | `core/views.py`, `accounts/views.py`, `accounts/adapter.py`, `accounts/signals.py`, `accounts/apps.py`, `core/apps.py`, `roles/apps.py`, `units/apps.py`, `persons/apps.py`, `core/management/commands/`, `roles/management/commands/`, `units/management/commands/`, `config/settings.py`, `config/urls.py`, `config/wsgi.py`, `manage.py`, `docker/gunicorn.conf.py` |
+| 5 | Seiten, Befehle und Adressen | was von außen aufgerufen wird: Seiten, Befehle auf dem Server, Login über allauth, Start von Django und Webserver | `core/views.py`, `accounts/views.py`, `accounts/adapter.py`, `accounts/signals.py`, `accounts/apps.py`, `core/apps.py`, `roles/apps.py`, `units/apps.py`, `persons/apps.py`, `events/apps.py`, `core/management/commands/`, `roles/management/commands/`, `units/management/commands/`, `config/settings.py`, `config/urls.py`, `config/wsgi.py`, `manage.py`, `docker/gunicorn.conf.py` |
 
 **Nicht Teil der Schichten:** `tests/`, `rauchtests/`, `containertests/`, `.github/`, `.claude/` und jeder Ordner `migrations`.
 

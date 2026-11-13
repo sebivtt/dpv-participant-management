@@ -43,6 +43,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-13 · Probe: Wer eine Veranstaltung anlegt, ist ihre Leitung (#100, TEAM-01)
+
+**Entscheidung** (Sebastian; Klärung von #100 am 22.10.2026, Nachklärung vom 22.10.2026 in #106, neuer Teil aus #136 am 30.10.2026; maßgeblich sind Text und Szenarien des Issues): keine neue fachliche Entscheidung über das Issue hinaus.
+
+**Technische Wahl** (KI):
+
+1. **Eigene App `events`** für das Modell `Event` mit Name, Beginn, Ende und Veranstaltungsleitung; Rechte und Seiten wie bei verwalteten Personen in `access/rights.py` und `core/views.py` (`docs/aufbau.md`). Die Leitung steht als Verbindung zu den Konten (`leads`), damit TEAM-01 in P3 weitere Leitungen ohne Umbau ergänzen kann; in P2 setzt nur `Rights.create_event()` genau eine, aus der Anmeldung. Leerer Name und ein Ende vor dem Beginn lehnt auch die Datenbank ab.
+2. **Zuordnung** (BER-03) als `Rights.has_assignment()`: eine Rolle Mitglied, Gruppen-, Stammes-, Ring- oder Bundesleitung, Verbandsleitung oder DPV-Veranstaltungsteam. Admin und ein laufender Support-Zugang zählen nicht (VA-05). Beim Anlegen wird sie unter Sperre des eigenen Kontos frisch geprüft; das Beenden einer Rolle sperrt dasselbe Konto, deshalb entsteht nichts, wenn die Mitgliedschaft gleichzeitig endet (VG9).
+3. **Doppelklick** (VG8) wie bei verwalteten Personen (#117, Nr. 4): Das Formular „Veranstaltung erstellen“ bekommt beim Öffnen eine Kennung (`creation_key`), die in der Datenbank eindeutig ist; ein zweites Abschicken führt ohne neue Meldung zur schon angelegten Veranstaltung, eine Kennung einer fremden Veranstaltung ist „nicht gefunden“.
+4. **Seiten nur als schlichte Platzhalter** (Sebastian bei der Vorschau, 13.11.2026: „dann nur schlichte Platzhalter und ein absolutes minimum bis die anderen issues die neuen seiten bauen, damit wir nicht etwas bauen was wir danach wider wegwerfen.“): Die Liste ist eine einfache Aufzählung (Name als Link, Zeitraum), die Seite einer Veranstaltung zeigt Name, Zeitraum und den vorhandenen zart blauen Knopf „Bearbeiten“. „Veranstaltung erstellen“ und „… bearbeiten“ sind Dialoge mit Textfeld und Datumsfeld, weil Eingabefelder aus Bausteinen kommen. Kein Baustein wird erweitert, kein eigenes Aussehen; die Gestaltung kommt mit #28 und #29. Neu ist nur das Symbol „kalender“ für den Punkt in der Seitenleiste.
+5. **Wie bei #117, Nr. 5:** Ein Datum, das das Datumsfeld des Browsers nicht versteht, kommt leer an; dann heißt es „Bitte gib den Beginn ein.“ bzw. „… das Ende ein.“, „Bitte gib ein gültiges Datum ein.“ kommt nur bei Anfragen am Browser vorbei.
+6. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Veranstaltung `event` (`Event`, App `events`, wie am 23.10.2026 festgelegt), Beginn `start`, Ende `end`, Veranstaltungsleitung `leads` (die geleiteten Veranstaltungen eines Kontos `led_events`, die Liste der eigenen `own_events`), Zuordnung `assignment` (`has_assignment`), anlegen `create_event`, bearbeiten `edit_event`.
+
+**Umsetzung:** `events/` (Modell, Migration, Texte), `.dockerignore` (gibt `events/` für das Container-Abbild frei), `access/rights.py`, `core/forms.py`, `core/views.py`, `core/navigation.py`, `config/urls.py`, `config/settings.py`, `core/templates/core/veranstaltungen.html`, `veranstaltung.html`, `_symbole.svg`, `core/management/commands/testdata.py` (leert auch die Leitungen der Veranstaltungen), `docs/rechtematrix.md`, `docs/gestaltung.md`, `docs/aufbau.md`; Tests in `tests/test_veranstaltungen.py` und `rauchtests/test_veranstaltungen.py`; `tests/test_rundumtest.py` kennt Veranstaltungen als Daten, die nur die zentrale Rechteprüfung liest, `tests/test_testumgebung_aufbau.py` die neue App, `tests/test_testdaten.py` das Leeren der Veranstaltungen, `tests/test_nicht_gefunden.py` setzt die Kennung des Formulars wie den Formularschutz gleich.
+
+---
+
 ## 2026-11-13 · Befehl für erfundene Testdaten: wo er läuft, was bleibt, wer anlegt (#103)
 
 **Entscheidung** (technische Wahl der KI bei der Umsetzung von #103, Nr. 5 von Sebastian bestätigt; was der Befehl können muss, steht im Text von #103 und in den Szenarien dort).

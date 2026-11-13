@@ -180,6 +180,14 @@ Zielbild als `docs/zielbilder/support-zugang.html`, Abweichungen in `docs/zielbi
 - **„Support-Zugang für … starten“:** Dialog mit dem Satz zu Dauer und Protokoll, darunter sichtbar „Anlass“ mit vier Möglichkeiten ohne Vorwahl, unten „Abbrechen“ und der dunkelblaue Knopf „Support-Zugang starten“. Ohne Wahl steht „Bitte wähle einen Anlass.“ als Fehlermeldung im Dialog unter der Wahl. Danach eine kurze Meldung (#186).
 - **Nach Ablauf** (N2): fest oben auf der nächsten Seite die Informationsmeldung „Dein Support-Zugang für … ist nach 60 Minuten abgelaufen.“; war ein Formular abgeschickt, eine Warnmeldung mit diesem Satz fett und darunter „Was du gerade abgeschickt hast, ist nicht gespeichert.“
 
+### Veranstaltungen, Probe (#100, 13.11.2026)
+
+Kein Zielbild (Probe, Entscheidung F1 aus #106). Nur schlichte Platzhalter, bis #28 und #29 die Seiten gestalten (Sebastian bei der Vorschau, 13.11.2026; `docs/entscheidungen.md`, Eintrag vom 13.11.2026 zu #100). Kein Baustein neu oder erweitert:
+
+- **„Veranstaltungen“** in der Seitenleiste mit dem Symbol Kalender: mit Zuordnung immer, ohne nur, solange man eine Veranstaltung leitet. Die Liste ist eine einfache Aufzählung (Name als Link, Zeitraum), nach Beginn; ohne eigene steht „Du leitest noch keine Veranstaltung.“ Den Knopf „Veranstaltung erstellen“ in der Überschrift der Fläche gibt es nur mit Zuordnung.
+- **„Veranstaltung erstellen“ und „… bearbeiten“:** Dialog mit Textfeld „Name“ und den Datumsfeldern „Beginn“ und „Ende“, Knopf „Anlegen“ oder „Speichern“; danach eine kurze Meldung (#186).
+- **Seite einer Veranstaltung:** Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“. Einen Knopf zum Löschen gibt es nicht.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

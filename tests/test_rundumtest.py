@@ -284,6 +284,8 @@ PERSONAL_MODELS = {
     # Verwaltete Personen (#117) und ihre angezeigten Leitungsrollen (#99).
     "ManagedPerson",
     "DisplayedLead",
+    # Veranstaltungen mit ihrer Veranstaltungsleitung (#100).
+    "Event",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
@@ -305,12 +307,13 @@ ALLOWED_FILES = {
     # Konten und zeigt höchstens Benutzernamen an; verwaltete Personen legt er über die zentrale Stelle an.
     "core/management/commands/testdata.py",
 }
-# Abfragen über einen Verweis auf Rollen, Konten oder verwaltete Personen (#117), auch über mehrere Stufen, z. B.
+# Abfragen über einen Verweis auf Rollen, Konten, verwaltete Personen (#117) oder Veranstaltungen (#100), auch über mehrere Stufen, z. B.
 # filter(roles__user=…), order_by("-user__email"), filter(parent__roles__kind=…),
 # prefetch_related("roles"). Ein bloßes "roles" oder "user" zählt nur als Angabe an eine Abfrage;
 # sonst heißen so auch die App und das Konto der Anfrage.
 LOOKUP_THROUGH_PERSONS = re.compile(
-    r"(^-?|__)(roles|user|managed_persons|displayed_leads)__\w|__(roles|user|managed_persons|displayed_leads)$")
+    r"(^-?|__)(roles|user|managed_persons|displayed_leads|led_events)__\w"
+    r"|__(roles|user|managed_persons|displayed_leads|led_events)$")
 QUERY_METHODS = {"select_related", "prefetch_related", "values", "values_list", "only", "order_by", "annotate"}
 # Ordner, die nur Tests enthalten; jeder andere Python-Ordner gehört zum Tool und wird durchsucht.
 ONLY_FOR_TESTS = {"tests", "rauchtests", "containertests"}
@@ -331,7 +334,7 @@ def bypasses(source: str) -> list[str]:
             owner = ast.unparse(node.value)
             if node.attr in ("objects", "_default_manager", "_base_manager") and owner in PERSONAL_MODELS:
                 found.append(f"{owner}.{node.attr}")
-            elif node.attr in ("roles", "managed_persons") or node.attr in ("raw", "cursor"):
+            elif node.attr in ("roles", "managed_persons", "led_events") or node.attr in ("raw", "cursor"):
                 found.append(f"{owner}.{node.attr}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             if LOOKUP_THROUGH_PERSONS.search(node.value):
@@ -417,6 +420,11 @@ def test_ausnahmen_gibt_es_noch():
         "unit.managed_persons.all()",
         "Unit.objects.filter(managed_persons__first_name='Lena')",
         "Unit.objects.prefetch_related('managed_persons')",
+        # Veranstaltungen und die eigenen Veranstaltungen eines Kontos (#100).
+        "Event.objects.all()",
+        "request.user.led_events.all()",
+        "Unit.objects.filter(roles__user__led_events__name='x')",
+        "get_user_model().objects.values('led_events__name')",
     ],
 )
 def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):

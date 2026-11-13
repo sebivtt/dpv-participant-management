@@ -1,0 +1,25 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{% translate "Veranstaltungen" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Liste „Veranstaltungen“ (#100, Probe in P2, kein Zielbild): die Veranstaltungen, die die Person leitet, nach Beginn, als schlichte Aufzählung; ein Platzhalter, bis #28 und #29 die Seiten gestalten (Sebastian bei der Vorschau, 13.11.2026). „Veranstaltung erstellen“ nur mit Zuordnung (VA-01), ohne auch kein Ersatztext. #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <div class="a-kopf"><h1>{% translate "Veranstaltungen" %}</h1></div>
+  <section class="a-flaeche" aria-labelledby="h-veranstaltungen">
+    {% include "core/_flaechenkopf.html" with symbol="kalender" title=list_title heading_id="h-veranstaltungen" action_href=create_href action_label=create_label %}
+    {% if entries %}
+      <ul>
+        {% for entry in entries %}<li><a href="{{ entry.href }}">{{ entry.name }}</a> <span>{{ entry.period }}</span></li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="a-leer-satz">{{ none_yet }}</p>
+    {% endif %}
+  </section>
+  {% if dialog %}
+    {# Dialog „Veranstaltung erstellen“: eigene Adresse, kommt offen vom Server. Name, darunter Beginn und Ende nebeneinander (schmal untereinander) im Baustein „Datumsfeld“ (#117, N3). #}
+    {% include "core/_dialog_auf.html" %}
+    {% textfeld dialog.event_form.name %}
+    <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start %}{% datumsfeld dialog.event_form.end %}</div>
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+{% endblock %}

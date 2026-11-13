@@ -305,7 +305,8 @@ def test_katalog_nennt_mein_profil_als_seite_der_kurzen_meldung():
     block = BUILDING_BLOCKS["kurzmeldung"]
     assert block["template"] == "core/_kurzmeldung.html"
     assert block["issues"] == [186]
-    assert [str(p) for p in block["pages"]] == ["Mein Profil"]
+    # Seit #100 auch nach dem Anlegen und Speichern einer Veranstaltung.
+    assert [str(p) for p in block["pages"]] == ["Mein Profil", "Veranstaltungen"]
 
 
 def test_kurze_meldung_hat_einen_deutlichen_schatten_und_keinen_zeitbalken():

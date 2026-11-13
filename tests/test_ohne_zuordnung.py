@@ -3,7 +3,8 @@
 Die Kürzel S1 bis G4 verweisen auf Sebastians Szenarien vom 27.10.2026 im Issue #9 (Kommentar
 „Szenarien (27.10.2026)“). V4 und V5 (Veranstaltungen, Anmeldungen) prüfen #100 und #101. Wie in
 #90 und #64 prüfen die Tests die zentrale Rechteprüfung und die Testadressen in `tests/urls.py`, dazu
-Startseite und „Mein Profil“, die einzigen Seiten, die ein Konto ohne Zuordnung heute öffnet.
+Startseite und „Mein Profil“, die einzigen Seiten, die ein Konto ohne Zuordnung heute öffnet; seit #100
+dazu „Veranstaltungen“, solange es noch eine Veranstaltung leitet.
 
 Der Hinweis richtet sich nach „weder Mitgliedschaft noch Rolle“, nicht nach „Zuordnung“: Ein
 Admin ohne Mitgliedschaft sieht ihn nicht (Klärung vom 27.10.2026, Frage 2). Alle Namen sind
