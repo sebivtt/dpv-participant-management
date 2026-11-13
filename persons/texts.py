@@ -61,3 +61,16 @@ NOT_IN_FEDERATION = gettext_lazy("Eine verwaltete Person gehört zu einer Gruppe
 # Abschnitt „Personen“ ohne Personen (N7); der zweite Satz nur, wer dort anlegen darf.
 NOBODY_YET = gettext_lazy("Dieser Organisation sind noch keine Personen zugeordnet.")
 NOBODY_YET_ADD = gettext_lazy("Du kannst oben eine verwaltete Person anlegen oder eine bereits registrierte Person aufnehmen.")
+
+# Angezeigte Leitungsrollen (#99, PER-07), Wortlaut nach dem Text von #99 und den Szenarien vom 11.11.2026.
+# Eintragen, „schon …“, Entfernen und die Ablehnung beim Verschieben nutzen die Sätze für Leitungen mit
+# Konto (units/texts.py, #190, #191, PK-25).
+DISPLAYED_HINT = gettext_lazy("%(person)s hat kein Konto. Die Rolle wird nur angezeigt und gibt keine Rechte.")
+# Im Abschnitt „Personen“ unter dem Namen; in der Liste der Leitungen steht „ohne Konto, nur Anzeige“ in der Vorlage.
+DISPLAYED_ROLE_AT = gettext_lazy("%(role)s %(unit)s (nur Anzeige)")
+DISPLAYED_OFF_PATH = gettext_lazy(
+    "%(person)s gehört zu %(unit)s und kann deshalb keine Leitung bei %(target)s sein."
+)
+# Nur am Tool vorbei möglich: Das Tool bietet keine falsche Ebene an und ändert keine gespeicherte Rolle.
+DISPLAYED_WRONG_LEVEL = gettext_lazy("Diese Leitungsrolle passt nicht zur Ebene der Organisation.")
+DISPLAYED_FIXED = gettext_lazy("Eine angezeigte Leitungsrolle lässt sich nicht ändern, nur entfernen und neu eintragen.")

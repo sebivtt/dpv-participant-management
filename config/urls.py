@@ -29,6 +29,7 @@ from core.views import (
     organisation_move,
     organisation_move_managed,
     organisation_remove,
+    organisation_remove_displayed,
     organisation_search,
     organisation_suggestions,
     organisation_support,
@@ -74,6 +75,9 @@ urlpatterns = [
     path("organisation/<key:unit>/benennen/suchen/", organisation_search, name="organisation_search"),
     path("organisation/<key:unit>/benennen/vorschlaege/", organisation_suggestions, name="organisation_suggestions"),
     path("organisation/<key:unit>/entfernen/<key:role>/", organisation_remove, name="organisation_remove"),
+    # Angezeigte Leitungsrollen verwalteter Personen (#99): eigene Adresse neben der für Rollen mit Konto.
+    path("organisation/<key:unit>/entfernen-anzeige/<key:role>/", organisation_remove_displayed,
+         name="organisation_remove_displayed"),
     path("organisation/<key:unit>/aufnehmen/", organisation_admit, name="organisation_admit"),
     path("organisation/<key:unit>/aufnehmen/suchen/", organisation_admit_search, name="organisation_admit_search"),
     path("organisation/<key:unit>/austragen/<key:person>/", organisation_expel, name="organisation_expel"),

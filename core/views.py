@@ -219,7 +219,7 @@ READING = ("GET", "HEAD")
 # Die Adresse hat keine Kennung: Sie zeigt immer die Gliederung der angemeldeten Person (EH-01)
 # oder, für die Verbandsleitung, die Seite „Verband“ (#94).
 @checks_rights("EH-01", "EH-03", "EH-04", "EH-05", "EH-07", "EH-08", "EH-09", "RO-01", "RO-03", "RO-04", "RO-05",
-               "RO-21", "RO-22", "VP-02", "VP-06")
+               "RO-09", "RO-21", "RO-22", "VP-02", "VP-06")
 def organisation(request: HttpRequest) -> HttpResponse:
     """„Organisation“: die Gliederung des eigenen Bundes, am PC daneben die Seite der eigenen Organisation.
 
@@ -241,8 +241,8 @@ def organisation(request: HttpRequest) -> HttpResponse:
 
 
 # Die Organisation kommt nur aus der Adresse, über ihre Kennung (CONTRIBUTING.md, Abschnitt 4).
-@checks_rights("EH-01", "EH-03", "EH-07", "EH-09", "EH-28", "RO-01", "RO-03", "RO-04", "RO-21", "RO-22", "VP-02", "VP-03",
-               "VP-06")
+@checks_rights("EH-01", "EH-03", "EH-07", "EH-09", "EH-28", "RO-01", "RO-03", "RO-04", "RO-09", "RO-21", "RO-22", "VP-02",
+               "VP-03", "VP-06")
 def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
     """Seite einer Organisation: im eigenen Bereich zum Verwalten, auf der Kette nach oben nur zum Lesen (Frage C).
 
@@ -264,7 +264,7 @@ def organisation_unit(request: HttpRequest, unit: str) -> HttpResponse:
 # Organisation kommt immer aus der Adresse, nie aus dem Formular (BV7). Wer dort nicht benennen
 # darf, bekommt auf allen drei Adressen „nicht gefunden“, auch per Skript (BV5, BV6, BV8).
 APPOINT_ROWS = ("PK-09", "PK-10", "PK-11", "PK-12", "PK-13", "PK-14", "PK-15", "PK-16", "PK-24",
-                "RO-10", "RO-11", "RO-12", "RO-13", "RO-14", "RO-17", "EP-08")
+                "RO-10", "RO-11", "RO-12", "RO-13", "RO-14", "RO-17", "EP-08", "VP-14", "VP-15")
 
 
 def _appointing(request: HttpRequest, unit: str) -> Unit:
@@ -303,10 +303,15 @@ def organisation_appoint(request: HttpRequest, unit: str) -> HttpResponse:
     benennt sie; die Rolle gilt sofort, ohne Zustimmung und ohne Nachricht (B2). Danach geht es
     zurück zur Seite der Organisation mit einer kurzen Meldung (B15). Lehnt die Rechteprüfung
     ab, bleibt der Dialog offen und nennt den Grund an der Stelle der Handlung.
+
+    Mit `verwaltet=ja` ist die Kennung die einer verwalteten Person, und eingetragen wird eine angezeigte
+    Leitungsrolle ohne Rechte (#99, VP-14). Das Feld wählt nur die Tabelle, in der die Kennung gesucht wird;
+    eine Kennung der anderen Art findet dort nichts und ist „nicht gefunden“.
     """
     found = _appointing(request, unit)
     if request.method == "POST":
-        done, text = request.rights.appoint(found, request.POST.get("person"))
+        appoint = request.rights.appoint_displayed if request.POST.get("verwaltet") == "ja" else request.rights.appoint
+        done, text = appoint(found, request.POST.get("person"))
         if done:
             messages.success(request, text)
             return redirect("organisation_unit", unit=found.key)
@@ -361,7 +366,8 @@ def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
     if len(text) >= SUGGESTION_MIN:
         # Vorschläge zeigen Namen von Personen; im Support-Zugang zählen sie wie eine Seite (#92).
         request.rights.record_view(found)
-    entries = request.rights.suggestions(text)
+    # Mit der Organisation des Dialogs kommen verwaltete Personen auf ihrem Leitungspfad dazu (#99).
+    entries = request.rights.suggestions(text, unit=found)
     context = {"hits": hits(entries, found), "hits_title": texts.SUGGESTIONS_TITLE,
                "empty": texts.NO_SUGGESTIONS if len(text) >= SUGGESTION_MIN else "",
                "appoint_action": reverse("organisation_appoint", args=[found.key])}
@@ -396,6 +402,30 @@ def organisation_remove(request: HttpRequest, unit: str, role: str) -> HttpRespo
     removal = shown.removal(found, rights.removal(found, role), action=request.path)
     return render(request, "core/organisation.html", {"outline": shown.outline(current=found), "page": shown.page(found),
                                                        "start": False, "removal": removal})
+
+
+# Angezeigte Leitungsrollen verwalteter Personen entfernen (#99, PER-07). Eigene Adresse neben der für Rollen
+# mit Konto (#191), damit eine Kennung der einen Art unter der anderen nie etwas findet.
+DISPLAYED_ROWS = ("VP-14", "VP-15", "VP-16", "RO-09")
+
+
+@checks_rights(*DISPLAYED_ROWS)
+def organisation_remove_displayed(request: HttpRequest, unit: str, role: str) -> HttpResponse:
+    """Bestätigung „… entfernen?“ zeigen und die angezeigte Leitungsrolle entfernen (VP-14, L6).
+
+    Wie beim Entfernen einer Leitung mit Konto (#191): Lesend zeigt die Adresse die Seite der Organisation
+    mit offenem Dialog, das Formular entfernt und führt zur Seite mit der kurzen Meldung. Die eigenen Rechte
+    ändern sich dabei nie, weil die angezeigte Rolle keine gibt.
+    """
+    found = _appointing(request, unit)
+    rights = request.rights
+    if request.method == "POST":
+        messages.success(request, rights.remove_displayed(found, role))
+        return redirect("organisation_unit", unit=found.key)
+    if request.method not in READING:
+        raise Http404
+    shown = Organisation(rights, request.user)
+    return _with_dialog(request, found, shown.removal(found, rights.displayed_removal(found, role), action=request.path))
 
 
 def _after_removal(request: HttpRequest, found: Unit) -> str:
@@ -736,17 +766,24 @@ DELETE_MANAGED_ROWS = ("VP-09", "VP-10", "EH-18", "EH-19")
 def organisation_move_managed(request: HttpRequest, unit: str, person: str) -> HttpResponse:
     """Dialog „Verschieben“ einer verwalteten Person zeigen und sie in eine Organisation direkt darunter verschieben (VP-07).
 
-    Derselbe Dialog wie bei Personen mit Konto (#287). Danach geht es zurück zur Seite mit der kurzen Meldung;
-    eine Ablehnung wie PK-25 gibt es nicht, weil verwaltete Personen keine Leitungsrollen haben.
+    Derselbe Dialog wie bei Personen mit Konto (#287). Danach geht es zurück zur Seite mit der kurzen Meldung.
+    Passt eine angezeigte Leitungsrolle nicht zum Ziel, bleibt der Dialog offen, nennt sie und lässt das Ziel
+    gewählt, wie PK-25 bei Personen mit Konto (#99, LG2).
     """
     rights = request.rights
     found = rights.entry(Unit.objects.all(), unit, allowed=rights.may_move)
+    notice, chosen = "", ""
     if request.method == "POST":
-        messages.success(request, rights.move_managed(found, person, request.POST.get("ziel", "")))
-        return redirect("organisation_unit", unit=found.key)
-    if request.method not in READING:
+        chosen = request.POST.get("ziel", "")
+        done, text = rights.move_managed(found, person, chosen)
+        if done:
+            messages.success(request, text)
+            return redirect("organisation_unit", unit=found.key)
+        notice = text
+    elif request.method not in READING:
         raise Http404
-    return _with_dialog(request, found, move_dialog(found, rights.moving_managed(found, person), action=request.path))
+    dialog = move_dialog(found, rights.moving_managed(found, person), action=request.path, notice=notice, chosen=chosen)
+    return _with_dialog(request, found, dialog)
 
 
 @checks_rights(*EXPEL_MANAGED_ROWS)
@@ -1094,14 +1131,16 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "leitung": {
-        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287, 117],
+        "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287, 117, 99],
         "purpose": _("Eine Leitung oder Person mit Kreis: oben Fahrtenname, Name und bei sich selbst „das bist du“, "
                      "darunter links die Rollen und rechts die Mail, wo die Seite sie zeigen darf. Eine Leitung hat "
                      "genau eine Rolle, eine Person im Abschnitt „Personen“ keine, eine oder mehrere "
                      "Leitungsrollen. Ganz rechts ist Platz für Knöpfe; wo man Leitungen entfernen darf, steht dort "
                      "„Entfernen“, beim eigenen Eintrag „Rolle abgeben“; wo man Personen verschieben oder "
                      "austragen darf, „Verschieben“ und „Austragen“. Eine verwaltete Person hat einen grauen Kreis, "
-                     "die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“."),
+                     "die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Eine angezeigte Leitungsrolle "
+                     "einer verwalteten Person hat einen grauen Kreis und hinter dem Namen „ohne Konto, nur "
+                     "Anzeige“; im Abschnitt „Personen“ steht sie als Rolle mit „(nur Anzeige)“."),
         "pages": [_("Organisation")],
     },
     "knopfentfernen": {
@@ -1171,11 +1210,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
-        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190, 285],
+        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190, 285, 99],
         "purpose": _("Vorschläge oder Treffer einer Suche: Kreis, Fahrtenname und Name, darunter die Organisation, "
                      "rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders "
                      "Mitglied ist, eine Warnung. Im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem "
-                     "Knopf „Aufnehmen“."),
+                     "Knopf „Aufnehmen“. Eine verwaltete Person hat die Marke „verwaltet“ und darunter den Satz, "
+                     "dass die Rolle nur angezeigt wird und keine Rechte gibt."),
         "pages": [_("Organisation")],
     },
     "profilkreis": {
@@ -1232,6 +1272,9 @@ def _organisation_examples() -> dict:
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
         Lead(name="kim.ohne.namen", extra="", role="Stammesleitung", mail="", locked=False, is_self=False,
              remove_href="#h-dialog", remove_label=texts.REMOVE_BUTTON),
+        # Eine angezeigte Leitungsrolle einer verwalteten Person (#99): grauer Kreis, „ohne Konto, nur Anzeige“; hier
+        # wie auf der Leseseite ohne Knopf, „Entfernen“ sieht dort aus wie bei den Leitungen darüber.
+        Lead(name="Tim Probe", extra="", role="Stammesleitung", mail="", locked=False, is_self=False, display_only=True),
     ]
     page = Page(unit=walhall, access="manage", path=[("Pfadfinderbund Boreas", "#h-orgakopf")],
                 kind_line="Stamm in Pfadfinderbund Boreas", mark=covers, leads=leads, notice="", tiles=None, empty="",
@@ -1254,6 +1297,9 @@ def _organisation_examples() -> dict:
             warning=texts.MEMBER_ELSEWHERE),
         Hit(key="", name="Otter", extra="Otto Ohne", place=texts.NOWHERE, note="", warning="",
             hint=texts.BECOMES_MEMBER % {"unit": "Sippe Falken"}),
+        # Eine verwaltete Person (#99): Marke „verwaltet“ und der Satz, dass die Rolle nur angezeigt wird.
+        Hit(key="", name="Kiwi", extra="Lena Probe", place="Sippe Falken", note="", warning="", managed=True,
+            hint=person_texts.DISPLAYED_HINT % {"person": "Kiwi (Lena Probe)"}),
     ]
     dialog = {"title": texts.APPOINT_TITLE % {"role": "Gruppenleitung"},
               "subtitle": texts.APPOINT_FOR % {"unit": "Sippe Falken"}, "close_href": "#h-dialog-beispiel",
@@ -1306,7 +1352,9 @@ def _organisation_examples() -> dict:
         # Eine verwaltete Person (#117): grauer Kreis, Marke „verwaltet“, ohne Mail, mit „Bearbeiten“; seit #118
         # dahinter „Verschieben“ und „Austragen“ wie bei Personen mit Konto.
         Lead(name="Kiwi", extra="Lena Probe", role="", mail="", locked=False, is_self=False, managed=True,
-             edit_href="#h-leitung", move_href="#h-leitung", expel_href="#h-leitung"),
+             edit_href="#h-leitung", move_href="#h-leitung", expel_href="#h-leitung",
+             # Seit #99 mit ihrer angezeigten Leitungsrolle.
+             role_names=[person_texts.DISPLAYED_ROLE_AT % {"role": "Gruppenleitung", "unit": "Sippe Falken"}]),
     ]
     # Verschieben mit Wahl ohne Vorschau und blauem Knopf (#287), erfunden wie im Beispiel des Issues.
     moving = {

@@ -177,17 +177,20 @@ class Unit(models.Model):
             raise
 
     def _check_leads_on_path(self, stored: "Unit | None") -> None:
-        """Lehnt einen Ringwechsel ab, nach dem eine Leitungsrolle nicht mehr auf dem Pfad läge (#89, #95).
+        """Lehnt einen Ringwechsel ab, nach dem eine Leitungsrolle nicht mehr auf dem Pfad läge (#89, #95), auch eine angezeigte (#99).
 
         Läuft unter der Sperre des Bundes, die auch das Speichern einer Rolle nimmt; so sieht die
         Prüfung eine gleichzeitig benannte Leitung (OG9).
         """
         if stored is None or self.kind != Kind.TROOP or stored.parent_id == self.parent_id:
             return
-        # Rollen liegen eine Schicht gleich hoch und binden dieses Modul ein; deshalb erst hier.
+        # Rollen und verwaltete Personen liegen eine Schicht gleich hoch und binden dieses Modul ein; deshalb erst hier.
+        from persons.models import displayed_off_path
         from roles.models import describe, leads_off_path
 
         blocking = [lead for _membership, leads in leads_off_path(self, self.parent) for lead in leads]
+        # Angezeigte Leitungsrollen verwalteter Personen ebenso (#99, LG5).
+        blocking += [lead for _person, leads in displayed_off_path(self, self.parent) for lead in leads]
         if blocking:
             roles = ", ".join(f"{lead.get_kind_display()} {describe(lead.unit)}" for lead in blocking)
             raise ValidationError(texts.LEADS_OFF_PATH % {"roles": roles}, code="leads_off_path")
