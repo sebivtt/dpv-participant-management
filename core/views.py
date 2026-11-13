@@ -840,10 +840,10 @@ def period(entry) -> str:
 def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpResponse:
     """Die Liste „Veranstaltungen“, auf Wunsch mit offenem Dialog „Veranstaltung erstellen“."""
     rights = request.rights
-    tiles = [{"label": period(entry), "org": entry.name, "href": reverse("event_page", args=[entry.key])}
-             for entry in rights.own_events()]
+    entries = [{"name": entry.name, "period": period(entry), "href": reverse("event_page", args=[entry.key])}
+               for entry in rights.own_events()]
     return render(request, "core/veranstaltungen.html", {
-        "tiles": tiles,
+        "entries": entries,
         # Den Knopf gibt es nur mit Zuordnung, ohne auch keinen Ersatztext (#100).
         "create_href": reverse("event_create") if rights.may_create_event() else None,
         "create_label": event_texts.CREATE_TITLE,
@@ -854,12 +854,11 @@ def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpRespon
 
 
 def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> HttpResponse:
-    """Die Seite einer Veranstaltung: Name und Zeitraum, der Stift zu „… bearbeiten“; auf Wunsch mit offenem Dialog."""
+    """Die Seite einer Veranstaltung: Name und Zeitraum, der Knopf „Bearbeiten“; auf Wunsch mit offenem Dialog."""
     return render(request, "core/veranstaltung.html", {
         "event": entry,
         "period": period(entry),
         "edit_href": reverse("event_edit", args=[entry.key]),
-        "edit_label": event_texts.EDIT_TITLE % {"event": entry.name},
         "dialog": dialog,
     })
 
@@ -1259,7 +1258,7 @@ BUILDING_BLOCKS = {
                      "darüber, die übrigen Rollen als Kacheln ohne zweite Zeile. Unter „Organisationen darunter“ "
                      "ist die Kachel anklickbar und zeigt ihre Leitungen, ohne Zugriff grau ohne blauen Streifen. "
                      "Unten darf ein kleiner Knopf „Rolle abgeben“ stehen, etwa beim DPV-Veranstaltungsteam."),
-        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Mein Profil"), _("Organisation")],
     },
     "gliederungsbaum": {
         "name": _("Gliederung"), "template": "core/_gliederung.html", "issues": [189],
@@ -1300,14 +1299,14 @@ BUILDING_BLOCKS = {
                      "blauer Schrift, die Farben der Informationsmeldung, meist klein. Beschriftung und Symbol sind "
                      "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
                      "Er führt zum Dialog, nie gleich zur Handlung."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "stift": {
-        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95, 100],
+        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95],
         "purpose": _("Ein Stift oben rechts in einer Fläche, dort, wo ein Dialog sein × hat. Er öffnet den Dialog "
                      "„… bearbeiten“, in dem alle Einstellungen dieser Sache an einem Ort stehen, etwa Name und "
                      "Ring einer Organisation. Er steht nur, wo man bearbeiten darf."),
-        "pages": [_("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Organisation")],
     },
     "schalter": {
         "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95, 98],

@@ -232,11 +232,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-orga-kopf .a-unterzeile { margin: 4px 0 0; }
 /* Bearbeiten-Symbol (#95): der Stift oben rechts in der Fläche; sein Aussehen teilt er mit dem × eines Dialogs (.a-schliessen unten). */
 .a-orga-kopf { position: relative; }
-/* Baustein „Bearbeiten-Symbol“ (#95): Der Stift steht oben rechts in seiner Fläche; seit #100 in jeder Fläche, etwa auf der Seite einer Veranstaltung. */
-.a-flaeche.hat-stift { position: relative; padding-right: 64px; }
-/* Seite einer Veranstaltung (#100): der Name groß wie die Überschrift einer Seite, darunter der Zeitraum. */
-.a-veranstaltung h1 { margin: 0; font-size: clamp(1.7rem, 1.3rem + 1.4vw, 2.25rem); letter-spacing: -.01em; overflow-wrap: anywhere; }
-.a-veranstaltung .a-unterzeile { margin: 4px 0 0; }
+.a-orga-kopf.hat-stift { padding-right: 64px; }
 /* Schalter (#95) nach dem Zielbild „Mein Profil“ (Zeile „Profil freigeben“): Titel und Satz links, rechts der runde Schalter. */
 .a-schalter-zeile { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
 .a-schalter-satz { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; }

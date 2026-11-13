@@ -2,13 +2,10 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Seite einer Veranstaltung (#100, Probe in P2, kein Zielbild): eine Fläche mit dem Namen und dem Zeitraum, oben rechts der Stift zu „… bearbeiten“ (#95). Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). #}
+  {# Seite einer Veranstaltung (#100, Probe in P2, kein Zielbild): der Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“; ein schlichter Platzhalter, bis #28 und #29 die Seiten gestalten (Sebastian bei der Vorschau, 13.11.2026). Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
-  <div class="a-flaeche a-veranstaltung hat-stift">
-    {% include "core/_stift.html" with href=edit_href label=edit_label %}
-    <h1>{{ event.name }}</h1>
-    <p class="a-unterzeile">{{ period }}</p>
-  </div>
+  <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ period }}</p></div>
+  <p>{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href=edit_href label=edit_label name=event.name %}</p>
   {% if dialog %}
     {# Dialog „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen. #}
     {% include "core/_dialog_auf.html" %}

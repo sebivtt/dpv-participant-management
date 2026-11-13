@@ -213,7 +213,8 @@ def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     # Der vorhandene zart blaue Knopf „Bearbeiten“ (Sebastian bei der Vorschau, 13.11.2026: schlichte Platzhalter).
     edit = _one([link for link in _by_tag(root, "a") if _visible_text(link) == "Bearbeiten"])
     assert _attr(edit, "href") == edit_address(probelager)
-    assert _text(edit) == "Bearbeiten: Probelager 2027"
+    # Vorleseprogramme hören, welche Veranstaltung gemeint ist.
+    assert _text(_one(_all(edit, lambda e: "sr-nur" in _classes(e)))) == ": Probelager 2027"
 
     found = open_edit(org.finn, probelager, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Probelager 2027 bearbeiten"

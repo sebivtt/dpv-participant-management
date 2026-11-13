@@ -182,13 +182,11 @@ Zielbild als `docs/zielbilder/support-zugang.html`, Abweichungen in `docs/zielbi
 
 ### Veranstaltungen, Probe (#100, 13.11.2026)
 
-Kein Zielbild (Probe, Entscheidung F1 aus #106); Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 13.11.2026 zu #100. Kein neuer Baustein, einer erweitert:
+Kein Zielbild (Probe, Entscheidung F1 aus #106). Nur schlichte Platzhalter, bis #28 und #29 die Seiten gestalten (Sebastian bei der Vorschau, 13.11.2026; `docs/entscheidungen.md`, Eintrag vom 13.11.2026 zu #100). Kein Baustein neu oder erweitert:
 
-- **Bearbeiten-Symbol:** steht in jeder Fläche oben rechts, nicht nur im Kopf einer Organisationsseite; etwa auf der Seite einer Veranstaltung.
-- **„Veranstaltungen“** in der Seitenleiste mit dem Symbol Kalender: mit Zuordnung immer, ohne nur, solange man eine Veranstaltung leitet. Die Liste zeigt die eigenen Veranstaltungen als anklickbare Rollenkacheln (klein der Zeitraum, groß der Name), nach Beginn; ohne eigene steht „Du leitest noch keine Veranstaltung.“ Den Knopf „Veranstaltung erstellen“ in der Überschrift der Fläche gibt es nur mit Zuordnung.
-- **„Veranstaltung erstellen“ und „… bearbeiten“:** Dialog mit „Name“ (Pflicht, Zahl der Zeichen bis 100), darunter „Beginn“ und „Ende“ nebeneinander (schmal untereinander) im Baustein „Datumsfeld“, unten der dunkelblaue Knopf „Anlegen“ oder „Speichern“. Danach eine kurze Meldung (#186).
-- **Seite einer Veranstaltung:** eine Fläche mit dem Namen groß, darunter der Zeitraum („15.05.2027 bis 17.05.2027“, ein Tag nur mit einem Datum), oben rechts der Stift zu „… bearbeiten“. Einen Knopf zum Löschen gibt es nicht.
-- Die Akzentfarbe am Symbol von „Veranstaltung erstellen“ (Abschnitt 1, „Farben“) kommt mit dem Zielbild zu #28 und #29; die Probe nutzt den Knopf der Überschrift einer Fläche, wie er ist.
+- **„Veranstaltungen“** in der Seitenleiste mit dem Symbol Kalender: mit Zuordnung immer, ohne nur, solange man eine Veranstaltung leitet. Die Liste ist eine einfache Aufzählung (Name als Link, Zeitraum), nach Beginn; ohne eigene steht „Du leitest noch keine Veranstaltung.“ Den Knopf „Veranstaltung erstellen“ in der Überschrift der Fläche gibt es nur mit Zuordnung.
+- **„Veranstaltung erstellen“ und „… bearbeiten“:** Dialog mit Textfeld „Name“ und den Datumsfeldern „Beginn“ und „Ende“, Knopf „Anlegen“ oder „Speichern“; danach eine kurze Meldung (#186).
+- **Seite einer Veranstaltung:** Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“. Einen Knopf zum Löschen gibt es nicht.
 
 ### Textfelder (#111, 26.10.2026)
 
