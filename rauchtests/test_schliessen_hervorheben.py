@@ -92,6 +92,7 @@ def test_mit_der_tastatur_hat_das_x_nur_den_fokusrahmen(pc):
 
 
 # S5: Im Bausteinkatalog hebt sich das × der Dialog-Vorschau genauso hervor
+@pytest.mark.bausteinkatalog
 def test_im_bausteinkatalog_hebt_sich_das_x_der_vorschau_hervor(pc):
     login(pc)
     pc.goto(f"{BASE}/bausteine/")

@@ -8,6 +8,7 @@ noch Docker und läuft in Sekunden. Geprüft wird das Skript, nicht die Prüfung
 Nicht jede Schreibweise der Meldungen wird einzeln geprüft, sondern ihr Inhalt.
 """
 
+import functools
 import json
 import os
 import re
@@ -183,15 +184,19 @@ def test_voller_lauf_mit_uebersprungenem_nennt_die_zahl_und_verweist_auf_die_gru
     assert "Alle gelaufenen Prüfungen grün, 4 Tests übersprungen (Gründe oben unter SKIPPED)." in lauf.out
 
 
-def test_schneller_lauf_ohne_dateien_startet_genau_die_vier_pruefungen_ohne_tests(lauf):
+def test_schneller_lauf_ohne_dateien_startet_die_vier_pruefungen_und_nur_die_katalogtests(lauf):
+    # Bis #304 liefen ohne Dateien gar keine Tests; seitdem laufen die Katalogtests immer mit (S3).
     lauf.start("schnell")
 
     assert lauf.code == 0
-    assert len(lauf.calls) == 4
+    assert len(lauf.calls) == 5
     assert [len(lauf.called(*words)) for words in (["lock"], ["ruff"], ["manage.py", "check"], ["makemigrations"])] == [1] * 4
-    assert lauf.pytest_calls() == []
+    (tests,) = lauf.pytest_calls()
+    assert tests["args"][-4:] == ["pytest", "-rsfE", "tests", "--schnelle-auswahl="]
+    assert tests["async"] is None
     assert not lauf.called("pip-audit") and not lauf.called("export")
     assert "Schneller Lauf grün" in lauf.out
+    assert "Immer mitgelaufen: die Katalogtests aus tests/." in lauf.out
     nicht_ausgewaehlt = lauf.out.split("Nicht ausgewählt:", 1)[1]
     for part in ["Tests", "Rauchtests", "Container", "pip-audit"]:
         assert part in nicht_ausgewaehlt, part
@@ -203,8 +208,9 @@ def test_schneller_lauf_mit_zwei_dateien_startet_zwei_getrennte_pytest_laeufe(la
 
     assert lauf.code == 0
     tests, rauch = lauf.pytest_calls()
-    assert tests["args"][-3:] == ["pytest", "-rsfE", "tests/test_a.py"]
-    assert rauch["args"][-3:] == ["pytest", "-rsfE", "rauchtests/test_r.py"]
+    # Seit #304 sammelt pytest den ganzen Ordner und behält die genannten Dateien und die Katalogtests.
+    assert tests["args"][-4:] == ["pytest", "-rsfE", "tests", "--schnelle-auswahl=tests/test_a.py"]
+    assert rauch["args"][-4:] == ["pytest", "-rsfE", "rauchtests", "--schnelle-auswahl=rauchtests/test_r.py"]
     assert (tests["async"], rauch["async"]) == (None, "true")
     assert not lauf.called("pip-audit") and not lauf.called("export")
     assert not any("containertests" in call["args"] for call in lauf.calls)
@@ -215,7 +221,7 @@ def test_schneller_lauf_gibt_mehrere_dateien_eines_ordners_an_einen_lauf(lauf):
     lauf.start("schnell", "tests/test_a.py", "tests/test_b.py")
 
     (tests,) = lauf.pytest_calls()
-    assert tests["args"][-4:] == ["pytest", "-rsfE", "tests/test_a.py", "tests/test_b.py"]
+    assert tests["args"][-4:] == ["pytest", "-rsfE", "tests", "--schnelle-auswahl=tests/test_a.py tests/test_b.py"]
 
 
 def test_schneller_lauf_mit_uebersprungenen_nennt_zahl_und_nicht_ausgewaehltes(lauf):
@@ -266,6 +272,17 @@ def test_roter_test_bleibt_auch_bei_uebersprungenem_rot(lauf):
     assert lauf.code == 1
     assert "Schneller Lauf grün" not in lauf.out
     assert "Nicht bestanden:" in lauf.out
+
+
+def test_u3_ein_roter_katalogtest_macht_den_schnellen_lauf_ohne_dateien_rot(lauf):
+    lauf.config["rot"] = ["pytest-tests"]
+    lauf.config["ausgabe"]["pytest-tests"] = "=========== 1 failed, 40 passed in 1.20s ==========="
+    lauf.start("schnell")
+
+    assert lauf.code == 1
+    assert "Schneller Lauf grün" not in lauf.out
+    assert "Katalogtests" in lauf.out.split("Nicht bestanden:", 1)[1]
+    assert "Immer mitgelaufen: die Katalogtests aus tests/." in lauf.out
 
 
 def test_jede_zeile_nennt_die_dauer_auch_bei_rot(lauf):
@@ -625,3 +642,85 @@ def test_die_meldung_bei_falschem_aufruf_bleibt_lokal_wie_bisher(lauf):
         "pruefen.sh: Unbekannte Option: langsam",
         "Aufruf: ./pruefen.sh   oder   ./pruefen.sh schnell [Testdatei aus tests/ oder rauchtests/ ...]",
     ]
+
+
+# --- Katalogtests im schnellen Lauf (#304) -----------------------------------------------------
+# Szenarien: https://github.com/sebivtt/dpv-participant-management/issues/304, Kommentar
+# „Szenarien (13.11.2026)“. Die Tests oben prüfen, was pruefen.sh an pytest gibt. Hier zählt, was
+# pytest mit genau diesen Angaben in diesem Repo wirklich auswählt: die Tests der genannten Dateien
+# und alle Tests mit dem Kennzeichen „bausteinkatalog“, jeden genau einmal. Gesammelt wird nur.
+
+
+@functools.cache
+def _alle_ids(ordner):
+    code, ids, ausgabe = _gesammelt(ordner)
+    assert code == 0, ausgabe[-3000:]
+    return tuple(ids)
+
+
+@functools.cache
+def _katalog_ids(ordner):
+    code, ids, ausgabe = _gesammelt(ordner, "-m", "bausteinkatalog")
+    assert code == 0, ausgabe[-3000:]
+    assert ids, f"in {ordner}/ gibt es Tests mit dem Kennzeichen"
+    return frozenset(ids)
+
+
+def _schnell_wie_pruefen_sh(tmp_path, *dateien):
+    """Startet ./pruefen.sh schnell mit Platzhalter; je Ordner die Auswahl, die pytest dann trifft."""
+    lauf = Lauf(tmp_path)
+    for name in dateien:
+        (lauf.root / name).parent.mkdir(exist_ok=True)
+        (lauf.root / name).write_text("", encoding="utf-8")
+    lauf.start("schnell", *dateien)
+    assert lauf.code == 0, lauf.out
+    auswahl = {}
+    for call in lauf.pytest_calls():
+        args = call["args"][call["args"].index("-rsfE") + 1 :]
+        code, ids, ausgabe = _gesammelt(*args)
+        assert code == 0, ausgabe[-3000:]
+        auswahl[args[0]] = ids
+    return lauf, auswahl
+
+
+def _ids_der_datei(ordner, datei):
+    ids = {nodeid for nodeid in _alle_ids(ordner) if nodeid.startswith(f"{datei}::")}
+    assert ids, datei
+    return ids
+
+
+def test_s1_nur_doku_geaendert_die_katalogtests_aus_tests_laufen_mit_ohne_browser(tmp_path):
+    lauf, auswahl = _schnell_wie_pruefen_sh(tmp_path, "tests/test_rechtematrix.py")
+
+    assert set(auswahl) == {"tests"}, "kein Browser"
+    ids = auswahl["tests"]
+    assert len(ids) == len(set(ids))
+    assert set(ids) == _ids_der_datei("tests", "tests/test_rechtematrix.py") | _katalog_ids("tests")
+    assert "Immer mitgelaufen: die Katalogtests aus tests/." in lauf.out
+
+
+def test_s2_mit_einer_rauchtest_datei_laufen_auch_die_katalog_rauchtests(tmp_path):
+    lauf, auswahl = _schnell_wie_pruefen_sh(tmp_path, "rauchtests/test_organisation.py")
+
+    assert set(auswahl["tests"]) == _katalog_ids("tests")
+    ids = auswahl["rauchtests"]
+    assert len(ids) == len(set(ids))
+    assert set(ids) == _ids_der_datei("rauchtests", "rauchtests/test_organisation.py") | _katalog_ids("rauchtests")
+    assert "Immer mitgelaufen: die Katalogtests aus tests/ und rauchtests/." in lauf.out
+
+
+def test_s3_ohne_datei_laufen_genau_die_katalogtests_aus_tests_und_keine_rauchtests(tmp_path):
+    _, auswahl = _schnell_wie_pruefen_sh(tmp_path)
+
+    assert set(auswahl) == {"tests"}
+    assert sorted(auswahl["tests"]) == sorted(_katalog_ids("tests"))
+
+
+def test_s4_eine_genannte_datei_mit_katalogtests_laeuft_jeden_test_genau_einmal(tmp_path):
+    _, auswahl = _schnell_wie_pruefen_sh(tmp_path, "tests/test_entfernen.py")
+
+    datei = _ids_der_datei("tests", "tests/test_entfernen.py")
+    assert datei & _katalog_ids("tests"), "die Datei enthält selbst Katalogtests"
+    ids = auswahl["tests"]
+    assert len(ids) == len(set(ids)), "jeder Test genau einmal"
+    assert set(ids) == datei | _katalog_ids("tests")

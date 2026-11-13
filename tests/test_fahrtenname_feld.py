@@ -350,6 +350,7 @@ def test_stammesleitung_aendert_erikas_fahrtennamen_auch_ueber_das_neue_feld_nic
 # Neuer Baustein zuerst auf der Musterseite, seit #176 im Bausteinkatalog (docs/gestaltung.md)
 
 
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_das_feld_zum_antippen(org):
     """Mit erfundenem Fahrtennamen; das Formular dort schickt nichts ab."""
     root = _tree(client_for(org.erika).get("/bausteine/"))

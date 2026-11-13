@@ -100,6 +100,7 @@ def test_ohne_skript_nur_der_rahmen_aussen(pc, browser):
 
 
 # Szenario 7: im Bausteinkatalog wie Szenarien 1 bis 4
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_im_bausteinkatalog_wie_auf_mein_profil(request, browser_name, device):
     page: Page = request.getfixturevalue(device)

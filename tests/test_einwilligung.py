@@ -314,6 +314,7 @@ def test_eg6_ein_doppelklick_legt_lena_einmal_an_mit_genau_einer_bestaetigung(or
 # ---------- Baustein und Zielbild ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_der_schalter_fuer_hat_ringe_bleibt_ein_schalter(org, settings):
     """Gegenprobe zur Erweiterung: Ohne Ansage als Ankreuzfeld bleibt der Baustein wie in #95, im Katalog wie bisher."""
     settings.BUILDING_BLOCKS_VISIBLE = True

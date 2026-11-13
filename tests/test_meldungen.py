@@ -246,6 +246,7 @@ def test_login_seite_ohne_anlass_ohne_meldung(client):
 # ---------- Szenario 8: Musterseite, seit #176 der Bausteinkatalog ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_alle_vier_arten_und_den_fehler_am_feld(org):
     client = Client()
     client.force_login(org.erika)

@@ -102,6 +102,7 @@ def test_ohne_skript_steht_die_kurze_meldung_fest_oben_vor_den_angaben(org):
     assert order == [notice, sections[0]]
 
 
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("address", ["/", "/profil/", "/bausteine/"])
 def test_jede_seite_mit_login_hat_den_bereich_fuer_kurze_meldungen(org, address, settings):
     """Szenario 3: Der Bereich ist leer da, damit Vorleseprogramme neue Meldungen darin ansagen."""
@@ -273,6 +274,7 @@ def test_text_der_kurzen_meldung_erscheint_als_gewoehnlicher_text():
 # ---------- Szenario 18: Bausteinkatalog und Doku ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_die_kurze_meldung_mit_erfolg_information_und_stapel(org, settings):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = _tree(client_for(org.erika).get("/bausteine/"))

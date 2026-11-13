@@ -712,6 +712,7 @@ def test_abfragen_wachsen_nicht_mit_der_zahl_der_rollen(org):
     assert_queries_do_not_grow(create_role, lambda: open_profile(org.erika, client=client))
 
 
+@pytest.mark.bausteinkatalog
 def test_bausteine_angaben_und_rollen_stehen_im_katalog(org):
     """Szenario 18 zu #161: die Bausteine stehen auf der Musterseite, seit #176 im Bausteinkatalog."""
     client = Client()
@@ -727,6 +728,7 @@ def test_bausteine_angaben_und_rollen_stehen_im_katalog(org):
     assert ("Admin", "DPV Anmeldetool", "") in tiles
 
 
+@pytest.mark.bausteinkatalog
 def test_bausteinkatalog_rollenkacheln_ohne_zeile_mitgliedschaft_und_darunter_mit_zeile(org):
     """Szenario 13 zu #219: keine Rollenkachel mit festem Satz oder Weg mehr im Katalog; die Mitgliedschaft
     und die Kacheln unter „Organisationen darunter“ zeigen ihre Zeile weiter."""

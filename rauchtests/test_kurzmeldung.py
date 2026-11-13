@@ -300,6 +300,7 @@ def test_speichern_wartet_auf_die_neue_seite_auch_wenn_sie_spaet_kommt(pc):
 
 
 # Szenarien 12, 13 und 18: Stapel im Bausteinkatalog, und Szenario 15: langer Text am Handy
+@pytest.mark.bausteinkatalog
 @pytest.mark.parametrize("device", ["pc", "handy"])
 def test_stapel_im_katalog_hoechstens_drei_neueste_unten(request, browser_name, device):
     page: Page = request.getfixturevalue(device)
@@ -360,6 +361,7 @@ def test_stapel_im_katalog_hoechstens_drei_neueste_unten(request, browser_name, 
 
 
 # Szenario 16: Bewegung reduzieren
+@pytest.mark.bausteinkatalog
 def test_bewegung_reduzieren_ohne_bewegung(browser, browser_name, tool):
     context = browser.new_context(reduced_motion="reduce", locale="de-DE", **PC)
     page = context.new_page()
@@ -379,6 +381,7 @@ def test_bewegung_reduzieren_ohne_bewegung(browser, browser_name, tool):
         context.close()
 
 
+@pytest.mark.bausteinkatalog
 def test_mit_bewegung_blendet_sie_sanft_ein(pc):
     """Gegenprobe zu Szenario 16: ohne die Einstellung gleitet sie kurz herein."""
     login(pc)

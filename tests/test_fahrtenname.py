@@ -385,6 +385,7 @@ def test_umlaute_und_zeichen_werden_gespeichert_wie_sie_sind(org, value):
     assert shown_name(profile(org.erika)) == f"{value} (Erika Testfrau)"
 
 
+@pytest.mark.bausteinkatalog
 def test_html_im_fahrtennamen_erscheint_als_gewoehnlicher_text(org):
     client = client_for(org.erika)
     save(org.erika, "<b>Kiwi</b>", client=client)
@@ -547,6 +548,7 @@ def test_feld_mit_beschriftung_ohne_pflicht_und_passender_tastatur(org):
     assert _attr(input_, "aria-describedby") == "id_scout_name-zahl"
 
 
+@pytest.mark.bausteinkatalog
 def test_katalog_zeigt_den_baustein_textfeld(org):
     """Szenario 16: Beschriftung, Pflicht-Hinweis und Fehler am Feld, gebaut mit demselben Baustein (seit #176 im Katalog)."""
     root = _tree(client_for(org.erika).get("/bausteine/"))

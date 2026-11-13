@@ -505,6 +505,7 @@ def test_u2_austragen_bleibt_neben_verschieben(org):
 # ---------- Baustein „Knopf Verschieben“ ----------
 
 
+@pytest.mark.bausteinkatalog
 def test_der_bausteinkatalog_zeigt_den_knopf_verschieben(settings, org):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = page_tree(org.falke, "/bausteine/")
