@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Sichtbarkeit des Repos | 13.11.2026, #310, Nr. 1 | 20.10.2026, „Offene Punkte aus der Bestandsaufnahme“, Nr. 4 |
 | Kennungs-Token beim Abmelden | 10.11.2026, #280, Nr. 1 | 21.10.2026, „Login über Keycloak: Abmelden, Sitzung, Anrede und Technik“, „Technische Wahl“, „Abmelden ohne Rückfrage bei Keycloak“ (nur der Weg, auf dem das Token zu Keycloak geht) |
 | Technik im Browser | 05.11.2026, #264, Nr. 1 bis 3 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“ (nur htmx, Alpine.js und SortableJS) |
 | Prüfwege für Anfragen aus dem Skript | 05.11.2026, #264, Nr. 4 | 28.10.2026, #190; 25.10.2026, #96, #8, #64, #90; 23.10.2026, #87 (je nur die Nennung von htmx) |
@@ -37,6 +38,26 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+
+---
+
+## 2026-11-13 · Repo vor dem echten Test veröffentlichen (#310)
+
+**Entscheidung** (Sebastian; Klärung von #310 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/310#issuecomment-6848063407), Fragen 1 bis 6; maßgeblich ist der Text des Issues):
+
+1. **Veröffentlichen vor dem echten Test:** Sebastian schaltet das Repo nach diesem Pull Request auf öffentlich, nicht erst, wenn das Tool in einen echten Test geht. Ersetzt den Eintrag vom 20.10.2026, „Offene Punkte aus der Bestandsaufnahme“, Nr. 4, ganz.
+2. **Lizenz** (Frage 1): Die EUPL-1.2 gilt ab der Veröffentlichung. Die mündliche Erlaubnis (Eintrag vom 20.10.2026, „Code aus dem alten Repo darf übernommen werden“) deckt auch die Veröffentlichung des Codes aus dem alten Repo. Die Lilie bleibt im Repo, mit ihrem Hinweis, dass sie nicht unter die EUPL fällt.
+3. **Niemand wird vorher gefragt, die Auskünfte bleiben** (Fragen 2 und 3): Sebastian veröffentlicht ohne Rückfrage bei DPV-Admin, Datenschutzperson oder Verbandsleitung. Die Auskünfte Dritter in #149, #222 und in den Issues, in die sie übertragen wurden, bleiben unverändert; sie nennen nur Rollen, keine Namen.
+4. **Mailadresse** (Frage 4): Die bisherigen Commits mit Sebastians privater Mailadresse bleiben, wie sie sind; die Git-Geschichte wird nicht umgeschrieben, und ein neues Repo ohne Geschichte gibt es nicht. Vor dem Umschalten stellt Sebastian bei GitHub „Keep my email addresses private“ ein, damit künftige Übernahmen die Ersatzadresse von GitHub tragen.
+5. **Fremde dürfen nur lesen** (Frage 6): Direkt nach dem Umschalten begrenzt Sebastian Beiträge auf Mitwirkende („Limit to repository collaborators“, längste Dauer 6 Monate, danach erneuern). Nur Beiträge von Sebastians Konto zählen als Protokoll, Freigabe oder Klärung; die Regel steht in `CLAUDE.md`, „Datenschutz und Sicherheit“.
+
+**Technische Wahl** (KI): Prüfungen aus fremden Kopien (Forks) laufen erst nach Freigabe („Require approval for all external contributors“). Die Prüfabläufe bleiben unverändert; auch nach #307 lösen sie nur bei `pull_request` und Änderungen an `main` aus, haben nur Leserechte und kein Geheimnis außer dem schreibgeschützten Token von GitHub (am 13.11.2026 in `ci.yml` und `pr-angaben.yml` nachgesehen).
+
+**Begründung:** Die Minuten auf GitHub waren am 13.11.2026 zu etwa 90 % verbraucht; für öffentliche Repos sind die Prüfungen auf den Standard-Rechnern von GitHub kostenlos, und GitHub kann dann das Übernehmen roter Pull Requests selbst sperren (#16). Die Prüfung der Inhalte vor dem Umschalten fand keine Zugangsdaten und keinen Kommentar, den die KI nach Frage 5 hätte löschen müssen; Sebastians vollständiger Name bleibt nach seiner Entscheidung stehen ([Ergebnis](https://github.com/sebivtt/dpv-participant-management/issues/310#issuecomment-6848207107), [Entscheidung](https://github.com/sebivtt/dpv-participant-management/issues/310#issuecomment-6848233415)). Zur Freigabe der Prüfungen aus Forks: Auch ohne Geheimnisse und Schreibrechte kostet ein fremder Lauf Zeit auf GitHub und könnte die Prüfumgebung für Fremdes nutzen; bei einem Ein-Personen-Projekt kostet die Freigabe nichts.
+
+**Grenzen:** Wer das Repo sieht, sieht auch alle früheren Bearbeitungsstände von Issues und Kommentaren. Nicht Teil dieser Entscheidung: die Sperre für rote Pull Requests (#16), eine Prüfung in „PR-Angaben“, wer den Kommentar „Szenarien“ geschrieben hat, Inbetriebnahme und Freigabe echter Daten (E3).
+
+**Umsetzung:** `docs/entscheidungen.md`, `CLAUDE.md` („Datenschutz und Sicherheit“), `README.md` (Test-Realm, K1), `CONTRIBUTING.md` (Abschnitt 8). Die Einstellungen auf GitHub und das Umschalten macht Sebastian selbst (Akzeptanzkriterien in #310).
 
 ---
 
