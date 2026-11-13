@@ -125,6 +125,18 @@ def test_g2_klein_ein_zweiter_lauf_ergibt_genau_dieselben_daten(small):
         "user_id", "email", "verified", "primary")) == mails
 
 
+def test_g2_klein_ein_zweiter_lauf_stellt_die_bestaetigte_mail_wieder_her(small):
+    """Befund G3 der unabhängigen Prüfung: Sonst fände die Suche bei „Person aufnehmen“ das Konto nicht mehr."""
+    run("--mass-data")
+    account = probe_accounts().order_by("username").first()
+    EmailAddress.objects.filter(user=account).update(email="anders@example.org", verified=False)
+
+    run("--mass-data")
+
+    assert list(EmailAddress.objects.filter(user=account).values_list("email", "verified", "primary")) == [
+        (account.email, True, True)]
+
+
 def test_g3_klein_ohne_keycloak_konto_und_ohne_passwort(small):
     run("--mass-data")
 

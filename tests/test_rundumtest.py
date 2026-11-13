@@ -307,7 +307,7 @@ ALLOWED_FILES = {
     # Konten und zeigt höchstens Benutzernamen an; verwaltete Personen legt er über die zentrale Stelle an.
     "core/management/commands/testdata.py",
     # Der Zusatz des Befehls für den Leistungstest (#104): schreibt erfundene Massendaten in einem Rutsch an der
-    # zentralen Stelle vorbei (docs/entscheidungen.md, 13.11.2026, #104) und zeigt nichts an.
+    # zentralen Stelle vorbei (docs/entscheidungen.md, 13.11.2026, #104) und zeigt höchstens Benutzernamen an.
     "core/management/mass_data.py",
 }
 # Abfragen über einen Verweis auf Rollen, Konten, verwaltete Personen (#117) oder Veranstaltungen (#100), auch über mehrere Stufen, z. B.

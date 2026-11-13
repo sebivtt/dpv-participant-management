@@ -264,6 +264,8 @@ def test_m4_suche_bei_person_aufnehmen_ueber_die_genaue_mail(data):
     def call():
         response = client.post(address, {"suche": mail})
         assert response.status_code == 200
+        # Sonst würde nach dem Suchlimit (PK-24) still die Meldung statt der Suche gemessen (Befund G5 der Prüfung).
+        assert f"{account.first_name} {account.last_name}" in response.content.decode()
         return response
 
     # Die Person ist schon Mitglied in einem Probestamm; der Dialog nennt sie dann mit ihrer Organisation (PG5).
@@ -280,7 +282,7 @@ def test_m4_suche_bei_person_aufnehmen_ueber_die_genaue_mail(data):
 @pytest.mark.rechtematrix("PK-04")
 @pytest.mark.rechtematrix("VP-03")
 def test_r1_max_sieht_nur_seinen_stamm_und_ein_probestamm_ist_nicht_gefunden(data):
-    from tests.test_testdaten import accounts_seen, managed_names, members_in
+    from tests.test_testdaten import accounts_seen, leads_seen, managed_names, members_in
 
     rights = Rights(data.max_)
     assert accounts_seen(data.max_) == members_in("Zugvögel", "Sippe Kraniche") - {"max.testmann"}
@@ -293,6 +295,8 @@ def test_r1_max_sieht_nur_seinen_stamm_und_ein_probestamm_ist_nicht_gefunden(dat
         content = client_for(data.max_).get(address).content.decode()
         assert "probe.0" not in content, address
         assert not [key for key in probe_keys if key in content], address
+    # Die Gliederung zeigt Leitungen nur mit Namen; deshalb hier über die Rechteprüfung (Befund G1 der Prüfung).
+    assert not {name for name, _kind in leads_seen(data.max_)} & set(mass_accounts().values_list("username", flat=True))
     assert_like_missing(data.max_, unit_address(data.outlier))
 
 
