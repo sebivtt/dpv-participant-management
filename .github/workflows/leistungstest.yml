@@ -1,0 +1,59 @@
+# Leistungstest am Ende einer Phase (#104, NFA-05): 5.000 erfundene Personen, jede Seite mit Personen in unter
+# 2 Sekunden. Startet nur von Hand (Actions → „Leistungstest“ → „Run workflow“), nie bei einem Pull Request
+# oder einer Änderung an main: Jeder normale Prüflauf müsste sonst 5.000 Personen anlegen, und Zeitmessungen
+# auf den Rechnern von GitHub schwanken (Klärung vom 13.11.2026, Frage 6). Die Tests stehen in
+# tests/leistungstest.py; das Ergebnis je Seite steht in der Zusammenfassung des Laufs.
+#
+# GitHub kann einen nur von Hand startbaren Ablauf erst starten, wenn er in main ist.
+# Gleiche Fassungen und erfundene Werte wie in ci.yml; Keycloak braucht der Test nicht.
+name: Leistungstest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  messen:
+    name: Leistungstest (5.000 erfundene Personen)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: dpv
+          POSTGRES_PASSWORD: nur-in-der-pruefung
+          POSTGRES_DB: dpv
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dpv -d dpv"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      # Erfundene Werte nur für diesen Lauf, kein Geheimnis.
+      DJANGO_SECRET_KEY: nur-in-der-pruefung-nicht-geheim
+      POSTGRES_DB: dpv
+      POSTGRES_USER: dpv
+      POSTGRES_PASSWORD: nur-in-der-pruefung
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      KEYCLOAK_REALM_URL: http://localhost:8080/realms/dpv
+      KEYCLOAK_CLIENT_ID: dpv-anmeldetool
+      KEYCLOAK_CLIENT_SECRET: nur-lokal-nicht-geheim
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.13.4"
+          enable-cache: true
+      - name: Python und Pakete aus uv.lock installieren
+        run: uv sync --locked
+      - name: Leistungstest
+        timeout-minutes: 20
+        run: uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider

@@ -27,3 +27,11 @@ USERNAME_TAKEN = gettext_lazy(
 NO_CREATOR = gettext_lazy(
     "Ohne verwaltete Personen, weil dort niemand mit Konto sie anlegen darf: %(units)s."
 )
+MASS_DATA_DONE = gettext_lazy(
+    "Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: %(units)s Probe-Organisationen, "
+    "%(accounts)s erfundene Konten ohne Login und %(managed)s verwaltete Personen."
+)
+MASS_DATA_TAKEN = gettext_lazy(
+    "Keine Massendaten, weil diese Benutzernamen schon zu einem Konto mit Login gehören: %(usernames)s. Der Befehl "
+    "gibt einem solchen Konto keine Rolle. Es wurde nichts gelöscht."
+)
