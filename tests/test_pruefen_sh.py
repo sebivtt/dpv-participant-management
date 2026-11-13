@@ -645,8 +645,8 @@ def test_die_meldung_bei_falschem_aufruf_bleibt_lokal_wie_bisher(lauf):
 
 
 # --- Katalogtests im schnellen Lauf (#304) -----------------------------------------------------
-# Szenarien: https://github.com/sebivtt/dpv-participant-management/issues/304, Kommentar
-# „Szenarien (13.11.2026)“. Die Tests oben prüfen, was pruefen.sh an pytest gibt. Hier zählt, was
+# Szenarien: https://github.com/sebivtt/dpv-participant-management/issues/304#issuecomment-6852474128
+# („Szenarien (13.11.2026, Fassung nach der Nachklärung)“). Die Tests oben prüfen, was pruefen.sh an pytest gibt. Hier zählt, was
 # pytest mit genau diesen Angaben in diesem Repo wirklich auswählt: die Tests der genannten Dateien
 # und alle Tests mit dem Kennzeichen „bausteinkatalog“, jeden genau einmal. Gesammelt wird nur.
 

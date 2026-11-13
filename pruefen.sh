@@ -321,7 +321,7 @@ else
     # Schneller Lauf: die genannten Dateien und immer die Katalogtests, also jeder Test mit dem
     # Kennzeichen „bausteinkatalog“ (#304, tests/katalogtests.py). pytest sammelt dafür den ganzen
     # Ordner und behält nur diese Tests; so läuft jeder Test genau einmal.
-    check_tests "Tests (pytest):${tests_files:- keine Datei genannt}, dazu die Katalogtests" \
+    check_tests "Tests (pytest):${tests_files:- keine Datei aus tests/ genannt}, dazu die Katalogtests" \
         $run pytest -rsfE tests "--schnelle-auswahl=${tests_files# }"
 fi
 # Eigener Lauf: Playwright betreibt eine Ereignisschleife, neben der Django Datenbankzugriffe

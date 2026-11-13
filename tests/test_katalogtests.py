@@ -2,8 +2,9 @@
 
 Ein Test, der den Bausteinkatalog aufruft, ohne das Kennzeichen ``bausteinkatalog`` zu tragen,
 liefe im schnellen Lauf nicht immer mit. Die Wache in ``tests/katalogtests.py`` macht ihn rot und
-nennt ihn. Szenarien: https://github.com/sebivtt/dpv-participant-management/issues/304
-(Kommentar „Szenarien (13.11.2026)“). Alle Daten sind erfunden.
+nennt ihn; Tests über jede Adresse tragen stattdessen „alle Adressen“ (S7). Szenarien:
+https://github.com/sebivtt/dpv-participant-management/issues/304#issuecomment-6852474128
+(„Szenarien (13.11.2026, Fassung nach der Nachklärung)“). Alle Daten sind erfunden.
 """
 
 import os

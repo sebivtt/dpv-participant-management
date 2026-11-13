@@ -74,7 +74,18 @@ def pytest_collection_modifyitems(config, items):
     if files is None:
         return
     base = Path(config.invocation_params.dir)
-    named = {(base / name).resolve() for name in files.split()}
+    named = {(base / name).resolve(): name for name in files.split()}
+    # Eine genannte Datei ohne gesammelte Tests (etwa eine Hilfsdatei) fiele sonst still weg; bevor
+    # pytest den Ordner sammelte, war der Lauf dann rot (Befund G2 der unabhängigen Prüfung zu #304).
+    collected = {item.path.resolve() for item in items}
+    without_tests = sorted(name for path, name in named.items() if path not in collected)
+    if without_tests:
+        config.hook.pytest_deselected(items=list(items))
+        items[:] = []  # pytest meldet die Sammlung auch nach dem Abbruch; dann ohne Tests
+        pytest.exit(
+            f"Ohne Tests: {' '.join(without_tests)} (genannt hinter „schnell“, pytest sammelt dort keine Tests).",
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
     keep, dropped = [], []
     for item in items:
         selected = item.path.resolve() in named or item.get_closest_marker(MARK) is not None
