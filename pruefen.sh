@@ -20,7 +20,7 @@ set -u
 cd "$(dirname "$0")"
 
 # Die Teile für GitHub (#307): Grundprüfungen mit Container-Prüfung und pip-audit, die Tests aus
-# tests/ in zwei Hälften und der Rauchtest je Browser. ci.yml nennt dieselben Teile;
+# tests/ in zwei Teilen und der Rauchtest je Browser. ci.yml nennt dieselben Teile;
 # tests/test_pruefung_auf_github.py vergleicht beide.
 PARTS="grund tests-1 tests-2 rauchtest-chromium rauchtest-firefox rauchtest-webkit"
 
@@ -131,12 +131,25 @@ summarize_parts() {
     return 0
 }
 
-# Die Testdateien eines der beiden Teile mit Tests aus tests/: alle Dateien nach den Regeln von
-# pytest (test_*.py, *_test.py), sortiert und abwechselnd verteilt. So landet jede Datei in genau
-# einem Teil, auch eine neue, ohne dass sie jemand einträgt.
+# Testdateien, die auf GitHub allein mehrere Minuten brauchen, laufen im Teil tests-2; alle
+# übrigen nach den Regeln von pytest (test_*.py, *_test.py), auch neue, im Teil tests-1. So
+# landet jede Datei in genau einem Teil, ohne dass jemand sie einträgt. Gemessen am 13.11.2026
+# (Lauf 43398286316): tests/test_rechte_ohne_seite.py 5,4 Minuten, alle übrigen zusammen gut 4.
+# Wird tests-1 deutlich länger als tests-2, kommt die nächste langsame Datei hierher.
+SLOW_TEST_FILES="tests/test_rechte_ohne_seite.py"
+
 part_test_files() {
+    if [ "$1" = "2" ]; then
+        echo "$SLOW_TEST_FILES"
+        return 0
+    fi
     find tests \( -name __pycache__ -o -name ".?*" \) -prune -o -type f \( -name "test_*.py" -o -name "*_test.py" \) -print |
-        LC_ALL=C sort | awk -v number="$1" '(NR - 1) % 2 == number - 1'
+        LC_ALL=C sort | while read -r file; do
+            case " $SLOW_TEST_FILES " in
+                *" $file "*) ;;
+                *) echo "$file" ;;
+            esac
+        done
 }
 
 mode="voll"
@@ -285,6 +298,10 @@ elif [ "$mode" = "teil" ]; then
     case "$part" in
         tests-*)
             part_files="$(part_test_files "${part#tests-}" | tr '\n' ' ')"
+            for file in $part_files; do
+                # Umbenannt oder gelöscht: rot statt still weniger Tests in tests-2.
+                [ -f "$file" ] || check "Testdatei aus SLOW_TEST_FILES fehlt: $file" false
+            done
             case "$part_files" in
                 *[!\ ]*)
                     # shellcheck disable=SC2086  # Die Dateinamen sind absichtlich eine Liste.
