@@ -58,7 +58,7 @@ Entfällt ein Recht, wird seine Zeile zum Verbot und behält ihre Kennung, weil 
 
 **Wie die Tests die Zeilen prüfen:** Eine Zeile „erlaubt“ prüft als verbotenen Fall den nächsten Nachbarn, etwa eine andere Einheit oder eine Ebene darunter. Eine Zeile „verboten“ prüft als erlaubten Fall die Gegenprobe, dass der vorgesehene Weg weiter funktioniert. Beides auch über direkte Adressen, Anfragen aus dem Skript und manipulierte Formulare (#90). Nennt eine Zeile mehrere Rollen, Daten oder Aktionen, prüft je Fall ein eigener Test; „gebaut“ heißt: alle Fälle (#136, A17).
 
-**Außerhalb des Tools:** Befehle auf dem Server (Verband und Bünde anlegen und umbenennen, „hat Ringe“ beim Anlegen eines Bundes festlegen oder später einschalten, Admins und die erste Verbandsleitung benennen, im Notfall eine leere Einheit löschen) braucht Zugang zum Server; sie stehen im `README.md` und schreiben ins Protokoll. Die Matrix regelt, was im Tool geht.
+**Außerhalb des Tools:** Befehle auf dem Server (Verband und Bünde anlegen und umbenennen, „hat Ringe“ beim Anlegen eines Bundes festlegen oder später einschalten, Admins und die erste Verbandsleitung benennen, im Notfall eine leere Einheit löschen, lokal und in der Testumgebung die erfundenen Testdaten anlegen (#103)) braucht Zugang zum Server; sie stehen im `README.md` und schreiben ins Protokoll. Die Matrix regelt, was im Tool geht.
 
 ## Eigenes Profil
 

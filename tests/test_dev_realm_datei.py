@@ -13,7 +13,7 @@ from pathlib import Path
 
 DEV_REALM_FILE = Path(__file__).resolve().parent.parent / "dev" / "keycloak" / "dpv-realm.json"
 
-# Erkennbar erfunden: lauter Nullen, nur die letzte Stelle zählt hoch. Die Form ist die übliche
+# Erkennbar erfunden: lauter Nullen, nur die letzten Stellen zählen hoch. Die Form ist die übliche
 # einer zufälligen Kennung (Fassung 4), damit Keycloak sie wie jede andere behandelt.
 ACCOUNT_IDS = {
     "erika.testfrau": "00000000-0000-4000-8000-000000000001",
@@ -21,6 +21,19 @@ ACCOUNT_IDS = {
     "ohne.name": "00000000-0000-4000-8000-000000000003",
     "ohne.nachname": "00000000-0000-4000-8000-000000000004",
     "ohne.mail": "00000000-0000-4000-8000-000000000005",
+    # Seit #103 je ein Konto für jede Leitung und jedes weitere Konto der Testdaten, benannt nach der Rolle.
+    "verbandsleitung": "00000000-0000-4000-8000-000000000006",
+    "veranstaltungsteam": "00000000-0000-4000-8000-000000000007",
+    "mitglied.walhall": "00000000-0000-4000-8000-000000000008",
+    "gruppenleitung.falken": "00000000-0000-4000-8000-000000000009",
+    "mitglied.falken": "00000000-0000-4000-8000-000000000010",
+    "gruppenleitung.woelfe": "00000000-0000-4000-8000-000000000011",
+    "gruppenleitung.kraniche": "00000000-0000-4000-8000-000000000012",
+    "bundesleitung.nordstern": "00000000-0000-4000-8000-000000000013",
+    "ringleitung.kueste": "00000000-0000-4000-8000-000000000014",
+    "stammesleitung.leuchtturm": "00000000-0000-4000-8000-000000000015",
+    "gruppenleitung.moewen": "00000000-0000-4000-8000-000000000016",
+    "admin": "00000000-0000-4000-8000-000000000017",
 }
 
 

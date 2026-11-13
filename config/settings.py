@@ -48,6 +48,12 @@ TEST_ENVIRONMENT = os.environ.get("TEST_ENVIRONMENT") == "1"
 # Testumgebung ist im Internet erreichbar.
 DEBUG = os.environ.get("DJANGO_DEBUG") == "1" and not TEST_ENVIRONMENT
 
+# Eigener Rechner (#103): Nur dann legt der Befehl `testdata` Konten an und leert die Datenbank; sonst
+# nur in der Testumgebung. Nur mit dem ausdrücklichen Wert 1, nie als Standard, und nie zusammen mit der
+# Testumgebung. Die Fehleranzeige für Entwickler (DJANGO_DEBUG) allein genügt nicht: Sie wird auch auf
+# einem Server zur Fehlersuche eingeschaltet, und der Befehl löscht alles außer den Konten.
+LOCAL_ENVIRONMENT = os.environ.get("LOCAL_ENVIRONMENT") == "1" and not TEST_ENVIRONMENT
+
 # Bausteinkatalog unter /bausteine/ (#176): nur auf dem eigenen Rechner (DJANGO_DEBUG=1) und in
 # der Testumgebung. Im Betrieb ist keins von beiden gesetzt; dort gibt es die Seite nicht, auch
 # nicht für Admins, weil ihre erfundenen Namen Nutzende verwirren würden.
