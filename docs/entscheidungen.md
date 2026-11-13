@@ -44,6 +44,31 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-14 · Leistungstest am Ende jeder Phase: auf GitHub alt gegen neu, Grenzen 2 Sekunden und 25 % (#145, NFA-05)
+
+**Entscheidung** (Sebastian in der Klärung von #104 und #145 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/145#issuecomment-6862672151), Fragen 4 bis 6; maßgeblich ist der Text von #145):
+
+1. **Nur am Phasenende:** Der Leistungstest läuft nur am Ende einer Phase, nie bei jedem Prüflauf oder in jedem Pull Request (wie im Eintrag vom 13.11.2026, #104, Nr. 3).
+2. **Auf GitHub alt gegen neu:** In einem einzigen Lauf auf demselben Rechner werden abwechselnd der Stand vom Ende der vorigen Phase und der neue Stand gemessen, mit denselben erzeugten Daten. Das Ende jeder Phase bekommt dafür eine feste Markierung im Repo.
+3. **Grenzen:** 2 Sekunden auf einer Seite blockieren immer. Mehr als 25 % langsamer als am Ende der vorigen Phase hält die Phase an, bis Sebastian entschieden hat, ob das behoben oder mit Begründung hingenommen wird. Darunter steht der Wert nur im Ergebnis. Seiten ohne Wert der vorigen Phase prüfen nur gegen die 2 Sekunden.
+4. **Erweitern nur am Phasenende:** Generator und Messung werden nur am Ende einer Phase erweitert, für alle in der Phase neu gebauten Seiten mit Personen oder Anmeldungen; kein Issue muss sie in seinem eigenen Pull Request erweitern.
+
+**Technische Wahl** (KI):
+
+5. **Markierung:** ein Git-Tag `phasenende-p<n>` auf dem Commit in `main`, der den Pull Request „Leistungstest am Ende von P<n>“ übernommen hat; die Steuerungssession setzt ihn (Skill `phase-steuern`, Abschnitt 5). Ein Tag lässt sich ohne Force nicht verschieben, und die Sperrdatei sperrt Force und das Löschen über `git push`; so bleibt der Vergleichsstand fest. Gemessen wird im Pull Request selbst, auf seinem Zweig, damit Erweitern, Messen und Ablegen ein Pull Request sind.
+6. **Alt und neu getrennt:** Der Ablauf holt den alten Stand über die Markierung in einen eigenen Ordner und misst jeden Stand mit seinem eigenen Code, seinen Paketen und seinem Generator, je zwei Durchgänge abwechselnd (alt, neu, alt, neu). Jeder Durchgang schreibt seine Zeiten in eine Datei; `tests/leistungsvergleich.py` nimmt je Seite den mittleren Wert (Median) aller Aufrufe und vergleicht. Der Schlüssel ist der Name der Seite in `PAGES`; wird er geändert, fehlt der Wert der vorigen Phase, und die Seite prüft nur gegen die 2 Sekunden.
+7. **Rot auch bei mehr als 25 %:** Der Lauf ist rot, sobald eine Seite die 2 Sekunden erreicht oder mehr als 25 % langsamer ist; die Zeile sagt, welches von beiden. So kann keine Verschlechterung übersehen werden. Hat Sebastian sie hingenommen, steht das in `docs/leistungstest.md`, nicht im Lauf.
+8. **Seiten ohne Messung:** Eine Seite mit Personen ist eine Seite mit der Markierung `@checks_rights` (`access/addresses.py`). Jede davon, die weder in `PAGES` noch mit Grund in `NOT_MEASURED` steht, meldet der Lauf als „ohne Messung“; er wird dadurch nicht rot.
+9. **Ergebnisse:** in `docs/leistungstest.md`, je Phase ein Abschnitt, den der Lauf fertig in seine Zusammenfassung schreibt. Die Messung von Hand am Ende von P2 (Server- und Browserzeit) beschreibt das `README.md` (L3, L4).
+
+**Begründung:** Zu 2: Die Rechner von GitHub wechseln von Lauf zu Lauf; nur im selben Lauf ist es wirklich derselbe Rechner. Zu 3: Messungen schwanken auch auf demselben Rechner um einige Prozent. Zu 4: Eine Pflicht in jedem Pull Request wäre aufwendig und eine weitere Regel. Zu 6: Der alte Stand kann ein anderes Datenmodell haben; mit eigenem Code und Generator entstehen bei beiden dieselben Daten für die Seiten, die es schon gab.
+
+**Grenzen:** Ein alter Stand muss Zeiten in eine Datei schreiben können; das kann `tests/leistungstest.py` ab diesem Pull Request, also ab der ersten Markierung `phasenende-p2`. Den ersten Lauf dieses Ablaufs gibt es erst am Ende von P2, weil GitHub einen nur von Hand startbaren Ablauf erst aus `main` kennt.
+
+**Umsetzung:** `.github/workflows/leistungstest.yml`, `tests/leistungsvergleich.py`, `tests/leistungstest.py` (`PAGES`, `NOT_MEASURED`, Ergebnisdatei), `docs/leistungstest.md`, `README.md` („Leistungstest“), Skill `phase-steuern`, Abschnitt 5; Tests in `tests/test_leistungsvergleich.py`.
+
+---
+
 ## 2026-11-13 · Probe des Leistungstests: Massendaten in einem Rutsch, Konten ohne Login, Messung nur am Phasenende (#104, NFA-05)
 
 **Entscheidung** (Sebastian in der Klärung von #104 und #145 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/104#issuecomment-6862671404); was der Zusatz anlegt und was gemessen wird, steht im Text von #104 und in den [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/104#issuecomment-6862671822)):
