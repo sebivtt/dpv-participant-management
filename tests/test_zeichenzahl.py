@@ -160,6 +160,7 @@ def test_ein_textfeld_ohne_grenze_hat_keine_zahl():
 # Szenario 16: der Bausteinkatalog
 
 
+@pytest.mark.bausteinkatalog
 def test_der_katalog_zeigt_das_feld_zum_antippen_mit_der_stelle_fuer_die_zahl(settings):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = _tree(_client_for(build_org().erika).get(CATALOG))
@@ -168,6 +169,7 @@ def test_der_katalog_zeigt_das_feld_zum_antippen_mit_der_stelle_fuer_die_zahl(se
     assert _attr(counter(section), "id") == "katalog_scout_name-zahl"
 
 
+@pytest.mark.bausteinkatalog
 def test_der_katalog_nennt_die_zahl_beim_textfeld(settings):
     settings.BUILDING_BLOCKS_VISIBLE = True
     root = _tree(_client_for(build_org().erika).get(CATALOG))
