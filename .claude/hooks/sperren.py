@@ -557,7 +557,8 @@ def _option(arg, following):
 def _check_api(args):
     """Prüft `gh api`; Inhalte liest der Prüfschritt nie aus Dateien, sie müssen im Befehl stehen."""
     endpoint, method, fields, inputs = _parse_api(args)
-    path = re.sub(r"^https?://[^/]+/", "", endpoint or "").lstrip("/").split("?", 1)[0]
+    path = re.sub(r"^https?://[^/]+/", "", endpoint or "", flags=re.IGNORECASE).lstrip("/")
+    path = re.split(r"[?#]", path, maxsplit=1)[0]
     # Wie bei gh: ohne -X wird die Anfrage mit Feldern oder --input zum POST, sonst GET.
     effective = (method or ("POST" if fields or inputs else "GET")).upper()
     if SETTINGS_PATH.search(path) and effective != "GET":
@@ -581,6 +582,9 @@ def _parse_api(args):
     index = 0
     while index < len(args):
         arg = args[index]
+        # `-i` (Kopfzeilen zeigen) ist die einzige Kurzoption ohne Wert; gh liest `-iX DELETE` wie `-i -X DELETE`.
+        while arg.startswith("-i") and len(arg) > 2:
+            arg = "-" + arg[2:]
         name, value = _option(arg, args[index + 1 : index + 2])
         if name is None:
             endpoint = endpoint or arg
