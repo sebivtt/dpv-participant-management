@@ -1,4 +1,4 @@
-"""Tests für die Arbeitsregeln in CLAUDE.md, CONTRIBUTING.md, den Skills und den Vorlagen (#158, #169, #262).
+"""Tests für die Arbeitsregeln in CLAUDE.md, CONTRIBUTING.md, den Skills und den Vorlagen (#158, #169, #262, #105).
 
 Die Regeln dürfen umformuliert und verschoben werden, ohne dass ein Test angepasst werden muss.
 Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, siehe
@@ -6,7 +6,8 @@ Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, s
 und Entscheidungen ins Ziel treffen und dass keine der 38 Kernregeln samt Kennung `<!-- Rnn -->`
 still verschwindet (die fünf Tests am Ende). Dazu kommen wenige Prüfungen von Form und Aufbau: dass
 jeder Skill auf CLAUDE.md verweist, statt Regeln zu wiederholen (ein Ort je Angabe, #169), die
-Überschriften der Skills und die Felder der Vorlagen. Ob sich eine Session an die Regeln hält und ob
+Überschriften der Skills und die Felder der Vorlagen, und dass es jede Musterdatei für neue Seiten
+gibt, die CLAUDE.md nennt (#105). Ob sich eine Session an die Regeln hält und ob
 eine Regel inhaltlich schwächer wird, prüfen sie nicht; das prüft das Review.
 """
 
@@ -293,6 +294,64 @@ def test_uebersicht_verweist_nur_auf_vorhandene_eintraege():
             assert vom_tag, f"{zeile}: kein Eintrag vom {tag}.{monat}.{jahr}"
             if nummer:
                 assert any(re.search(rf"#{nummer}\b", e) for e in vom_tag), f"{zeile}: #{nummer} fehlt am {tag}.{monat}.{jahr}"
+
+
+# --- Musterdateien für neue Seiten (#105) -----------------------------------------------------
+#
+# Der Abschnitt in CLAUDE.md nennt die Dateien, nach deren Vorbild neue Seiten entstehen. Nach einer
+# Umbenennung soll er nicht unbemerkt ins Leere zeigen. Strenger als der Test
+# test_dateien_und_ordner_in_backticks_gibt_es_im_repo weiter unten: Jede Angabe mit „/“ oder einer
+# Endung aus DATEIENDUNGEN ist ein voller Pfad ab dem Wurzelordner, den Git verfolgt; ein bloßer
+# Dateiname gilt hier nicht, damit klar ist, welche Datei gemeint ist. Welche Datei als Muster taugt,
+# prüft das Review.
+
+MUSTER_ABSCHNITT = "Musterdateien für neue Seiten"
+
+
+def _verfolgte_dateien():
+    befehl = ["git", "ls-files"]
+    return set(subprocess.run(befehl, cwd=BASE_DIR, capture_output=True, text=True, check=True).stdout.splitlines())  # noqa: S603 -- fester Befehl
+
+
+def _fehlende_musterdateien(text, verfolgt):
+    """Die Punkte des Abschnitts ohne Datei und die genannten Pfade, die Git nicht verfolgt."""
+    punkte = [zeile for zeile in text.splitlines() if zeile.startswith("- ")]
+    ohne_datei, fehlt = [], []
+    for punkt in punkte:
+        # Mit „/“ zählt jede Angabe als Pfad, damit auch eine verstümmelte Endung („config/urls.p“) auffällt.
+        pfade = [angabe for angabe in re.findall(r"`([^`\n]+)`", punkt)
+                 if "/" in angabe or Path(angabe).suffix in DATEIENDUNGEN]
+        if not pfade:
+            ohne_datei.append(punkt[:60])
+        fehlt += [pfad for pfad in pfade if pfad not in verfolgt]
+    return punkte, ohne_datei, fehlt
+
+
+def _muster_text():
+    text = CLAUDE_MD.read_text(encoding="utf-8")
+    match = re.search(rf"^## {re.escape(MUSTER_ABSCHNITT)}\n(.*?)(?=^## )", text, flags=re.M | re.S)
+    assert match, f"Abschnitt „{MUSTER_ABSCHNITT}“ fehlt in CLAUDE.md"
+    return match.group(1)
+
+
+def test_jede_musterdatei_fuer_neue_seiten_gibt_es():
+    punkte, ohne_datei, fehlt = _fehlende_musterdateien(_muster_text(), _verfolgte_dateien())
+
+    assert punkte, "Der Abschnitt nennt keine Musterdateien"
+    assert not ohne_datei, f"Diese Punkte nennen keine Datei: {ohne_datei}"
+    assert not fehlt, f"Diese Musterdateien gibt es nicht (umbenannt oder gelöscht?): {fehlt}"
+
+
+@pytest.mark.parametrize("anders", ["_gibt_es_nicht.py", ".p"], ids=["anderer_name", "verstuemmelte_endung"])
+def test_gegenprobe_ein_falscher_pfad_bei_den_musterdateien_wird_gemeldet(anders):
+    text = _muster_text()
+    # Ein Pfad aus der Liste, nicht aus der Einleitung davor.
+    pfad = re.search(r"^- .*?`([^`\n]+\.py)`", text, flags=re.M).group(1)
+    falsch = text.replace(f"`{pfad}`", f"`{pfad[:-3]}{anders}`", 1)
+
+    _punkte, _ohne_datei, fehlt = _fehlende_musterdateien(falsch, _verfolgte_dateien())
+
+    assert fehlt == [f"{pfad[:-3]}{anders}"]
 
 
 # --- Verweise und Kennungen statt fester Sätze (#262) -----------------------------------------
