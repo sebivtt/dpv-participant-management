@@ -55,7 +55,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Technische Wahl** (KI):
 
-1. Die Stelle steht im Speicher des Browsers je Tab (`sessionStorage`) und gilt nur für den nächsten Seitenwechsel. Wiederhergestellt wird nur, wenn die neue Seite von genau der Seite kommt, die sich die Stelle gemerkt hat (`document.referrer`); so wirkt sie nie bei einem Lesezeichen oder einem neuen Tab. Ist der Speicher im Browser gesperrt, beginnt die Seite oben wie bisher.
+1. Die Stelle steht im Speicher des Browsers je Tab (`sessionStorage`) und gilt nur für den nächsten Seitenwechsel. Wiederhergestellt wird nur, wenn die neue Seite von genau der Seite kommt, die sich die Stelle gemerkt hat (`document.referrer`), und beim Zurückkehren unter dem Dialog dieselbe Seite ist, also gleicher Pfad und gleicher Titel; so wirkt sie nicht bei einem Lesezeichen und nicht auf einer anderen Seite unter derselben Adresse. Klicks mit Strg, Cmd oder Umschalt (neuer Tab) merken nichts. Ist der Speicher im Browser gesperrt, beginnt die Seite oben wie bisher.
 2. Die Sprungmarken heißen „#abschnitt-…“ und stehen an den Abschnitten selbst (`core/sections.py`). Nach dem Speichern leitet der Server ohne Sprungmarke weiter; der Browser übernimmt die des Formulars. Mit Skript fallen die Sprungmarken vor dem Seitenwechsel weg, damit die Seite nicht erst zum Abschnitt springt.
 3. Zurückgerollt wird sofort, nicht weich, wie es Bootstrap sonst einstellt; sonst sähe man die Seite von oben zur Stelle gleiten.
 

@@ -1343,7 +1343,9 @@ BUILDING_BLOCKS = {
                      "Danach bekommt der Knopf, der den Dialog geöffnet hat, wieder den Fokus, wo die Seite ihm eine "
                      "Kennung gibt, etwa bei verwalteten Personen. Links unten kann ein zart roter Knopf stehen, etwa "
                      "„Verwaltete Person löschen“ (drittes Beispiel), und „Abbrechen“ kann anders heißen und "
-                     "woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“ (viertes Beispiel)."),
+                     "woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“ (viertes Beispiel). "
+                     "Nach Öffnen, Schließen und Speichern steht die Seite dahinter an derselben Stelle wie vorher; "
+                     "ohne Skript springt sie zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat (#220)."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "auswahl": {

@@ -425,6 +425,7 @@
     try {
       window.sessionStorage.setItem(SPOT_KEY, JSON.stringify({
         y: window.scrollY,
+        title: document.title,
         from: window.location.href.split("#")[0],
         below: openDialog ? pathOf(openDialog.getAttribute("data-schliessen")) : null,
       }));
@@ -444,7 +445,9 @@
     if (!spot || typeof spot.y !== "number" || document.referrer.split("#")[0] !== spot.from) {
       return null;
     }
-    if (openDialog || spot.below === window.location.pathname) {
+    // Gleicher Pfad heißt nicht gleiche Seite: Wer seine Verbandsleitung abgibt, sieht unter „/organisation/“
+    // danach die Seite seines Stamms. Der Titel unterscheidet sie; ein Dialog trägt den Titel der Seite darunter.
+    if (openDialog || (spot.below === window.location.pathname && spot.title === document.title)) {
       return spot.y;
     }
     return null;
@@ -454,7 +457,8 @@
 
   document.addEventListener("click", function (event) {
     var link = event.target.closest ? event.target.closest("a[href]") : null;
-    if (!link) {
+    // Mit Strg, Cmd oder Umschalt öffnet der Link einen neuen Tab oder ein neues Fenster; die Seite hier bleibt.
+    if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
     }
     link.setAttribute("href", withoutJump(link.getAttribute("href")));
