@@ -511,6 +511,11 @@
     if (returnTo && returnTo.matches("a[href], button")) {
       returnTo.focus({ preventScroll: spot !== null });
     }
+    // Safari rollt nach dem Laden noch selbst weich zur Kennung in der Adresse, auch nach dem Zurückrollen.
+    // Mit gemerkter Stelle fällt die Kennung deshalb aus der Adresse; der Fokus liegt schon auf dem Knopf.
+    if (spot !== null) {
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    }
   }
 
   // „instant“: Bootstrap lässt die Seite sonst weich rollen, und man sähe sie von oben zur Stelle fahren.
