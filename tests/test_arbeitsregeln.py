@@ -1,4 +1,4 @@
-"""Tests für die Arbeitsregeln in CLAUDE.md, CONTRIBUTING.md, den Skills und den Vorlagen (#158, #169, #262).
+"""Tests für die Arbeitsregeln in CLAUDE.md, CONTRIBUTING.md, den Skills und den Vorlagen (#158, #169, #262, #105).
 
 Die Regeln dürfen umformuliert und verschoben werden, ohne dass ein Test angepasst werden muss.
 Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, siehe
@@ -6,7 +6,8 @@ Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, s
 und Entscheidungen ins Ziel treffen und dass keine der 38 Kernregeln samt Kennung `<!-- Rnn -->`
 still verschwindet (die fünf Tests am Ende). Dazu kommen wenige Prüfungen von Form und Aufbau: dass
 jeder Skill auf CLAUDE.md verweist, statt Regeln zu wiederholen (ein Ort je Angabe, #169), die
-Überschriften der Skills und die Felder der Vorlagen. Ob sich eine Session an die Regeln hält und ob
+Überschriften der Skills und die Felder der Vorlagen, und dass es jede Musterdatei für neue Seiten
+gibt, die CLAUDE.md nennt (#105). Ob sich eine Session an die Regeln hält und ob
 eine Regel inhaltlich schwächer wird, prüfen sie nicht; das prüft das Review.
 """
 
@@ -295,46 +296,6 @@ def test_uebersicht_verweist_nur_auf_vorhandene_eintraege():
                 assert any(re.search(rf"#{nummer}\b", e) for e in vom_tag), f"{zeile}: #{nummer} fehlt am {tag}.{monat}.{jahr}"
 
 
-# --- Verweise und Kennungen statt fester Sätze (#262) -----------------------------------------
-#
-# Diese fünf Tests schützen die Regeln, ohne einen Wortlaut festzuhalten: Eine Regel darf
-# umformuliert und verschoben werden. Rot wird nur, wenn ein Verweis ins Leere geht oder eine
-# Kernregel samt Kennung verschwindet. Nicht geprüft wird, ob eine Regel inhaltlich schwächer wird
-# und ob ein Punkt unter dem richtigen Elternabschnitt steht; das prüft das Review.
-
-VERWEISDATEIEN = [CLAUDE_MD, CONTRIBUTING, README, PR_TEMPLATE, *SKILLS, GESTALTUNG, REVIEW_LEITFADEN]
-REGELDATEIEN = [CLAUDE_MD, CONTRIBUTING, *SKILLS]
-# Als Datei oder Ordner gilt eine Angabe in Backticks mit diesen Endungen oder mit „/“ am Ende;
-# alles andere (Benutzernamen wie `ohne.mail`, Adressen wie `search/issues`) ist kein Verweis.
-DATEIENDUNGEN = {".md", ".py", ".yml", ".json", ".html", ".svg", ".js", ".css", ".sh", ".toml", ".lock", ".example"}
-# Einzige Ausnahme: CONTRIBUTING.md meint damit einen Ordner des alten Repos.
-KEIN_VERWEIS = {"backend/notifications/"}
-
-
-def _ohne_codebloecke(path):
-    return re.sub(r"```.*?```", "", path.read_text(encoding="utf-8"), flags=re.S)
-
-
-def test_dateien_und_ordner_in_backticks_gibt_es_im_repo():
-    befehl = ["git", "ls-files"]
-    verfolgt = subprocess.run(befehl, cwd=BASE_DIR, capture_output=True, text=True, check=True).stdout  # noqa: S603 -- fester Befehl
-    namen = Counter(Path(zeile).name for zeile in verfolgt.splitlines())
-    uebersprungen, fehlt = 0, []
-
-    for path in VERWEISDATEIEN:
-        for angabe in re.findall(r"`([^`\n]+)`", _ohne_codebloecke(path)):
-            if re.search(r"[<*…\s]", angabe) or angabe.startswith(("/", "http")):
-                uebersprungen += 1
-            elif (angabe.endswith("/") or Path(angabe).suffix in DATEIENDUNGEN) and angabe not in KEIN_VERWEIS:
-                ziel = angabe.removeprefix("./")
-                # Ein bloßer Name gilt, wenn er im Wurzelordner steht oder genau einmal im Repo vorkommt.
-                if not (BASE_DIR / ziel).exists() and not ("/" not in ziel.rstrip("/") and namen[ziel] == 1):
-                    fehlt.append(f"{path.name}: `{angabe}`")
-
-    print(f"{uebersprungen} Angaben übersprungen (mit <, *, …, Leerzeichen, Anfang / oder http)")  # noqa: T201 -- Zahl für den Bericht
-    assert not fehlt, f"Diese Dateien oder Ordner gibt es nicht ({uebersprungen} Angaben übersprungen): {fehlt}"
-
-
 # --- Musterdateien für neue Seiten (#105) -----------------------------------------------------
 #
 # Der Abschnitt in CLAUDE.md nennt die Dateien, nach deren Vorbild neue Seiten entstehen. Nach einer
@@ -386,6 +347,46 @@ def test_gegenprobe_ein_falscher_pfad_bei_den_musterdateien_wird_gemeldet():
     _punkte, _ohne_datei, fehlt = _fehlende_musterdateien(falsch, _verfolgte_dateien())
 
     assert fehlt == [f"{pfad[:-3]}_gibt_es_nicht.py"]
+
+
+# --- Verweise und Kennungen statt fester Sätze (#262) -----------------------------------------
+#
+# Diese fünf Tests schützen die Regeln, ohne einen Wortlaut festzuhalten: Eine Regel darf
+# umformuliert und verschoben werden. Rot wird nur, wenn ein Verweis ins Leere geht oder eine
+# Kernregel samt Kennung verschwindet. Nicht geprüft wird, ob eine Regel inhaltlich schwächer wird
+# und ob ein Punkt unter dem richtigen Elternabschnitt steht; das prüft das Review.
+
+VERWEISDATEIEN = [CLAUDE_MD, CONTRIBUTING, README, PR_TEMPLATE, *SKILLS, GESTALTUNG, REVIEW_LEITFADEN]
+REGELDATEIEN = [CLAUDE_MD, CONTRIBUTING, *SKILLS]
+# Als Datei oder Ordner gilt eine Angabe in Backticks mit diesen Endungen oder mit „/“ am Ende;
+# alles andere (Benutzernamen wie `ohne.mail`, Adressen wie `search/issues`) ist kein Verweis.
+DATEIENDUNGEN = {".md", ".py", ".yml", ".json", ".html", ".svg", ".js", ".css", ".sh", ".toml", ".lock", ".example"}
+# Einzige Ausnahme: CONTRIBUTING.md meint damit einen Ordner des alten Repos.
+KEIN_VERWEIS = {"backend/notifications/"}
+
+
+def _ohne_codebloecke(path):
+    return re.sub(r"```.*?```", "", path.read_text(encoding="utf-8"), flags=re.S)
+
+
+def test_dateien_und_ordner_in_backticks_gibt_es_im_repo():
+    befehl = ["git", "ls-files"]
+    verfolgt = subprocess.run(befehl, cwd=BASE_DIR, capture_output=True, text=True, check=True).stdout  # noqa: S603 -- fester Befehl
+    namen = Counter(Path(zeile).name for zeile in verfolgt.splitlines())
+    uebersprungen, fehlt = 0, []
+
+    for path in VERWEISDATEIEN:
+        for angabe in re.findall(r"`([^`\n]+)`", _ohne_codebloecke(path)):
+            if re.search(r"[<*…\s]", angabe) or angabe.startswith(("/", "http")):
+                uebersprungen += 1
+            elif (angabe.endswith("/") or Path(angabe).suffix in DATEIENDUNGEN) and angabe not in KEIN_VERWEIS:
+                ziel = angabe.removeprefix("./")
+                # Ein bloßer Name gilt, wenn er im Wurzelordner steht oder genau einmal im Repo vorkommt.
+                if not (BASE_DIR / ziel).exists() and not ("/" not in ziel.rstrip("/") and namen[ziel] == 1):
+                    fehlt.append(f"{path.name}: `{angabe}`")
+
+    print(f"{uebersprungen} Angaben übersprungen (mit <, *, …, Leerzeichen, Anfang / oder http)")  # noqa: T201 -- Zahl für den Bericht
+    assert not fehlt, f"Diese Dateien oder Ordner gibt es nicht ({uebersprungen} Angaben übersprungen): {fehlt}"
 
 
 def _gliederung(path):
