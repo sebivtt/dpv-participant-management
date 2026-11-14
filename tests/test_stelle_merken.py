@@ -21,6 +21,7 @@ from tests.test_benennen import dialog_of
 from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _tree, _visible_text
 from tests.test_organisation import client_for, unit_address
 from tests.test_rollen import give, person, unit
+from tests.test_veranstaltungen import event_of
 from units.models import Unit
 
 R = Role.Kind
@@ -51,6 +52,9 @@ def org(db) -> SimpleNamespace:
     o.viktor_role = give(person("viktor.verband", "Viktor", "Verband"), R.FEDERATION_LEAD, o.dpv)
     o.tom_role = give(person("tom.team", "Tom", "Team"), R.EVENT_TEAM, o.dpv)
     o.bruno_role = give(person("bruno.bund", "Bruno", "Bund"), R.ASSOCIATION_LEAD, o.boreas)
+    o.admin = person("ada.admin", "Ada", "Admin")
+    give(o.admin, R.ADMIN)
+    o.event = event_of(o.wanda)
     return o
 
 
@@ -110,6 +114,8 @@ def _cases(o) -> list[tuple]:
         (o.vera, federation, f"/organisation/verband/bund/{o.boreas.key}/benennen/", bund, None),
         (o.vera, federation, f"/organisation/verband/entfernen/{o.bruno_role.key}/", bund, None),
         (o.wanda, "/veranstaltungen/", "/veranstaltungen/erstellen/", None, None),
+        (o.wanda, f"/veranstaltungen/{o.event.key}/", f"/veranstaltungen/{o.event.key}/bearbeiten/", None, None),
+        (o.admin, walhall, f"{walhall}support-zugang/", None, None),
     ]
 
 

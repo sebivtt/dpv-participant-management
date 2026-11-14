@@ -46,9 +46,9 @@ def _stand(page: Page) -> dict:
 
 
 def _nichts_rutscht(page: Page, text: str, lang: bool = True, spot: int = 0) -> None:
-    """Die Meldung ist unten zu sehen; die Seite steht oben, und der Inhalt steht, wo er zuerst stand.
+    """Die Meldung ist unten zu sehen; die Seite steht, wo sie soll, und der Inhalt steht, wo er zuerst stand.
 
-    Kommt die Seite aus einem Dialog, steht sie seit #220 an der Stelle `spot`, an der sie vor dem Öffnen stand,
+    Ohne Dialog davor steht die Seite oben. Kommt die Seite aus einem Dialog, steht sie seit #220 an der Stelle `spot`, an der sie vor dem Öffnen stand,
     höchstens am Ende der Seite. Das Skript rollt sie dorthin, bevor die Meldung kommt; danach rutscht nichts.
     """
     # Die Maus weg von der Meldung, sonst hält sie sie fest (#186, Szenario 4).

@@ -93,7 +93,9 @@ def _seite_steht(page: Page, dialog) -> int:
     assert _gesperrt(page), "Die Seite ist hinter dem Dialog nicht gesperrt"
     # Ohne Skript gleitet die Seite weich zur Sprungmarke; erst danach steht fest, wo sie steht.
     before = None
-    while before != _gerollt(page):
+    for _ in range(50):
+        if before == _gerollt(page):
+            break
         before = _gerollt(page)
         page.wait_for_timeout(150)
     if not _kann_rollen(page):

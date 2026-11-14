@@ -30,6 +30,14 @@ R = Role.Kind
 U = Unit.Kind
 LEADS = '[aria-labelledby="h-leitungen"]'
 PERSONS = '[aria-labelledby="h-personen"]'
+# Macht jede Seite unten lang, bevor das Skript der Seite läuft (defer läuft erst nach „interactive“).
+PADDING = """document.addEventListener('readystatechange', () => {
+    if (document.readyState === 'interactive') {
+        const style = document.createElement('style');
+        style.textContent = '.a-main-inhalt { padding-bottom: 3000px !important; }';
+        document.head.appendChild(style);
+    }
+});"""
 # So weit darf die Seite von der gemerkten Stelle abweichen: Rundung beim Rollen, sonst nichts.
 EXACT = 2
 
@@ -273,15 +281,7 @@ def test_neue_veranstaltung_beginnt_oben(pc):
     login(pc)
     _lange_walhall()
     # Jede Seite bekommt unten viel Platz, damit auch die kurze Seite einer Veranstaltung rollen könnte.
-    pc.add_init_script(
-        """document.addEventListener('readystatechange', () => {
-            if (document.readyState === 'interactive') {
-                const style = document.createElement('style');
-                style.textContent = '.a-main-inhalt { padding-bottom: 3000px !important; }';
-                document.head.appendChild(style);
-            }
-        });"""
-    )
+    pc.add_init_script(PADDING)
     pc.goto(f"{BASE}/veranstaltungen/")
     create = pc.locator('[aria-labelledby="h-veranstaltungen"] .a-flaeche-aktion')
     spot = _roll_to(pc, int(create.evaluate("e => e.getBoundingClientRect().top + scrollY")) - 40)
@@ -296,6 +296,35 @@ def test_neue_veranstaltung_beginnt_oben(pc):
 
     pc.wait_for_url(f"{BASE}/veranstaltungen/*/")
     expect(pc.locator("h1")).to_have_text("Probelager 2027")
+    assert _most(pc) > spot
+    assert _y(pc) == 0
+
+
+# S8 (unabhängige Prüfung, Befund M1): Erika gibt ihre Verbandsleitung ab und ist noch Stammesleitung. Unter
+# derselben Adresse „/organisation/“ steht danach statt „Verband“ die Seite ihres Stamms; die beginnt oben.
+def test_andere_seite_unter_derselben_adresse_beginnt_oben(pc):
+    login(pc)
+    erika = _erika()
+    dpv = unit(U.FEDERATION, "DPV")
+    for number in range(15):
+        unit(U.ASSOCIATION, f"Bund {number:02d}", dpv)
+    walhall = unit(U.TROOP, "Walhall", Unit.objects.get(name="Bund 00"))
+    give(erika, R.FEDERATION_LEAD, dpv)
+    give(person("viktor.verband", "Viktor", "Verband"), R.FEDERATION_LEAD, dpv)
+    give(erika, R.TROOP_LEAD, walhall)
+    # Jede Seite bekommt unten viel Platz, damit auch die Seite des Stamms rollen könnte.
+    pc.add_init_script(PADDING)
+    pc.goto(f"{BASE}/organisation/")
+    give_up = pc.locator('[aria-labelledby="h-verbandsleitung"] .a-leitung-knopf', has_text="Rolle abgeben")
+    spot = _roll_to(pc, int(give_up.evaluate("e => e.getBoundingClientRect().top + scrollY")) - 80)
+    assert spot > 50
+    give_up.click()
+    expect(_dialog(pc)).to_be_visible()
+    _steht_bei(pc, spot)
+    _dialog(pc).locator(".btn-gefahr").click()
+
+    pc.wait_for_url(f"{BASE}/organisation/")
+    expect(pc.locator(".a-orga-name")).to_have_text("Walhall")
     assert _most(pc) > spot
     assert _y(pc) == 0
 
