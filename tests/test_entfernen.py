@@ -14,6 +14,7 @@ from django.core import mail
 from django.http import Http404
 
 from access.rights import Rights
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_benennen, test_organisation
 from tests.test_benennen import _one_after_the_other, appoint, dialog_of, roles_of, short_notices
@@ -94,18 +95,18 @@ def test_entfernen_bei_jeder_anderen_leitung_rolle_abgeben_nur_beim_eigenen_eint
     wanda = role_of(org.walhall_leitung, R.TROOP_LEAD, org.walhall)
     willi = role_of(org.willi, R.TROOP_LEAD, org.walhall)
 
-    assert buttons(org.walhall_leitung, org.falken) == {"Funke": ("Entfernen", remove_address(org.falken, fiete))}
+    assert buttons(org.walhall_leitung, org.falken) == {"Funke": ("Entfernen", to_section(remove_address(org.falken, fiete), "leitungen"))}
     assert buttons(org.walhall_leitung, org.walhall) == {
-        "Wirbelwind": ("Rolle abgeben", remove_address(org.walhall, wanda)),
-        "Wiesel": ("Entfernen", remove_address(org.walhall, willi)),
+        "Wirbelwind": ("Rolle abgeben", to_section(remove_address(org.walhall, wanda), "leitungen")),
+        "Wiesel": ("Entfernen", to_section(remove_address(org.walhall, willi), "leitungen")),
     }
     assert buttons(org.bundesleitung, org.walhall) == {
-        "Wirbelwind": ("Entfernen", remove_address(org.walhall, wanda)),
-        "Wiesel": ("Entfernen", remove_address(org.walhall, willi)),
+        "Wirbelwind": ("Entfernen", to_section(remove_address(org.walhall, wanda), "leitungen")),
+        "Wiesel": ("Entfernen", to_section(remove_address(org.walhall, willi), "leitungen")),
     }
-    assert buttons(org.falken_leitung, org.falken) == {"Funke": ("Rolle abgeben", remove_address(org.falken, fiete))}
-    assert buttons(org.kueste_leitung, org.leuchtturm) == {"Laterne": ("Entfernen", remove_address(
-        org.leuchtturm, role_of(org.leuchtturm_leitung, R.TROOP_LEAD, org.leuchtturm)))}
+    assert buttons(org.falken_leitung, org.falken) == {"Funke": ("Rolle abgeben", to_section(remove_address(org.falken, fiete), "leitungen"))}
+    assert buttons(org.kueste_leitung, org.leuchtturm) == {"Laterne": ("Entfernen", to_section(remove_address(
+        org.leuchtturm, role_of(org.leuchtturm_leitung, R.TROOP_LEAD, org.leuchtturm)), "leitungen"))}
 
 
 @pytest.mark.rechtematrix("RO-13", "EH-28")
@@ -135,8 +136,8 @@ def test_c1_wanda_entfernt_fiete_die_letzte_gruppenleitung(org):
     assert shown["text"] == ["Danach hat Sippe Falken keine Gruppenleitung mehr. Bis eine neue benannt ist, springt die "
                              "Leitung von Stamm Walhall ein. Trotzdem entfernen?"]
     assert shown["button"] == "Entfernen"
-    assert shown["action"] == remove_address(org.falken, fiete)
-    assert shown["cancel"] == unit_address(org.falken)
+    assert shown["action"] == to_section(remove_address(org.falken, fiete), "leitungen")
+    assert shown["cancel"] == to_section(unit_address(org.falken), "leitungen")
 
 
 def test_c2_willi_entfernt_wanda_die_nicht_die_letzte_ist(org):
@@ -250,7 +251,7 @@ def test_der_dialog_steht_ueber_der_seite_der_organisation(org):
 
     assert "Funke" in [lead["name"] for lead in leads_on_page(root)]
     dialog = dialog_of(root)
-    assert _attr(dialog, "data-schliessen") == unit_address(org.falken)
+    assert _attr(dialog, "data-schliessen") == to_section(unit_address(org.falken), "leitungen")
 
 
 # ---------- Danach ----------
@@ -509,7 +510,7 @@ def test_die_seite_zeigt_keine_laufenden_nummern_der_rollen(org):
 
     assert len(hrefs) == 2
     for role in Role.objects.filter(unit=org.walhall, kind=R.TROOP_LEAD):
-        assert remove_address(org.walhall, role) in hrefs
+        assert to_section(remove_address(org.walhall, role), "leitungen") in hrefs
         assert f"/entfernen/{role.pk}/" not in "".join(hrefs)
 
 

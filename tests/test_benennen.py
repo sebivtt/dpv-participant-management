@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from access.rights import Rights
 from accounts.models import AccountSearch
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_organisation
 from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
@@ -120,7 +121,7 @@ def appoint_button(user, unit) -> str | None:
     links = _all(root, lambda e: "a-flaeche-aktion" in _classes(e))
     if not links:
         return None
-    assert _attr(_one(links), "href") == appoint_address(unit)
+    assert _attr(_one(links), "href") == to_section(appoint_address(unit), "leitungen")
     return _visible_text(_one(links))
 
 
@@ -158,7 +159,7 @@ def test_der_knopf_steht_auch_auf_der_uebersicht_bei_der_eigenen_organisation(or
 
     link = _one(_all(root, lambda e: "a-flaeche-aktion" in _classes(e)))
     assert _visible_text(link) == "Stammesleitung benennen"
-    assert _attr(link, "href") == appoint_address(org.walhall)
+    assert _attr(link, "href") == to_section(appoint_address(org.walhall), "leitungen")
 
 
 def test_der_dialog_hat_feld_suchen_und_abbrechen(org):
@@ -172,10 +173,10 @@ def test_der_dialog_hat_feld_suchen_und_abbrechen(org):
     field = _one(_by_tag(dialog, "input", name="suche"))
     assert _attr(field, "id") == _attr(label, "for")
     form = _one(_by_tag(dialog, "form", method="post"))
-    assert _attr(form, "action") == search_address(org.falken)
+    assert _attr(form, "action") == to_section(search_address(org.falken), "leitungen")
     assert _visible_text(_one(_by_tag(form, "button", type="submit"))) == "Suchen"
     back = [_attr(link, "href") for link in _by_tag(dialog, "a")]
-    assert back == [unit_address(org.falken), unit_address(org.falken)]
+    assert back == [to_section(unit_address(org.falken), "leitungen")] * 2
     assert "Abbrechen" in _visible_text(dialog)
 
 

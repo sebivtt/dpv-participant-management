@@ -40,7 +40,7 @@ FRIDA = ("mitglied.falken", "testpasswort-finn")
 ZORA = ("stammesleitung.leuchtturm", "testpasswort-lars")
 
 PERSONS = '[aria-labelledby="h-personen"]'
-ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href$="/verwaltete-person/anlegen/"]'
+ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/verwaltete-person/anlegen/"]'
 REMOVE_BUTTON = '[aria-labelledby="h-leitungen"] .a-leitung-knopf'
 APPOINT_BUTTON = '[aria-labelledby="h-leitungen"] .a-flaeche-aktion'
 CONSENT = 'dialog input[name="consent"]'
@@ -82,7 +82,7 @@ def _page_of(where) -> str:
 
 
 def _lena_edit(lena) -> str:
-    return f'{PERSONS} a[href$="/verwaltete-person/{lena.key}/bearbeiten/"]'
+    return f'{PERSONS} a[href*="/verwaltete-person/{lena.key}/bearbeiten/"]'
 
 
 def _log_in(page: Page, account, keyboard: bool) -> None:

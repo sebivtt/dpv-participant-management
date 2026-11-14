@@ -49,7 +49,7 @@ def _move_dialog(where, target) -> str:
 
 
 def _button_for(target) -> str:
-    return f'{PERSONS} .btn-verschieben[href$="/verschieben/{target.key}/"]'
+    return f'{PERSONS} .btn-verschieben[href*="/verschieben/{target.key}/"]'
 
 
 def _dialog(page: Page):
@@ -114,7 +114,7 @@ def test_am_handy_nur_mit_der_tastatur_verschieben(handy):
     units = _walhall_with_woelfe()
     handy.goto(_page_of(units["walhall"]))
     _no_side_scroll(handy)
-    wilma_button = f'.btn-verschieben[href$="/verschieben/{units["wilma"].key}/"]'
+    wilma_button = f'.btn-verschieben[href*="/verschieben/{units["wilma"].key}/"]'
     entry = handy.locator(f"{PERSONS} li", has=handy.locator(wilma_button))
     expect(entry.locator(".btn")).to_have_text(["Verschieben: Wilma Walhall", "Austragen: Wilma Walhall"])
 
@@ -171,7 +171,8 @@ def test_ohne_skript_verschiebt_der_knopf_die_gewaehlte_organisation(pc_ohne_skr
     page.get_by_label("Sippe Falken").check()
     page.locator("dialog .btn-primary").click()
 
-    page.wait_for_url(_page_of(units["walhall"]))
+    # Ohne Skript springt die Seite zum Abschnitt mit dem Knopf (#220).
+    page.wait_for_url(f"{_page_of(units['walhall'])}#abschnitt-personen")
     # Ohne Skript steht die kurze Meldung fest oben auf der Seite (docs/gestaltung.md, „Kurze Meldung“).
     expect(page.locator("[data-kurz]")).to_contain_text("Wilma Walhall gehört jetzt zu Sippe Falken.")
     assert _membership(units["wilma"]) == "Sippe Falken"

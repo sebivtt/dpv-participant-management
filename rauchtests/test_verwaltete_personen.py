@@ -20,8 +20,8 @@ from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 
 PERSONS = '[aria-labelledby="h-personen"]'
-ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href$="/verwaltete-person/anlegen/"]'
-EDIT_BUTTON = f'{PERSONS} a[href$="/bearbeiten/"]'
+ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/verwaltete-person/anlegen/"]'
+EDIT_BUTTON = f'{PERSONS} a[href*="/bearbeiten/"]'
 # Der Regler der Einwilligung (#98, DSG-02): ein Ankreuzfeld im Baustein „Schalter“.
 CONSENT = 'dialog input[name="consent"]'
 SUBMIT = 'dialog button[type="submit"]'

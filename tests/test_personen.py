@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from access.rights import Rights
 from accounts.models import AccountSearch
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_benennen
 from tests.test_benennen import _one_after_the_other, dialog_of, hits, notices, roles_of, search, short_notices
@@ -119,7 +120,7 @@ def admit_button(user, where) -> str | None:
     """
     section = persons_section(page_tree(user, unit_address(where)))
     links = [link for link in _all(section, lambda e: "a-flaeche-aktion" in _classes(e))
-             if _attr(link, "href") == admit_address(where)]
+             if _attr(link, "href") == to_section(admit_address(where), "personen")]
     if not links:
         return None
     return _visible_text(_one(links))
@@ -243,7 +244,7 @@ def test_der_dialog_hat_feld_knopf_und_hinweis_ohne_vorschlaege(org):
     assert "Mail oder Benutzername" in text
     assert DIALOG_HELP in text
     form = _one(_by_tag(found, "form"))
-    assert _attr(form, "action") == search_address(org.falken)
+    assert _attr(form, "action") == to_section(search_address(org.falken), "personen")
     assert _attr(form, "data-vorschlaege") is None
     assert [_visible_text(button) for button in _by_tag(form, "button")] == ["Suchen"]
     # Die Seite unter dem Dialog ist die Seite der Falken.

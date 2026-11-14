@@ -16,6 +16,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 
 from access.rights import Rights
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_personen
 from tests.test_benennen import _one_after_the_other, dialog_of, roles_of, short_notices
@@ -140,13 +141,13 @@ def log_since(before: int) -> list[tuple]:
 @pytest.mark.rechtematrix("PK-21")
 def test_die_leitung_der_eigenen_organisation_hat_austragen_bei_jeder_person(org):
     assert expel_buttons(org.falken_leitung, org.falken) == {
-        "Funke": expel_address(org.falken, org.falken_leitung),
-        "Flink": expel_address(org.falken, org.falke),
+        "Funke": to_section(expel_address(org.falken, org.falken_leitung), "personen"),
+        "Flink": to_section(expel_address(org.falken, org.falke), "personen"),
     }
     assert set(expel_buttons(org.walhall_leitung, org.walhall)) == {"Wirbelwind", "Wiesel", "Wilma Walhall", "Wim Wolf"}
     assert expel_buttons(org.bundesleitung, org.boreas) == {
-        "Bea Boreas": expel_address(org.boreas, org.boreas_mitglied),
-        "Brummbär": expel_address(org.boreas, org.bundesleitung),
+        "Bea Boreas": to_section(expel_address(org.boreas, org.boreas_mitglied), "personen"),
+        "Brummbär": to_section(expel_address(org.boreas, org.bundesleitung), "personen"),
     }
 
 
@@ -178,7 +179,7 @@ def test_p5_der_dialog_zeigt_zwei_moeglichkeiten_und_die_vorschau_je_wahl(org):
         STAYS,
     ]
     assert shown["button"] == "Austragen"
-    assert shown["action"] == expel_address(org.falken, org.falke)
+    assert shown["action"] == to_section(expel_address(org.falken, org.falke), "personen")
     # Der Dialog allein ändert nichts.
     assert membership_of(org.falke) == "Sippe Falken"
 
@@ -394,7 +395,7 @@ def test_nur_lesen_und_abschicken_andere_anfragen_sind_nicht_gefunden(org):
 @pytest.mark.rechtematrix("EP-06")
 def test_den_knopf_austreten_hat_jede_person_mit_mitgliedschaft(org):
     for user in (org.falke, org.falken_leitung, org.walhall_leitung, org.boreas_mitglied):
-        assert exit_button(user) == EXIT, user.username
+        assert exit_button(user) == to_section(EXIT, "rollen"), user.username
     for user in (org.ohne, org.verbandsleitung, org.team):
         assert exit_button(user) is None, user.username
         assert client_for(user).get(EXIT).status_code == 404
@@ -417,7 +418,7 @@ def test_der_dialog_bietet_die_ebenen_der_eigenen_kette(org):
         ["Du trittst aus Pfadfinderbund Boreas aus und gehörst danach keiner Organisation mehr an.", YOURS_STAY],
     ]
     assert shown["button"] == "Austreten"
-    assert shown["action"] == EXIT
+    assert shown["action"] == to_section(EXIT, "rollen")
     assert shown["hidden"] == {"von": org.falken.key}
     assert membership_of(org.falke) == "Sippe Falken"
 
@@ -645,7 +646,7 @@ def test_u2_mein_profil_behaelt_fahrtenname_und_rolle_abgeben(org):
 
     assert _by_tag(root, "form", action="/profil/fahrtenname/")
     assert [_attr(link, "href") for link in _all(root, lambda e: "a-kachel-knopf" in _classes(e))] == [
-        "/profil/team-abgeben/"]
+        to_section("/profil/team-abgeben/", "rollen")]
 
 
 def test_u3_der_wechsel_der_mitgliedschaft_lehnt_mit_leitungsrolle_weiter_ab(org):

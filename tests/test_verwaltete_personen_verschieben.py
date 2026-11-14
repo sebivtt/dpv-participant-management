@@ -25,6 +25,7 @@ from django.http import Http404
 from django.test import Client
 
 from access.rights import Rights
+from core.sections import to_section
 from persons.models import ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
 from tests import test_verwaltete_personen
@@ -143,15 +144,15 @@ def unit_of(entry) -> str:
 @pytest.mark.rechtematrix("VP-07", "PR-02")
 def test_v1_wanda_verschiebt_paul_in_die_sippe_falken(org):
     shown = entries(page_tree(org.walhall_leitung, unit_address(org.walhall)))
-    assert shown["Paul Probe"]["buttons"]["Verschieben"] == move_address(org.walhall, org.paul)
-    assert shown["Paul Probe"]["buttons"]["Austragen"] == expel_address(org.walhall, org.paul)
+    assert shown["Paul Probe"]["buttons"]["Verschieben"] == to_section(move_address(org.walhall, org.paul), "personen")
+    assert shown["Paul Probe"]["buttons"]["Austragen"] == to_section(expel_address(org.walhall, org.paul), "personen")
     client = client_for(org.walhall_leitung)
     found = move_dialog(client.get(move_address(org.walhall, org.paul)))
     assert found["title"] == "Verschieben"
     assert found["subtitle"] == "Paul Probe aus Stamm Walhall"
     # Zur Wahl stehen nur die Organisationen direkt darunter.
     assert [label for _name, _value, label, _checked in found["options"]] == ["Meute Wölfe", "Sippe Falken"]
-    assert found["action"] == move_address(org.walhall, org.paul)
+    assert found["action"] == to_section(move_address(org.walhall, org.paul), "personen")
     before = RoleChange.objects.count()
 
     response = move(org.walhall_leitung, org.walhall, org.paul, org.falken, client=client)
@@ -175,8 +176,8 @@ def test_v1_wanda_verschiebt_paul_in_die_sippe_falken(org):
 def test_v2_wim_traegt_mia_aus_der_meute_woelfe_aus(org, mia):
     shown = entries(page_tree(org.woelfe_leitung, unit_address(org.woelfe)))
     # Unter einer Gruppe gibt es nichts, wohin man verschieben könnte; Austragen und Bearbeiten schon.
-    assert shown["Mia Probe"]["buttons"] == {"Bearbeiten": edit_address(org.woelfe, mia),
-                                             "Austragen": expel_address(org.woelfe, mia)}
+    assert shown["Mia Probe"]["buttons"] == {"Bearbeiten": to_section(edit_address(org.woelfe, mia), "personen"),
+                                             "Austragen": to_section(expel_address(org.woelfe, mia), "personen")}
     client = client_for(org.woelfe_leitung)
     found = choice_dialog(client.get(expel_address(org.woelfe, mia)))
     assert found["title"] == "Mia Probe aus Meute Wölfe austragen?"
@@ -185,7 +186,7 @@ def test_v2_wim_traegt_mia_aus_der_meute_woelfe_aus(org, mia):
     assert found["options"][0]["preview"][0] == (
         "Mia Probe aus Meute Wölfe austragen? Danach gehört Mia Probe direkt zu Stamm Walhall.")
     assert found["button"] == "Austragen"
-    assert found["action"] == expel_address(org.woelfe, mia)
+    assert found["action"] == to_section(expel_address(org.woelfe, mia), "personen")
     before = RoleChange.objects.count()
 
     response = expel(org.woelfe_leitung, org.woelfe, mia, client=client)
@@ -230,7 +231,7 @@ def test_v4_ohne_stammesleitung_springt_bruno_ein_und_verschiebt_paul(org):
     remove(org.walhall_leitung, R.TROOP_LEAD, org.walhall)
     remove(org.willi, R.TROOP_LEAD, org.walhall)
     shown = entries(page_tree(org.bundesleitung, unit_address(org.walhall)))
-    assert shown["Paul Probe"]["buttons"]["Verschieben"] == move_address(org.walhall, org.paul)
+    assert shown["Paul Probe"]["buttons"]["Verschieben"] == to_section(move_address(org.walhall, org.paul), "personen")
 
     response = move(org.bundesleitung, org.walhall, org.paul, org.falken)
 
@@ -247,7 +248,7 @@ def test_v5_fiete_loescht_lena_im_dialog_bearbeiten(org):
     found, _version = open_edit(org.falken_leitung, org.falken, lena, client=client)
     link = delete_link(found)
     assert link is not None
-    assert _attr(link, "href") == delete_address(org.falken, lena)
+    assert _attr(link, "href") == to_section(delete_address(org.falken, lena), "personen")
     # Zart rot wie „Entfernen“ (Baustein „Knopf „Entfernen““), im Fuß des Dialogs als Erstes, also links unten.
     assert "btn-entfernen" in _classes(link)
     footer = _one(_all(found, lambda e: "a-dialog-fuss" in _classes(e)))
@@ -259,8 +260,8 @@ def test_v5_fiete_loescht_lena_im_dialog_bearbeiten(org):
     assert CANNOT_UNDO in asked["text"]
     assert _visible_text(asked["button"]) == "Endgültig löschen"
     assert "btn-gefahr" in _classes(asked["button"])
-    assert asked["action"] == delete_address(org.falken, lena)
-    assert asked["keep"] == edit_address(org.falken, lena)
+    assert asked["action"] == to_section(delete_address(org.falken, lena), "personen")
+    assert asked["keep"] == to_section(edit_address(org.falken, lena), "personen")
     before = RoleChange.objects.count()
 
     response = delete(org.falken_leitung, org.falken, lena, client=client)
@@ -281,7 +282,7 @@ def test_v6_ohne_gruppenleitung_loescht_wanda_lena(org, lena):
     remove(org.falken_leitung, R.GROUP_LEAD, org.falken)
     client = client_for(org.walhall_leitung)
     found, _version = open_edit(org.walhall_leitung, org.falken, lena, client=client)
-    assert _attr(delete_link(found), "href") == delete_address(org.falken, lena)
+    assert _attr(delete_link(found), "href") == to_section(delete_address(org.falken, lena), "personen")
 
     response = delete(org.walhall_leitung, org.falken, lena, client=client)
 
@@ -353,7 +354,7 @@ def test_vv1_fiete_verschiebt_lena_nicht(org, lena):
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/verwaltete-person/<key:person>/austragen/")
 def test_vv2_wanda_verschiebt_und_traegt_lena_nicht_aus_solange_die_falken_fiete_haben(org, lena):
     shown = entries(page_tree(org.walhall_leitung, unit_address(org.falken)))
-    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena)}
+    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": to_section(edit_address(org.falken, lena), "personen")}
 
     assert_like_missing(org.walhall_leitung, expel_address(org.falken, lena))
     refused(org.walhall_leitung, move_address(org.falken, lena), {"ziel": org.woelfe.key})
@@ -410,7 +411,7 @@ def test_vv5_im_bund_gibt_es_kein_austragen_nur_verschieben_und_loeschen(org):
     refused(org.bundesleitung, expel_address(org.boreas, berti), {"wahl": "hoch"})
     assert unit_of(berti) == "Pfadfinderbund Boreas"
     found, _version = open_edit(org.bundesleitung, org.boreas, berti)
-    assert _attr(delete_link(found), "href") == delete_address(org.boreas, berti)
+    assert _attr(delete_link(found), "href") == to_section(delete_address(org.boreas, berti), "personen")
     assert move(org.bundesleitung, org.boreas, berti, org.zugvoegel).status_code == 302
     assert unit_of(berti) == "Zugvögel"
 

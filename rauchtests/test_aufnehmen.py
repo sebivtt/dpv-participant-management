@@ -16,7 +16,7 @@ from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_
 
 PERSONS = '[aria-labelledby="h-personen"]'
 # Seit #117 steht daneben „Verwaltete Person anlegen“; gemeint ist der Knopf, der zum Aufnehmen führt.
-ADMIT_BUTTON = f'{PERSONS} .a-flaeche-aktion[href$="/aufnehmen/"]'
+ADMIT_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/aufnehmen/"]'
 
 
 def _dialog(page: Page):

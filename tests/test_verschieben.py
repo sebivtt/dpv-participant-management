@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 
 from access.rights import Rights
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_personen
 from tests.test_austragen import _outcome, expel, log_since
@@ -101,10 +102,10 @@ def move_buttons(user, where) -> dict[str, str]:
 @pytest.mark.rechtematrix("PK-19", "EP-10")
 def test_p3_die_stammesleitung_hat_verschieben_bei_jeder_person_auch_bei_sich(org):
     assert move_buttons(org.walhall_leitung, org.walhall) == {
-        "Wirbelwind": move_address(org.walhall, org.walhall_leitung),
-        "Wiesel": move_address(org.walhall, org.willi),
-        "Wilma Walhall": move_address(org.walhall, org.walhall_mitglied),
-        "Wim Wolf": move_address(org.walhall, org.woelfe_leitung),
+        "Wirbelwind": to_section(move_address(org.walhall, org.walhall_leitung), "personen"),
+        "Wiesel": to_section(move_address(org.walhall, org.willi), "personen"),
+        "Wilma Walhall": to_section(move_address(org.walhall, org.walhall_mitglied), "personen"),
+        "Wim Wolf": to_section(move_address(org.walhall, org.woelfe_leitung), "personen"),
     }
     assert set(move_buttons(org.bundesleitung, org.boreas)) == {"Bea Boreas", "Brummbär"}
 
@@ -159,7 +160,7 @@ def test_p3_der_dialog_bietet_die_organisationen_direkt_darunter(org):
     assert _visible_text(shown["button"]) == "Verschieben"
     assert "btn-primary" in _classes(shown["button"])
     assert "btn-gefahr" not in _classes(shown["button"])
-    assert shown["action"] == move_address(org.walhall, org.walhall_mitglied)
+    assert shown["action"] == to_section(move_address(org.walhall, org.walhall_mitglied), "personen")
     assert shown["notices"] == []
     # Der Dialog allein ändert nichts.
     assert membership_of(org.walhall_mitglied) == "Walhall"

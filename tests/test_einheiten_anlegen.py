@@ -23,6 +23,7 @@ from django.http import Http404
 from django.urls import get_resolver
 
 from access.rights import Rights
+from core.sections import to_section
 from roles.models import Role
 from tests import test_benennen
 from tests.test_benennen import _one_after_the_other, dialog_of, short_notices
@@ -860,10 +861,10 @@ def create_button(user, where) -> tuple[str, str] | None:
 
 
 def test_der_knopf_anlegen_heisst_nach_der_art(org):
-    assert create_button(org.walhall_leitung, org.walhall) == ("Gruppe anlegen", create_address(org.walhall))
-    assert create_button(org.bundesleitung, org.boreas) == ("Stamm anlegen", create_address(org.boreas))
-    assert create_button(org.mosaik_leitung, org.mosaik) == ("Ring anlegen", create_address(org.mosaik))
-    assert create_button(org.kueste_leitung, org.kueste) == ("Stamm anlegen", create_address(org.kueste))
+    assert create_button(org.walhall_leitung, org.walhall) == ("Gruppe anlegen", to_section(create_address(org.walhall), "darunter"))
+    assert create_button(org.bundesleitung, org.boreas) == ("Stamm anlegen", to_section(create_address(org.boreas), "darunter"))
+    assert create_button(org.mosaik_leitung, org.mosaik) == ("Ring anlegen", to_section(create_address(org.mosaik), "darunter"))
+    assert create_button(org.kueste_leitung, org.kueste) == ("Stamm anlegen", to_section(create_address(org.kueste), "darunter"))
     assert create_button(org.mosaik_leitung, org.kueste) is None
     assert create_button(org.falken_leitung, org.falken) is None
 
@@ -904,7 +905,7 @@ def test_dialog_anlegen_mit_dem_feld_name_und_blauem_knopf(org):
     assert " ".join(_visible_text(label).split()) == "Name (Pflicht)"
     assert _visible_text(shown["button"]) == "Anlegen"
     assert "btn-primary" in _classes(shown["button"])
-    assert _attr(shown["form"], "action") == create_address(org.walhall)
+    assert _attr(shown["form"], "action") == to_section(create_address(org.walhall), "darunter")
 
 
 def test_dialog_bearbeiten_zeigt_je_person_nur_ihre_felder(org):
@@ -1004,11 +1005,11 @@ def test_og7_mit_stammesleitung_endet_nur_was_nele_durch_das_einspringen_hatte(o
     """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und der Stift bleiben (EH-11, EH-14)."""
     client = client_for(org.nord_leitung)
     root = _tree(client.get(unit_address(org.sturmvogel)))
-    assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
+    assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}aufnehmen/", "personen"))
 
     lead("sina.sturm", R.TROOP_LEAD, org.sturmvogel)
 
     root = _tree(client.get(unit_address(org.sturmvogel)))
-    assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == f"{unit_address(org.sturmvogel)}aufnehmen/")
-    assert create_button(org.nord_leitung, org.sturmvogel) == ("Gruppe anlegen", create_address(org.sturmvogel))
+    assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}aufnehmen/", "personen"))
+    assert create_button(org.nord_leitung, org.sturmvogel) == ("Gruppe anlegen", to_section(create_address(org.sturmvogel), "darunter"))
     assert pencil(org.nord_leitung, org.sturmvogel) == (edit_address(org.sturmvogel), "Stamm Sturmvogel bearbeiten")

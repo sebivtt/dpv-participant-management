@@ -82,19 +82,29 @@ def _steht_mittig(dialog) -> None:
     assert lage["oben"] >= RAND - 1, lage
 
 
-def _seite_steht(page: Page, dialog) -> None:
-    """Rollt über dem Dialog und daneben; die Seite dahinter bewegt sich dabei nicht."""
+def _seite_steht(page: Page, dialog) -> int:
+    """Rollt über dem Dialog und daneben; die Seite dahinter bewegt sich dabei nicht.
+
+    Seit #220 steht die Seite beim Öffnen nicht immer oben: ohne Skript am Abschnitt mit dem Knopf. Verglichen
+    wird deshalb mit der Stelle vor dem Rollen; die gibt die Funktion zurück.
+    """
     _lang(page)
     assert page.evaluate("document.scrollingElement.scrollHeight") > page.viewport_size["height"] + 1000
     assert _gesperrt(page), "Die Seite ist hinter dem Dialog nicht gesperrt"
+    # Ohne Skript gleitet die Seite weich zur Sprungmarke; erst danach steht fest, wo sie steht.
+    before = None
+    while before != _gerollt(page):
+        before = _gerollt(page)
+        page.wait_for_timeout(150)
     if not _kann_rollen(page):
-        return
+        return before
     box = dialog.bounding_box()
     _rollen(page, box["x"] + box["width"] / 2, box["y"] + 30)
-    assert _gerollt(page) == 0, "Die Seite rollt über dem Dialog mit"
+    assert _gerollt(page) == before, "Die Seite rollt über dem Dialog mit"
     # Rechts daneben: Der Dialog steht in der Mitte, das Menü am linken Rand.
     _rollen(page, page.viewport_size["width"] - 5, page.viewport_size["height"] - 40)
-    assert _gerollt(page) == 0, "Die Seite rollt neben dem Dialog mit"
+    assert _gerollt(page) == before, "Die Seite rollt neben dem Dialog mit"
+    return before
 
 
 def _rollt_normal(page: Page) -> None:
@@ -259,12 +269,12 @@ def test_ohne_skript_steht_der_dialog_mittig_und_die_seite_rollt_nicht_mit(pc, b
         dialog = page.locator("dialog.a-dialog")
         expect(dialog).to_be_visible()
         _steht_mittig(dialog)
-        _seite_steht(page, dialog)
+        before = _seite_steht(page, dialog)
         # Ohne Skript ist die Seite dahinter nicht gesperrt wie bei einem modalen Dialog. Auch die
         # Seitenleiste mit eigenem Rollen bleibt stehen, wenn das Fenster so niedrig ist, dass sie rollen könnte.
         page.set_viewport_size({"width": 1366, "height": 300})
         assert page.evaluate("(s => s.scrollHeight > s.clientHeight)(document.querySelector('.a-sidebar'))")
         _rollen(page, 100, 150)
-        assert _gerollt(page) == 0, "Die Seitenleiste rollt hinter dem Dialog mit"
+        assert _gerollt(page) == before, "Die Seitenleiste rollt hinter dem Dialog mit"
     finally:
         context.close()

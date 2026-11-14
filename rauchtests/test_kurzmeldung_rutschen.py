@@ -45,8 +45,12 @@ def _stand(page: Page) -> dict:
     )
 
 
-def _nichts_rutscht(page: Page, text: str, lang: bool = True) -> None:
-    """Die Meldung ist unten zu sehen; die Seite steht oben, und der Inhalt steht, wo er zuerst stand."""
+def _nichts_rutscht(page: Page, text: str, lang: bool = True, spot: int = 0) -> None:
+    """Die Meldung ist unten zu sehen; die Seite steht oben, und der Inhalt steht, wo er zuerst stand.
+
+    Kommt die Seite aus einem Dialog, steht sie seit #220 an der Stelle `spot`, an der sie vor dem Öffnen stand,
+    höchstens am Ende der Seite. Das Skript rollt sie dorthin, bevor die Meldung kommt; danach rutscht nichts.
+    """
     # Die Maus weg von der Meldung, sonst hält sie sie fest (#186, Szenario 4).
     page.mouse.move(5, 5)
     _later(page, 300)
@@ -56,8 +60,9 @@ def _nichts_rutscht(page: Page, text: str, lang: bool = True) -> None:
     first = page.evaluate("window.vorDemSkript")
     now = _stand(page)
     assert now["lang"] == lang, "Die Seite muss länger als der Bildschirm sein" if lang else "Die Seite muss ganz zu sehen sein"
-    assert first["scroll"] == 0 and now["scroll"] == 0, (first, now)
-    assert now["top"] == first["top"], (first, now)
+    most = page.evaluate("Math.round(document.scrollingElement.scrollHeight - innerHeight)")
+    assert first["scroll"] == 0 and now["scroll"] == min(spot, most), (first, now, spot)
+    assert now["top"] == first["top"] - now["scroll"], (first, now)
 
     # Szenario 5: Auch wenn sie nach rund 6 Sekunden verschwindet, rutscht nichts.
     _later(page, 6500)
@@ -138,9 +143,12 @@ def test_verband_nach_dem_entfernen_rutscht_nichts(request, browser_name, device
     test_verband._verband_for_erika()
     _stop_clock(page)
     page.goto(f"{BASE}/organisation/")
-    page.locator(".a-bund .a-leitung-knopf").click()
+    button = page.locator(".a-bund .a-leitung-knopf")
+    button.scroll_into_view_if_needed()
+    spot = page.evaluate("Math.round(scrollY)")
+    button.click()
     _submit(page, test_verband._dialog(page).locator(".btn-gefahr").click)
-    _nichts_rutscht(page, "Brummbär (Bruno Bund) ist nicht mehr Bundesleitung von Pfadfinderbund Boreas.")
+    _nichts_rutscht(page, "Brummbär (Bruno Bund) ist nicht mehr Bundesleitung von Pfadfinderbund Boreas.", spot=spot)
 
 
 # Szenario 4: Seite einer Organisation nach dem Benennen
