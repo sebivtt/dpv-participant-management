@@ -74,4 +74,3 @@ def test_richtlinie_wirkt_und_erlaubt_keinen_eingebetteten_code():
     assert "unsafe" not in response.headers[HEADER]
     assert "nonce" not in response.headers[HEADER]
     assert settings.SECURE_CSP_REPORT_ONLY == {}
-

@@ -14,7 +14,7 @@ import pytest
 from django.conf import settings
 from playwright.sync_api import Page, Route, expect
 
-from rauchtests.conftest import BASE, assert_no_csp_violations, csp_violations, login
+from rauchtests.conftest import BASE, assert_no_csp_violations, check_after_test, csp_violations, login
 
 # Ohne https: WebKit lädt sonst die Seite des Tools (http) nicht in den Rahmen der fremden Seite.
 FOREIGN = "http://fremd.example"
@@ -157,9 +157,26 @@ def test_fremde_seite_kann_das_tool_nicht_einbetten(pc):
     )
 
     # Erst weiter, wenn das Tool dem Rahmen geantwortet hat; sonst wäre er nur noch leer.
-    with pc.expect_response(f"{BASE}/anmelden/"):
+    with pc.expect_response(f"{BASE}/anmelden/") as answer:
         pc.goto(f"{FOREIGN}/rahmen")
     _settle(pc)
 
+    # Nur die Richtlinie schützt hier: Der ältere Schutz ist wirklich weg.
+    headers = answer.value.headers
+    assert "x-frame-options" not in headers
+    assert "frame-ancestors 'none'" in headers["content-security-policy"]
+
     frame = pc.frame_locator("iframe")
     expect(frame.get_by_role("button", name="Mit DPV-Konto anmelden")).to_have_count(0)
+
+
+# G1: Der Wächter selbst ist bei jedem Rauchtest dabei und wird rot, wenn ein Verstoß gemeldet ist.
+def test_waechter_laeuft_bei_jedem_rauchtest_und_wird_rot(request, pc):
+    assert "_keine_verstoesse_gegen_die_sicherheitsrichtlinie" in request.fixturenames
+    csp_violations(pc.context).append("style-src-elem blockiert inline auf einer erfundenen Seite")
+
+    with pytest.raises(AssertionError, match="style-src-elem"):
+        check_after_test(request.fixturenames)
+    # Schweigt nur, wenn der Test die Verstöße ausdrücklich selbst erwartet.
+    csp_violations(pc.context).append("style-src-elem blockiert inline auf einer erfundenen Seite")
+    check_after_test([*request.fixturenames, "verstoesse_erwartet"])

@@ -83,8 +83,9 @@ MIDDLEWARE = [
     # Ganz außen, damit auch Fehlerseiten und Antworten der übrigen Bausteine die Bitte an
     # Suchmaschinen tragen (#58).
     "core.testumgebung.NoIndexMiddleware",
-    # Ebenso ganz außen: Die Sicherheitsrichtlinie für Skripte (SECURE_CSP) steht so auf jeder
-    # Antwort, auch auf Fehlerseiten und auf Dateien vom eigenen Server (#278).
+    # Gleich danach: Die Sicherheitsrichtlinie für Skripte (SECURE_CSP) steht so auf jeder Antwort,
+    # auch auf Fehlerseiten und auf Dateien, die WhiteNoise liefert (#278). Der Testserver auf dem
+    # eigenen Rechner (runserver, Rauchtests) liefert Dateien an allen Bausteinen vorbei, ohne sie.
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     # Außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
     "core.errors.ClientErrorLogMiddleware",

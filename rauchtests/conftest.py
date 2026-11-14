@@ -124,8 +124,13 @@ _CSP_CONSOLE = re.compile(r"Content.Security.Policy", re.IGNORECASE)
 _csp_violations: dict[BrowserContext, list[str]] = {}
 
 
-def _on_tool_page(page: Page | None) -> bool:
-    return page is None or page.url.startswith(BASE)
+def _from_tool(message) -> bool:
+    """Kommt die Meldung aus einer Seite des Tools? Zählt das Dokument mit dem Verstoß, sonst die Seite.
+
+    Nicht nur die Seite: Leitet sie gleich danach zu Keycloak weiter, stünde dort schon dessen Adresse.
+    """
+    address = (message.location or {}).get("url") or (message.page.url if message.page else "")
+    return address.startswith(BASE)
 
 
 def _watch_csp(context: BrowserContext) -> None:
@@ -141,7 +146,7 @@ def _watch_csp(context: BrowserContext) -> None:
     context.on(
         "console",
         lambda message: seen.append(f"Konsole: {message.text}")
-        if _CSP_CONSOLE.search(message.text) and _on_tool_page(message.page)
+        if _CSP_CONSOLE.search(message.text) and _from_tool(message)
         else None,
     )
 
@@ -178,9 +183,14 @@ def _keine_verstoesse_gegen_die_sicherheitsrichtlinie(request):
     """
     _csp_violations.clear()
     yield
+    check_after_test(request.fixturenames)
+
+
+def check_after_test(fixturenames: list[str]) -> None:
+    """Prüfung des Wächters nach einem Test: rot bei jedem Verstoß, außer der Test erwartet ihn selbst."""
     found = [text for seen in _csp_violations.values() for text in seen]
     _csp_violations.clear()
-    if "verstoesse_erwartet" not in request.fixturenames:
+    if "verstoesse_erwartet" not in fixturenames:
         assert_no_csp_violations(found)
 
 
@@ -206,7 +216,7 @@ def browser(_playwright, browser_name) -> Browser:
             pytest.skip("Firefox startet unter macOS 27 nicht (bekanntes Problem); läuft auf GitHub mit.")
         raise
     # Jeder Kontext beobachtet die Sicherheitsrichtlinie (#278), auch einer, den ein Test selbst
-    # mit browser.new_context anlegt. browser.new_page nutzt kein Test; es bliebe unbeobachtet.
+    # mit browser.new_context oder browser.new_page anlegt.
     new_context = browser.new_context
 
     def watched_context(**options) -> BrowserContext:
@@ -214,7 +224,11 @@ def browser(_playwright, browser_name) -> Browser:
         _watch_csp(context)
         return context
 
+    def watched_page(**options) -> Page:
+        return watched_context(**options).new_page()
+
     browser.new_context = watched_context
+    browser.new_page = watched_page
     yield browser
     browser.close()
 
@@ -314,7 +328,7 @@ def run_axe(page: Page) -> list[str]:
     """
     # Nicht als Skript in die Seite: Das wäre eingebetteter Code, den die Sicherheitsrichtlinie
     # blockiert (#278). Was der Test selbst ausführt, blockiert sie nicht.
-    page.evaluate(AXE.read_text())
+    page.evaluate(AXE.read_text(encoding="utf-8"))
     result = page.evaluate(_AXE_RUN, SHORT_DELAY_MS)
     return [
         f"{v['id']} ({v['impact']}): {v['help']} – {[n['target'] for n in v['nodes']][:3]}" for v in result["violations"]

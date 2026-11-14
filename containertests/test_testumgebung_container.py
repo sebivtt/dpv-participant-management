@@ -110,6 +110,7 @@ def test_testumgebung_schickt_die_richtlinie_mit_ihrer_keycloak_adresse(testumge
     assert "script-src 'self'" in policy
     assert "Content-Security-Policy-Report-Only" not in response.headers
 
+
 # Szenario 4
 def test_fehleranzeige_bleibt_aus_obwohl_die_umgebungsdatei_sie_einschaltet(testumgebung):
     # Ein fremder Servername löst einen Fehler aus; die Fehleranzeige für Entwickler zeigte ihn samt Einstellungen.
