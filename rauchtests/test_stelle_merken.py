@@ -107,8 +107,13 @@ def _roll_to(page: Page, y: int) -> int:
 
 
 def _at_bottom_of_window(page: Page, locator) -> int:
-    """Rollt so, dass `locator` unten im Fenster steht, also nicht oben: Ein Sprung dorthin fiele auf."""
+    """Rollt so, dass `locator` unten im Fenster steht, also nicht oben: Ein Sprung dorthin fiele auf.
+
+    Mit etwas Abstand zum Rand: Steht der Knopf genau an der Kante, rollt Firefox ihn beim Klick erst selbst
+    ganz ins Bild, und gemerkt wäre dann diese neue Stelle (Prüfung auf GitHub, Firefox, S1).
+    """
     locator.evaluate("e => e.scrollIntoView({block: 'end', behavior: 'instant'})")
+    page.evaluate("scrollBy({top: 60, behavior: 'instant'})")
     return _y(page)
 
 
