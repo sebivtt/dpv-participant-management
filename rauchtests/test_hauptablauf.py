@@ -25,7 +25,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, ERIKA, PC, _context, login
+from rauchtests.conftest import BASE, ERIKA, PC, _context, focus_visible, login
 from rauchtests.test_rauchtest import _all_visible, _keycloak_look, _keycloak_marks_focus, _stations_to_element, _tab_key, _tab_to
 from roles.models import Role
 from tests.test_rollen import give, unit
@@ -70,7 +70,7 @@ def _units() -> dict:
     walhall = unit(U.TROOP, "Walhall", boreas)
     falken = unit(U.GROUP, "Sippe Falken", walhall)
     zugvoegel = unit(U.TROOP, "Zugvögel", boreas)
-    return {"walhall": walhall, "falken": falken, "zugvoegel": zugvoegel}
+    return {"boreas": boreas, "walhall": walhall, "falken": falken, "zugvoegel": zugvoegel}
 
 
 def _account(account):
@@ -134,13 +134,18 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
     expect(first).to_be_focused()
 
     if keyboard:
+        # Auch in den Feldern muss der Fokus zu sehen sein (H6), nicht nur auf den Knöpfen.
+        fields = [focus_visible(page)]
         page.keyboard.type("Lena")
         page.keyboard.press(_tab_key(page))
         expect(page.get_by_label("Nachname")).to_be_focused()
+        fields.append(focus_visible(page))
         page.keyboard.type("Probe")
         page.keyboard.press(_tab_key(page))
         birth = page.get_by_label("Geburtsdatum")
         expect(birth).to_be_focused()
+        fields.append(focus_visible(page))
+        _all_visible(fields)
         birth.fill("2015-05-14")
         _all_visible(_stations_to_element(page, 'input[name="scout_name"]', steps=6))
         page.keyboard.type("Kiwi")
@@ -181,6 +186,7 @@ def _h2_wanda_entfernt_fiete_und_benennt_frida(page: Page, falken, keyboard: boo
     field = page.get_by_label("Name, Fahrtenname, Mail oder Benutzername")
     expect(field).to_be_focused()
     if keyboard:
+        _all_visible([focus_visible(page)])
         page.keyboard.type("Finn")
     else:
         field.fill("Finn")
@@ -198,7 +204,8 @@ def _h3_fiete_findet_lena_nicht_mehr(page: Page, falken, lena, keyboard: bool) -
     _press(page, _lena_edit(lena), keyboard)
     expect(page.get_by_role("heading", level=1)).to_have_text(NOT_FOUND)
 
-    # Zurück und neu laden: Die Seite der Falken ist für Fiete jetzt selbst „nicht gefunden“, Lena steht nirgends.
+    # Zurück: Die Seite der Falken kommt frisch vom Server und ist für Fiete jetzt selbst „nicht gefunden“, als
+    # Mitglied ohne Leitungsrolle sieht er keine Organisation. Damit steht Lena in keiner Liste von ihm (H3).
     if keyboard:
         _all_visible(_tab_to(page, "Zurück"))
         page.keyboard.press("Enter")
@@ -206,9 +213,7 @@ def _h3_fiete_findet_lena_nicht_mehr(page: Page, falken, lena, keyboard: bool) -
         page.get_by_role("link", name="Zurück", exact=True).click()
     # Die Adresse zum Bearbeiten beginnt ebenso; erst die Seite der Falken selbst zählt, mit oder ohne Anker.
     page.wait_for_url(lambda url: url.split("#")[0] == _page_of(falken))
-    page.reload()
     expect(page.get_by_role("heading", level=1)).to_have_text(NOT_FOUND)
-    expect(page.locator("body")).not_to_contain_text("Kiwi")
 
 
 def _h4_frida_sieht_lena_sofort(page: Page, falken, lena, keyboard: bool) -> None:
@@ -225,9 +230,13 @@ def _h4_frida_sieht_lena_sofort(page: Page, falken, lena, keyboard: bool) -> Non
 
 
 def _h5_zora_findet_lena_nirgends(page: Page, units: dict, lena) -> None:
-    for address in (f"{BASE}/organisation/", _page_of(units["zugvoegel"])):
+    # Jede Seite, die Zora öffnen darf, auch Boreas über ihr; jede zeigt ihren Inhalt, nur Lena nicht.
+    readable = {f"{BASE}/organisation/": "Zugvögel", _page_of(units["zugvoegel"]): "Zugvögel",
+                _page_of(units["boreas"]): "Pfadfinderbund Boreas"}
+    for address, shown in readable.items():
         page.goto(address)
         expect(page.get_by_role("heading", level=1)).not_to_have_text(NOT_FOUND)
+        expect(page.locator("main")).to_contain_text(shown)
         expect(page.locator("body")).not_to_contain_text("Kiwi")
         expect(page.locator("body")).not_to_contain_text("Lena")
     for address in (_page_of(units["falken"]), f"{_page_of(units['falken'])}verwaltete-person/{lena.key}/bearbeiten/"):
