@@ -145,26 +145,34 @@ def test_eingeschmuggeltes_formular_an_fremde_seite_geht_nicht_ab(pc, verstoesse
 # V4: Eine fremde Seite kann das Tool nicht in einem Rahmen zeigen. Der Test entfernt den älteren Schutz
 # gegen Einbetten (X-Frame-Options), damit nur die Richtlinie wirkt; der bleibt im Tool unverändert.
 def test_fremde_seite_kann_das_tool_nicht_einbetten(pc):
+    delivered: list[dict[str, str]] = []
+
     def without_old_protection(route: Route) -> None:
         response = route.fetch()
         headers = {k: v for k, v in response.headers.items() if k.lower() != "x-frame-options"}
+        delivered.append({k.lower(): v for k, v in headers.items()})
         route.fulfill(response=response, headers=headers)
 
-    pc.route(f"{BASE}/anmelden/", without_old_protection)
-    pc.route(
+    # Am ganzen Kontext, nicht nur an der Seite: Firefox lädt den fremden Rahmen getrennt.
+    pc.context.route(f"{BASE}/anmelden/", without_old_protection)
+    pc.context.route(
         f"{FOREIGN}/rahmen",
         lambda route: route.fulfill(content_type="text/html", body=f'<iframe src="{BASE}/anmelden/"></iframe>'),
     )
 
-    # Erst weiter, wenn das Tool dem Rahmen geantwortet hat; sonst wäre er nur noch leer.
-    with pc.expect_response(f"{BASE}/anmelden/") as answer:
-        pc.goto(f"{FOREIGN}/rahmen")
+    pc.goto(f"{FOREIGN}/rahmen")
+    # Erst weiter, wenn das Tool dem Rahmen geantwortet hat; sonst wäre er nur noch leer. Festgehalten
+    # wird die Antwort beim Umleiten, weil Firefox sie nicht als Ereignis der Seite meldet.
+    for _ in range(100):
+        if delivered:
+            break
+        pc.wait_for_timeout(100)
     _settle(pc)
 
     # Nur die Richtlinie schützt hier: Der ältere Schutz ist wirklich weg.
-    headers = answer.value.headers
-    assert "x-frame-options" not in headers
-    assert "frame-ancestors 'none'" in headers["content-security-policy"]
+    assert len(delivered) == 1, delivered
+    assert "x-frame-options" not in delivered[0]
+    assert "frame-ancestors 'none'" in delivered[0]["content-security-policy"]
 
     frame = pc.frame_locator("iframe")
     expect(frame.get_by_role("button", name="Mit DPV-Konto anmelden")).to_have_count(0)
