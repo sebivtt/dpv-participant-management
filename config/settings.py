@@ -83,6 +83,9 @@ MIDDLEWARE = [
     # Ganz außen, damit auch Fehlerseiten und Antworten der übrigen Bausteine die Bitte an
     # Suchmaschinen tragen (#58).
     "core.testumgebung.NoIndexMiddleware",
+    # Ebenso ganz außen: Die Sicherheitsrichtlinie für Skripte (SECURE_CSP) steht so auf jeder
+    # Antwort, auch auf Fehlerseiten und auf Dateien vom eigenen Server (#278).
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     # Außen, damit sie auch „kein Zugriff“ aus den übrigen Bausteinen sieht (#6).
     "core.errors.ClientErrorLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -197,6 +200,27 @@ KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
 # Keycloak-Testumgebung unter einer anderen Adresse als der Browser. Diese Adresse nutzt nur
 # das Tool selbst für seine Anfragen an Keycloak; der Browser bekommt weiter KEYCLOAK_REALM_URL.
 KEYCLOAK_REALM_URL_INTERN = os.environ.get("KEYCLOAK_REALM_URL_INTERN", "").rstrip("/") or KEYCLOAK_REALM_URL
+
+# Sicherheitsrichtlinie für Skripte (Content-Security-Policy, #278): Hat eine Seite einmal eine
+# Lücke, führt der Browser eingeschmuggelten Code trotzdem nicht aus. Alles kommt nur vom eigenen
+# Server; eingebetteter Code in den Seiten ist verboten (docs/entscheidungen.md, 14.11.2026).
+# Eingebettete Bilder (data:) braucht Bootstrap für seine Symbole. Formulare dürfen außer an den
+# eigenen Server nur an den Realm von Keycloak gehen: Login und Registrierung leiten dorthin
+# weiter, Abmelden schickt das Formular direkt dorthin (#280); Chrome wendet die Regel auch auf
+# die Weiterleitung an. Der Schrägstrich am Ende lässt alle Adressen unterhalb des Realms zu,
+# keine anderen auf demselben Server. Überall gleich streng, ohne Beobachtungsmodus.
+SECURE_CSP = {
+    "default-src": ["'none'"],
+    "script-src": ["'self'"],
+    "style-src": ["'self'"],
+    "font-src": ["'self'"],
+    "img-src": ["'self'", "data:"],
+    "connect-src": ["'self'"],
+    "object-src": ["'none'"],
+    "base-uri": ["'none'"],
+    "frame-ancestors": ["'none'"],
+    "form-action": ["'self'", f"{KEYCLOAK_REALM_URL}/"] if KEYCLOAK_REALM_URL else ["'self'"],
+}
 
 # Schalter für den Link „Noch kein Konto? Registrieren“ (0 = ausgeblendet) und die Adresse,
 # die die Login-Seite stattdessen nennt.
