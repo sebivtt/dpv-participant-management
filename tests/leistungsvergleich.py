@@ -5,11 +5,7 @@ demselben Rechner abwechselnd den Stand vom Ende der vorigen Phase („alt“, d
 und den neuen Stand („neu“), jeden mit `tests/leistungstest.py` und denselben erzeugten Daten. Jeder
 Durchgang schreibt seine Zeiten in eine Datei; dieses Skript fasst sie zusammen und vergleicht.
 
-Grenzen (Text von #145, `docs/entscheidungen.md`, 14.11.2026, #145):
-
-- 2 Sekunden oder mehr auf einer Seite: rot, blockiert immer.
-- Mehr als 25 % langsamer als der alte Stand: Die Phase hält an, bis Sebastian entschieden hat.
-- Darunter steht der Wert nur im Ergebnis. Seiten ohne Wert vom alten Stand prüfen nur gegen die 2 Sekunden.
+Die Grenzen stehen in `docs/entscheidungen.md` (14.11.2026, #145, Nr. 3); hier stehen nur `LIMIT` und `SLOWER`.
 
 Die Ausgabe ist der Abschnitt für `docs/leistungstest.md`. Nur Standardbibliothek, damit das Skript ohne
 Django und ohne Pakete läuft.
@@ -32,7 +28,7 @@ LIMIT = 2.0
 SLOWER = 0.25
 # Am Ende von P2 gibt es noch keine vorige Phase; der erste Lauf legt den Ausgangswert ab.
 FIRST_PHASE = 2
-PHASE = re.compile(r"P([1-9]\d*)")
+PHASE = re.compile(r"P([1-9][0-9]*)")
 
 VERDICTS = {
     "gruen": "im Rahmen",
@@ -92,9 +88,11 @@ def compare(new: dict[str, list[float]], old: dict[str, list[float]] | None) -> 
         time = statistics.median(values)
         previous = statistics.median(old[page]) if old and old.get(page) else None
         change = time / previous - 1 if previous else None
-        if time >= LIMIT:
+        # Geprüft wird mit den Werten, wie sie im Ergebnis stehen (Sekunden auf zwei, Prozent auf eine Stelle),
+        # damit Zahl und Ergebnis nie widersprüchlich wirken (Befund B5 der unabhängigen Prüfung).
+        if round(time, 2) >= LIMIT:
             verdict = "rot"
-        elif change is not None and change > SLOWER:
+        elif change is not None and round(change * 100, 1) > SLOWER * 100:
             verdict = "anhalten"
         else:
             verdict = "gruen"
@@ -103,7 +101,7 @@ def compare(new: dict[str, list[float]], old: dict[str, list[float]] | None) -> 
 
 
 def section(rows: list[dict], *, phase: str, previous: str, commit: str, day: str, unmeasured: list[str],
-            dropped: list[str]) -> str:
+            dropped: list[str], old_failed: bool = False) -> str:
     """Der Abschnitt einer Phase für `docs/leistungstest.md`."""
     if previous:
         intro = (f"Lauf vom {day}, Commit `{commit[:7]}`, verglichen mit `{previous}`: beide Stände abwechselnd "
@@ -118,7 +116,12 @@ def section(rows: list[dict], *, phase: str, previous: str, commit: str, day: st
         if row["change"] is not None:
             change = percent(row["change"])
         else:
-            change = "neue Seite" if previous else "–"
+            if not previous:
+                change = "–"
+            elif old_failed:
+                change = "kein Wert, alter Stand rot"
+            else:
+                change = "neue Seite"
         lines.append(f"| {row['page']} | {seconds(row['time'])} | {before} | {change} | {VERDICTS[row['verdict']]} |")
     lines.append("")
     lines.append("Seiten mit Personen ohne Messung: " + (", ".join(f"`{name}`" for name in unmeasured) or "keine")
@@ -143,6 +146,8 @@ def _arguments(argv: list[str] | None) -> argparse.Namespace:
             action.add_argument("--commit", required=True)
             action.add_argument("--alt", nargs="*", default=[])
             action.add_argument("--neu", nargs="+", required=True)
+            action.add_argument("--alt-rot", action="store_true",
+                                help="Ein Durchgang des alten Stands war rot; Seiten ohne Wert sind dann nicht neu.")
     return parser.parse_args(argv)
 
 
@@ -168,7 +173,11 @@ def main(argv: list[str] | None = None) -> int:
     rows = compare(new, old)
     dropped = sorted(set(old or {}) - set(new))
     _say(section(rows, phase=args.phase, previous=args.vorige, commit=args.commit,
-                 day=date.today().strftime("%d.%m.%Y"), unmeasured=unmeasured, dropped=dropped))
+                 day=date.today().strftime("%d.%m.%Y"), unmeasured=unmeasured, dropped=dropped,
+                 old_failed=args.alt_rot))
+    if args.alt_rot:
+        _say("Der alte Stand war in mindestens einem Durchgang rot; für Seiten ohne Wert gibt es keinen Vergleich.")
+        return 1
     return 0 if all(row["verdict"] == "gruen" for row in rows) else 1
 
 

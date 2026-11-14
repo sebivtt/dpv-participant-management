@@ -91,10 +91,11 @@ jobs:
         run: |
           mkdir -p ergebnis
           fehler=0
+          alt_rot=()
           # Je Stand zwei Durchgänge, abwechselnd; die Zusammenfassung schreibt erst der Vergleich unten.
           for runde in 1 2; do
             if [ -d alt ]; then
-              (cd alt && env -u GITHUB_STEP_SUMMARY LEISTUNGSTEST_ERGEBNIS="$GITHUB_WORKSPACE/ergebnis/alt-$runde.json" uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider) || fehler=1
+              (cd alt && env -u GITHUB_STEP_SUMMARY LEISTUNGSTEST_ERGEBNIS="$GITHUB_WORKSPACE/ergebnis/alt-$runde.json" uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider) || alt_rot=(--alt-rot)
             fi
             (cd neu && env -u GITHUB_STEP_SUMMARY LEISTUNGSTEST_ERGEBNIS="$GITHUB_WORKSPACE/ergebnis/neu-$runde.json" uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider) || fehler=1
           done
@@ -102,10 +103,10 @@ jobs:
           if [ -d alt ]; then alt=(--alt ergebnis/alt-1.json ergebnis/alt-2.json); fi
           auswertung=0
           python3 neu/tests/leistungsvergleich.py auswerten --phase "$PHASE" --vorige "$VORIGE_PHASE" \
-            --commit "$GITHUB_SHA" "${alt[@]}" --neu ergebnis/neu-1.json ergebnis/neu-2.json \
+            --commit "$GITHUB_SHA" "${alt[@]}" "${alt_rot[@]}" --neu ergebnis/neu-1.json ergebnis/neu-2.json \
             > ergebnis/abschnitt.md || auswertung=1
           tee -a "$GITHUB_STEP_SUMMARY" < ergebnis/abschnitt.md
           if [ "$fehler" != 0 ]; then
-            echo "Mindestens ein Durchgang des Leistungstests war rot; Einzelheiten stehen oben im Protokoll dieses Schritts." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Mindestens ein Durchgang des neuen Stands war rot; Einzelheiten stehen oben im Protokoll dieses Schritts." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           [ "$fehler" = 0 ] && [ "$auswertung" = 0 ]

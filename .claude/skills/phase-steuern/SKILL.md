@@ -18,7 +18,7 @@ gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&la
 
 ## 0. Einstieg einer neuen Steuerungssession
 
-**Was die Steuerungssession darf:** lesen, Aufträge verteilen und das Phasen-Issue pflegen, dazu, was ihr dieser Skill beim Start und bei neuen Issues zuweist (Issues mit `issue-anlegen` anlegen, Labels und Abhängigkeiten eintragen). Sie entscheidet nichts Fachliches. <!-- R09 -->
+**Was die Steuerungssession darf:** lesen, Aufträge verteilen und das Phasen-Issue pflegen, dazu, was ihr dieser Skill beim Start, bei neuen Issues und beim Abschluss zuweist (Issues mit `issue-anlegen` anlegen, Labels und Abhängigkeiten eintragen; am Phasenende den Leistungstest starten und die Markierung setzen, Abschnitt 5). Sie entscheidet nichts Fachliches. <!-- R09 -->
 
 Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben. Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2).
 
@@ -87,12 +87,16 @@ Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für di
 
 Abgeschlossen ist eine Phase, wenn alle Häkchen im Phasen-Issue einen Beleg haben, das externe Review nach `docs/review-leitfaden.md` (ab P1) und danach der Rückblick gelaufen sind und die neuen Erfahrungen in `CLAUDE.md`, „Erfahrungen“, stehen. Wer das Review zusammenführt, arbeitet nur lesend, schreibt nur ins Review-Issue und legt Befund-Issues erst nach Sebastians Entscheidung an. Ist das Review-Issue eingeordnet und sind alle blockierenden Befunde behoben, prüft der Rückblick zuerst, welche Regeln sich streichen, zusammenfassen oder durch eine Prüfschranke ersetzen lassen, und wertet die Befunde der unabhängigen Prüfung nach Fehlerarten aus; erst dann kommt Neues dazu, und vor jeder neuen Regel die Frage, ob eine Prüfschranke genügt. <!-- R06 --> Erst dann wechselt der „Stand“ im `README.md`.
 
-1. **Leistungstest** (#145; Handgriffe im `README.md`, „Leistungstest (am Ende einer Phase)“; Ergebnisse in `docs/leistungstest.md`). Die Steuerungssession legt mit `issue-anlegen` das Issue „Leistungstest am Ende von P<n>“ an; es läuft wie jedes andere Issue, und sein Pull Request umfasst die ersten drei Teile:
+1. **Leistungstest** (#145; Handgriffe im `README.md`, „Leistungstest (am Ende einer Phase)“; Ergebnisse in `docs/leistungstest.md`). Die Steuerungssession legt mit `issue-anlegen` das Issue „Leistungstest am Ende von P<n>“ an; es läuft wie jedes andere Issue, und sein Pull Request umfasst Erweitern und Ablegen:
    - **Erweitern:** Generator (`core/management/mass_data.py`) und Messung (`tests/leistungstest.py`) für alle in der Phase neu gebauten Seiten mit Personen oder Anmeldungen und für die Seiten, die der letzte Lauf als „ohne Messung“ meldet; eine Seite, die nicht gemessen wird, steht mit Grund in `NOT_MEASURED`. Nur hier, in keinem anderen Pull Request.
-   - **Messen:** Ablauf „Leistungstest“ auf dem Zweig des Pull Requests, nach der letzten Änderung am Code und auf dem Stand von `main`, gegen die Markierung der vorigen Phase. Am Ende von P2 gibt es keine; der Lauf legt den Ausgangswert ab, und dazu kommt einmal die Messung von Hand in der Testumgebung auf dem Server (L3, L4).
-   - **Ablegen:** den Abschnitt aus der Zusammenfassung des Laufs unverändert in `docs/leistungstest.md`.
+   - **Messen:** Meldet die Umsetzungs-Session, dass das Erweitern fertig ist (letzte Änderung am Code, Zweig auf dem Stand von `main`), startet die Steuerungssession den Ablauf „Leistungstest“ auf diesem Zweig, gegen die Markierung der vorigen Phase (`README.md`, L1):
+     ```bash
+     gh workflow run leistungstest.yml --ref <zweig> -f phase=P<n> -f vorige_phase=phasenende-p<n-1>
+     ```
+     Am Ende von P2 bleibt `vorige_phase` leer; der Lauf legt den Ausgangswert ab, und dazu kommt einmal die Messung von Hand in der Testumgebung auf dem Server (L3 bis L5). Den Abschnitt aus der Zusammenfassung des Laufs gibt sie der Umsetzungs-Session (`SendMessage`).
+   - **Ablegen:** Die Umsetzungs-Session übernimmt ihn unverändert in `docs/leistungstest.md`.
 
-   Braucht eine Seite 2 Sekunden oder mehr, endet die Phase nicht; der Fehler kommt als Issue. Ist eine Seite mehr als 25 % langsamer als am Ende der vorigen Phase, hält die Phase an, bis Sebastian entschieden hat, ob das behoben oder mit Begründung hingenommen wird; seine Entscheidung steht in seinen Worten im Issue und mit Link unter dem Abschnitt in `docs/leistungstest.md`. Nach der Übernahme:
+   Was bei Rot gilt, steht in `docs/entscheidungen.md` (14.11.2026, #145, Nr. 3): Bei „blockiert“ endet die Phase nicht, der Fehler kommt als Issue. Bei „Sebastian entscheidet“ hält die Phase an, bis er entschieden hat; seine Entscheidung steht in seinen Worten im Issue und mit Link unter dem Abschnitt in `docs/leistungstest.md`. Ist der alte Stand rot, klärt die Steuerungssession die Ursache, bevor sie neu misst. Nach der Übernahme:
    - **Markieren:** Die Steuerungssession setzt die Markierung `phasenende-p<n>` auf den Commit in `main`, der den Pull Request übernommen hat, und trägt sie als Beleg ins Phasen-Issue. Eine Markierung wird nie verschoben; ist eine falsch, entscheidet Sebastian.
      ```bash
      git fetch origin main
