@@ -385,6 +385,8 @@ Die Oberfläche soll auch ohne ausschließlich farbliche Hinweise verständlich 
 
 Die Gestaltung soll zur vorgesehenen Architektur mit Django-Templates und einem eigenen kleinen Skript passen. Serverseitig gerenderte Seiten bilden die Grundlage; dynamische Interaktionen werden dort ergänzt, wo sie einen konkreten Bedienungsvorteil bieten.
 
+Seiten und Bausteine bringen keinen eingebetteten Code mit (`docs/entscheidungen.md`, 14.11.2026, #278).
+
 Berechtigungen werden serverseitig geprüft und nicht allein durch das Ausblenden von Navigationselementen oder Aktionen abgesichert.
 
 Die Umsetzung soll möglichst einfach, wartbar und modular bleiben. Neue fachliche Funktionen sollen sich in die bestehende Navigation und das Dashboard integrieren lassen, ohne das gesamte Layout neu gestalten zu müssen.

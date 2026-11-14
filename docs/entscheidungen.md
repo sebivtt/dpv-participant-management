@@ -44,6 +44,20 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-14 · Sicherheitsrichtlinie für Skripte: kein eingebetteter Code in Seiten und Bausteinen (#278)
+
+**Entscheidung** (Sebastian in der Klärung von #278 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/278#issuecomment-6875010175); maßgeblich ist der Text von #278):
+
+1. **Kein eingebetteter Code:** Neue Seiten und Bausteine bringen keinen eingebetteten Code mit, also keine Skripte und Stile in der Seite selbst und keine Klick-Befehle (`onclick` und Ähnliches) oder `style`-Angaben an Elementen. Skripte und Gestaltung kommen als eigene Dateien vom eigenen Server. Eine Ausnahme (etwa für den Editor des Einladungstexts, VER-05, oder für htmx, #30) braucht eine eigene Entscheidung.
+2. **Überall gleich streng:** Die Richtlinie gilt lokal, in den Tests und in der Testumgebung gleich, ohne Beobachtungsmodus. Formulare dürfen nur an den eigenen Server und an den Realm von Keycloak aus der Einstellung `KEYCLOAK_REALM_URL` gehen (Frage 1 des Protokolls).
+3. **Prüfung:** Jeder Rauchtest wird rot, sobald der Browser einen Verstoß meldet, und nennt ihn. Meldungen des Browsers an das Tool im Betrieb kommen später (#323).
+
+**Technische Wahl** (KI): Djangos eigene Einstellung `SECURE_CSP` mit `django.middleware.csp.ContentSecurityPolicyMiddleware`, kein neues Paket; der Inhalt steht in `config/settings.py`. Die Middleware steht gleich nach der Bitte an Suchmaschinen, damit auch Fehlerseiten und Dateien, die WhiteNoise liefert (Testumgebung, Server), die Richtlinie tragen. Die Rauchtests beobachten Verstöße in jedem Browser-Kontext auf zwei Wegen (Ereignis in der Seite, Zeile in der Konsole), nur auf Seiten des Tools (`rauchtests/conftest.py`). Die Prüfung auf Barrierefreiheit (axe) führt der Test selbst aus, statt sie als Skript in die Seite zu setzen.
+
+**Begründung:** Die Seiten waren schon so gebaut; die Richtlinie ist eine zweite Schutzschicht, bevor das Tool offen im Internet erreichbar ist (#59, Befund T-05/11 der Projektprüfung). Hat eine Seite einmal eine Lücke, führt der Browser eingeschmuggelten Code trotzdem nicht aus. Ohne Ausnahmen bleibt die Richtlinie einfach, und jeder neue eingebettete Code fällt im Rauchtest auf.
+
+**Grenzen:** Die Fehleranzeige für Entwickler auf dem eigenen Rechner erscheint ungestaltet; sie betrifft nie Nutzende. Der Testserver auf dem eigenen Rechner und in den Rauchtests liefert Dateien wie `app.js` ohne Richtlinie aus; für den Schutz zählt die Richtlinie der Seite, die sie lädt. Auf dem Server prüft Sebastian Login und Abmelden einmal von Hand im Rahmen von #59. Ob Firefox Verstöße bei abgeschaltetem Skript in die Konsole meldet, ist nicht geprüft (Firefox startet auf dem Mac nicht); mit Skript meldet er sie als Ereignis in der Seite.
+
 ## 2026-11-14 · Leistungstest am Ende jeder Phase: auf GitHub alt gegen neu, Grenzen 2 Sekunden und 25 % (#145, NFA-05)
 
 **Entscheidung** (Sebastian in der Klärung von #104 und #145 am 13.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/145#issuecomment-6862672151), Fragen 4 bis 6; maßgeblich ist der Text von #145):
