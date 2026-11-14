@@ -299,9 +299,11 @@ def test_uebersicht_verweist_nur_auf_vorhandene_eintraege():
 # --- Musterdateien für neue Seiten (#105) -----------------------------------------------------
 #
 # Der Abschnitt in CLAUDE.md nennt die Dateien, nach deren Vorbild neue Seiten entstehen. Nach einer
-# Umbenennung soll er nicht unbemerkt ins Leere zeigen. Strenger als der Test oben: Jede Angabe ist ein
-# voller Pfad ab dem Wurzelordner, den Git verfolgt; ein bloßer Dateiname gilt hier nicht, damit klar
-# ist, welche Datei gemeint ist. Welche Datei als Muster taugt, prüft das Review.
+# Umbenennung soll er nicht unbemerkt ins Leere zeigen. Strenger als der Test
+# test_dateien_und_ordner_in_backticks_gibt_es_im_repo weiter unten: Jede Angabe mit „/“ oder einer
+# Endung aus DATEIENDUNGEN ist ein voller Pfad ab dem Wurzelordner, den Git verfolgt; ein bloßer
+# Dateiname gilt hier nicht, damit klar ist, welche Datei gemeint ist. Welche Datei als Muster taugt,
+# prüft das Review.
 
 MUSTER_ABSCHNITT = "Musterdateien für neue Seiten"
 
@@ -316,7 +318,9 @@ def _fehlende_musterdateien(text, verfolgt):
     punkte = [zeile for zeile in text.splitlines() if zeile.startswith("- ")]
     ohne_datei, fehlt = [], []
     for punkt in punkte:
-        pfade = [angabe for angabe in re.findall(r"`([^`\n]+)`", punkt) if Path(angabe).suffix in DATEIENDUNGEN]
+        # Mit „/“ zählt jede Angabe als Pfad, damit auch eine verstümmelte Endung („config/urls.p“) auffällt.
+        pfade = [angabe for angabe in re.findall(r"`([^`\n]+)`", punkt)
+                 if "/" in angabe or Path(angabe).suffix in DATEIENDUNGEN]
         if not pfade:
             ohne_datei.append(punkt[:60])
         fehlt += [pfad for pfad in pfade if pfad not in verfolgt]
@@ -338,15 +342,16 @@ def test_jede_musterdatei_fuer_neue_seiten_gibt_es():
     assert not fehlt, f"Diese Musterdateien gibt es nicht (umbenannt oder gelöscht?): {fehlt}"
 
 
-def test_gegenprobe_ein_falscher_pfad_bei_den_musterdateien_wird_gemeldet():
+@pytest.mark.parametrize("anders", ["_gibt_es_nicht.py", ".p"], ids=["anderer_name", "verstuemmelte_endung"])
+def test_gegenprobe_ein_falscher_pfad_bei_den_musterdateien_wird_gemeldet(anders):
     text = _muster_text()
     # Ein Pfad aus der Liste, nicht aus der Einleitung davor.
     pfad = re.search(r"^- .*?`([^`\n]+\.py)`", text, flags=re.M).group(1)
-    falsch = text.replace(f"`{pfad}`", f"`{pfad[:-3]}_gibt_es_nicht.py`", 1)
+    falsch = text.replace(f"`{pfad}`", f"`{pfad[:-3]}{anders}`", 1)
 
     _punkte, _ohne_datei, fehlt = _fehlende_musterdateien(falsch, _verfolgte_dateien())
 
-    assert fehlt == [f"{pfad[:-3]}_gibt_es_nicht.py"]
+    assert fehlt == [f"{pfad[:-3]}{anders}"]
 
 
 # --- Verweise und Kennungen statt fester Sätze (#262) -----------------------------------------
