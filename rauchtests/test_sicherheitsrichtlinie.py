@@ -145,13 +145,18 @@ def test_eingeschmuggeltes_formular_an_fremde_seite_geht_nicht_ab(pc, verstoesse
 # V4: Eine fremde Seite kann das Tool nicht in einem Rahmen zeigen. Der Test entfernt den älteren Schutz
 # gegen Einbetten (X-Frame-Options), damit nur die Richtlinie wirkt; der bleibt im Tool unverändert.
 def test_fremde_seite_kann_das_tool_nicht_einbetten(pc):
-    delivered: list[dict[str, str]] = []
+    # Die echte Antwort des Tools vorher holen, nicht erst beim Umleiten: Firefox blieb dabei hängen.
+    real = pc.request.get(f"{BASE}/anmelden/")
+    assert "x-frame-options" in real.headers
+    headers = {k: v for k, v in real.headers.items() if k != "x-frame-options"}
+    # Nur die Richtlinie schützt hier: Der ältere Schutz ist weg, die Richtlinie da.
+    assert "frame-ancestors 'none'" in headers["content-security-policy"]
+    body = real.body()
+    served: list[str] = []
 
     def without_old_protection(route: Route) -> None:
-        response = route.fetch()
-        headers = {k: v for k, v in response.headers.items() if k.lower() != "x-frame-options"}
-        delivered.append({k.lower(): v for k, v in headers.items()})
-        route.fulfill(response=response, headers=headers)
+        served.append(route.request.url)
+        route.fulfill(status=real.status, headers=headers, body=body)
 
     # Am ganzen Kontext, nicht nur an der Seite: Firefox lädt den fremden Rahmen getrennt.
     pc.context.route(f"{BASE}/anmelden/", without_old_protection)
@@ -160,22 +165,17 @@ def test_fremde_seite_kann_das_tool_nicht_einbetten(pc):
         lambda route: route.fulfill(content_type="text/html", body=f'<iframe src="{BASE}/anmelden/"></iframe>'),
     )
 
-    pc.goto(f"{FOREIGN}/rahmen")
-    # Erst weiter, wenn das Tool dem Rahmen geantwortet hat; sonst wäre er nur noch leer. Festgehalten
-    # wird die Antwort beim Umleiten, weil Firefox sie nicht als Ereignis der Seite meldet.
+    pc.goto(f"{FOREIGN}/rahmen", wait_until="commit", timeout=15000)
+    # Erst weiter, wenn das Tool dem Rahmen geantwortet hat; sonst wäre er nur noch leer.
     for _ in range(100):
-        if delivered:
+        if served:
             break
         pc.wait_for_timeout(100)
-    _settle(pc)
-
-    # Nur die Richtlinie schützt hier: Der ältere Schutz ist wirklich weg.
-    assert len(delivered) == 1, delivered
-    assert "x-frame-options" not in delivered[0]
-    assert "frame-ancestors 'none'" in delivered[0]["content-security-policy"]
+    assert served == [f"{BASE}/anmelden/"]
+    pc.wait_for_timeout(500)
 
     frame = pc.frame_locator("iframe")
-    expect(frame.get_by_role("button", name="Mit DPV-Konto anmelden")).to_have_count(0)
+    expect(frame.get_by_role("button", name="Mit DPV-Konto anmelden")).to_have_count(0, timeout=5000)
 
 
 # G1: Der Wächter selbst ist bei jedem Rauchtest dabei und wird rot, wenn ein Verstoß gemeldet ist.
