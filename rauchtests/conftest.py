@@ -25,6 +25,7 @@ Ohne RAUCHTEST_BROWSER laufen wie bisher alle drei.
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -113,6 +114,76 @@ def _playwright():
         yield playwright
 
 
+# Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278) meldet der Browser auf zwei Wegen: als
+# Ereignis in der Seite (geht nur mit Skript) und als Zeile in der Konsole (auch ohne Skript; Firefox
+# meldet sie vielleicht nicht dorthin). Beide zählen, aber nur auf Seiten des Tools selbst, nicht
+# bei Keycloak oder auf einer fremden Seite im Test.
+_CSP_EVENT = """document.addEventListener('securitypolicyviolation', (event) =>
+    window.__cspVerstoss(`${event.effectiveDirective} blockiert ${event.blockedURI || '?'} auf ${event.documentURI}`));"""
+_CSP_CONSOLE = re.compile(r"Content.Security.Policy", re.IGNORECASE)
+_csp_violations: dict[BrowserContext, list[str]] = {}
+
+
+def _on_tool_page(page: Page | None) -> bool:
+    return page is None or page.url.startswith(BASE)
+
+
+def _watch_csp(context: BrowserContext) -> None:
+    """Sammelt jeden Verstoß gegen die Sicherheitsrichtlinie, den der Browser in diesem Kontext meldet."""
+    seen = _csp_violations.setdefault(context, [])
+
+    def from_page(source, text: str) -> None:
+        if text.split(" auf ", 1)[-1].startswith(BASE):
+            seen.append(text)
+
+    context.expose_binding("__cspVerstoss", from_page)
+    context.add_init_script(_CSP_EVENT)
+    context.on(
+        "console",
+        lambda message: seen.append(f"Konsole: {message.text}")
+        if _CSP_CONSOLE.search(message.text) and _on_tool_page(message.page)
+        else None,
+    )
+
+
+def csp_violations(context: BrowserContext) -> list[str]:
+    """Die Verstöße, die der Browser in diesem Kontext bisher gemeldet hat (#278).
+
+    Ein Test, der absichtlich einen Verstoß auslöst, prüft ihn hier und nutzt `verstoesse_erwartet`;
+    sonst wird er am Ende rot.
+    """
+    return _csp_violations.setdefault(context, [])
+
+
+def assert_no_csp_violations(found: list[str]) -> None:
+    """Rot mit Nennung jedes Verstoßes, sobald der Browser einen gemeldet hat (#278, G1)."""
+    assert not found, "Der Browser meldet Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278):\n" + "\n".join(
+        f"  - {text}" for text in found
+    )
+
+
+@pytest.fixture
+def verstoesse_erwartet():
+    """Für einen Test, der absichtlich Verstöße auslöst und sie selbst mit csp_violations prüft (#278).
+
+    Der Wächter unten schweigt dann; der Browser meldet manche Verstöße mehrfach und verspätet.
+    """
+
+
+@pytest.fixture(autouse=True)
+def _keine_verstoesse_gegen_die_sicherheitsrichtlinie(request):
+    """Jeder Rauchtest wird rot, wenn der Browser einen Verstoß gegen die Richtlinie meldet (#278).
+
+    Geprüft wird nach dem Test, wenn alle Seiten geschlossen sind; der Bericht nennt jeden Verstoß.
+    """
+    _csp_violations.clear()
+    yield
+    found = [text for seen in _csp_violations.values() for text in seen]
+    _csp_violations.clear()
+    if "verstoesse_erwartet" not in request.fixturenames:
+        assert_no_csp_violations(found)
+
+
 @pytest.fixture(scope="session")
 def browser(_playwright, browser_name) -> Browser:
     """Startet den Browser einmal je Lauf.
@@ -134,6 +205,16 @@ def browser(_playwright, browser_name) -> Browser:
         if known_mac_problem:
             pytest.skip("Firefox startet unter macOS 27 nicht (bekanntes Problem); läuft auf GitHub mit.")
         raise
+    # Jeder Kontext beobachtet die Sicherheitsrichtlinie (#278), auch einer, den ein Test selbst
+    # mit browser.new_context anlegt. browser.new_page nutzt kein Test; es bliebe unbeobachtet.
+    new_context = browser.new_context
+
+    def watched_context(**options) -> BrowserContext:
+        context = new_context(**options)
+        _watch_csp(context)
+        return context
+
+    browser.new_context = watched_context
     yield browser
     browser.close()
 
@@ -231,7 +312,9 @@ def run_axe(page: Page) -> list[str]:
     sie halb durchsichtig und fällt beim Kontrast durch. Deshalb steht sie während der Prüfung still
     und ganz sichtbar (siehe oben). Ein echter Kontrastfehler der Meldung fällt weiter auf.
     """
-    page.add_script_tag(path=str(AXE))
+    # Nicht als Skript in die Seite: Das wäre eingebetteter Code, den die Sicherheitsrichtlinie
+    # blockiert (#278). Was der Test selbst ausführt, blockiert sie nicht.
+    page.evaluate(AXE.read_text())
     result = page.evaluate(_AXE_RUN, SHORT_DELAY_MS)
     return [
         f"{v['id']} ({v['impact']}): {v['help']} – {[n['target'] for n in v['nodes']][:3]}" for v in result["violations"]

@@ -14,7 +14,7 @@ import socket
 import pytest
 import requests
 
-from containertests.conftest import TOOL, compose, wait_for
+from containertests.conftest import KEYCLOAK, TOOL, compose, wait_for
 from tests.check_ports import CONTAINER_KEYCLOAK_PORT, CONTAINER_LOCK_PORT, CONTAINER_TOOL_PORT
 from tests.localhost_browser import BrowserOnLocalhost
 
@@ -98,6 +98,17 @@ def test_erika_meldet_sich_in_der_testumgebung_an(testumgebung):
     assert "Hallo Erika!" in page
     assert BAND in page
 
+
+# #278, Szenario E5: Die Richtlinie kommt mit, und Formulare dürfen an die Keycloak-Adresse der
+# Testumgebung, nicht an die vom eigenen Rechner. Login und Abmelden im Browser prüfen die Rauchtests.
+def test_testumgebung_schickt_die_richtlinie_mit_ihrer_keycloak_adresse(testumgebung):
+    response = requests.get(f"{TOOL}/anmelden/", timeout=30)
+
+    policy = response.headers["Content-Security-Policy"]
+    form_action = next(part.split()[1:] for part in policy.split(";") if part.split()[0] == "form-action")
+    assert form_action == ["'self'", f"{KEYCLOAK}/realms/dpv/"]
+    assert "script-src 'self'" in policy
+    assert "Content-Security-Policy-Report-Only" not in response.headers
 
 # Szenario 4
 def test_fehleranzeige_bleibt_aus_obwohl_die_umgebungsdatei_sie_einschaltet(testumgebung):
