@@ -335,6 +335,59 @@ def test_dateien_und_ordner_in_backticks_gibt_es_im_repo():
     assert not fehlt, f"Diese Dateien oder Ordner gibt es nicht ({uebersprungen} Angaben übersprungen): {fehlt}"
 
 
+# --- Musterdateien für neue Seiten (#105) -----------------------------------------------------
+#
+# Der Abschnitt in CLAUDE.md nennt die Dateien, nach deren Vorbild neue Seiten entstehen. Nach einer
+# Umbenennung soll er nicht unbemerkt ins Leere zeigen. Strenger als der Test oben: Jede Angabe ist ein
+# voller Pfad ab dem Wurzelordner, den Git verfolgt; ein bloßer Dateiname gilt hier nicht, damit klar
+# ist, welche Datei gemeint ist. Welche Datei als Muster taugt, prüft das Review.
+
+MUSTER_ABSCHNITT = "Musterdateien für neue Seiten"
+
+
+def _verfolgte_dateien():
+    befehl = ["git", "ls-files"]
+    return set(subprocess.run(befehl, cwd=BASE_DIR, capture_output=True, text=True, check=True).stdout.splitlines())  # noqa: S603 -- fester Befehl
+
+
+def _fehlende_musterdateien(text, verfolgt):
+    """Die Punkte des Abschnitts ohne Datei und die genannten Pfade, die Git nicht verfolgt."""
+    punkte = [zeile for zeile in text.splitlines() if zeile.startswith("- ")]
+    ohne_datei, fehlt = [], []
+    for punkt in punkte:
+        pfade = [angabe for angabe in re.findall(r"`([^`\n]+)`", punkt) if Path(angabe).suffix in DATEIENDUNGEN]
+        if not pfade:
+            ohne_datei.append(punkt[:60])
+        fehlt += [pfad for pfad in pfade if pfad not in verfolgt]
+    return punkte, ohne_datei, fehlt
+
+
+def _muster_text():
+    text = CLAUDE_MD.read_text(encoding="utf-8")
+    match = re.search(rf"^## {re.escape(MUSTER_ABSCHNITT)}\n(.*?)(?=^## )", text, flags=re.M | re.S)
+    assert match, f"Abschnitt „{MUSTER_ABSCHNITT}“ fehlt in CLAUDE.md"
+    return match.group(1)
+
+
+def test_jede_musterdatei_fuer_neue_seiten_gibt_es():
+    punkte, ohne_datei, fehlt = _fehlende_musterdateien(_muster_text(), _verfolgte_dateien())
+
+    assert punkte, "Der Abschnitt nennt keine Musterdateien"
+    assert not ohne_datei, f"Diese Punkte nennen keine Datei: {ohne_datei}"
+    assert not fehlt, f"Diese Musterdateien gibt es nicht (umbenannt oder gelöscht?): {fehlt}"
+
+
+def test_gegenprobe_ein_falscher_pfad_bei_den_musterdateien_wird_gemeldet():
+    text = _muster_text()
+    # Ein Pfad aus der Liste, nicht aus der Einleitung davor.
+    pfad = re.search(r"^- .*?`([^`\n]+\.py)`", text, flags=re.M).group(1)
+    falsch = text.replace(f"`{pfad}`", f"`{pfad[:-3]}_gibt_es_nicht.py`", 1)
+
+    _punkte, _ohne_datei, fehlt = _fehlende_musterdateien(falsch, _verfolgte_dateien())
+
+    assert fehlt == [f"{pfad[:-3]}_gibt_es_nicht.py"]
+
+
 def _gliederung(path):
     """Überschriften (mit ihrer Nummer) und fette Punkte eines Dokuments, ohne Codeblöcke."""
     text = _ohne_codebloecke(path)
