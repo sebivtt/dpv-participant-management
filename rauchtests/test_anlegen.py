@@ -265,6 +265,7 @@ def test_ohne_skript_legt_der_knopf_die_gruppe_an(pc_ohne_skript):
     page.get_by_label("Name (Pflicht)").fill("Meute Wölfe")
     page.locator("dialog .btn-primary").click()
 
-    page.wait_for_url(_page_of(units["walhall"]))
+    # Ohne Skript springt die Seite zum Abschnitt mit dem Knopf (#220).
+    page.wait_for_url(f"{_page_of(units['walhall'])}#abschnitt-darunter")
     expect(page.locator("[data-kurz]")).to_contain_text("Meute Wölfe ist angelegt.")
     assert "Meute Wölfe" in _children(units["walhall"])

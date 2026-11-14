@@ -24,6 +24,7 @@ from django.db.models import ProtectedError
 from django.utils import timezone
 
 from access.rights import Rights
+from core.sections import to_section
 from persons.models import ManagedPerson
 from roles.models import Role
 from tests import test_personen
@@ -182,7 +183,7 @@ def lena_now() -> ManagedPerson:
 def test_m1_fiete_legt_lena_in_den_falken_an(org):
     client = client_for(org.falken_leitung)
     root = page_tree(org.falken_leitung, unit_address(org.falken))
-    assert head_buttons(root)["Verwaltete Person anlegen"] == add_address(org.falken)
+    assert head_buttons(root)["Verwaltete Person anlegen"] == to_section(add_address(org.falken), "personen")
 
     found, _creation_key = open_add(org.falken_leitung, org.falken, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Verwaltete Person anlegen"
@@ -241,9 +242,9 @@ def test_m4_wanda_willi_und_bruno_sehen_lena_und_koennen_sie_bearbeiten(org, len
     for user in (org.walhall_leitung, org.willi, org.bundesleitung, org.falken_leitung):
         shown = entries(page_tree(user, unit_address(org.falken)))
         # Seit #118 trägt Fiete als Gruppenleitung der Falken Lena auch aus (VP-18); die anderen nicht.
-        expected = {"Bearbeiten": edit_address(org.falken, lena)}
+        expected = {"Bearbeiten": to_section(edit_address(org.falken, lena), "personen")}
         if user == org.falken_leitung:
-            expected["Austragen"] = f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"
+            expected["Austragen"] = to_section(f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/", "personen")
         assert shown["Kiwi"]["buttons"] == expected, user.username
         found, version = open_edit(user, org.falken, lena)
         assert _text(_one(_by_tag(found, "h2"))) == "Kiwi (Lena Probe) bearbeiten"
@@ -260,7 +261,7 @@ def test_m4_wanda_willi_und_bruno_sehen_lena_und_koennen_sie_bearbeiten(org, len
 def test_m4_in_mosaik_sehen_mona_und_kai_lotta_in_der_meute_moewen(org):
     for user in (org.mosaik_leitung, org.kueste_leitung):
         shown = entries(page_tree(user, unit_address(org.moewen)))
-        assert shown["Lotta Probe"]["buttons"] == {"Bearbeiten": edit_address(org.moewen, org.lotta)}, user.username
+        assert shown["Lotta Probe"]["buttons"] == {"Bearbeiten": to_section(edit_address(org.moewen, org.lotta), "personen")}, user.username
         _found, version = open_edit(user, org.moewen, org.lotta)
         assert save(user, org.moewen, org.lotta, version, birth_date=f"2017-07-0{version}").status_code == 302
         org.lotta.refresh_from_db()
@@ -291,7 +292,7 @@ def test_m6_mitglieder_und_lena_stehen_gemischt_nach_nachname(org, lena):
     assert list(entries(root)) == ["Emil Eber", "Funke", "Flink", "Kiwi"]
     assert persons_head(root) == "4 Personen"
     assert list(head_buttons(root)) == ["Verwaltete Person anlegen", "Person mit Konto aufnehmen"]
-    assert head_buttons(root)["Person mit Konto aufnehmen"] == admit_address(org.falken)
+    assert head_buttons(root)["Person mit Konto aufnehmen"] == to_section(admit_address(org.falken), "personen")
     shown = entries(root)
     # Personen mit Konto bleiben, wie sie sind: mit Mail, ohne Marke „verwaltet“.
     assert shown["Flink"]["mail"] == "finn.falke@example.org"
@@ -328,8 +329,8 @@ def test_nach_dem_dialog_kehrt_der_fokus_zum_knopf_zurueck(org, lena):
     """
     root = page_tree(org.falken_leitung, unit_address(org.falken))
     add_button = _one([link for link in _all(persons_section(root), lambda e: "a-flaeche-aktion" in _classes(e))
-                       if _attr(link, "href") == add_address(org.falken)])
-    edit_button = _one(_by_tag(persons_section(root), "a", href=edit_address(org.falken, lena)))
+                       if _attr(link, "href") == to_section(add_address(org.falken), "personen")])
+    edit_button = _one(_by_tag(persons_section(root), "a", href=to_section(edit_address(org.falken, lena), "personen")))
     assert _attr(add_button, "id") == "verwaltete-person-anlegen"
     assert _attr(edit_button, "id") == f"bearbeiten-{lena.key}"
 
@@ -390,8 +391,9 @@ def test_mw2_frida_sieht_lena_nach_dem_benennen_und_kann_sie_bearbeiten(org, len
 
     shown = entries(page_tree(frida, unit_address(org.falken)))
     # Seit #118 trägt die Gruppenleitung verwaltete Personen auch aus (VP-18).
-    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": edit_address(org.falken, lena),
-                                        "Austragen": f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/"}
+    assert shown["Kiwi"]["buttons"] == {"Bearbeiten": to_section(edit_address(org.falken, lena), "personen"),
+                                        "Austragen": to_section(f"{unit_address(org.falken)}verwaltete-person/{lena.key}/austragen/",
+                                                                "personen")}
     _found, version = open_edit(frida, org.falken, lena)
     assert save(frida, org.falken, lena, version, scout_name="Kiwi Frida").status_code == 302
 

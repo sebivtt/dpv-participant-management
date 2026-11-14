@@ -25,6 +25,8 @@ from access.rights import (
     unit_label,
 )
 from accounts.models import display_name
+from core import sections
+from core.sections import to_section
 from persons import texts as person_texts
 from roles import texts as role_texts
 from roles.models import LEAD_ROLE, LEADS_IN_UNITS, AdminAccess, RoleKind
@@ -408,7 +410,8 @@ class Organisation:
             notice=self._notice(unit),
             tiles=tiles,
             empty=self._empty(unit) if tiles == [] else "",
-            appoint_href=reverse("organisation_appoint", args=[unit.key]) if self.rights.may_appoint(unit) else None,
+            appoint_href=to_section(reverse("organisation_appoint", args=[unit.key]), sections.LEADS)
+            if self.rights.may_appoint(unit) else None,
             appoint_label=texts.APPOINT_TITLE % {"role": LEAD_ROLE[unit.kind].label},
             back_label=back_label,
             support_href=support_href,
@@ -430,7 +433,8 @@ class Organisation:
         rights = self.rights
         kind = child_kind(unit)
         return {
-            "create_href": reverse("organisation_create", args=[unit.key]) if rights.may_create(unit) else None,
+            "create_href": to_section(reverse("organisation_create", args=[unit.key]), sections.BELOW)
+            if rights.may_create(unit) else None,
             "create_label": texts.CREATE_TITLE[kind] if kind else "",
             "edit_href": reverse("organisation_edit", args=[unit.key]) if rights.may_rename(unit) else None,
             "edit_label": texts.EDIT_TITLE % {"unit": unit_label(unit)},
@@ -459,8 +463,10 @@ class Organisation:
             "persons": persons,
             "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
             "persons_empty": empty,
-            "admit_href": reverse("organisation_admit", args=[unit.key]) if self.rights.may_admit(unit) else None,
-            "add_managed_href": reverse("organisation_add_managed", args=[unit.key]) if may_add else None,
+            "admit_href": to_section(reverse("organisation_admit", args=[unit.key]), sections.PERSONS)
+            if self.rights.may_admit(unit) else None,
+            "add_managed_href": to_section(reverse("organisation_add_managed", args=[unit.key]), sections.PERSONS)
+            if may_add else None,
         }
 
     @staticmethod
@@ -484,10 +490,12 @@ class Organisation:
             locked=False,
             is_self=False,
             managed=True,
-            edit_href=reverse("organisation_edit_managed", args=[unit.key, entry.key]),
+            edit_href=to_section(reverse("organisation_edit_managed", args=[unit.key, entry.key]), sections.PERSONS),
             edit_id=edit_anchor(entry),
-            expel_href=reverse("organisation_expel_managed", args=[unit.key, entry.key]) if expel else None,
-            move_href=reverse("organisation_move_managed", args=[unit.key, entry.key]) if move else None,
+            expel_href=to_section(reverse("organisation_expel_managed", args=[unit.key, entry.key]), sections.PERSONS)
+            if expel else None,
+            move_href=to_section(reverse("organisation_move_managed", args=[unit.key, entry.key]), sections.PERSONS)
+            if move else None,
         )
 
     def _person(self, user, unit: Unit, expel: bool, move: bool) -> Lead:
@@ -506,8 +514,10 @@ class Organisation:
             mail=user.email,
             locked=not user.is_active,
             is_self=user.pk == self.user.pk,
-            expel_href=reverse("organisation_expel", args=[unit.key, user.key]) if expel else None,
-            move_href=reverse("organisation_move", args=[unit.key, user.key]) if move else None,
+            expel_href=to_section(reverse("organisation_expel", args=[unit.key, user.key]), sections.PERSONS)
+            if expel else None,
+            move_href=to_section(reverse("organisation_move", args=[unit.key, user.key]), sections.PERSONS)
+            if move else None,
         )
 
     def _leads_of(self, unit: Unit, access: str) -> list[Lead]:
@@ -530,13 +540,15 @@ class Organisation:
                 mail=mails.get(entry["user_key"], ""),
                 locked=entry["locked"],
                 is_self=is_self,
-                remove_href=reverse("organisation_remove", args=[unit.key, entry["role_key"]]) if may_remove else None,
+                remove_href=to_section(reverse("organisation_remove", args=[unit.key, entry["role_key"]]), sections.LEADS)
+                if may_remove else None,
                 remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
             )))
         if access in (MANAGE, READ):
             # Angezeigte Leitungsrollen (#99): gemischt nach Namen; „Entfernen“ wie bei Leitungen mit Konto (VP-14).
             for entry in self.displayed.get(unit.key, []):
-                remove_href = reverse("organisation_remove_displayed", args=[unit.key, entry["role_key"]])
+                remove_href = to_section(reverse("organisation_remove_displayed", args=[unit.key, entry["role_key"]]),
+                                         sections.LEADS)
                 found.append((_by_name({**entry, "username": ""}),
                               _displayed_lead(entry, remove_href if may_remove else None)))
         return [lead for _order, lead in sorted(found, key=lambda pair: pair[0])]
@@ -567,8 +579,8 @@ class Organisation:
         return {
             "title": title,
             "lines": lines,
-            "close_href": reverse("organisation_unit", args=[unit.key]),
-            "confirm_action": action,
+            "close_href": to_section(reverse("organisation_unit", args=[unit.key]), sections.LEADS),
+            "confirm_action": to_section(action, sections.LEADS),
             "confirm_label": texts.GIVE_UP_BUTTON if shown["is_self"] else texts.REMOVE_BUTTON,
         }
 
@@ -652,8 +664,8 @@ def expulsion_dialog(unit: Unit, shown: dict, action: str) -> dict:
         options.append((option["value"], str(label), lines))
     return {
         "title": texts.EXPEL_QUESTION % {"person": person, "unit": place},
-        "close_href": reverse("organisation_unit", args=[unit.key]),
-        "confirm_action": action,
+        "close_href": to_section(reverse("organisation_unit", args=[unit.key]), sections.PERSONS),
+        "confirm_action": to_section(action, sections.PERSONS),
         "confirm_label": texts.EXPEL_BUTTON,
         "form_id": "f-dialog",
         "choice": _choice("wahl", str(texts.EXPEL_LEGEND % {"person": person}), options),
@@ -674,8 +686,8 @@ def move_dialog(unit: Unit, shown: dict, action: str, notice: str = "", chosen: 
         "title": texts.MOVE_TITLE,
         "subtitle": texts.MOVE_FROM % {"person": shown["person"], "unit": unit_label(unit)},
         "lines": [texts.MOVE_QUESTION],
-        "close_href": reverse("organisation_unit", args=[unit.key]),
-        "confirm_action": action,
+        "close_href": to_section(reverse("organisation_unit", args=[unit.key]), sections.PERSONS),
+        "confirm_action": to_section(action, sections.PERSONS),
         "confirm_label": texts.MOVE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
@@ -728,7 +740,7 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
         "title": person_texts.EDIT_TITLE % {"person": entry.display_name} if entry else person_texts.ADD_TITLE,
         "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
         "close_href": back,
-        "confirm_action": action,
+        "confirm_action": to_section(action, sections.PERSONS),
         "confirm_label": person_texts.SAVE_BUTTON if entry else person_texts.ADD_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
@@ -737,7 +749,7 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
         "person_form": form,
         "hidden": list(hidden),
         "conflict": conflict,
-        "side_href": delete_href,
+        "side_href": to_section(delete_href, sections.PERSONS) if delete_href else None,
         "side_label": person_texts.DELETE_BUTTON,
     }
 
@@ -754,9 +766,9 @@ def delete_dialog(unit: Unit, entry, action: str) -> dict:
         "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
         "lines": [person_texts.DELETE_CANNOT_UNDO],
         "close_href": f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry)}",
-        "cancel_href": reverse("organisation_edit_managed", args=[unit.key, entry.key]),
+        "cancel_href": to_section(reverse("organisation_edit_managed", args=[unit.key, entry.key]), sections.PERSONS),
         "cancel_label": person_texts.DELETE_KEEP,
-        "confirm_action": action,
+        "confirm_action": to_section(action, sections.PERSONS),
         "confirm_label": person_texts.DELETE_CONFIRM,
     }
 
@@ -769,8 +781,8 @@ def create_dialog(parent: Unit, form, action: str) -> dict:
     return {
         "title": texts.CREATE_TITLE[child_kind(parent)],
         "subtitle": texts.CREATE_IN % {"unit": unit_label(parent)},
-        "close_href": reverse("organisation_unit", args=[parent.key]),
-        "confirm_action": action,
+        "close_href": to_section(reverse("organisation_unit", args=[parent.key]), sections.BELOW),
+        "confirm_action": to_section(action, sections.BELOW),
         "confirm_label": texts.CREATE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
@@ -855,8 +867,8 @@ def exit_dialog(membership, options: list[dict], action: str) -> dict:
         found.append((option["level"].key, str(label), lines))
     return {
         "title": texts.EXIT_TITLE,
-        "close_href": reverse("profile"),
-        "confirm_action": action,
+        "close_href": to_section(reverse("profile"), sections.ROLES),
+        "confirm_action": to_section(action, sections.ROLES),
         "confirm_label": texts.EXIT_BUTTON,
         "form_id": "f-dialog",
         "hidden": [("von", membership.unit.key)],
@@ -989,7 +1001,8 @@ class Federation:
                 mail="",
                 locked=entry["locked"],
                 is_self=is_self,
-                remove_href=reverse("federation_remove", args=[entry["role_key"]]),
+                remove_href=to_section(reverse("federation_remove", args=[entry["role_key"]]),
+                                       federation_section(kind, unit)),
                 remove_label=texts.GIVE_UP_BUTTON if is_self else texts.REMOVE_BUTTON,
             )))
         if kind == RoleKind.ASSOCIATION_LEAD:
@@ -1012,12 +1025,14 @@ class Federation:
             href=reverse("organisation_unit", args=[bund.key]) if self.rights.opens_unit(bund) else None,
             leads=self._people(RoleKind.ASSOCIATION_LEAD, bund),
             notice="" if self.rights.has_lead(bund) else str(texts.NO_LEAD % {"unit": bund.name, "role": role}),
-            appoint_href=reverse("federation_appoint_lead", args=[bund.key]),
+            appoint_href=to_section(reverse("federation_appoint_lead", args=[bund.key]), sections.association(bund)),
         ) for bund in bunds]
 
     def removal(self, role, shown: dict, action: str) -> dict:
         """Der Dialog zum Entfernen oder Abgeben auf der Seite „Verband“, mit den Wortlauten aus #191 (V7, V9)."""
-        close = reverse("organisation")
+        section = federation_section(role.kind, role.unit)
+        close = to_section(reverse("organisation"), section)
+        action = to_section(action, section)
         anyway = texts.ANYWAY_GIVE_UP if shown["is_self"] else texts.ANYWAY_REMOVE
         label = texts.GIVE_UP_BUTTON if shown["is_self"] else texts.REMOVE_BUTTON
         lines = []
@@ -1034,6 +1049,15 @@ class Federation:
             if shown["last"] and role.kind == RoleKind.FEDERATION_LEAD:
                 lines.append(f"{texts.LAST_FEDERATION_LEAD} {anyway}")
         return {"title": title, "lines": lines, "close_href": close, "confirm_action": action, "confirm_label": label}
+
+
+def federation_section(kind: str, unit: Unit) -> str:
+    """Der Abschnitt der Seite „Verband“, in dem eine Rolle dieser Art steht; dorthin springt ihr Dialog ohne Skript (#220)."""
+    if kind == RoleKind.FEDERATION_LEAD:
+        return sections.FEDERATION_LEADS
+    if kind == RoleKind.EVENT_TEAM:
+        return sections.TEAM
+    return sections.association(unit)
 
 
 def federation_done(role, shown: dict) -> str:

@@ -44,6 +44,28 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-14 · Dialoge: Seite bleibt an ihrer Stelle, ohne Skript Sprung zum Abschnitt (#220)
+
+**Entscheidung** (Sebastian; Klärung von #220 am 14.11.2026; maßgeblich sind Text und Szenarien des Issues):
+
+1. **Stelle merken** (Frage 2, „A“): Jeder Dialog behält seine eigene Adresse (28.10.2026, #190). Mit Skript merkt sich die Seite bei jedem Link und Formular, wie weit sie gerollt war; die nächste Seite steht wieder dort, wenn es um einen Dialog geht: Öffnen, „Suchen“ und Ablehnungen im Dialog, Schließen auf jedem Weg und Speichern, wenn es zur Seite unter dem Dialog zurückgeht. Ist die Seite kürzer geworden, steht sie so nah wie möglich daran. Eine andere Seite und jede später neu geöffnete Seite beginnen oben. Das gilt für alle Dialoge mit eigener Adresse, auch künftige.
+2. **Ohne Skript** (Frage 3): Öffnen, Schließen und Speichern springen zum Abschnitt der Seite, in dem der Knopf steht, der den Dialog geöffnet hat; die Sprungmarke steht in der Adresse. Steht der Knopf ganz oben, ist keine nötig. Bei verwalteten Personen führt der Dialog wie bisher zum Knopf selbst (11.11.2026, #117).
+3. **Fokus** (S11): Wo der Knopf nach dem Dialog den Fokus wieder bekommt (#117), bleibt das; mit Skript springt die Seite dabei nicht zum Knopf, sondern steht an der gemerkten Stelle.
+4. **Wortlaut** (Frage 5): Im Dialog „Verbandsleitung benennen“ heißt die Zeile unter dem Titel „für den DPV“ statt „für den Verband“.
+
+**Technische Wahl** (KI):
+
+1. Die Stelle steht im Speicher des Browsers je Tab (`sessionStorage`) und gilt nur für den nächsten Seitenwechsel. Wiederhergestellt wird nur, wenn die neue Seite von genau der Seite kommt, die sich die Stelle gemerkt hat (`document.referrer`), und beim Zurückkehren unter dem Dialog dieselbe Seite ist, also gleicher Pfad und gleicher Titel; so wirkt sie nicht bei einem Lesezeichen und nicht auf einer anderen Seite unter derselben Adresse. Klicks mit Strg, Cmd oder Umschalt (neuer Tab) merken nichts. Ist der Speicher im Browser gesperrt, beginnt die Seite oben wie bisher.
+2. Die Sprungmarken heißen „#abschnitt-…“ und stehen an den Abschnitten selbst (`core/sections.py`). Nach dem Speichern leitet der Server ohne Sprungmarke weiter; der Browser übernimmt die des Formulars. Mit Skript fallen die Sprungmarken vor dem Seitenwechsel weg, damit die Seite nicht erst zum Abschnitt springt.
+3. Zurückgerollt wird sofort, nicht weich, wie es Bootstrap sonst einstellt; sonst sähe man die Seite von oben zur Stelle gleiten.
+4. Kehrt die Seite mit der Kennung eines Knopfs in der Adresse zurück (#117) und wird die Stelle wiederhergestellt, nimmt das Skript die Kennung nach dem Fokus aus der Adresse. Safari rollt sonst nach dem Laden noch selbst zum Knopf.
+
+**Begründung:** Wer weit unten einen Dialog öffnete, stand danach oben und musste den Eintrag neu suchen (Sebastian beim Test von #217). Die Stelle zu merken braucht nur eine Stelle im Skript und lässt die eigene Adresse je Dialog und den Weg ohne Skript unverändert. Den Dialog im Hintergrund nachzuladen hätte zwei Wege für jeden Dialog gebracht und wurde nicht gewählt.
+
+**Grenzen:** Ersetzt keinen älteren Eintrag; ergänzt den vom 28.10.2026 (#190) und vom 11.11.2026 (#117). Nach dem Speichern rollt die Seite nicht zum geänderten Eintrag. Die Seite lädt weiter neu; dabei kann sie kurz aufblitzen.
+
+---
+
 ## 2026-11-14 · Sicherheitsrichtlinie für Skripte: kein eingebetteter Code in Seiten und Bausteinen (#278)
 
 **Entscheidung** (Sebastian in der Klärung von #278 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/278#issuecomment-6875010175); maßgeblich ist der Text von #278):
@@ -57,6 +79,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 **Begründung:** Die Seiten waren schon so gebaut; die Richtlinie ist eine zweite Schutzschicht, bevor das Tool offen im Internet erreichbar ist (#59, Befund T-05/11 der Projektprüfung). Hat eine Seite einmal eine Lücke, führt der Browser eingeschmuggelten Code trotzdem nicht aus. Ohne Ausnahmen bleibt die Richtlinie einfach, und jeder neue eingebettete Code fällt im Rauchtest auf.
 
 **Grenzen:** Die Fehleranzeige für Entwickler auf dem eigenen Rechner erscheint ungestaltet; sie betrifft nie Nutzende. Der Testserver auf dem eigenen Rechner und in den Rauchtests liefert Dateien wie `app.js` ohne Richtlinie aus; für den Schutz zählt die Richtlinie der Seite, die sie lädt. Auf dem Server prüft Sebastian Login und Abmelden einmal von Hand im Rahmen von #59. Ob Firefox Verstöße bei abgeschaltetem Skript in die Konsole meldet, ist nicht geprüft (Firefox startet auf dem Mac nicht); mit Skript meldet er sie als Ereignis in der Seite.
+
+---
 
 ## 2026-11-14 · Leistungstest am Ende jeder Phase: auf GitHub alt gegen neu, Grenzen 2 Sekunden und 25 % (#145, NFA-05)
 

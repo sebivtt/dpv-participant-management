@@ -36,7 +36,7 @@
     {% translate "Name und E-Mail-Adresse stammen aus deinem DPV-Konto und lassen sich hier nicht ändern. Änderungen dort erscheinen hier nach deiner nächsten Anmeldung." as hint %}
     {% meldung "info" text=hint icon="schloss" %}
   </section>
-  <section class="a-flaeche a-profilflaeche" aria-labelledby="h-rollen">
+  <section class="a-flaeche a-profilflaeche" id="abschnitt-rollen" aria-labelledby="h-rollen">
     {% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisation und Rollen") heading_id="h-rollen" %}
     {% if membership %}
       <div class="a-mitgliedschaft">

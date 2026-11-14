@@ -63,7 +63,7 @@ def test_am_pc_nur_mit_der_tastatur_bundesleitung_benennen(pc):
     assert len(set(sizes)) == 1, sizes
     assert run_axe(pc) == []
 
-    selector = f'a[href="/organisation/verband/bund/{units["boreas"].key}/benennen/"]'
+    selector = f'a[href^="/organisation/verband/bund/{units["boreas"].key}/benennen/"]'
     stations = _stations_to_element(pc, selector, steps=60)
     _all_visible(stations)
     pc.keyboard.press("Enter")

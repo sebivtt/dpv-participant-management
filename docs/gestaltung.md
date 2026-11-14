@@ -188,6 +188,13 @@ Kein Zielbild (Probe, Entscheidung F1 aus #106). Nur schlichte Platzhalter, bis 
 - **„Veranstaltung erstellen“ und „… bearbeiten“:** Dialog mit Textfeld „Name“ und den Datumsfeldern „Beginn“ und „Ende“, Knopf „Anlegen“ oder „Speichern“; danach eine kurze Meldung (#186).
 - **Seite einer Veranstaltung:** Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“. Einen Knopf zum Löschen gibt es nicht.
 
+### Dialog: Seite bleibt an ihrer Stelle (#220, 14.11.2026)
+
+Kein Zielbild (Nachbesserung eines bestehenden Bausteins). Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 14.11.2026 zu #220. Ein Baustein erweitert:
+
+- **Dialog:** Öffnen, Schließen und Speichern laden die Seite neu, weil jeder Dialog eine eigene Adresse hat. Mit Skript steht die Seite dahinter danach an derselben Stelle wie vor dem Öffnen, auch nach „Suchen“ und einer Ablehnung im Dialog; ist sie kürzer geworden, so nah wie möglich daran. Führt die Handlung auf eine andere Seite, beginnt diese oben, ebenso eine Seite, die man später neu öffnet. Das gilt für jeden Dialog mit eigener Adresse, ohne dass er etwas eigenes braucht. Ohne Skript springt die Seite zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat („#abschnitt-…“ in der Adresse); steht der Knopf ganz oben auf der Seite, bleibt sie oben. Bei verwalteten Personen führt der Dialog wie bisher zum Knopf selbst (#117); mit Skript bekommt er den Fokus, ohne dass die Seite zu ihm springt.
+- **„Verbandsleitung benennen“:** Die Zeile unter dem Titel heißt „für den DPV“.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

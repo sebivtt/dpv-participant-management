@@ -22,6 +22,7 @@ from django.http import Http404
 from django.test import Client
 
 from access.rights import Rights
+from core.sections import to_section
 from persons.models import DisplayedLead, ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
 from units.models import Unit
@@ -223,7 +224,7 @@ def test_l5_bruno_traegt_berta_als_bundesleitung_ein_und_vera_sieht_sie_auf_der_
 @pytest.mark.wie_nicht_vorhanden("organisation/<key:unit>/entfernen-anzeige/<key:role>/")
 def test_l6_wanda_entfernt_tims_angezeigte_rolle_und_tim_bleibt_in_der_meute(org):
     entry = show(org.tim, R.GROUP_LEAD, org.woelfe)
-    assert buttons(org.walhall_leitung, org.woelfe)["Tim Probe"] == ("Entfernen", remove_address(org.woelfe, entry))
+    assert buttons(org.walhall_leitung, org.woelfe)["Tim Probe"] == ("Entfernen", to_section(remove_address(org.woelfe, entry), "leitungen"))
     client = client_for(org.walhall_leitung)
     response = client.get(remove_address(org.woelfe, entry))
     assert response.status_code == 200

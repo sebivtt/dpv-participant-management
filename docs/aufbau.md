@@ -25,7 +25,7 @@ Jede Datei des Tools gehört zu genau einer Schicht. Sie bindet nur Dateien aus 
 
 | Nr. | Schicht | Aufgabe | Dateien |
 | --- | --- | --- | --- |
-| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak | `access/keys.py`, `core/actors.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `events/texts.py`, `core/texts.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
+| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Sprungmarken, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak | `access/keys.py`, `core/actors.py`, `core/sections.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `events/texts.py`, `core/texts.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
 | 2 | Modelle | was in der Datenbank steht, mit den Regeln beim Speichern | `accounts/models.py`, `units/models.py`, `roles/models.py`, `persons/models.py`, `events/models.py` |
 | 3 | Rechteprüfung | wer was darf; Kennzeichnung der Seiten | `access/rights.py`, `access/addresses.py` |
 | 4 | Aufbereitung | ordnet Daten für Seiten und Befehle, Formulare, Navigation, Bausteine für Vorlagen | `units/organisation.py`, `units/management/common.py`, `core/management/mass_data.py`, `accounts/forms.py`, `core/forms.py`, `core/navigation.py`, `core/templatetags/layout.py` |

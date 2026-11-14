@@ -42,7 +42,7 @@ def _managed_address(where, entry, action: str) -> str:
 
 
 def _link(entry, action: str) -> str:
-    return f'a[href$="/verwaltete-person/{entry.key}/{action}/"]'
+    return f'a[href*="/verwaltete-person/{entry.key}/{action}/"]'
 
 
 def _button(entry, action: str) -> str:
@@ -138,7 +138,7 @@ def test_am_pc_nicht_loeschen_fuehrt_zurueck_und_escape_schliesst(pc):
     units = _with_managed()
 
     pc.goto(_managed_address(units["falken"], units["lena"], "loeschen"))
-    stations = _stations_to_element(pc, 'dialog .a-dialog-fuss a[href$="/bearbeiten/"]', steps=10)
+    stations = _stations_to_element(pc, 'dialog .a-dialog-fuss a[href*="/bearbeiten/"]', steps=10)
     expect(pc.locator("dialog .a-dialog-fuss a.btn-zart")).to_have_text("Nicht löschen")
     _all_visible(stations)
     pc.keyboard.press("Enter")
@@ -215,7 +215,8 @@ def test_ohne_skript_loescht_der_rote_knopf(pc_ohne_skript):
 
     page.locator("dialog .btn-gefahr").click()
 
-    page.wait_for_url(_page_of(units["falken"]))
+    # Ohne Skript springt die Seite zum Abschnitt mit dem Knopf (#220).
+    page.wait_for_url(f"{_page_of(units['falken'])}#abschnitt-personen")
     # Ohne Skript steht die kurze Meldung fest oben auf der Seite (docs/gestaltung.md, „Kurze Meldung“).
     expect(page.locator("[data-kurz]")).to_contain_text("Kiwi (Lena Probe) wurde gelöscht.")
     assert not ManagedPerson.objects.filter(pk=units["lena"].pk).exists()

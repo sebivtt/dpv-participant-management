@@ -15,6 +15,7 @@ from django.http import Http404
 
 from access.rights import Rights
 from accounts.models import AccountSearch
+from core.sections import to_section
 from roles.models import Role, RoleChange
 from tests import test_benennen, test_organisation
 from tests.test_benennen import _one_after_the_other, dialog_of, hits, notices, roles_of, short_notices
@@ -303,15 +304,15 @@ def test_v9_beim_eigenen_eintrag_steht_rolle_abgeben_sonst_entfernen(org):
     buttons = {_visible_text(e): _attr(e, "href") for e in _all(section_of(root, "h-verbandsleitung"),
                                                                  lambda e: "a-leitung-knopf" in _classes(e))}
 
-    assert buttons == {"Rolle abgeben": remove_address(role_of(org.verbandsleitung, R.FEDERATION_LEAD)),
-                       "Entfernen": remove_address(role_of(org.viktor, R.FEDERATION_LEAD))}
+    assert buttons == {"Rolle abgeben": to_section(remove_address(role_of(org.verbandsleitung, R.FEDERATION_LEAD)), "verbandsleitung"),
+                       "Entfernen": to_section(remove_address(role_of(org.viktor, R.FEDERATION_LEAD)), "verbandsleitung")}
 
 
 @pytest.mark.rechtematrix("RO-20")
 def test_v10_tom_gibt_seine_rolle_auf_mein_profil_ab(org):
     profile = page_tree(org.team, "/profil/")
     link = _one([e for e in _by_tag(profile, "a") if _visible_text(e).startswith("Rolle abgeben")])
-    assert _attr(link, "href") == "/profil/team-abgeben/"
+    assert _attr(link, "href") == to_section("/profil/team-abgeben/", "rollen")
 
     dialog = dialog_of(page_tree(org.team, "/profil/team-abgeben/"))
     assert _visible_text(_one(_by_tag(dialog, "h2"))) == "Deine Rolle im DPV-Veranstaltungsteam abgeben?"
