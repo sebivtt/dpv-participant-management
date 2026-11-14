@@ -436,6 +436,8 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
   /* Am Handy ist um den Kreis kaum Platz; der Ring allein hebt ihn hervor (#13). */
   .a-topbar .a-profil[aria-current="page"] { background: none; }
   .a-topbar .a-avatar { width: 36px; height: 36px; }
+  /* Ohne Skript springen Dialoge zum Abschnitt mit ihrem Knopf (#220); die Leiste oben verdeckt ihn sonst. */
+  section[id^="abschnitt-"] { scroll-margin-top: 64px; }
 }
 .a-menueknopf, .a-schliessen, .a-stift { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-radius: var(--radius-klein); border: 1px solid var(--linie); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
 /* Beim Darüberfahren und Drücken wie die zarten Knöpfe (.btn-zart), denen sie in Ruhe gleichen (#216) */

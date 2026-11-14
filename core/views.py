@@ -17,6 +17,7 @@ from access.keys import is_key, new_key
 from access.rights import SUGGESTION_MIN, SUPPORT_REASONS, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
+from core import sections
 from core.forms import (
     AccountSearchForm,
     EventForm,
@@ -26,6 +27,7 @@ from core.forms import (
     PatternForm,
     UnitNameForm,
 )
+from core.sections import to_section
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
 from persons import texts as person_texts
@@ -53,6 +55,7 @@ from units.organisation import (
     expulsion_dialog,
     move_dialog,
     federation_done,
+    federation_section,
     hits,
     edit_anchor,
     managed_dialog,
@@ -167,7 +170,8 @@ def profile_leave_team(request: HttpRequest) -> HttpResponse:
     if request.method not in READING or rights.own_team_role() is None:
         raise Http404
     removal = {"title": texts.FEDERATION_GIVE_UP_QUESTION[Role.Kind.EVENT_TEAM], "lines": [],
-               "close_href": reverse("profile"), "confirm_action": request.path, "confirm_label": texts.GIVE_UP_BUTTON}
+               "close_href": to_section(reverse("profile"), sections.ROLES),
+               "confirm_action": to_section(request.path, sections.ROLES), "confirm_label": texts.GIVE_UP_BUTTON}
     form = ScoutNameForm(initial={"scout_name": request.user.scout_name})
     return _profile_page(request, form, removal=removal)
 
@@ -201,7 +205,7 @@ def _profile_page(request: HttpRequest, form: ScoutNameForm, save_failed: bool =
         "removal": removal,
         "membership": _tile(membership, label=_("Mitgliedschaft")) if membership else None,
         # Der Knopf „Austreten“ in der Fläche der Mitgliedschaft (#286, EP-06).
-        "exit_href": reverse("profile_leave") if membership else None,
+        "exit_href": to_section(reverse("profile_leave"), sections.ROLES) if membership else None,
         "exit_label": texts.EXIT_BUTTON,
         "tiles": [_tile(role) for role in roles if role is not membership],
         "scout_name_form": form,
@@ -284,12 +288,12 @@ def _appoint_page(request: HttpRequest, found: Unit, form: AccountSearchForm | N
     dialog = {
         "title": page.appoint_label,
         "subtitle": texts.APPOINT_FOR % {"unit": found.name},
-        "close_href": reverse("organisation_unit", args=[found.key]),
+        "close_href": to_section(reverse("organisation_unit", args=[found.key]), sections.LEADS),
         "form": form or AccountSearchForm(),
-        "search_action": reverse("organisation_search", args=[found.key]),
+        "search_action": to_section(reverse("organisation_search", args=[found.key]), sections.LEADS),
         "suggestions_href": reverse("organisation_suggestions", args=[found.key]),
         "help_text": texts.APPOINT_HELP,
-        "appoint_action": reverse("organisation_appoint", args=[found.key]),
+        "appoint_action": to_section(reverse("organisation_appoint", args=[found.key]), sections.LEADS),
         "hits": hits or [],
         "hits_title": hits_title,
         "notice": notice,
@@ -373,7 +377,7 @@ def organisation_suggestions(request: HttpRequest, unit: str) -> HttpResponse:
     entries = request.rights.suggestions(text, unit=found)
     context = {"hits": hits(entries, found), "hits_title": texts.SUGGESTIONS_TITLE,
                "empty": texts.NO_SUGGESTIONS if len(text) >= SUGGESTION_MIN else "",
-               "appoint_action": reverse("organisation_appoint", args=[found.key])}
+               "appoint_action": to_section(reverse("organisation_appoint", args=[found.key]), sections.LEADS)}
     return render(request, "core/_treffer.html", context)
 
 
@@ -463,11 +467,11 @@ def _admit_page(request: HttpRequest, found: Unit, form: FederationSearchForm | 
     dialog = {
         "title": texts.ADMIT_TITLE,
         "subtitle": texts.ADMIT_FOR % {"unit": unit_label(found)},
-        "close_href": reverse("organisation_unit", args=[found.key]),
+        "close_href": to_section(reverse("organisation_unit", args=[found.key]), sections.PERSONS),
         "form": form or FederationSearchForm(),
         "help_text": texts.ADMIT_HELP,
-        "search_action": reverse("organisation_admit_search", args=[found.key]),
-        "appoint_action": reverse("organisation_admit", args=[found.key]),
+        "search_action": to_section(reverse("organisation_admit_search", args=[found.key]), sections.PERSONS),
+        "appoint_action": to_section(reverse("organisation_admit", args=[found.key]), sections.PERSONS),
         "action_label": texts.ADMIT_BUTTON,
         "hits": hits_found or [],
         "hits_title": texts.HITS_TITLE if hits_found else "",
@@ -985,9 +989,10 @@ def _federation_page(request: HttpRequest, dialog=None, removal=None, status=200
         "federation_leads": shown.federation_leads(),
         "team": shown.team(),
         "associations": shown.associations(),
-        "appoint_federation_lead": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.FEDERATION_LEAD]}",
-                                                              args=federation_key),
-        "appoint_team": federation_key and reverse(f"federation_appoint_{SLUG_OF[Role.Kind.EVENT_TEAM]}", args=federation_key),
+        "appoint_federation_lead": federation_key and to_section(
+            reverse(f"federation_appoint_{SLUG_OF[Role.Kind.FEDERATION_LEAD]}", args=federation_key), sections.FEDERATION_LEADS),
+        "appoint_team": federation_key and to_section(
+            reverse(f"federation_appoint_{SLUG_OF[Role.Kind.EVENT_TEAM]}", args=federation_key), sections.TEAM),
         # Dieselben Wortlaute wie die Titel der Dialoge, damit Knopf und Dialog gleich heißen.
         "labels": {"federation_lead": texts.APPOINT_FEDERATION_LEAD, "team": texts.APPOINT_TEAM,
                    "association_lead": texts.APPOINT_TITLE % {"role": Role.Kind.ASSOCIATION_LEAD.label}},
@@ -1022,13 +1027,14 @@ def _federation_dialog(request: HttpRequest, kind: str, found: Unit, form=None, 
         subtitle = texts.APPOINT_FOR_FEDERATION if kind == Role.Kind.FEDERATION_LEAD else texts.APPOINT_FOR_TEAM
         search_action = reverse(f"federation_search_{SLUG_OF[kind]}", args=[found.key])
         appoint_action = reverse(f"federation_appoint_{SLUG_OF[kind]}", args=[found.key])
+    section = federation_section(kind, found)
     dialog = {
         "title": title,
         "subtitle": subtitle,
-        "close_href": reverse("organisation"),
+        "close_href": to_section(reverse("organisation"), section),
         "form": form or FederationSearchForm(),
-        "search_action": search_action,
-        "appoint_action": appoint_action,
+        "search_action": to_section(search_action, section),
+        "appoint_action": to_section(appoint_action, section),
         "hits": hits_found or [],
         "hits_title": texts.HITS_TITLE if hits_found else "",
         "notice": notice,
@@ -1182,7 +1188,7 @@ def _tile(role: Role, label=None) -> dict:
         "org": role.unit.name if role.unit else _("DPV Anmeldetool"),
         "way": " › ".join(role.unit.names_above()) if role.kind == Role.Kind.MEMBER else "",
         # Nur das DPV-Veranstaltungsteam gibt seine Rolle hier ab (RO-20, Frage 5 vom 28.10.2026, W1).
-        "give_up_href": reverse("profile_leave_team") if role.kind == Role.Kind.EVENT_TEAM else None,
+        "give_up_href": to_section(reverse("profile_leave_team"), sections.ROLES) if role.kind == Role.Kind.EVENT_TEAM else None,
     }
 
 
@@ -1328,7 +1334,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "

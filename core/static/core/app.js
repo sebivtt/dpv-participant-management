@@ -399,11 +399,81 @@
     outline.scrollTop += offset - outline.clientHeight / 3;
   }
 
+  // Stelle merken (#220): Jeder Dialog hat eine eigene Adresse (#190); Öffnen, Schließen und Speichern laden
+  // die Seite neu, und sie stünde danach oben. Deshalb merkt sich die Seite bei jedem Link und Formular, wie
+  // weit sie gerollt war, und die nächste Seite stellt das wieder her, aber nur, wenn sie von genau dieser
+  // Seite kommt (`document.referrer`) und es um einen Dialog geht: Die neue Seite zeigt einen Dialog (Öffnen,
+  // „Suchen“, Ablehnung im Dialog), oder die vorige zeigte einen und die neue ist die Seite darunter
+  // (Schließen, Speichern). Eine andere Seite, etwa die neue Veranstaltung, beginnt oben; ebenso, wer eine
+  // Seite später über einen Link, die Navigation oder die Adresse öffnet. Gemerkt wird je Tab und nur für
+  // den nächsten Seitenwechsel. Ist die Seite kürzer geworden, begrenzt der Browser die Stelle aufs Ende.
+  // Ohne Skript springen die Seiten stattdessen zum Abschnitt mit dem Knopf („#abschnitt-…“, core/sections.py);
+  // mit Skript fällt diese Sprungmarke weg, bevor die Seite wechselt, damit sie nicht dorthin springt.
+  var SPOT_KEY = "dialog-stelle";
+  var openDialog = document.querySelector("dialog[data-dialog]");
+
+  function withoutJump(address) {
+    var at = address.indexOf("#abschnitt-");
+    return at < 0 ? address : address.slice(0, at);
+  }
+
+  function pathOf(address) {
+    return new URL(address, window.location.href).pathname;
+  }
+
+  function rememberSpot() {
+    try {
+      window.sessionStorage.setItem(SPOT_KEY, JSON.stringify({
+        y: window.scrollY,
+        from: window.location.href.split("#")[0],
+        below: openDialog ? pathOf(openDialog.getAttribute("data-schliessen")) : null,
+      }));
+    } catch (error) {
+      // Ist der Speicher im Browser gesperrt, beginnt die Seite oben wie früher.
+    }
+  }
+
+  function recallSpot() {
+    var spot = null;
+    try {
+      spot = JSON.parse(window.sessionStorage.getItem(SPOT_KEY));
+      window.sessionStorage.removeItem(SPOT_KEY);
+    } catch (error) {
+      return null;
+    }
+    if (!spot || typeof spot.y !== "number" || document.referrer.split("#")[0] !== spot.from) {
+      return null;
+    }
+    if (openDialog || spot.below === window.location.pathname) {
+      return spot.y;
+    }
+    return null;
+  }
+
+  var spot = recallSpot();
+
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest ? event.target.closest("a[href]") : null;
+    if (!link) {
+      return;
+    }
+    link.setAttribute("href", withoutJump(link.getAttribute("href")));
+    rememberSpot();
+  });
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    var action = form.getAttribute("action");
+    if (action) {
+      form.setAttribute("action", withoutJump(action));
+    }
+    rememberSpot();
+  });
+
   // Dialog (#190): Er kommt offen vom Server und hat eine eigene Adresse. Mit Skript wird er modal: Der
   // Browser hält den Fokus darin, und Escape oder Tippen daneben führen wie × und „Abbrechen“ zurück zur
   // Seite darunter. Ohne Skript liegt er einfach über der Seite.
   document.querySelectorAll("dialog[data-dialog]").forEach(function (dialog) {
-    var back = dialog.getAttribute("data-schliessen");
+    var back = withoutJump(dialog.getAttribute("data-schliessen"));
     if (typeof dialog.showModal !== "function") {
       return;
     }
@@ -411,27 +481,37 @@
     dialog.showModal();
     var first = dialog.querySelector("[autofocus]");
     if (first) {
-      first.focus();
+      first.focus({ preventScroll: spot !== null });
+    }
+    function leave() {
+      rememberSpot();
+      window.location.href = back;
     }
     dialog.addEventListener("cancel", function (event) {
       event.preventDefault();
-      window.location.href = back;
+      leave();
     });
     dialog.addEventListener("click", function (event) {
       if (event.target === dialog) {
-        window.location.href = back;
+        leave();
       }
     });
   });
 
   // Zurück aus einem Dialog (#117): Führt der Dialog zur Seite mit der Kennung eines Knopfs in der Adresse
   // („#…“), etwa „Bearbeiten“ bei einer verwalteten Person, bekommt dieser Knopf wieder den Fokus. Ohne
-  // Skript beginnt die Tastatur dort, weil der Browser zu ihm springt.
-  if (window.location.hash.length > 1 && !document.querySelector("dialog[data-dialog]")) {
+  // Skript beginnt die Tastatur dort, weil der Browser zu ihm springt. Mit gemerkter Stelle (#220) springt
+  // die Seite dabei nicht zum Knopf.
+  if (window.location.hash.length > 1 && !openDialog) {
     var returnTo = document.getElementById(window.location.hash.slice(1));
     if (returnTo && returnTo.matches("a[href], button")) {
-      returnTo.focus();
+      returnTo.focus({ preventScroll: spot !== null });
     }
+  }
+
+  // „instant“: Bootstrap lässt die Seite sonst weich rollen, und man sähe sie von oben zur Stelle fahren.
+  if (spot !== null) {
+    window.scrollTo({ top: spot, behavior: "instant" });
   }
 
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen

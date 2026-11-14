@@ -12,13 +12,13 @@
       {% if start %}{% include "core/_orgakopf.html" with heading=2 %}{% else %}{% include "core/_orgakopf.html" %}{% endif %}
       {# Ein Admin ohne Support-Zugang sieht nur den Kopf mit „Support-Zugang starten“ (#92, S1). #}
       {% if not page.head_only %}
-      <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-leitungen">
+      <section class="a-flaeche a-orga-flaeche" id="abschnitt-leitungen" aria-labelledby="h-leitungen">
         {% if start %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" level=3 action_href=page.appoint_href action_label=page.appoint_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") heading_id="h-leitungen" action_href=page.appoint_href action_label=page.appoint_label %}{% endif %}
         {% if page.notice %}{% meldung "info" text=page.notice %}{% endif %}
         {% if page.leads %}<ul class="a-leitungen">{% for lead in page.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
       </section>
       {% if page.tiles is not None %}
-        <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-darunter">
+        <section class="a-flaeche a-orga-flaeche" id="abschnitt-darunter" aria-labelledby="h-darunter">
           {% if start %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" level=3 action_href=page.create_href action_label=page.create_label %}{% else %}{% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Organisationen darunter") heading_id="h-darunter" action_href=page.create_href action_label=page.create_label %}{% endif %}
           {% if page.tiles %}
             <ul class="a-rollenkacheln">
@@ -31,7 +31,7 @@
       {% endif %}
       {% if page.persons is not None %}
         {# Abschnitt „Personen“ (#285): die direkten Mitglieder und, seit #117, die verwalteten Personen gemischt, nur im eigenen Bereich; „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“ nur, wo die Person das darf. #}
-        <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-personen">
+        <section class="a-flaeche a-orga-flaeche" id="abschnitt-personen" aria-labelledby="h-personen">
           {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id=page.add_managed_id %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id=page.add_managed_id %}{% endif %}
           {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
         </section>

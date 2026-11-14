@@ -7,11 +7,11 @@
     <h1>{% translate "Verband" %}</h1>
   </div>
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
-  <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-verbandsleitung">
+  <section class="a-flaeche a-orga-flaeche" id="abschnitt-verbandsleitung" aria-labelledby="h-verbandsleitung">
     {% include "core/_flaechenkopf.html" with symbol="person" title=_("DPV-Verbandsleitung") heading_id="h-verbandsleitung" action_href=appoint_federation_lead action_label=labels.federation_lead %}
     {% if federation_leads %}<ul class="a-leitungen">{% for lead in federation_leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}
   </section>
-  <section class="a-flaeche a-orga-flaeche" aria-labelledby="h-team">
+  <section class="a-flaeche a-orga-flaeche" id="abschnitt-team" aria-labelledby="h-team">
     {% include "core/_flaechenkopf.html" with symbol="person" title=_("DPV-Veranstaltungsteam") heading_id="h-team" action_href=appoint_team action_label=labels.team %}
     {% if team %}<ul class="a-leitungen">{% for lead in team %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{% translate "Im DPV-Veranstaltungsteam ist niemand." %}</p>{% endif %}
   </section>
@@ -19,7 +19,7 @@
   <section class="a-buende" aria-labelledby="h-buende">
     <h2 id="h-buende" class="a-buende-titel">{% translate "Bünde" %}</h2>
     {% for bund in associations %}
-      {% with heading_id="h-bund-"|add:bund.unit.key %}<section class="a-flaeche a-orga-flaeche a-bund" aria-labelledby="{{ heading_id }}">
+      {% with heading_id="h-bund-"|add:bund.unit.key %}<section class="a-flaeche a-orga-flaeche a-bund" id="abschnitt-bund-{{ bund.unit.key }}" aria-labelledby="{{ heading_id }}">
         {% include "core/_flaechenkopf.html" with symbol="organisation" title=bund.unit.name title_href=bund.href heading_id=heading_id level=3 action_href=bund.appoint_href action_label=labels.association_lead %}
         {% if bund.notice %}{% meldung "info" text=bund.notice %}{% endif %}
         {% if bund.leads %}<ul class="a-leitungen">{% for lead in bund.leads %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% endif %}

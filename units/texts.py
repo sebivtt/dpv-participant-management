@@ -175,7 +175,8 @@ GAVE_UP = gettext_lazy("Du bist nicht mehr %(role)s von %(unit)s.")
 APPOINT_FEDERATION_LEAD = gettext_lazy("Verbandsleitung benennen")
 APPOINT_TEAM = gettext_lazy("Teammitglied benennen")
 APPOINT_FOR_TEAM = gettext_lazy("für das DPV-Veranstaltungsteam")
-APPOINT_FOR_FEDERATION = gettext_lazy("für den Verband")
+# „für den DPV“ statt „für den Verband“ (#220, Sebastian, 14.11.2026).
+APPOINT_FOR_FEDERATION = gettext_lazy("für den DPV")
 NOT_YOURSELF_FEDERATION = gettext_lazy("Dir selbst kannst du keine Rolle geben. Das kann eine andere Verbandsleitung.")
 FEDERATION_APPOINTED = {
     "association_lead": APPOINTED,
