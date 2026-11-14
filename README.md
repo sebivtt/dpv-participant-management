@@ -19,6 +19,7 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`docs/gestaltung.md`](docs/gestaltung.md) | Leitlinie für die Gestaltung jeder Seite |
 | [`docs/zielbilder/`](docs/zielbilder/) | Sebastians Entwürfe für einzelne Seiten |
 | [`docs/aufbau.md`](docs/aufbau.md) | Aufbau des Codes: Apps, Schichten und ihre Richtung, wo man was baut |
+| [`docs/leistungstest.md`](docs/leistungstest.md) | Ergebnisse des Leistungstests am Ende jeder Phase |
 
 Anforderungen und Fahrplan sind hier im Repo maßgeblich (Entscheidung vom 20.10.2026). Änderungen daran laufen wie alles andere über Pull Requests.
 
@@ -291,8 +292,10 @@ D5. Die Testdaten in der Testumgebung im Container anlegen.
 
 Am Ende jeder Phase prüft der Leistungstest, ob jede Seite mit Personen auch bei 5.000 erfundenen Personen in unter 2 Sekunden vom Server kommt (#104). Er legt dafür mit dem Zusatz `--mass-data` am Befehl `testdata` zusätzlich 40 Probestämme mit je 5 Gruppen und 5.000 erfundene Personen im Pfadfinderbund Boreas an. Die normalen Prüfungen machen das nicht. Warum so, steht in `docs/entscheidungen.md` (13.11.2026, #104).
 
-L1. Auf GitHub starten: Im Repo oben auf „Actions“, links „Leistungstest“, rechts „Run workflow“ und darin noch einmal „Run workflow“.
-   Danach: Nach einigen Minuten ist der Lauf grün oder rot. Die Zeit je Seite steht auf der Seite des Laufs unter „Leistungstest (#104)“. Ist er rot, nennt er die zu langsame Seite und ihre Zeit.
+Am Phasenende misst er relativ zur vorigen Phase (#145): In einem Lauf auf GitHub misst er abwechselnd den Stand vom Ende der vorigen Phase und den neuen Stand, mit denselben erzeugten Daten. Den alten Stand findet er über die feste Markierung `phasenende-p<n>` im Repo (etwa `phasenende-p2`). Rot ist der Lauf, wenn eine Seite eine der Grenzen aus `docs/entscheidungen.md` (14.11.2026, #145, Nr. 3) reißt oder ein Durchgang, alt oder neu, rot war; die Zeile der Seite sagt, was davon. Er meldet auch Seiten mit Personen, die noch keine Messung haben. Wann wer was tut, steht im Skill `phase-steuern`, Abschnitt 5; die Ergebnisse stehen in `docs/leistungstest.md`.
+
+L1. Auf GitHub starten: Im Repo oben auf „Actions“, links „Leistungstest“, rechts „Run workflow“. Unter „Use workflow from“ den Zweig wählen, der gemessen werden soll. Bei „Phase“ die Phase eintragen, die endet (etwa `P3`), bei „Markierung der vorigen Phase“ deren Markierung (etwa `phasenende-p2`); nur am Ende von P2 bleibt sie leer. Dann noch einmal „Run workflow“.
+   Danach: Nach einigen Minuten ist der Lauf grün oder rot. Auf der Seite des Laufs steht der fertige Abschnitt für `docs/leistungstest.md`: je Seite Zeit, Wert der vorigen Phase, Abweichung und Ergebnis, darunter die Seiten mit Personen ohne Messung. Passen Phase und Markierung nicht zusammen, bricht er gleich mit `Falsche Eingabe: …` ab.
 
 Lokal (zuerst Schritte 3, 6, 7 und 8 unter „Projekt starten (Mac)“; die Daten entstehen dabei nur in einer eigenen Test-Datenbank):
 
@@ -300,9 +303,21 @@ L2. Den Leistungstest starten.
    ```bash
    uv run --env-file .env pytest tests/leistungstest.py -rsfE
    ```
-   Danach: eine Tabelle „Leistungstest (#104), Grenze 2 s je Seite“ mit der Zeit je Seite und am Ende `10 passed`.
+   Danach: eine Tabelle „Leistungstest (#104), Grenze 2 s je Seite“ mit der Zeit je Seite, darunter `Seiten mit Personen ohne Messung (#145): …` und am Ende `10 passed`. Einen Vergleich mit der vorigen Phase gibt es nur auf GitHub (L1).
 
 Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen.` Anmelden kann sich mit diesen Konten niemand. Ein Lauf ohne Zusatz entfernt die Massendaten wieder bis auf die Konten, die dann ohne Rolle bleiben.
+
+Nur einmal, am Ende von P2: Messung von Hand in der Testumgebung auf dem Server (#145), sobald sie läuft (#59). Wie die Befehle dort genau heißen, legt #59 fest; bis dahin gelten sie nur für die Testumgebung im Container auf dem Mac (D5) und werden mit #59 nachgeprüft.
+
+L3. In der Testumgebung im Browser einmal als `ohne.nachname` anmelden, damit Boreas dort eine Bundesleitung hat, mit dem Konto aus dem Test-Realm dort (Abschnitt „Test-Realm im Keycloak des DPV“).
+   Danach: „Hallo“ mit dem gelben Band der Testumgebung.
+L4. Die Testdaten mit den Massendaten anlegen (wie D5, mit Zusatz).
+   ```bash
+   docker compose -f testumgebung/docker-compose.yml exec tool python manage.py testdata --mass-data
+   ```
+   Danach: wie in D5, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
+L5. In Safari zuerst unter „Safari“ → „Einstellungen“ → „Erweitert“ die Funktionen für Webentwickler einschalten. Dann als `ohne.nachname` anmelden, im Menü „Entwickler“ „Webinformationen einblenden“ wählen und dort „Netzwerk“. Nacheinander „Organisation“, die Seite „Probestamm 01“ und auf der Seite „Pfadfinderbund Boreas“ den Dialog „Person mit Konto aufnehmen“ mit einer Suche nach einer Mail öffnen.
+   Danach: Je Seite steht in der Liste in der Zeile der Seite selbst unter „Zeit“ die Zeit bis zur Antwort des Servers, und unten die Zeit, bis der Browser die Seite fertig geladen hat. Beide Zahlen je Seite notieren und der KI für `docs/leistungstest.md`, Abschnitt P2, geben. Heißen die Spalten in Safari anders, das der KI sagen.
 
 ## Verband und Bünde anlegen (Admins)
 

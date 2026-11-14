@@ -11,8 +11,10 @@ Sebastians Entscheidung „Alle passen so“. Die Besetzung ist die aus #103: Bu
 `ohne.nachname`, Max (`max.testmann`) die Stammesleitung der Zugvögel, Nils (`bundesleitung.nordstern`)
 die Bundesleitung Nordstern. Alle Namen sind erfunden.
 
-Erweitern am Ende einer Phase (#145): neue Seiten mit Personen oder Anmeldungen als weiteren Eintrag in
-`PAGES`; was sie brauchen, kommt in den Zusatz `--mass-data` (`core/management/mass_data.py`).
+Erweitern am Ende einer Phase (#145): neue Seiten mit Personen oder Anmeldungen als weiteren Test mit Eintrag
+in `PAGES`, oder mit Grund in `NOT_MEASURED`; was sie brauchen, kommt in den Zusatz `--mass-data`
+(`core/management/mass_data.py`). Seiten mit Personen, die in keinem von beiden stehen, meldet der Lauf als
+„ohne Messung“. Den Vergleich mit der vorigen Phase macht `tests/leistungsvergleich.py`.
 
 „Unter 2 Sekunden“ heißt: bis der Server die fertige Seite ausgeliefert hat (Klärung vom 22.10.2026,
 Frage 3). Gemessen wird mit dem Test-Client von Django, also durch alle Bausteine einer Anfrage bis zur
@@ -21,6 +23,7 @@ werden beim ersten Aufruf übersetzt), dann `RUNS` gemessene; zählt der mittler
 einzelner Ausreißer des Rechners den Lauf nicht rot macht.
 """
 
+import json
 import os
 import statistics
 import time
@@ -37,6 +40,7 @@ from django.test.utils import override_settings
 from access.rights import Rights
 from persons.models import ManagedPerson
 from roles.models import Role
+from tests.leistungsvergleich import LIMIT, seconds
 from tests.test_gestaltung import _all, _classes, _tree
 from tests.test_nicht_gefunden import assert_like_missing
 from tests.test_organisation import ADDRESS, client_for, unit_address
@@ -47,7 +51,6 @@ User = get_user_model()
 R = Role.Kind
 U = Unit.Kind
 
-LIMIT = 2.0
 RUNS = 5
 BOREAS = "Pfadfinderbund Boreas"
 OUTLIER = "Probestamm 01"
@@ -56,6 +59,25 @@ BOREAS_FROM_103 = 6
 
 # Die gemessenen Zeiten je Seite, für die Übersicht am Ende des Laufs.
 RESULTS: dict[str, list[float]] = {}
+
+# Jede gemessene Seite mit dem Namen ihrer Adresse in `config/urls.py`. Der Name der Seite ist der Schlüssel für
+# den Vergleich mit der vorigen Phase (#145); wird er geändert, fehlt dort der Wert der vorigen Phase.
+PAGES = {
+    "Gliederung „Organisation“": "organisation",
+    "Seite mit 500 Personen": "organisation_unit",
+    "Namensvorschläge zu „Pro“": "organisation_suggestions",
+    "Suche bei „Person aufnehmen“": "organisation_admit_search",
+}
+# Seiten mit Personen (`@checks_rights`), die bewusst nicht gemessen werden, mit Grund. Alle übrigen meldet der
+# Test als „ohne Messung“ (#145); am Phasenende kommen sie nach `PAGES` oder mit Grund hierher.
+NOT_MEASURED = {
+    "start": "zeigt nur die angemeldete Person selbst",
+    "profile": "zeigt nur die angemeldete Person selbst",
+    "profile_scout_name": "ändert nur den eigenen Fahrtennamen",
+    "profile_leave_team": "ändert nur die eigene Rolle",
+    "profile_leave": "ändert nur das eigene Konto",
+    "openid_connect_callback": "Login: legt nur das eigene Konto an",
+}
 
 
 # ---------- Messen ----------
@@ -72,13 +94,9 @@ def measure(call: Callable[[], object], clock: Callable[[], float] = time.perf_c
     return times
 
 
-def seconds(value: float) -> str:
-    """Sekunden mit Komma und zwei Stellen, z. B. „0,61 s“."""
-    return f"{value:.2f} s".replace(".", ",")
-
-
 def check_page(name: str, times: list[float]) -> float:
     """Der mittlere Wert einer Seite; 2 Sekunden oder mehr macht den Lauf rot und nennt Seite und Zeit (M5)."""
+    assert name in PAGES, f"„{name}“ fehlt in PAGES."
     RESULTS[name] = times
     middle = statistics.median(times)
     if middle >= LIMIT:
@@ -96,10 +114,34 @@ def summary() -> list[str]:
     return lines
 
 
+def unmeasured_pages() -> list[str]:
+    """Die Adressen mit Personen (`@checks_rights`), die weder gemessen noch mit Grund ausgenommen sind (#145)."""
+    from django.urls import get_resolver
+
+    from tests.test_rundumtest import _all_patterns
+
+    known = {*PAGES.values(), *NOT_MEASURED}
+    return sorted({entry.name for _pattern, entry in _all_patterns(get_resolver().url_patterns)
+                   if getattr(entry.callback, "rights_rows", None) and entry.name not in known})
+
+
+def write_results(path: str) -> None:
+    """Die Zeiten je Seite und die Seiten ohne Messung als Datei für den Vergleich mit der vorigen Phase (#145)."""
+    content = {"seiten": RESULTS, "ohne_messung": unmeasured_pages()}
+    with open(path, "w", encoding="utf-8") as out:
+        json.dump(content, out, ensure_ascii=False, indent=1)
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _report(request):
-    """Schreibt nach dem Lauf die Zeiten je Seite in die Ausgabe und auf GitHub in die Zusammenfassung des Laufs."""
+    """Schreibt nach dem Lauf die Zeiten je Seite in die Ausgabe und auf GitHub in die Zusammenfassung des Laufs.
+
+    Mit `LEISTUNGSTEST_ERGEBNIS` schreibt er sie zusätzlich in diese Datei; der Ablauf auf GitHub vergleicht damit
+    alt gegen neu (#145, `tests/leistungsvergleich.py`).
+    """
     yield
+    if os.environ.get("LEISTUNGSTEST_ERGEBNIS"):
+        write_results(os.environ["LEISTUNGSTEST_ERGEBNIS"])
     if not RESULTS:
         return
     lines = summary()
@@ -108,6 +150,7 @@ def _report(request):
         reporter.write_line("")
         for line in ["Leistungstest (#104), Grenze 2 s je Seite:", *lines]:
             reporter.write_line(line)
+        reporter.write_line("Seiten mit Personen ohne Messung (#145): " + (", ".join(unmeasured_pages()) or "keine"))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
             out.write("### Leistungstest (#104)\n\n" + "\n".join(lines) + "\n")

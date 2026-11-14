@@ -1,8 +1,14 @@
-# Leistungstest am Ende einer Phase (#104, NFA-05): 5.000 erfundene Personen, jede Seite mit Personen in unter
-# 2 Sekunden. Startet nur von Hand (Actions → „Leistungstest“ → „Run workflow“), nie bei einem Pull Request
-# oder einer Änderung an main: Jeder normale Prüflauf müsste sonst 5.000 Personen anlegen, und Zeitmessungen
-# auf den Rechnern von GitHub schwanken (Klärung vom 13.11.2026, Frage 6). Die Tests stehen in
-# tests/leistungstest.py; das Ergebnis je Seite steht in der Zusammenfassung des Laufs.
+# Leistungstest am Ende einer Phase (#104, #145, NFA-05): 5.000 erfundene Personen, jede Seite mit Personen in
+# unter 2 Sekunden und nicht mehr als 25 % langsamer als am Ende der vorigen Phase. Startet nur von Hand
+# (Actions → „Leistungstest“ → „Run workflow“), nie bei einem Pull Request oder einer Änderung an main: Jeder
+# normale Prüflauf müsste sonst 5.000 Personen anlegen, und Zeitmessungen auf den Rechnern von GitHub schwanken
+# (Klärung vom 13.11.2026, Frage 6). Die Messung steht in tests/leistungstest.py, der Vergleich in
+# tests/leistungsvergleich.py; das Ergebnis steht in der Zusammenfassung des Laufs, fertig für docs/leistungstest.md.
+#
+# Alt gegen neu (#145): In einem einzigen Lauf auf demselben Rechner misst der Ablauf abwechselnd den Stand vom Ende
+# der vorigen Phase (Markierung phasenende-p<n>, Ordner „alt“) und den neuen Stand (Ordner „neu“), jeden mit seinem
+# eigenen Code und Generator, also denselben erzeugten Daten. Am Ende von P2 gibt es keine vorige Phase; dann misst
+# er nur den neuen Stand und legt den Ausgangswert ab.
 #
 # GitHub kann einen nur von Hand startbaren Ablauf erst starten, wenn er in main ist.
 # Gleiche Fassungen und erfundene Werte wie in ci.yml; Keycloak braucht der Test nicht.
@@ -10,15 +16,25 @@ name: Leistungstest
 
 on:
   workflow_dispatch:
+    inputs:
+      phase:
+        description: "Phase, die endet, etwa P3"
+        required: true
+        type: string
+      vorige_phase:
+        description: "Markierung der vorigen Phase, etwa phasenende-p2; leer nur am Ende von P2"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
 jobs:
   messen:
-    name: Leistungstest (5.000 erfundene Personen)
+    name: Leistungstest (5.000 erfundene Personen, alt gegen neu)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 75
     services:
       postgres:
         image: postgres:18
@@ -44,16 +60,53 @@ jobs:
       KEYCLOAK_REALM_URL: http://localhost:8080/realms/dpv
       KEYCLOAK_CLIENT_ID: dpv-anmeldetool
       KEYCLOAK_CLIENT_SECRET: nur-lokal-nicht-geheim
+      # Die Eingaben nur über Umgebungsvariablen, nie direkt in einen Befehl eingesetzt.
+      PHASE: ${{ inputs.phase }}
+      VORIGE_PHASE: ${{ inputs.vorige_phase }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          path: neu
+          persist-credentials: false
+      - name: Eingaben prüfen
+        run: python3 neu/tests/leistungsvergleich.py pruefen --phase "$PHASE" --vorige "$VORIGE_PHASE"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: inputs.vorige_phase != ''
+        with:
+          ref: refs/tags/${{ inputs.vorige_phase }}
+          path: alt
           persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: "0.13.4"
           enable-cache: true
+          cache-dependency-glob: "**/uv.lock"
       - name: Python und Pakete aus uv.lock installieren
-        run: uv sync --locked
-      - name: Leistungstest
-        timeout-minutes: 20
-        run: uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider
+        run: |
+          for stand in alt neu; do
+            if [ -d "$stand" ]; then (cd "$stand" && uv sync --locked); fi
+          done
+      - name: Leistungstest, abwechselnd alt und neu
+        timeout-minutes: 60
+        run: |
+          mkdir -p ergebnis
+          fehler=0
+          alt_rot=()
+          # Je Stand zwei Durchgänge, abwechselnd; die Zusammenfassung schreibt erst der Vergleich unten.
+          for runde in 1 2; do
+            if [ -d alt ]; then
+              (cd alt && env -u GITHUB_STEP_SUMMARY LEISTUNGSTEST_ERGEBNIS="$GITHUB_WORKSPACE/ergebnis/alt-$runde.json" uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider) || alt_rot=(--alt-rot)
+            fi
+            (cd neu && env -u GITHUB_STEP_SUMMARY LEISTUNGSTEST_ERGEBNIS="$GITHUB_WORKSPACE/ergebnis/neu-$runde.json" uv run --locked pytest tests/leistungstest.py -rsfE -p no:cacheprovider) || fehler=1
+          done
+          alt=()
+          if [ -d alt ]; then alt=(--alt ergebnis/alt-1.json ergebnis/alt-2.json); fi
+          auswertung=0
+          python3 neu/tests/leistungsvergleich.py auswerten --phase "$PHASE" --vorige "$VORIGE_PHASE" \
+            --commit "$GITHUB_SHA" "${alt[@]}" "${alt_rot[@]}" --neu ergebnis/neu-1.json ergebnis/neu-2.json \
+            > ergebnis/abschnitt.md || auswertung=1
+          tee -a "$GITHUB_STEP_SUMMARY" < ergebnis/abschnitt.md
+          if [ "$fehler" != 0 ]; then
+            echo "Mindestens ein Durchgang des neuen Stands war rot; Einzelheiten stehen oben im Protokoll dieses Schritts." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          [ "$fehler" = 0 ] && [ "$auswertung" = 0 ]
