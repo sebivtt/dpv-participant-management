@@ -477,14 +477,23 @@ def _axe_file(tmp_path, delay_ms: int):
     return path
 
 
+def _extra_style(rules: str) -> str:
+    """Skript, das jeder neuen Seite zusätzliche Gestaltung gibt, nur für den Test.
+
+    Über die Schnittstelle des Browsers statt als Element <style>: Das wäre eingebettete Gestaltung,
+    die die Sicherheitsrichtlinie blockiert (#278).
+    """
+    return (
+        "document.addEventListener('DOMContentLoaded', () => {"
+        "const sheet = new CSSStyleSheet();"
+        f"sheet.replaceSync({rules!r});"
+        "document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; });"
+    )
+
+
 def _slow_fade(page: Page) -> None:
     """Streckt Ein- und Ausblenden der kurzen Meldung auf jeder neuen Seite, auch nach dem Speichern."""
-    page.add_init_script(
-        "document.addEventListener('DOMContentLoaded', () => {"
-        "const s = document.createElement('style');"
-        f"s.textContent = '.a-meldung.a-kurz, .a-meldung.a-kurz.ist-weg {{ animation-duration: {SHORT_FADE_SLOWED} !important; }}';"
-        "document.head.appendChild(s); });"
-    )
+    page.add_init_script(_extra_style(f".a-meldung.a-kurz, .a-meldung.a-kurz.ist-weg {{ animation-duration: {SHORT_FADE_SLOWED} !important; }}"))
 
 
 @pytest.mark.parametrize("device", ["pc", "handy"])
@@ -530,12 +539,7 @@ def test_axe_haelt_die_meldung_fest_auch_wenn_sie_gleich_verschwunden_waere(requ
 
 def test_axe_meldet_einen_zu_blassen_text_der_kurzen_meldung_trotzdem(pc):
     """Gegenprobe: Das Warten und Festhalten schwächt die Prüfung nicht ab; ein echter Kontrastfehler fällt auf."""
-    pc.add_init_script(
-        "document.addEventListener('DOMContentLoaded', () => {"
-        "const s = document.createElement('style');"
-        "s.textContent = '.a-kurz p { color: #d0d0d0 !important; }';"
-        "document.head.appendChild(s); });"
-    )
+    pc.add_init_script(_extra_style(".a-kurz p { color: #d0d0d0 !important; }"))
     login(pc)
     _set_scout_name("Falkenflug")
     _stop_clock(pc)
