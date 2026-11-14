@@ -144,7 +144,13 @@ def test_eingeschmuggeltes_formular_an_fremde_seite_geht_nicht_ab(pc, verstoesse
 
 # V4: Eine fremde Seite kann das Tool nicht in einem Rahmen zeigen. Der Test entfernt den älteren Schutz
 # gegen Einbetten (X-Frame-Options), damit nur die Richtlinie wirkt; der bleibt im Tool unverändert.
-def test_fremde_seite_kann_das_tool_nicht_einbetten(pc):
+def test_fremde_seite_kann_das_tool_nicht_einbetten(pc, browser_name):
+    if browser_name == "firefox":
+        # Auf GitHub blieb Firefox beim Umleiten der Antwort an den fremden Rahmen zweimal hängen, bis
+        # der Teil nach 25 Minuten abbrach (PR #337). Ohne Umleiten schützt dort schon der ältere
+        # Schutz, und der Test sagte nichts über die Richtlinie. Dass sie Einbetten verbietet, prüft
+        # tests/test_sicherheitsrichtlinie.py an der Kopfzeile.
+        pytest.skip("Firefox bleibt beim Umleiten der Antwort an einen fremden Rahmen hängen (PR #337).")
     # Die echte Antwort des Tools vorher holen, nicht erst beim Umleiten: Firefox blieb dabei hängen.
     real = pc.request.get(f"{BASE}/anmelden/")
     assert "x-frame-options" in real.headers
