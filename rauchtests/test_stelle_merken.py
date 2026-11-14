@@ -30,12 +30,13 @@ R = Role.Kind
 U = Unit.Kind
 LEADS = '[aria-labelledby="h-leitungen"]'
 PERSONS = '[aria-labelledby="h-personen"]'
-# Macht jede Seite unten lang, bevor das Skript der Seite läuft (defer läuft erst nach „interactive“).
+# Macht jede Seite unten lang, bevor das Skript der Seite läuft (defer läuft erst nach „interactive“). Über die
+# Schnittstelle des Browsers statt als Element <style>, das die Sicherheitsrichtlinie blockiert (#278).
 PADDING = """document.addEventListener('readystatechange', () => {
     if (document.readyState === 'interactive') {
-        const style = document.createElement('style');
-        style.textContent = '.a-main-inhalt { padding-bottom: 3000px !important; }';
-        document.head.appendChild(style);
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync('.a-main-inhalt { padding-bottom: 3000px !important; }');
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     }
 });"""
 # So weit darf die Seite von der gemerkten Stelle abweichen: Rundung beim Rollen, sonst nichts.
