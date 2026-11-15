@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Zeitpunkt des Pull Requests | 15.11.2026, #348, Nr. 1 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“, „Arbeitsweise aus dem alten Repo“ (nur dass die unabhängige Prüfung vor dem Pull Request liegt; sie liegt jetzt vor „bereit“ und dem Link) |
 | Testdaten für den Leistungstest | 13.11.2026, #104, Nr. 1 und 2 | 13.11.2026, #103, Nr. 4 und 5 (nur für die Massendaten des Zusatzes `--mass-data`) |
 | Sperre für rote Pull Requests | 13.11.2026, #16, Nr. 1 | 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur der Satz, dass die Regel die Sperre durch GitHub ersetzt); 03.11.2026, #239, und 03.11.2026, #237, „Grenzen“ (je nur der Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“) |
 | Sichtbarkeit des Repos | 13.11.2026, #310, Nr. 1 | 20.10.2026, „Offene Punkte aus der Bestandsaufnahme“, Nr. 4 |
@@ -45,6 +46,26 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Knöpfe im Abschnitt „Personen“ | 15.11.2026, #298, Nr. 1 | 11.11.2026, #117, Nr. 2 (nur Knopf „Person mit Konto aufnehmen“ mit „Verwaltete Person anlegen“ daneben, N6) |
 | Satz bei leerer Liste „Personen“ | 15.11.2026, #298, Nr. 3 | 11.11.2026, #117, Nr. 2 (nur der zweite Satz „Du kannst oben …“, N7) |
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
+
+---
+
+## 2026-11-15 · Pull Request als Entwurf vor der unabhängigen Prüfung (#348)
+
+**Entscheidung** (Sebastian in der Klärung von #348 am 15.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/348#issuecomment-6899833781), Frage 2, Weg (c); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/348#issuecomment-6899833517) mit „Alle passen“):
+
+1. Ist der schnelle Lauf grün und die Vorschau abgenickt (falls es eine gibt), legt die KI den Pull Request nach der Vorlage als Entwurf an, mit vollständiger Beschreibung, bevor die unabhängige Prüfung beginnt. Der volle Lauf auf GitHub läuft so gleichzeitig mit der Prüfung.
+2. Rote Tests aus diesem Lauf, auch solche nur in Firefox, behebt die KI zusammen mit den Befunden der Prüfung in einem Stand.
+3. Erst wenn für den letzten Stand alles grün ist, stellt die KI den Entwurf auf „bereit“ und schickt Sebastian den Link, unter denselben Bedingungen wie bisher (`CLAUDE.md`, R29). Befund „hoch“, Ende der Sitzung vor Grün und Neustart nach gescheiterter Browser-Installation gelten auch für einen Entwurf.
+4. Unverändert bleiben der schnelle und der volle Lauf (`pruefen.sh`), die Auswahl der Tests nach `CLAUDE.md`, Ablauf je Aufgabe Nr. 4, und dass die unabhängige Prüfung nie gleichzeitig mit einem lokalen Prüflauf derselben Arbeitskopie läuft.
+5. Nachweis der Wirkung: Der Rückblick P2 (#269) zählt ab dieser Änderung die roten Läufe nach dem Ende der unabhängigen Prüfung, die von einem lokal nicht ausgewählten Test kamen (auch nur in Firefox). Ziel: keiner.
+
+**Technische Wahl** (KI): Angelegt wird mit `gh pr create --draft`, bereit gestellt mit `gh pr ready`. „Prüfungen“ (`.github/workflows/ci.yml`) und „PR-Angaben“ (`.github/workflows/pr-angaben.yml`) laufen auch für Entwürfe und reagieren nicht auf das Bereitstellen; der zuletzt geprüfte Stand bleibt also gültig. Zwei Tests in `tests/test_pruefung_auf_github.py` halten beides fest. Die Regel trägt die Kennung R39.
+
+**Begründung:** Vom 03.11. bis 15.11.2026 war die Prüfung auf GitHub in 8 Pull Requests rot, weil ein bestehender Test lokal nicht ausgewählt war, jeweils erst nach der unabhängigen Prüfung; jede zusätzliche Runde kostete 10 bis 15 Minuten ([Auswertung in #293, Punkt 2](https://github.com/sebivtt/dpv-participant-management/issues/293#issuecomment-6897640389)). Von den sechs Fällen, die #304 nicht schon löst, hätte eine Auswahl nach genannten Dateien nur zwei gefunden, ein lokaler Lauf aller Tests ohne Browser fünf, bei rund 13 Minuten je Pull Request. Der Entwurf findet alle sechs und Fehler nur in Firefox, ohne lokale Kosten; das Repo ist öffentlich, die Minuten auf GitHub kosten nichts.
+
+**Grenzen:** Ersetzt im Eintrag vom 20.10.2026 („Neustart, Name, Lizenz, Umfang und Technik“) nur den Zeitpunkt in „unabhängige Prüfung vor jedem Pull Request“: Der Pull Request entsteht jetzt davor, aber als Entwurf; „bereit“ und der Link kommen weiter erst danach. Der Satz „Die Prüfung vor jedem Pull Request sieht nur den Diff“ im Eintrag vom 21.10.2026 („Externes KI-Review am Ende jeder Phase“) ist Begründung, keine Regel, und wird nicht ersetzt. Die Einträge vom 03.11.2026 (#235), Nr. 3, und 04.11.2026 (#249), Nr. 1, bleiben: Die Prüfung beginnt weiter erst nach grünem schnellem Lauf und abgenickter Vorschau, und der Entwurf entsteht erst danach. Ebenso bleibt der Eintrag vom 04.11.2026 (#244), Nr. 2: Das Nachziehen liegt jetzt vor dem Entwurf und damit weiter vor der Prüfung. Ob sich eine Session an die Reihenfolge hält, prüft kein Programm, sondern das Review.
+
+**Umsetzung:** `CLAUDE.md` (Ablauf je Aufgabe Nr. 5 und 6, „Nachziehen“), `docs/review-leitfaden.md`, `.github/pull_request_template.md`, Tests in `tests/test_arbeitsregeln.py` (Kennung R39) und `tests/test_pruefung_auf_github.py`.
 
 ---
 
