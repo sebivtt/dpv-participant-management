@@ -627,16 +627,17 @@ def test_mg2_leerzeichen_am_rand_werden_entfernt(org):
 
 
 def test_mg3_hoechstlaengen_von_namen_und_fahrtenname(org):
-    response = add(org.falken_leitung, org.falken, first_name="L" * 101, last_name="P" * 101, scout_name="K" * 31)
+    # Vor- und Nachname höchstens 50 Zeichen seit #330 (vorher 100).
+    response = add(org.falken_leitung, org.falken, first_name="L" * 51, last_name="P" * 51, scout_name="K" * 31)
     found = dialog_of(_tree(response))
-    assert field_error(found, "first_name") == "Der Vorname darf höchstens 100 Zeichen lang sein."
-    assert field_error(found, "last_name") == "Der Nachname darf höchstens 100 Zeichen lang sein."
+    assert field_error(found, "first_name") == "Der Vorname darf höchstens 50 Zeichen lang sein."
+    assert field_error(found, "last_name") == "Der Nachname darf höchstens 50 Zeichen lang sein."
     assert field_error(found, "scout_name") == "Der Fahrtenname darf höchstens 30 Zeichen lang sein."
     # Nichts wird abgeschnitten: Die zu lange Eingabe bleibt stehen.
-    assert value_of(found, "first_name") == "L" * 101
+    assert value_of(found, "first_name") == "L" * 51
     assert not ManagedPerson.objects.filter(unit=org.falken).exists()
 
-    response = add(org.falken_leitung, org.falken, first_name="L" * 100, last_name="P" * 100, scout_name="K" * 30)
+    response = add(org.falken_leitung, org.falken, first_name="L" * 50, last_name="P" * 50, scout_name="K" * 30)
 
     assert response.status_code == 302
     assert ManagedPerson.objects.get(unit=org.falken).scout_name == "K" * 30
