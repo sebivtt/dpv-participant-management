@@ -9,6 +9,8 @@ pytest_plugins = ["pytester", "tests.keycloak_fake", "tests.log_capture", "tests
 
 import pytest
 
+from tests.nur_lokales_keycloak import require_local_keycloak
+
 
 @pytest.fixture(autouse=True)
 def _bausteinkatalog_sichtbar(settings):
@@ -18,3 +20,9 @@ def _bausteinkatalog_sichtbar(settings):
     Tests für den Betrieb schalten ihn selbst ab.
     """
     settings.BUILDING_BLOCKS_VISIBLE = True
+
+
+def pytest_collection_finish(session):
+    """Mit einem Test gegen das echte Keycloak (Dateien *_echt.py) nur gegen das auf dem eigenen Rechner (#325, V11)."""
+    if any(item.path.name.endswith("_echt.py") for item in session.items):
+        require_local_keycloak()
