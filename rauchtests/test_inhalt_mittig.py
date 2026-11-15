@@ -62,6 +62,7 @@ def _mittig_rechts_der_leiste(page: Page) -> None:
 
 
 # Szenarien 1 und 2: großer Bildschirm, alle Seiten mit Seitenleiste
+@pytest.mark.bausteinkatalog
 def test_grosser_bildschirm_block_mittig_auf_allen_seiten(browser, browser_name, mit_band):
     page = _context(browser, browser_name, GROSS).new_page()
     login(page)
