@@ -532,6 +532,13 @@ def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
     return _admit_page(request, found, form=form, hits_found=hits_found, notice=notice)
 
 
+# Person aufnehmen (#298): leeres Gerüst, damit die Tests an der fachlichen Regel scheitern.
+@checks_rights("PK-17", "PK-23", "PK-26", "VP-01", "VP-06", "VP-17", "EH-18", "SZ-03")
+def organisation_add_person(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Person aufnehmen“ mit der Wahl; noch leer (#298)."""
+    raise Http404
+
+
 # Austragen (#286, Teil 2 von #65). Wie beim Entfernen hat der Dialog eine eigene Adresse unter der
 # Seite der Organisation, damit er auch ohne Skript geht: „Austragen“ führt dorthin, der rote Knopf
 # schickt die Wahl dorthin. Die Organisation kommt immer aus der Adresse, die Person über ihre Kennung,

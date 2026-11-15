@@ -21,6 +21,7 @@ from core.views import (
     federation_search_lead,
     organisation,
     organisation_add_managed,
+    organisation_add_person,
     organisation_admit,
     organisation_admit_search,
     organisation_appoint,
@@ -82,6 +83,8 @@ urlpatterns = [
     # Angezeigte Leitungsrollen verwalteter Personen (#99): eigene Adresse neben der für Rollen mit Konto.
     path("organisation/<key:unit>/entfernen-anzeige/<key:role>/", organisation_remove_displayed,
          name="organisation_remove_displayed"),
+    # Person aufnehmen (#298): der Dialog mit der Wahl; die beiden Wege behalten ihre Adressen.
+    path("organisation/<key:unit>/person-aufnehmen/", organisation_add_person, name="organisation_add_person"),
     path("organisation/<key:unit>/aufnehmen/", organisation_admit, name="organisation_admit"),
     path("organisation/<key:unit>/aufnehmen/suchen/", organisation_admit_search, name="organisation_admit_search"),
     path("organisation/<key:unit>/austragen/<key:person>/", organisation_expel, name="organisation_expel"),
