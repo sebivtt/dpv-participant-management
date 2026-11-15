@@ -344,3 +344,14 @@ def test_zielbild_laedt_nichts_von_fremden_servern():
     assert not re.findall(r"""(?:src|href)\s*=\s*["']?(?:https?:)?//""", content, flags=re.I)
     assert not re.findall(r"""(?:url\(|@import)\s*["']?(?:https?:)?//""", content, flags=re.I)
     assert all(mail.endswith("@example.org") for mail in re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", content))
+
+
+def test_befund_g1_die_ueberschrift_einer_flaeche_steht_nicht_in_einem_span(org):
+    """Unabhängige Prüfung, G1: Ein `span` darf nach den Regeln von HTML keine Überschrift enthalten."""
+    root = page_tree(org.falken_leitung, unit_address(org.falken))
+
+    heads = _all(root, lambda e: "a-flaeche-kopf" in _classes(e))
+    assert heads
+    for head in heads:
+        for span in _by_tag(head, "span"):
+            assert not _all(span, lambda e: e.name in ("h2", "h3")), _visible_text(head)
