@@ -32,13 +32,13 @@ from django.utils import timezone
 from access.keys import new_key
 from access.rights import Rights
 from accounts.models import AccountSearch
-from events.models import Event
+from events.models import Event, RegisteredPerson, Registration
 from persons.models import ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
 from tests.keycloak_fake import login
 from tests.test_dev_realm_datei import ACCOUNT_IDS
 from tests.test_nicht_gefunden import assert_like_missing
-from tests.test_organisation import unit_address
+from tests.test_organisation import client_for, unit_address
 from tests.test_testumgebung import _setting
 from units.models import Unit, UnitChange
 
@@ -116,7 +116,8 @@ IDS_FROM_199 = {
 # stehen“): das Konto, seine Verknüpfung mit Keycloak, seine Mail-Liste und seine Anmeldung.
 KEPT = (User, EmailAddress, SocialAccount, SocialToken, SocialApp, Session, ContentType, Permission, Group)
 # Werte, die bei jedem Lauf neu entstehen: zufällige Kennungen und Uhrzeiten.
-VOLATILE = {"key", "creation_key", "changed_at", "consent_at", "at"}
+# Seit #101 auch der Zeitpunkt einer Anmeldung.
+VOLATILE = {"key", "creation_key", "changed_at", "consent_at", "at", "created_at"}
 
 
 @pytest.fixture
@@ -301,8 +302,9 @@ def test_ein_zweiter_lauf_leert_auch_veranstaltungen_und_ihre_leitungen(local):
 
     run()
 
-    assert not Event.objects.exists()
-    assert Event.leads.through.objects.count() == 0
+    # Seit #101 legt der Befehl selbst „Probelager 2027“ an (AG3); Fietes Veranstaltung und ihre Leitung sind weg.
+    assert not Event.objects.filter(leads=fiete).exists()
+    assert list(Event.leads.through.objects.values_list("user__username", flat=True)) == ["ohne.nachname"]
     assert snapshot() == after_first
 
 
@@ -624,9 +626,13 @@ def test_u3_der_befehl_nimmt_nur_die_normalen_wege_des_tools():
     """
     source = (BASE_DIR / "core" / "management" / "commands" / "testdata.py").read_text(encoding="utf-8")
 
-    for bypass in ("bulk_create", ".update(", "objects.create(", "ManagedPerson(", "RoleChange.record", "UnitChange."):
+    for bypass in ("bulk_create", ".update(", "objects.create(", "ManagedPerson(", "RoleChange.record", "UnitChange.",
+                   "Event(", "Registration", "RegisteredPerson"):
         assert bypass not in source, bypass
     assert "add_managed(" in source
+    # Veranstaltung und Anmeldung wie im Tool über die zentrale Rechteprüfung (#101, AG3).
+    assert "create_event(" in source
+    assert ".register(" in source
     assert ".save(by=" in source
 
 
@@ -638,3 +644,91 @@ def test_u4_importdatei_des_test_realms_und_die_kennungen_aus_199_bleiben():
     assert all("id" not in user for user in test_realm["users"])
     dev_ids = {user["username"]: user.get("id") for user in dev_realm["users"]}
     assert {username: dev_ids.get(username) for username in IDS_FROM_199} == IDS_FROM_199
+
+
+# ---------- Probelager 2027 und die Sammelanmeldung (#101) ----------
+#
+# AG3 und U4 aus dem Kommentar „Szenarien (15.11.2026)“ in #101
+# (https://github.com/sebivtt/dpv-participant-management/issues/101#issuecomment-6901245455).
+
+ERIKAS_ANMELDUNG = ["Erika Testfrau", "Paul Probe", "Kiwi (Lena Probe)", "Theo Probe"]
+
+
+def registered_names(entry: Registration) -> list[str]:
+    return [person.display_name for person in RegisteredPerson.objects.filter(registration=entry).order_by("pk")]
+
+
+def test_ag3_probelager_von_der_bundesleitung_boreas_mit_erikas_sammelanmeldung(local):
+    run()
+
+    probelager = Event.objects.get()
+    assert (probelager.name, probelager.start, probelager.end) == ("Probelager 2027", date(2027, 5, 15),
+                                                                     date(2027, 5, 17))
+    assert list(probelager.leads.values_list("username", flat=True)) == ["ohne.nachname"]
+    registration = Registration.objects.get()
+    assert (registration.event, registration.contact) == (probelager, account("erika.testfrau"))
+    assert registered_names(registration) == ERIKAS_ANMELDUNG
+
+
+def test_ag3_bundesleitung_und_erika_sehen_sie_max_testmann_nicht(data):
+    registration = Registration.objects.get()
+    address = f"/anmeldungen/{registration.key}/"
+    event_page = f"/veranstaltungen/{registration.event.key}/"
+
+    bund = client_for(data.ohne_nachname)
+    assert "Kiwi (Lena Probe)" in bund.get(event_page).content.decode()
+    assert bund.get(address).status_code == 200
+    assert client_for(data.erika_testfrau).get(address).status_code == 200
+    assert client_for(data.max_testmann).get(address).status_code == 404
+    assert_like_missing(data.max_testmann, address)
+
+
+def test_ag3_auf_dem_server_mit_den_vier_konten(test_environment):
+    logged_in_before("erika.testfrau", "Erika", "Testfrau")
+    logged_in_before("ohne.nachname", "Erika")
+    logged_in_before("max.testmann", "Max", "Testmann")
+
+    run()
+
+    registration = Registration.objects.select_related("event", "contact").get()
+    assert registration.contact.username == "erika.testfrau"
+    assert list(registration.event.leads.values_list("username", flat=True)) == ["ohne.nachname"]
+    assert registered_names(registration) == ERIKAS_ANMELDUNG
+
+
+def test_ag3_ohne_konto_der_leitung_keine_veranstaltung_und_keine_anmeldung(test_environment):
+    logged_in_before("erika.testfrau", "Erika", "Testfrau")
+
+    out = run()
+
+    assert not Event.objects.exists()
+    assert not Registration.objects.exists()
+    notes = [line for line in out.splitlines() if "Probelager 2027" in line]
+    assert len(notes) == 1, out
+    assert "ohne.nachname" in notes[0]
+
+
+def test_ag3_ohne_erikas_konto_die_veranstaltung_aber_keine_anmeldung(test_environment):
+    logged_in_before("ohne.nachname", "Erika")
+
+    out = run()
+
+    assert list(Event.objects.values_list("name", flat=True)) == ["Probelager 2027"]
+    assert not Registration.objects.exists()
+    notes = [line for line in out.splitlines() if "Probelager 2027" in line]
+    assert len(notes) == 1, out
+    assert "erika.testfrau" in notes[0]
+
+
+def test_ag3_und_u4_jeder_lauf_ergibt_dieselben_daten_und_leert_die_anmeldungen(local):
+    run()
+    after_first = snapshot()
+    fiete = account("gruppenleitung.falken")
+    Rights(fiete).register(Event.objects.get(), [fiete])
+    assert Registration.objects.count() == 2
+
+    run()
+
+    assert snapshot() == after_first
+    assert Registration.objects.count() == 1
+    assert registered_names(Registration.objects.get()) == ERIKAS_ANMELDUNG
