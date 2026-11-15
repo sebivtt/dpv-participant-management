@@ -16,6 +16,10 @@ ihren eigenen. Jeder Teil läuft zu Ende, auch wenn ein anderer rot ist. Die Ges
 Prüfungen (pruefen.sh)“ ist nur grün, wenn alle Teile grün sind. Die Zeitlimits gelten je Teil;
 die Summe wird hier nachgerechnet.
 
+Issue #348 (15.11.2026): Der Pull Request entsteht als Entwurf vor der unabhängigen Prüfung, damit
+GitHub gleichzeitig prüft. Das wirkt nur, solange „Prüfungen“ und „PR-Angaben“ auch Entwürfe prüfen,
+und der zuletzt geprüfte Stand bleibt nur gültig, solange „bereit“ keinen neuen Lauf startet.
+
 Diese Tests sorgen dafür, dass das nicht still aus ci.yml verschwindet. Ob GitHub es
 tatsächlich so ausführt, zeigt erst ein Lauf dort.
 """
@@ -28,6 +32,7 @@ import yaml
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CI = BASE_DIR / ".github" / "workflows" / "ci.yml"
+PR_ANGABEN = BASE_DIR / ".github" / "workflows" / "pr-angaben.yml"
 INSTALL_NAME = "Browser für den Rauchtest installieren"
 INSTALL_COMMAND = "uv run --locked playwright install --with-deps ${{ matrix.browser }}"
 TEIL_COMMAND = "./pruefen.sh teil ${{ matrix.teil }}"
@@ -262,3 +267,35 @@ def test_die_gesamtpruefung_ist_rot_wenn_ein_teil_nicht_gruen_beendet_ist():
 
 def test_die_gesamtpruefung_hat_ein_kurzes_zeitlimit():
     assert _gesamt()["timeout-minutes"] <= 5
+
+
+# ---------- Pull Request als Entwurf (#348) ----------
+
+# Ohne eigene Liste startet GitHub einen Lauf bei diesen Ereignissen eines Pull Requests.
+STANDARD_EREIGNISSE = ["opened", "synchronize", "reopened"]
+
+
+def _ereignisse(pfad: Path) -> list[str]:
+    workflow = yaml.safe_load(pfad.read_text(encoding="utf-8"))
+    ausloeser = workflow.get("on", workflow.get(True))  # YAML liest das Wort „on“ als wahr
+    return (ausloeser["pull_request"] or {}).get("types", STANDARD_EREIGNISSE)
+
+
+def _bedingungen(pfad: Path) -> list[str]:
+    jobs = yaml.safe_load(pfad.read_text(encoding="utf-8"))["jobs"].values()
+    teile = [*jobs, *(step for job in jobs for step in job.get("steps", []))]
+    return [str(teil["if"]) for teil in teile if "if" in teil]
+
+
+def test_ein_entwurf_wird_beim_anlegen_und_bei_jedem_neuen_stand_geprueft():
+    """S1 und S3: Auf GitHub laufen „Prüfungen“ und „PR-Angaben“ schon für den Entwurf."""
+    for pfad in (CI, PR_ANGABEN):
+        ereignisse = _ereignisse(pfad)
+        assert {"opened", "synchronize"} <= set(ereignisse), (pfad.name, ereignisse)
+        assert not [b for b in _bedingungen(pfad) if "draft" in b], f"{pfad.name} überspringt Entwürfe"
+
+
+def test_bereit_stellen_startet_keinen_neuen_lauf():
+    """S4: Der zuletzt geprüfte Stand bleibt gültig, wenn die KI den Entwurf auf „bereit“ stellt."""
+    for pfad in (CI, PR_ANGABEN):
+        assert "ready_for_review" not in _ereignisse(pfad), pfad.name
