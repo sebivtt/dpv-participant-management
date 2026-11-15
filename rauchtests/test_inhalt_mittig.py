@@ -6,12 +6,15 @@ Firefox und WebKit (conftest.py). Alle Konten und Daten sind erfunden.
 """
 
 import pytest
+from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from rauchtests.conftest import BASE, HANDY, _context, login
 from rauchtests.test_kurzmeldung import _later, _save, _set_scout_name, _short, _stop_clock
 from rauchtests.test_organisation import _no_side_scroll, _walhall_for_erika
 from rauchtests.test_veranstaltungen import _erika_in_den_falken
+from roles.models import Role
+from tests.test_rollen import give
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -67,6 +70,9 @@ def test_grosser_bildschirm_block_mittig_auf_allen_seiten(browser, browser_name,
     page = _context(browser, browser_name, GROSS).new_page()
     login(page)
     units = _walhall_for_erika()
+    # Als Verbandsleitung zeigt „/organisation/“ die Seite „Verband“ (Szenario 2), nicht die Seite „Organisation“.
+    erika = get_user_model().objects.get(username="erika.testfrau")
+    give(erika, Role.Kind.FEDERATION_LEAD, units["boreas"].parent)
     adressen = (
         "/profil/",
         f"/organisation/{units['walhall'].key}/",
@@ -77,6 +83,8 @@ def test_grosser_bildschirm_block_mittig_auf_allen_seiten(browser, browser_name,
     for adresse in adressen:
         page.goto(f"{BASE}{adresse}")
         _mittig_rechts_der_leiste(page)
+        if adresse == "/organisation/":
+            expect(page.locator(".a-buende-titel")).to_be_visible()
     # Gegenprobe: Rechts bleibt nicht mehr die ganze freie Fläche leer.
     kasten = _kasten(page, ".a-main-inhalt")
     assert kasten["left"] - LEISTE > 100, kasten
