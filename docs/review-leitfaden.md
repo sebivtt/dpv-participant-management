@@ -86,7 +86,7 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
 
    </details>
    ```
-   Am Anfang der Zeile `<summary>` steht genau einer dieser Namen: „Bericht A“ für Prüfauftrag A, „Bericht B“ für Prüfauftrag B, „Nachtrag B“ für die Antwort auf den Nachtrag. „Bericht C“ gibt es nur für ein drittes Modell in den Fällen aus Abschnitt 4 (Schritte 10 und 12); andere Namen, etwa „Nachtrag C“, gibt es nicht.
+   Direkt hinter `<summary>` steht genau einer dieser Namen: „Bericht A“ für Prüfauftrag A, „Bericht B“ für Prüfauftrag B, „Nachtrag B“ für die Antwort auf den Nachtrag. „Bericht C“ gibt es nur für ein drittes Modell in den Fällen aus Abschnitt 4 (Schritte 10 und 12); andere Namen, etwa „Nachtrag C“, gibt es nicht. Nur ein ungültiger Bericht heißt „Ungültig: ZIP-Datei nicht lesbar“ (unter Schritt 15).
    Danach: Der Kommentar zeigt nur die Zeile mit dem Namen; aufgeklappt stehen die Überschriften des Berichts ohne Rautezeichen.
 10. **Nur nach P6:** einem dritten Modell in einem neuen Chat die ZIP-Datei und Prüfauftrag B geben und den Bericht als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen.
 11. Eine neue Claude-Sitzung starten und den Auftrag zur Zusammenführung (Abschnitt 9) mit der Nummer des Review-Issues hineinkopieren.
@@ -100,12 +100,12 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
 Das gilt für jedes Modell, das die ZIP-Datei bekommt. Hat es sie nicht lesen können, ist sein Bericht nicht gültig, auch wenn er lang und gründlich aussieht. Woran man das erkennt:
 
 - Der Bericht beginnt mit „ZIP-Datei nicht lesbar“ (das verlangen die Prüfaufträge in Abschnitt 9) oder sagt auf andere Weise, dass die Datei oder ihr Inhalt nicht zu öffnen war.
-- Oder kein Befund nennt eine Fundstelle mit Datei und Zeile, oder der Bericht nennt nur Dateinamen. So war es beim Review zu P1: Gemini sah nur die Namen der Dateien.
+- Oder der ganze Bericht, auch die Tabelle der Abschlusskriterien, nennt keine einzige Fundstelle mit Datei und Zeile, oder er nennt nur Dateinamen. So war es beim Review zu P1: Gemini sah nur die Namen der Dateien.
 
 Was dann zu tun ist:
 
-1. Den Bericht nicht als Bericht A, B oder C ins Review-Issue stellen. Stattdessen dort ein kurzer Kommentar: welches Modell, welcher Prüfauftrag, „ZIP-Datei nicht lesbar“.
-2. Einmal einen neuen Chat beim selben Modell öffnen, dieselbe ZIP-Datei hochladen und denselben Prüfauftrag schicken. Ist der neue Bericht gültig, weiter wie in Schritt 9.
+1. Den Bericht nicht als Bericht A, B oder C ins Review-Issue stellen, sondern eingeklappt wie in Schritt 9 mit dem Namen „Ungültig: ZIP-Datei nicht lesbar“, dahinter Modell und Prüfauftrag, z. B. `<summary>Ungültig: ZIP-Datei nicht lesbar, Gemini, Prüfauftrag B</summary>`.
+2. Einmal einen neuen Chat beim selben Modell öffnen, dieselbe ZIP-Datei hochladen und denselben Prüfauftrag schicken. Ist der neue Bericht gültig, dort weitermachen, wo der erste Bericht kopiert wurde: bei ChatGPT mit Schritt 8, bei Gemini mit dem Nachtrag in Schritt 8, bei einem dritten Modell mit dem Einstellen nach Schritt 9.
 3. Ist auch er nicht gültig: anhalten und keine andere ZIP-Datei erzeugen, damit beide Modelle dieselbe Datei prüfen. Wie es weitergeht, etwa mit einem anderen Modell für diesen Prüfauftrag, entscheidet Sebastian zusammen mit einer Claude-Sitzung. Die Zusammenführung beginnt erst mit zwei gültigen Berichten.
 
 ## 7. Zusammenführung

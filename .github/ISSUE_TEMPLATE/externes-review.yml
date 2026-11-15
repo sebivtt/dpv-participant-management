@@ -62,7 +62,7 @@ body:
     id: modelle
     attributes:
       label: Modelle und Fassungen
-      description: Wer welchen Prüfauftrag bekam, mit Fassung, soweit bekannt. Ein drittes Modell nur in den Fällen aus dem Leitfaden.
+      description: Wer welchen Prüfauftrag bekam, mit Fassung, soweit bekannt, und ob es die ZIP-Datei lesen konnte (Leitfaden, Abschnitt 7). Ein drittes Modell nur in den Fällen aus dem Leitfaden.
       placeholder: |
         Prüfauftrag A (breiter Blick): ChatGPT, Modell laut Chat
         Prüfauftrag B (Sicherheit, Rechte, Datenschutz): Gemini, Modell laut Chat

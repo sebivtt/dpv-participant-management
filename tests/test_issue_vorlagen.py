@@ -193,7 +193,8 @@ def test_zip_fuer_die_modelle_ist_unkomprimiert(tmp_path):
 
 def _schritte_fuer_sebastian() -> dict[int, str]:
     """Die nummerierten Schritte aus Abschnitt 6 des Leitfadens, je mit ihrem ganzen Text."""
-    section = GUIDE.read_text(encoding="utf-8").split("## 6.", 1)[1].split("\n## ", 1)[0]
+    # Bis zum nächsten Abschnitt oder Unterabschnitt: Dessen eigene Listen sind keine Schritte.
+    section = re.split(r"\n#{2,3} ", GUIDE.read_text(encoding="utf-8").split("## 6.", 1)[1], maxsplit=1)[0]
     parts = re.split(r"^(\d+)\. ", section, flags=re.MULTILINE)
     return {int(number): text for number, text in zip(parts[1::2], parts[2::2], strict=True)}
 
