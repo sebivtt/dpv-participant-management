@@ -54,7 +54,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Begründung:** Je 100 Zeichen sprengen an einigen Stellen die Anzeige, etwa im Dialog „Verschieben“ (#331). Gemeldet mit dem Vorschlag 30 Zeichen; 50, damit lange Doppelnamen passen. Leeren statt Kürzen geht nicht, weil Vor- und Nachname Pflicht sind.
 
-**Technische Wahl** (KI): Die Grenze steht an einer Stelle im Code (`NAME_MAX_LENGTH` in `persons/models.py`); Zahl unter dem Feld und Meldung „zu lang“ folgen ihr von selbst (#215). Wie beim Fahrtennamen kein `maxlength` im Feld, damit beim Einfügen nichts still abgeschnitten wird. Die Umstellung kürzt mit derselben Stelle, die zu lange Namen aus Keycloak kürzt (`trimmed()`, #77).
+**Technische Wahl** (KI): Die Grenze steht an einer Stelle im Code (`NAME_MAX_LENGTH` in `persons/models.py`); Zahl unter dem Feld und Meldung „zu lang“ folgen ihr von selbst (#215). Wie beim Fahrtennamen kein `maxlength` im Feld, damit beim Einfügen nichts still abgeschnitten wird. Die Umstellung kürzt wie die Stelle, die zu lange Namen aus Keycloak kürzt (`trimmed()`, #77), mit einer eigenen Kopie in der Migration, damit sie sich später nicht mitändert.
 
 **Umsetzung:** `persons/models.py`, `persons/migrations/0004_namen_50.py`, `persons/texts.py`, `tests/test_namen_grenze.py`, `rauchtests/test_namen_grenze.py`.
 
