@@ -195,6 +195,12 @@ Kein Zielbild (Nachbesserung eines bestehenden Bausteins). Entscheidungen in `do
 - **Dialog:** Öffnen, Schließen und Speichern laden die Seite neu, weil jeder Dialog eine eigene Adresse hat. Mit Skript steht die Seite dahinter danach an derselben Stelle wie vor dem Öffnen, auch nach „Suchen“ und einer Ablehnung im Dialog; ist sie kürzer geworden, so nah wie möglich daran. Führt die Handlung auf eine andere Seite, beginnt diese oben, ebenso eine Seite, die man später neu öffnet. Das gilt für jeden Dialog mit eigener Adresse, ohne dass er etwas eigenes braucht. Ohne Skript springt die Seite zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat („#abschnitt-…“ in der Adresse); steht der Knopf ganz oben auf der Seite, bleibt sie oben. Bei verwalteten Personen führt der Dialog wie bisher zum Knopf selbst (#117); mit Skript bekommt er den Fokus, ohne dass die Seite zu ihm springt.
 - **„Verbandsleitung benennen“:** Die Zeile unter dem Titel heißt „für den DPV“.
 
+### Auswahl: der ganze Kasten wählt (#329, 15.11.2026)
+
+Kein Zielbild (Nachbesserung eines bestehenden Bausteins, Sebastian bei der Klärung am 14.11.2026). Ein Baustein erweitert:
+
+- **Auswahl im Dialog:** Ein Klick oder Tippen irgendwo in den Kasten einer Möglichkeit wählt sie, auch auf den Rand neben Text und rundem Knopf, auch ohne Skript; über dem ganzen Kasten zeigt der Mauszeiger die Hand. Ein Klick in die Lücke zwischen zwei Kästen ändert die Wahl nicht. Mit der Tastatur bleibt alles wie bisher, der Fokusrahmen sitzt am runden Knopf. Das Aussehen der Kästen bleibt gleich.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
