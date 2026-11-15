@@ -1,9 +1,12 @@
 """Einstellungen des DPV Anmeldetools.
 
 Zugangsdaten und alles, was sich je Rechner unterscheidet, kommen aus Umgebungsvariablen
-(NFA-10). Lokal stehen sie in der Datei .env, die nie ins Repo kommt; die Vorlage ist
-.env.example. Fehlt eine Pflichtangabe, bricht der Start mit einer verständlichen
-Meldung ab, statt mit einem unsicheren Ersatzwert weiterzulaufen.
+(NFA-10). Lokal stehen sie in der Datei .env, die nie ins Repo kommt. Was jede Einstellung
+bedeutet, steht in testumgebung/.env.example, was nur für den eigenen Rechner gilt, in
+.env.example; die Absicherungen für den Betrieb auf einem Server listet docs/betrieb.md.
+Die Kommentare hier erklären nur, warum das Tool eine Einstellung so verwendet. Fehlt eine
+Pflichtangabe, bricht der Start mit einer verständlichen Meldung ab, statt mit einem
+unsicheren Ersatzwert weiterzulaufen.
 """
 
 import hashlib
@@ -148,14 +151,19 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Hinter HTTPS (#58): Vor dem Tool liegt dann ein Programm, das die verschlüsselte Verbindung
-# annimmt und mit dem Hinweis X-Forwarded-Proto weiterreicht. Nur mit Schalter: Ohne so ein
-# Programm davor könnte jede Anfrage diesen Hinweis selbst mitschicken. Dann gehen Sitzungs-
-# und Formular-Cookies nur über HTTPS; das Cookie „war angemeldet“ folgt der Anfrage selbst.
+# Hinter HTTPS (#58, #324): Dem Hinweis X-Forwarded-Proto glaubt das Tool nur mit Schalter;
+# ohne Programm davor könnte jede Anfrage ihn selbst mitschicken. Das Cookie „war angemeldet“
+# folgt der Anfrage selbst. Die Weiterleitung auf HTTPS ist dauerhaft (301), und HSTS gilt nur
+# für genau diese Adresse und ohne Vorab-Liste der Browser: Beides ließe sich sonst für andere
+# Adressen derselben Domain oder nach einem Umzug kaum zurücknehmen (Klärung von #324).
 BEHIND_HTTPS_PROXY = os.environ.get("DJANGO_BEHIND_HTTPS_PROXY") == "1"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if BEHIND_HTTPS_PROXY else None
 SESSION_COOKIE_SECURE = BEHIND_HTTPS_PROXY
 CSRF_COOKIE_SECURE = BEHIND_HTTPS_PROXY
+SECURE_SSL_REDIRECT = BEHIND_HTTPS_PROXY
+SECURE_HSTS_SECONDS = 365 * 24 * 60 * 60 if BEHIND_HTTPS_PROXY else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 
 # Mails gehen bis auf Weiteres nur als Hinweis ins Log, nie an einen Mailserver (#58). Den
 # Versand über den DPV-Mailweg bringt P5; in der Testumgebung dann nur an erlaubte
@@ -191,15 +199,14 @@ AUTHENTICATION_BACKENDS = ["allauth.account.auth_backends.AuthenticationBackend"
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "start"
 
-# Adresse des Realms, z. B. http://localhost:8080/realms/dpv, und Zugang des Login-Clients.
-# Fehlen sie, meldet die Systemprüfung beim Start einen Fehler (accounts/checks.py). Sie
-# sind hier nicht Pflicht, damit sich die übrigen Einstellungen auch ohne sie laden lassen.
+# Fehlen Adresse des Realms oder Zugang des Login-Clients, meldet die Systemprüfung beim Start
+# einen Fehler (accounts/checks.py). Sie sind hier nicht Pflicht, damit sich die übrigen
+# Einstellungen auch ohne sie laden lassen.
 KEYCLOAK_REALM_URL = os.environ.get("KEYCLOAK_REALM_URL", "").rstrip("/")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "")
 KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
-# Nur für die Testumgebung auf dem eigenen Rechner (#58): Im Container erreicht das Tool die
-# Keycloak-Testumgebung unter einer anderen Adresse als der Browser. Diese Adresse nutzt nur
-# das Tool selbst für seine Anfragen an Keycloak; der Browser bekommt weiter KEYCLOAK_REALM_URL.
+# Die interne Adresse (#58) nutzt nur das Tool selbst für seine Anfragen an Keycloak; der
+# Browser bekommt weiter KEYCLOAK_REALM_URL.
 KEYCLOAK_REALM_URL_INTERN = os.environ.get("KEYCLOAK_REALM_URL_INTERN", "").rstrip("/") or KEYCLOAK_REALM_URL
 
 # Sicherheitsrichtlinie für Skripte (Content-Security-Policy, #278): Hat eine Seite einmal eine
@@ -223,8 +230,7 @@ SECURE_CSP = {
     "form-action": ["'self'", f"{KEYCLOAK_REALM_URL}/"] if KEYCLOAK_REALM_URL else ["'self'"],
 }
 
-# Schalter für den Link „Noch kein Konto? Registrieren“ (0 = ausgeblendet) und die Adresse,
-# die die Login-Seite stattdessen nennt.
+# Link „Noch kein Konto? Registrieren“ (#5); nur der ausdrückliche Wert 0 blendet ihn aus.
 REGISTRATION_LINK_ENABLED = os.environ.get("REGISTRATION_LINK_ENABLED", "1") != "0"
 ACCOUNT_HELP_EMAIL = os.environ.get("ACCOUNT_HELP_EMAIL", "anmeldetool@dpvonline.de")
 
