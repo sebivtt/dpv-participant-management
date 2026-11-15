@@ -994,6 +994,12 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
+@checks_rights("AN-01", "AN-02", "AN-03", "AN-06")
+def registration_page(request: HttpRequest, registration: str) -> HttpResponse:
+    """Die Seite einer Anmeldung (#101). Gerüst."""
+    raise Http404
+
+
 def _managed_values(entry) -> dict:
     """Die gespeicherten Angaben einer verwalteten Person für den Dialog „… bearbeiten“."""
     return {name: getattr(entry, name) for name in EDITABLE_FIELDS}

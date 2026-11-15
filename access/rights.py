@@ -57,7 +57,7 @@ from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
-from events.models import Event
+from events.models import Event, Registration
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, displayed_off_path, roles_blocking
 from roles import texts as role_texts
@@ -1129,6 +1129,28 @@ class Rights:
                 setattr(entry, name, values[name])
             entry.save()
         return entry, str(event_texts.SAVED % {"event": entry.name})
+
+    # Anmeldungen (#101, ANM-01, ANM-02; Probe in P2). Gerüst.
+
+    def may_register(self, person) -> bool:
+        """Darf die Person `person` anmelden (AN-04, AN-05)? Gerüst."""
+        return False
+
+    def register(self, event: Event, people: list) -> Registration:
+        """Meldet `people` zu `event` an; die Person wird Ansprechperson. Gerüst."""
+        return Registration.create(event, self.user, people)
+
+    def registrations(self) -> QuerySet:
+        """Die Anmeldungen, die die Person sieht (AN-01 bis AN-03). Gerüst."""
+        return Registration.objects.none()
+
+    def event_registrations(self, event: Event) -> list[dict]:
+        """Die Anmeldungen zu einer eigenen Veranstaltung für den Abschnitt „Anmeldungen“ (AN-01). Gerüst."""
+        return []
+
+    def registration(self, key) -> Registration:
+        """Eine Anmeldung über ihre Kennung; sonst „nicht gefunden“ (AN-03). Gerüst."""
+        return self.entry(self.registrations(), key)
 
     # Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02)
     #
