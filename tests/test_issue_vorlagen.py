@@ -150,10 +150,13 @@ def test_pruefauftraege_nennen_phase_und_commit_nur_ueber_platzhalter():
     assert "7d5f673" not in prompts
 
 
-def test_zip_fuer_die_modelle_enthaelt_das_repo_ohne_fremde_bibliotheken(tmp_path):
-    # Genau der Befehl aus dem Leitfaden, nur mit anderem Zielort und dem aktuellen Stand statt
-    # der Beispielkennung. --worktree-attributes: Auch noch nicht übernommene Änderungen an
-    # .gitattributes zählen, damit ein lokaler Lauf vor dem Commit dasselbe zeigt wie GitHub.
+def _zip_aus_dem_leitfaden(tmp_path) -> zipfile.ZipFile:
+    """Erzeugt die ZIP-Datei mit genau dem Befehl aus dem Leitfaden, Schritt 5.
+
+    Nur Zielort und Stand sind anders: der aktuelle Stand statt der Beispielkennung.
+    --worktree-attributes: Auch noch nicht übernommene Änderungen an .gitattributes zählen,
+    damit ein lokaler Lauf vor dem Commit dasselbe zeigt wie GitHub.
+    """
     lines = [line.strip() for line in GUIDE.read_text(encoding="utf-8").splitlines()]
     commands = [line for line in lines if line.startswith("git archive ")]
     assert len(commands) == 1, "Der Leitfaden nennt genau einen Befehl für die ZIP-Datei."
@@ -166,9 +169,64 @@ def test_zip_fuer_die_modelle_enthaelt_das_repo_ohne_fremde_bibliotheken(tmp_pat
 
     subprocess.run(command, cwd=BASE_DIR, check=True)  # noqa: S603 -- Befehl aus dem eigenen Leitfaden
 
-    names = zipfile.ZipFile(archive).namelist()
+    return zipfile.ZipFile(archive)
+
+
+def test_zip_fuer_die_modelle_enthaelt_das_repo_ohne_fremde_bibliotheken(tmp_path):
+    names = _zip_aus_dem_leitfaden(tmp_path).namelist()
     for included in ["CLAUDE.md", "CONTRIBUTING.md", "docs/anforderungen.md", "accounts/models.py"]:
         assert included in names
     assert ".env" not in names
     for excluded in ["core/static/core/bootstrap/", "tests/vendor/"]:
         assert not [name for name in names if name.startswith(excluded)], excluded
+
+
+def test_zip_fuer_die_modelle_ist_unkomprimiert(tmp_path):
+    # Beim Review zu P1 konnte Gemini die gepackte ZIP-Datei nicht lesen und sah nur die
+    # Dateinamen; die ungepackte desselben Commits schon (#74). Beide Modelle bekommen deshalb
+    # dieselbe ungepackte Datei.
+    entries = [entry for entry in _zip_aus_dem_leitfaden(tmp_path).infolist() if not entry.is_dir()]
+
+    assert entries
+    assert {entry.compress_type for entry in entries} == {zipfile.ZIP_STORED}
+
+
+def _schritte_fuer_sebastian() -> dict[int, str]:
+    """Die nummerierten Schritte aus Abschnitt 6 des Leitfadens, je mit ihrem ganzen Text."""
+    section = GUIDE.read_text(encoding="utf-8").split("## 6.", 1)[1].split("\n## ", 1)[0]
+    parts = re.split(r"^(\d+)\. ", section, flags=re.MULTILINE)
+    return {int(number): text for number, text in zip(parts[1::2], parts[2::2], strict=True)}
+
+
+def test_vorlage_review_verweist_beim_commit_auf_den_schritt_mit_der_kennung():
+    # Die Vorlage verwies beim Review zu P1 auf Schritt 2, die Kennung kommt aber aus dem
+    # Schritt mit „git rev-parse HEAD“ (#74). So bleibt der Verweis auch nach neuer Nummerierung richtig.
+    steps = _schritte_fuer_sebastian()
+    [number] = [number for number, text in steps.items() if "git rev-parse HEAD" in text]
+    description = _fields(_load("externes-review.yml"))["commit"]["attributes"]["description"]
+
+    assert re.findall(r"Schritt (\d+)", description) == [str(number)]
+
+
+def test_rahmen_fuer_berichte_hat_eine_leerzeile_vor_und_nach_dem_bericht():
+    # Steht der Bericht direkt unter <summary>, zeigt GitHub die erste Überschrift mit
+    # Rautezeichen an (#74). Der Rahmen hält deshalb eine eigene Zeile für den Bericht frei,
+    # mit je einer Leerzeile darüber und darunter.
+    [frame] = [block for block in re.findall(r"```text\n(.*?)```", GUIDE.read_text(encoding="utf-8"), flags=re.DOTALL)
+               if "<details>" in block]
+    lines = [line.strip() for line in frame.strip().splitlines()]
+
+    assert lines[0].startswith("<details><summary>") and lines[0].endswith("</summary>")
+    assert lines[-1] == "</details>"
+    assert lines[1:-1] == ["", lines[2], ""] and lines[2], lines
+
+
+def test_pruefauftraege_mit_zip_datei_verlangen_einen_hinweis_wenn_sie_nicht_lesbar_ist():
+    # Ein Modell, das die ZIP-Datei nicht lesen kann, schreibt sonst einen Bericht ohne
+    # Fundstellen, der leicht für gültig gehalten wird (Review zu P1, #74).
+    guide = GUIDE.read_text(encoding="utf-8").split("## 9.", 1)[1]
+    prompts = [block for block in re.findall(r"```text\n(.*?)```", guide, flags=re.DOTALL) if "ZIP-Datei" in block]
+
+    assert len(prompts) == 3, "Prüfauftrag A, Prüfauftrag B und der strittige Befund bekommen die ZIP-Datei."
+    for prompt in prompts:
+        assert "ZIP-Datei nicht lesbar" in prompt, prompt[:80]
