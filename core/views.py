@@ -1334,7 +1334,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220, 331],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
@@ -1345,7 +1345,9 @@ BUILDING_BLOCKS = {
                      "„Verwaltete Person löschen“ (drittes Beispiel), und „Abbrechen“ kann anders heißen und "
                      "woandershin führen, etwa „Nicht löschen“ zurück in den Dialog „Bearbeiten“ (viertes Beispiel). "
                      "Nach Öffnen, Schließen und Speichern steht die Seite dahinter an derselben Stelle wie vorher; "
-                     "ohne Skript springt sie zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat (#220)."),
+                     "ohne Skript springt sie zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat (#220). "
+                     "Jeder Text im Dialog bricht um, ein sehr langer Name notfalls mitten im Wort; der Dialog "
+                     "bleibt so breit wie sonst und rollt nie seitlich (#331)."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "auswahl": {
