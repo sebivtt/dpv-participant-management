@@ -229,6 +229,7 @@ def marked_for(address: str) -> set[str]:
     request = RequestFactory().get(address)
     request.user = SimpleNamespace(is_authenticated=True)
     request.rights = SimpleNamespace(sees_menu=lambda: True, sees_events=lambda: True)
+    # Wie bei einer echten Anfrage; die Hervorhebung bis #266 las den Namen der Adresse von hier.
     request.resolver_match = resolve(address)
     context = navigation(request)
     labels = {str(item["label"]) for item in context["nav_items"] if item["active"]}

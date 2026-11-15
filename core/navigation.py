@@ -59,7 +59,8 @@ def items_for(request: HttpRequest) -> list[dict]:
     for item in NAV_ITEMS:
         if item.visible_for(request):
             url = reverse(item.url_name)
-            items.append({"url": url, "label": item.label, "icon": item.icon, "active": _active(request, url, item.area)})
+            active = _active(request, url, item.area)
+            items.append({"url": url, "label": item.label, "icon": item.icon, "active": active})
     return items
 
 
