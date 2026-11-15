@@ -520,7 +520,7 @@ KENNUNGEN = {
     "R36": "Was bleibt unverändert",
     "R37": "Kurzform nur mit Sebastians Bestätigung",
     "R38": "Vorübergehenden Vorschau-Test löschen",
-    "R39": "Pull Request als Entwurf vor der unabhängigen Prüfung",  # #348, Szenarien S1, S2 und S4
+    "R39": "Pull Request als Entwurf vor der unabhängigen Prüfung",  # #348, Szenarien S1 und S2
 }
 
 
