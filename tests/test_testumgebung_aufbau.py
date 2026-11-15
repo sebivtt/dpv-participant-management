@@ -69,7 +69,8 @@ def test_datenbank_ist_von_aussen_nicht_erreichbar():
 
 
 def test_datenbank_ist_postgresql_18_wie_lokal_und_auf_github():
-    assert _services()["datenbank"]["image"] == "postgres:18"
+    # Seit #324 mit fester Fassung und Prüfsumme (tests/test_betrieb.py, E6); die Hauptfassung bleibt 18.
+    assert _services()["datenbank"]["image"].startswith("postgres:18.")
 
 
 def test_tool_erreicht_die_datenbank_und_ist_selbst_nur_vom_eigenen_rechner_aus_erreichbar():
