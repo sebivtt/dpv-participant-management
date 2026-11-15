@@ -416,7 +416,7 @@ def test_sa3_abmelden_beendet_den_zugang(org):
 
 ADDRESSES_IN_WALHALL = [
     "benennen/", "benennen/suchen/", "aufnehmen/", "aufnehmen/suchen/", "anlegen/", "bearbeiten/",
-    "verwaltete-person/anlegen/",
+    "verwaltete-person/anlegen/", "person-aufnehmen/",
 ]
 
 
