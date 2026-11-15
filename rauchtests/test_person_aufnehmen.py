@@ -174,3 +174,53 @@ def test_am_handy_ohne_skript_bedienbar(handy_ohne_skript):
     _dialog(page).get_by_role("link", name="Zurück").tap()
     page.wait_for_url(f"{page_address}person-aufnehmen/**")
     expect(page.locator(TILES)).to_have_count(2)
+
+
+# Anmerkung aus der Vorschau (15.11.2026): Am Handy verdeckte „Person aufnehmen“ Teile des Titels. Seitdem zeigt der
+# Knopf in der Überschrift einer Fläche am Handy überall nur das Plus und bleibt in der Zeile; Vorleseprogramme lesen
+# weiter seinen Text. Geprüft an allen drei Flächen der Seite von Walhall, auch auf einem sehr schmalen Handy.
+HEADS = {"h-leitungen": "Stammesleitung benennen", "h-darunter": "Gruppe anlegen", "h-personen": "Person aufnehmen"}
+
+
+def _overlap(a: dict, b: dict) -> bool:
+    return a["x"] < b["x"] + b["width"] and b["x"] < a["x"] + a["width"] and \
+        a["y"] < b["y"] + b["height"] and b["y"] < a["y"] + a["height"]
+
+
+def test_am_handy_zeigt_jeder_knopf_im_kopf_nur_das_plus_und_verdeckt_nichts(handy):
+    login(handy)
+    units = _walhall_for_erika()
+    page_address = f"{BASE}/organisation/{units['walhall'].key}/"
+
+    for width in (390, 320):
+        handy.set_viewport_size({"width": width, "height": 844})
+        handy.goto(page_address)
+        _no_side_scroll(handy)
+        for heading, label in HEADS.items():
+            head = handy.locator(f'[aria-labelledby="{heading}"] .a-flaeche-kopf')
+            button = head.locator(".a-flaeche-aktion")
+            expect(button).to_have_accessible_name(label)
+            expect(button).to_have_text(label)
+            box = button.bounding_box()
+            # Nur das Plus: ein kleiner Knopf, der Text ist nicht zu sehen.
+            assert box["width"] <= 48, (width, label, box)
+            assert head.locator(".a-flaeche-aktion-text").evaluate(
+                "e => e.getBoundingClientRect().width <= 1"), (width, label)
+            # In der Zeile der Überschrift, ohne Titel oder Zahl zu verdecken.
+            icon = head.locator(".a-flaeche-ic").bounding_box()
+            assert box["y"] < icon["y"] + icon["height"] and icon["y"] < box["y"] + box["height"], (width, label)
+            for part in ("h2", ".a-flaeche-zahl"):
+                if head.locator(part).count():
+                    assert not _overlap(box, head.locator(part).bounding_box()), (width, label, part)
+    assert run_axe(handy) == []
+
+
+def test_am_pc_steht_der_text_im_knopf(pc):
+    login(pc)
+    units = _walhall_for_erika()
+    pc.goto(f"{BASE}/organisation/{units['walhall'].key}/")
+
+    for heading, label in HEADS.items():
+        button = pc.locator(f'[aria-labelledby="{heading}"] .a-flaeche-aktion')
+        expect(button).to_have_text(label)
+        assert button.bounding_box()["width"] > 100, label
