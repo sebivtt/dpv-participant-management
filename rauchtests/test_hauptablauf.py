@@ -40,7 +40,9 @@ FRIDA = ("mitglied.falken", "testpasswort-finn")
 ZORA = ("stammesleitung.leuchtturm", "testpasswort-lars")
 
 PERSONS = '[aria-labelledby="h-personen"]'
-ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/verwaltete-person/anlegen/"]'
+# Seit #298 führt „Person aufnehmen“ zur Wahl; deren untere Fläche führt zum Anlegen.
+ADD_BUTTON = "#person-aufnehmen"
+LOWER_TILE = "dialog li:nth-child(2) > .a-wahlflaeche"
 REMOVE_BUTTON = '[aria-labelledby="h-leitungen"] .a-leitung-knopf'
 APPOINT_BUTTON = '[aria-labelledby="h-leitungen"] .a-flaeche-aktion'
 CONSENT = 'dialog input[name="consent"]'
@@ -128,6 +130,8 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
     page_address = _page_of(falken)
     page.goto(page_address)
     _press(page, ADD_BUTTON, keyboard)
+    page.wait_for_url(f"{page_address}person-aufnehmen/")
+    _press(page, LOWER_TILE, keyboard, steps=2)
     page.wait_for_url(f"{page_address}verwaltete-person/anlegen/")
     expect(_dialog(page)).to_be_visible()
     first = page.get_by_label("Vorname")
@@ -163,7 +167,7 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
         expect(page.locator(CONSENT)).to_be_checked()
         page.locator(SUBMIT).click()
 
-    page.wait_for_url(f"{page_address}#verwaltete-person-anlegen")
+    page.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(page.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(page.locator(PERSONS)).to_contain_text("Kiwi")
     return ManagedPerson.objects.get(first_name="Lena", last_name="Probe")

@@ -85,9 +85,8 @@
       {% include "core/_flaechenkopf.html" with symbol="organisation" title=_("Überschrift einer Fläche mit Symbol") level=3 %}
       {% include "core/_flaechenkopf.html" with symbol="person" title=_("Leitungen") level=3 action_href="#h-flaechenkopf" action_label=_("Gruppenleitung benennen") %}
       {% include "core/_flaechenkopf.html" with symbol="organisation" title="Pfadfinderbund Boreas" title_href="#h-flaechenkopf" level=3 action_href="#h-flaechenkopf" action_label=_("Bundesleitung benennen") %}
-      {# Mit Zahl hinter dem Titel, wie der Abschnitt „Personen“ (#285). #}
-      {# Mit zwei Knöpfen, links der zart blaue, wie der Abschnitt „Personen“ seit #117. #}
-      {% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") level=3 count=examples.persons_count action_href="#h-flaechenkopf" action_label=_("Person mit Konto aufnehmen") second_href="#h-flaechenkopf" second_label=_("Verwaltete Person anlegen") %}
+      {# Mit Zahl hinter dem Titel, wie der Abschnitt „Personen“ (#285), und seit #298 mit „Person aufnehmen“. #}
+      {% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") level=3 count=examples.persons_count action_href="#h-flaechenkopf" action_label=_("Person aufnehmen") %}
     </div>
   </section>
 
@@ -141,6 +140,14 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-knopfverschieben">
     {% include "core/_katalogeintrag.html" with block=blocks.knopfverschieben %}
     <div class="a-flaeche a-katalog-knoepfe">{% translate "Verschieben" as move_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=move_label name="Funke" %}{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=edit_label name="Kiwi" %}{% translate "Support-Zugang starten" as support_label %}{% include "core/_knopf_verschieben.html" with href="#h-knopfverschieben" label=support_label symbol="schild" large=True %}</div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-wahlflaechen">
+    {% include "core/_katalogeintrag.html" with block=blocks.wahlflaechen %}
+    {# Im Dialog „Person aufnehmen“ wie auf der Seite „Organisation“ (#298), hier an seinem Platz statt über der Seite. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.choosing preview=True %}
+    {% include "core/_wahlflaechen.html" with tiles=examples.choosing.tiles preview=True %}
+    {% include "core/_dialog_zu.html" with dialog=examples.choosing preview=True %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-stift">

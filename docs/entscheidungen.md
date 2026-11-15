@@ -42,8 +42,33 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
 | Grundabbilder des Containers | 15.11.2026, #324, „Technische Wahl“, Nr. 4 | 22.10.2026, „Testumgebung im Container …“, „Technische Wahl“, „Abbild“ (nur der Satz, dass die Grundabbilder über ihre Fassung festgelegt sind, nicht über eine Prüfsumme) |
+| Knöpfe im Abschnitt „Personen“ | 15.11.2026, #298, Nr. 1 | 11.11.2026, #117, Nr. 2 (nur Knopf „Person mit Konto aufnehmen“ mit „Verwaltete Person anlegen“ daneben, N6) |
+| Satz bei leerer Liste „Personen“ | 15.11.2026, #298, Nr. 3 | 11.11.2026, #117, Nr. 2 (nur der zweite Satz „Du kannst oben …“, N7) |
+| Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
 
 ---
+
+## 2026-11-15 · Ein Knopf „Person aufnehmen“ mit Wahl im Dialog (#298, PER-01, PER-02)
+
+**Entscheidung** (Sebastian in der Klärung von #298 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875044763); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875044923) mit „Alle passen“; [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289041) und [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289269); maßgeblich sind Text und Szenarien des Issues):
+
+1. Im Kopf des Abschnitts „Personen“ steht nur noch der Knopf „Person aufnehmen“, im Aussehen des Hauptknopfs. Er öffnet den Dialog „Person aufnehmen“ mit zwei großen Flächen, oben „Person mit Konto aufnehmen“, darunter „Verwaltete Person anlegen“, je mit einem Satz (Frage 1 bis 4). Ersetzt den Eintrag vom 11.11.2026 (#117), Nr. 2, teilweise: nur die beiden Knöpfe nebeneinander (N6); der Dialog heißt weiter „Person mit Konto aufnehmen“.
+2. In beiden Wegen heißt der Knopf unten „Zurück“ und führt zur Wahl; × und Escape schließen zur Seite (Frage 5). Der Dialog „… benennen“ behält „Abbrechen“.
+3. Bei leerer Liste lautet der zweite Satz, nur für wer dort aufnehmen darf: „Mit „Person aufnehmen“ oben kannst du eine Person mit Konto aufnehmen oder eine verwaltete Person anlegen.“ (Frage 6). Ersetzt den Eintrag vom 11.11.2026 (#117), Nr. 2, teilweise: nur den zweiten Satz aus N7.
+4. Neuer Baustein „Wahl mit großen Flächen“ (`docs/gestaltung.md`); Rechte, Felder, Prüfungen und Meldungen beider Wege bleiben, wie sie sind.
+
+**Begründung:** Die Seite der Organisation wird aufgeräumter, und am Handy bleibt der Kopf von „Personen“ einzeilig. „Person mit Konto …“ steht oben, damit eine Person mit Konto aufgenommen statt doppelt als verwaltete Person angelegt wird (Frage 2).
+
+**Technische Wahl** (KI):
+
+1. Die Wahl hat eine eigene Adresse (`organisation/<Kennung>/person-aufnehmen/`); beide Wege behalten ihre Adressen (U3). So geht alles ohne Skript, und an den bewährten Wegen ändert sich am wenigsten (Protokoll der Klärung).
+2. Der Knopf trägt die Kennung `person-aufnehmen`; dorthin führen × und Escape aus der Wahl und aus beiden Wegen und die Weiterleitung nach dem Aufnehmen oder Anlegen, und das Skript gibt ihm den Fokus (PA7). Ersetzt den Eintrag vom 11.11.2026 (#117), „Technische Wahl“, Nr. 5, teilweise: nur die Kennung `#verwaltete-person-anlegen`.
+3. Knopf und Wahl gibt es nur, wo Aufnehmen und Anlegen beide erlaubt sind (`may_add_person()` in `units/organisation.py`); das sind heute dieselben Personen. Sonst ist die Wahl „nicht gefunden“ wie die beiden Wege.
+4. Der zweite, zart blaue Knopf in der „Überschrift einer Fläche“ (#117) entfällt mit seiner einzigen Seite; der Knopf dort kann stattdessen eine Kennung tragen.
+
+**Anmerkung aus der Vorschau** (Sebastian, 15.11.2026, [Kommentar „Vorschau“](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6895097208)): Am Handy zeigt der Knopf in der „Überschrift einer Fläche“ überall nur das Plus und bleibt in der Zeile der Überschrift; am PC bleibt der Text. Bisher stand er dort am Handy unter der Überschrift (`docs/gestaltung.md`, Abschnitt zu #190).
+
+**Umsetzung:** `config/urls.py`, `core/views.py`, `units/organisation.py`, `units/texts.py`, `persons/texts.py`, `core/templates/core/organisation.html`, `_flaechenkopf.html`, `_wahlflaechen.html` (neu), `bausteine.html`, `core/static/core/app.css`, `docs/gestaltung.md`, Zielbild `docs/zielbilder/person-aufnehmen.html`; Tests in `tests/test_person_aufnehmen.py` und `rauchtests/test_person_aufnehmen.py`.
 
 ## 2026-11-15 · Startprüfung: auf dem Server kein Start mit unsicheren Einstellungen (#325)
 

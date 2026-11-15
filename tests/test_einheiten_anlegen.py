@@ -1002,14 +1002,17 @@ def test_wird_der_ring_abgelehnt_bleibt_auch_der_name(org):
 
 @pytest.mark.rechtematrix("EH-18", "EH-11", "EH-14")
 def test_og7_mit_stammesleitung_endet_nur_was_nele_durch_das_einspringen_hatte(org):
-    """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und der Stift bleiben (EH-11, EH-14)."""
+    """OG7 in der Lesart der Antwort 2 vom 11.11.2026: „Gruppe anlegen“ und der Stift bleiben (EH-11, EH-14).
+
+    Seit #298 führt der Knopf im Abschnitt „Personen“ zur Wahl „Person aufnehmen“ statt direkt zum Aufnehmen.
+    """
     client = client_for(org.nord_leitung)
     root = _tree(client.get(unit_address(org.sturmvogel)))
-    assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}aufnehmen/", "personen"))
+    assert _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}person-aufnehmen/", "personen"))
 
     lead("sina.sturm", R.TROOP_LEAD, org.sturmvogel)
 
     root = _tree(client.get(unit_address(org.sturmvogel)))
-    assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}aufnehmen/", "personen"))
+    assert not _all(root, lambda e: e.name == "a" and _attr(e, "href") == to_section(f"{unit_address(org.sturmvogel)}person-aufnehmen/", "personen"))
     assert create_button(org.nord_leitung, org.sturmvogel) == ("Gruppe anlegen", to_section(create_address(org.sturmvogel), "darunter"))
     assert pencil(org.nord_leitung, org.sturmvogel) == (edit_address(org.sturmvogel), "Stamm Sturmvogel bearbeiten")

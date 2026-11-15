@@ -15,8 +15,9 @@ from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 
 PERSONS = '[aria-labelledby="h-personen"]'
-# Seit #117 steht daneben „Verwaltete Person anlegen“; gemeint ist der Knopf, der zum Aufnehmen führt.
-ADMIT_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/aufnehmen/"]'
+# Seit #298 führt „Person aufnehmen“ zur Wahl; deren obere Fläche hat den Fokus und führt zum Aufnehmen.
+ADMIT_BUTTON = "#person-aufnehmen"
+UPPER_TILE = "dialog li:first-child > .a-wahlflaeche"
 
 
 def _dialog(page: Page):
@@ -33,7 +34,10 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
 
     stations = _stations_to_element(pc, ADMIT_BUTTON, steps=60)
     _all_visible(stations)
-    expect(pc.locator(ADMIT_BUTTON)).to_have_text("Person mit Konto aufnehmen")
+    expect(pc.locator(ADMIT_BUTTON)).to_have_text("Person aufnehmen")
+    pc.keyboard.press("Enter")
+    pc.wait_for_url(f"{page_address}person-aufnehmen/")
+    expect(pc.locator(UPPER_TILE)).to_be_focused()
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{page_address}aufnehmen/")
@@ -54,7 +58,7 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
     assert pc.evaluate("document.activeElement.closest('dialog') !== null")
     pc.keyboard.press("Enter")
 
-    pc.wait_for_url(page_address)
+    pc.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(pc.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     expect(pc.locator(PERSONS)).to_contain_text("Otto Ohne")
     expect(pc.locator(PERSONS)).to_contain_text("2 Personen")
@@ -70,7 +74,7 @@ def test_am_pc_escape_fuehrt_zurueck_und_nimmt_niemanden_auf(pc):
     pc.goto(f"{page_address}aufnehmen/")
     expect(_dialog(pc)).to_be_visible()
     pc.keyboard.press("Escape")
-    pc.wait_for_url(page_address)
+    pc.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(_dialog(pc)).to_have_count(0)
     expect(pc.locator(PERSONS)).not_to_contain_text("Otto")
 
@@ -85,6 +89,9 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
 
     stations = _stations_to_element(handy, ADMIT_BUTTON, steps=60)
     _all_visible(stations)
+    handy.keyboard.press("Enter")
+    handy.wait_for_url(f"{page_address}person-aufnehmen/")
+    expect(handy.locator(UPPER_TILE)).to_be_focused()
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{page_address}aufnehmen/")
     dialog = _dialog(handy)
@@ -103,6 +110,6 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, ".a-treffer-knopf button", steps=10)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(page_address)
+    handy.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(handy.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     _no_side_scroll(handy)

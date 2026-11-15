@@ -37,7 +37,6 @@ from roles.models import Role
 from units.models import Unit
 from units import texts
 from units.organisation import (
-    ADD_MANAGED_ID,
     FEDERATION_SLUGS,
     SLUG_OF,
     Federation,
@@ -47,7 +46,10 @@ from units.organisation import (
     Node,
     Organisation,
     Page,
+    add_person_back,
     admission,
+    back_to_choice,
+    choice_dialog,
     create_dialog,
     delete_dialog,
     edit_dialog,
@@ -59,6 +61,7 @@ from units.organisation import (
     hits,
     edit_anchor,
     managed_dialog,
+    may_add_person,
     rings_question,
     support_dialog,
 )
@@ -461,13 +464,17 @@ def _admitting(request: HttpRequest, unit: str) -> Unit:
 
 def _admit_page(request: HttpRequest, found: Unit, form: FederationSearchForm | None = None, hits_found=None,
                 notice=None) -> HttpResponse:
-    """Die Seite der Organisation mit offenem Dialog „Person aufnehmen“; `notice` ist (Art, Text) einer Meldung."""
+    """Die Seite der Organisation mit offenem Dialog „Person mit Konto aufnehmen“; `notice` ist (Art, Text) einer Meldung.
+
+    × und Escape führen zum Knopf „Person aufnehmen“, „Zurück“ zur Wahl (#298, PA7).
+    """
     shown = Organisation(request.rights, request.user)
     page = shown.page(found)
     dialog = {
         "title": texts.ADMIT_TITLE,
         "subtitle": texts.ADMIT_FOR % {"unit": unit_label(found)},
-        "close_href": to_section(reverse("organisation_unit", args=[found.key]), sections.PERSONS),
+        "close_href": add_person_back(found),
+        **back_to_choice(found),
         "form": form or FederationSearchForm(),
         "help_text": texts.ADMIT_HELP,
         "search_action": to_section(reverse("organisation_admit_search", args=[found.key]), sections.PERSONS),
@@ -483,19 +490,19 @@ def _admit_page(request: HttpRequest, found: Unit, form: FederationSearchForm | 
 
 @checks_rights(*ADMIT_ROWS)
 def organisation_admit(request: HttpRequest, unit: str) -> HttpResponse:
-    """Dialog „Person aufnehmen“ öffnen und eine Person mit Konto als Mitglied aufnehmen (PK-17).
+    """Dialog „Person mit Konto aufnehmen“ öffnen und eine Person mit Konto als Mitglied aufnehmen (PK-17).
 
     Lesend zeigt die Adresse den leeren Dialog. Ein Formular mit der Kennung einer Person nimmt sie
     auf; die Mitgliedschaft gilt sofort, ohne Zustimmung und ohne Nachricht. Danach geht es zurück
-    zur Seite der Organisation mit einer kurzen Meldung (#186). Lehnt die Rechteprüfung ab, bleibt
-    der Dialog offen und nennt den Grund an der Stelle der Handlung.
+    zur Seite der Organisation, zum Knopf „Person aufnehmen“ (#298, PA7), mit einer kurzen Meldung
+    (#186). Lehnt die Rechteprüfung ab, bleibt der Dialog offen und nennt den Grund an der Stelle der Handlung.
     """
     found = _admitting(request, unit)
     if request.method == "POST":
         done, text = request.rights.admit(found, request.POST.get("person"))
         if done:
             messages.success(request, text)
-            return redirect("organisation_unit", unit=found.key)
+            return redirect(add_person_back(found))
         return _admit_page(request, found, notice=("warning", text))
     if request.method not in READING:
         raise Http404
@@ -530,6 +537,26 @@ def organisation_admit_search(request: HttpRequest, unit: str) -> HttpResponse:
         return _admit_page(request, found, form=form, notice=("warning", texts.NO_ACCOUNT))
     hits_found, notice = admission(entries, found)
     return _admit_page(request, found, form=form, hits_found=hits_found, notice=notice)
+
+
+# Person aufnehmen (#298): Der Knopf im Kopf von „Personen“ öffnet einen Dialog mit eigener Adresse und zwei
+# großen Flächen, eine je Weg; die Wege selbst bleiben auf ihren Adressen (oben und „Verwaltete Person anlegen“).
+# Die Wahl gibt es nur, wo beide Wege offen sind; sonst ist sie „nicht gefunden“ wie die beiden Wege (PV1 bis PV3).
+ADD_PERSON_ROWS = ("PK-17", "PK-23", "PK-26", "VP-01", "VP-06", "VP-17", "EH-18", "SZ-03")
+
+
+@checks_rights(*ADD_PERSON_ROWS)
+def organisation_add_person(request: HttpRequest, unit: str) -> HttpResponse:
+    """Dialog „Person aufnehmen“ mit der Wahl zwischen „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“.
+
+    Nur lesend; die Wahl schickt nichts ab, ein Tipp auf eine Fläche ist ein Link zum Weg (PA2). Ob jemand
+    inzwischen nicht mehr aufnehmen darf, prüft der Weg selbst beim Öffnen (PG1).
+    """
+    rights = request.rights
+    found = rights.entry(Unit.objects.all(), unit, allowed=lambda entry: may_add_person(rights, entry))
+    if request.method not in READING:
+        raise Http404
+    return _with_dialog(request, found, choice_dialog(found))
 
 
 # Austragen (#286, Teil 2 von #65). Wie beim Entfernen hat der Dialog eine eigene Adresse unter der
@@ -714,7 +741,7 @@ def organisation_add_managed(request: HttpRequest, unit: str) -> HttpResponse:
             text = rights.add_managed(found, form.cleaned_data, creation_key)
             if text:
                 messages.success(request, text)
-            return redirect(f"{reverse('organisation_unit', args=[found.key])}#{ADD_MANAGED_ID}")
+            return redirect(add_person_back(found))
     elif request.method in READING:
         form, creation_key = ManagedPersonAddForm(), new_key()
     else:
@@ -1250,10 +1277,9 @@ BUILDING_BLOCKS = {
     },
     "flaechenkopf": {
         "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html",
-        "issues": [161, 190, 94, 218, 285, 117],
+        "issues": [161, 190, 94, 218, 285, 117, 298],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
-                     "stehen, etwa „Gruppenleitung benennen“, links daneben ein zweiter zart blauer, etwa "
-                     "„Verwaltete Person anlegen“. Der Titel darf ein Link sein, etwa der eigene Bund "
+                     "stehen, etwa „Gruppenleitung benennen“ oder „Person aufnehmen“; am Handy zeigt er nur das Plus. Der Titel darf ein Link sein, etwa der eigene Bund "
                      "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
                      "„4 Personen“."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
@@ -1306,6 +1332,13 @@ BUILDING_BLOCKS = {
                      "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
                      "Er führt zum Dialog, nie gleich zur Handlung."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
+    },
+    "wahlflaechen": {
+        "name": _("Wahl mit großen Flächen"), "template": "core/_wahlflaechen.html", "issues": [298],
+        "purpose": _("Im Dialog die Wahl zwischen wenigen Wegen: je Weg eine große Fläche mit Symbol, fettem Titel "
+                     "und einem Satz, rechts ein Pfeil, am Handy ohne. Ein Tipp führt direkt zum Weg, nichts ist "
+                     "vorgewählt; die erste Fläche bekommt beim Öffnen den Fokus."),
+        "pages": [_("Organisation")],
     },
     "stift": {
         "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95],
@@ -1462,6 +1495,13 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
+    # Der Dialog „Person aufnehmen“ mit der Wahl (#298); die Flächen führen hier nur zum Eintrag selbst.
+    choosing = {"title": texts.ADD_PERSON_TITLE, "subtitle": texts.ADMIT_FOR % {"unit": "Sippe Falken"},
+                "close_href": "#h-wahlflaechen", "preview_id": "h-dialog-wahl",
+                "tiles": [{"href": "#h-wahlflaechen", "symbol": "at", "title": texts.ADMIT_TITLE,
+                           "text": texts.ADMIT_CHOICE_TEXT},
+                          {"href": "#h-wahlflaechen", "symbol": "plus", "title": person_texts.ADD_TITLE,
+                           "text": person_texts.ADD_CHOICE_TEXT}]}
     # Löschen einer verwalteten Person (#118): der Knopf links unten im Dialog „Bearbeiten“ und die Rückfrage danach.
     managed_edit = {"title": person_texts.EDIT_TITLE % {"person": "Kiwi (Lena Probe)"},
                     "subtitle": person_texts.IN_UNIT % {"unit": "Sippe Falken"}, "close_href": "#h-dialog",
@@ -1539,7 +1579,7 @@ def _organisation_examples() -> dict:
     return {"switches": switches, "edit_example": edit_example, "persons": persons, "persons_count": texts.PERSONS_COUNT % {"count": 4}, "admit_hits": admit_hits,
             "outline": outline, "org_page": page, "org_federation_page": federation_page, "org_support_page": support_page,
             "support_bar": {"label": "Stamm Walhall", "until": "14:35", "end_action": "#h-supportbalken"}, "org_leads": leads, "org_tiles": tiles,
-            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "managed_edit": managed_edit, "deleting": deleting, "expulsion": expulsion, "moving": moving, "hits": hit_list,
+            "org_marks": [covers, read, Mark(_("gesperrt"), "gesperrt"), Mark(_("verwaltet"), "verwaltet")], "dialog": dialog, "removal": removal, "managed_edit": managed_edit, "choosing": choosing, "deleting": deleting, "expulsion": expulsion, "moving": moving, "hits": hit_list,
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 

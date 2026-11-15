@@ -85,8 +85,23 @@ def edit_address(where, entry) -> str:
 
 
 def back_from_add(where) -> str:
-    """Wohin „Verwaltete Person anlegen“ zurückführt: zum Knopf, der den Dialog geöffnet hat."""
-    return f"{unit_address(where)}#verwaltete-person-anlegen"
+    """Wohin „Verwaltete Person anlegen“ zurückführt: seit #298 zum Knopf „Person aufnehmen“, der die Wahl öffnet."""
+    return f"{unit_address(where)}#person-aufnehmen"
+
+
+def choice_address(where) -> str:
+    """Der Dialog „Person aufnehmen“ mit der Wahl (#298); seine untere Fläche führt zu „Verwaltete Person anlegen“."""
+    return f"{unit_address(where)}person-aufnehmen/"
+
+
+def add_tile(user, where) -> str | None:
+    """Die Adresse der Fläche „Verwaltete Person anlegen“ in der Wahl, oder None, wenn es Knopf oder Wahl nicht gibt."""
+    if "Person aufnehmen" not in head_buttons(page_tree(user, unit_address(where))):
+        return None
+    response = client_for(user).get(choice_address(where))
+    links = [_attr(link, "href") for link in _by_tag(dialog_of(_tree(response)), "a")
+             if "Verwaltete Person anlegen" in _visible_text(link)]
+    return _one(links)
 
 
 def back_from_edit(where, entry) -> str:
@@ -182,8 +197,8 @@ def lena_now() -> ManagedPerson:
 @pytest.mark.rechtematrix("VP-01", "GA-05")
 def test_m1_fiete_legt_lena_in_den_falken_an(org):
     client = client_for(org.falken_leitung)
-    root = page_tree(org.falken_leitung, unit_address(org.falken))
-    assert head_buttons(root)["Verwaltete Person anlegen"] == to_section(add_address(org.falken), "personen")
+    # Seit #298 über „Person aufnehmen“ und die untere Fläche der Wahl.
+    assert add_tile(org.falken_leitung, org.falken) == to_section(add_address(org.falken), "personen")
 
     found, _creation_key = open_add(org.falken_leitung, org.falken, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Verwaltete Person anlegen"
@@ -227,8 +242,7 @@ def test_m2_wanda_legt_paul_ohne_fahrtennamen_in_walhall_an(org):
 def test_m3_ohne_gruppenleitung_springt_wanda_in_den_woelfen_ein(org):
     remove(org.woelfe_leitung, R.GROUP_LEAD, org.woelfe)
 
-    root = page_tree(org.walhall_leitung, unit_address(org.woelfe))
-    assert "Verwaltete Person anlegen" in head_buttons(root)
+    assert add_tile(org.walhall_leitung, org.woelfe) == to_section(add_address(org.woelfe), "personen")
     response = add(org.walhall_leitung, org.woelfe, first_name="Wanja", last_name="Probe", scout_name="")
 
     assert response.status_code == 302
@@ -291,8 +305,8 @@ def test_m6_mitglieder_und_lena_stehen_gemischt_nach_nachname(org, lena):
 
     assert list(entries(root)) == ["Emil Eber", "Funke", "Flink", "Kiwi"]
     assert persons_head(root) == "4 Personen"
-    assert list(head_buttons(root)) == ["Verwaltete Person anlegen", "Person mit Konto aufnehmen"]
-    assert head_buttons(root)["Person mit Konto aufnehmen"] == to_section(admit_address(org.falken), "personen")
+    # Seit #298 steht im Kopf nur „Person aufnehmen“; die Wahl darin führt zu beiden Wegen.
+    assert head_buttons(root) == {"Person aufnehmen": to_section(choice_address(org.falken), "personen")}
     shown = entries(root)
     # Personen mit Konto bleiben, wie sie sind: mit Mail, ohne Marke „verwaltet“.
     assert shown["Flink"]["mail"] == "finn.falke@example.org"
@@ -308,7 +322,8 @@ def test_m7_leere_liste_mit_hinweis_nur_fuer_wer_dort_anlegen_darf(org):
     give(kira, R.MEMBER, org.walhall)
     give(kira, R.GROUP_LEAD, kraniche)
     first = "Dieser Organisation sind noch keine Personen zugeordnet."
-    second = "Du kannst oben eine verwaltete Person anlegen oder eine bereits registrierte Person aufnehmen."
+    # Der zweite Satz seit #298 (PA8).
+    second = "Mit „Person aufnehmen“ oben kannst du eine Person mit Konto aufnehmen oder eine verwaltete Person anlegen."
 
     may_add = [(org.walhall_leitung, eulen), (kira, kraniche)]
     only_sees = [(org.walhall_leitung, kraniche), (org.bundesleitung, eulen)]
@@ -325,20 +340,22 @@ def test_nach_dem_dialog_kehrt_der_fokus_zum_knopf_zurueck(org, lena):
     """Aus dem Zielbild: Nach dem Dialog liegt der Fokus wieder auf dem Knopf, der ihn geöffnet hat.
 
     × und „Abbrechen“ führen zur Seite mit der Kennung des Knopfs in der Adresse; das Skript gibt ihm
-    dort den Fokus. Den Weg im Browser prüft der Rauchtest.
+    dort den Fokus. Den Weg im Browser prüft der Rauchtest. Seit #298 öffnet „Person aufnehmen“ die Wahl,
+    und beim Anlegen führt × zu ihm zurück, „Zurück“ zur Wahl (tests/test_person_aufnehmen.py, PA7).
     """
     root = page_tree(org.falken_leitung, unit_address(org.falken))
-    add_button = _one([link for link in _all(persons_section(root), lambda e: "a-flaeche-aktion" in _classes(e))
-                       if _attr(link, "href") == to_section(add_address(org.falken), "personen")])
+    add_button = _one(_all(persons_section(root), lambda e: "a-flaeche-aktion" in _classes(e)))
     edit_button = _one(_by_tag(persons_section(root), "a", href=to_section(edit_address(org.falken, lena), "personen")))
-    assert _attr(add_button, "id") == "verwaltete-person-anlegen"
+    assert _attr(add_button, "id") == "person-aufnehmen"
     assert _attr(edit_button, "id") == f"bearbeiten-{lena.key}"
 
-    for found, back in ((open_add(org.falken_leitung, org.falken)[0], back_from_add(org.falken)),
-                        (open_edit(org.falken_leitung, org.falken, lena)[0], back_from_edit(org.falken, lena))):
-        # Seit #118 steht im Dialog „Bearbeiten“ für Fiete auch „Verwaltete Person löschen“; das schließt nicht.
-        closing = [_attr(link, "href") for link in _by_tag(found, "a") if _visible_text(link) != "Verwaltete Person löschen"]
-        assert closing == [back, back]
+    adding = open_add(org.falken_leitung, org.falken)[0]
+    assert [_attr(link, "href") for link in _by_tag(adding, "a")] == [
+        back_from_add(org.falken), to_section(choice_address(org.falken), "personen")]
+    editing = open_edit(org.falken_leitung, org.falken, lena)[0]
+    # Seit #118 steht im Dialog „Bearbeiten“ für Fiete auch „Verwaltete Person löschen“; das schließt nicht.
+    closing = [_attr(link, "href") for link in _by_tag(editing, "a") if _visible_text(link) != "Verwaltete Person löschen"]
+    assert closing == [back_from_edit(org.falken, lena)] * 2
 
 
 # ---------- Leitungswechsel (Abschlusskriterium von P2) ----------
@@ -427,7 +444,7 @@ def test_mw3_das_einspringen_endet_bei_offenem_dialog_und_niemand_wird_angelegt(
 def test_mv1_ohne_einspringen_legt_niemand_in_einer_organisation_darunter_an(org):
     forbidden = [(org.walhall_leitung, org.falken), (org.bundesleitung, org.walhall), (org.kueste_leitung, org.leuchtturm)]
     for user, where in forbidden:
-        assert "Verwaltete Person anlegen" not in head_buttons(page_tree(user, unit_address(where))), user.username
+        assert add_tile(user, where) is None, user.username
         assert_like_missing(user, add_address(where))
         response = client_for(user).post(add_address(where), {**LENA, "consent": "an", "creation_key": "b" * 20})
         assert response.status_code == 404

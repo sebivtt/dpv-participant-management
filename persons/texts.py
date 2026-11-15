@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy
 
 # Knöpfe und Dialog (N6)
 ADD_TITLE = gettext_lazy("Verwaltete Person anlegen")
+# Der Satz unter der Fläche „Verwaltete Person anlegen“ im Dialog „Person aufnehmen“ (#298).
+ADD_CHOICE_TEXT = gettext_lazy("Für Personen ohne eigenes Konto, meist Kinder und Jugendliche. Ihre Angaben pflegt die Leitung.")
 ADD_BUTTON = gettext_lazy("Anlegen")
 EDIT_BUTTON = gettext_lazy("Bearbeiten")
 EDIT_TITLE = gettext_lazy("%(person)s bearbeiten")
@@ -58,9 +60,11 @@ DELETED = gettext_lazy("%(person)s wurde gelöscht.")
 # Regel beim Speichern
 NOT_IN_FEDERATION = gettext_lazy("Eine verwaltete Person gehört zu einer Gruppe, einem Stamm, einem Ring oder einem Bund, nie zum Verband.")
 
-# Abschnitt „Personen“ ohne Personen (N7); der zweite Satz nur, wer dort anlegen darf.
+# Abschnitt „Personen“ ohne Personen (N7); der zweite Satz nur, wer dort aufnehmen darf, seit #298 (PA8).
 NOBODY_YET = gettext_lazy("Dieser Organisation sind noch keine Personen zugeordnet.")
-NOBODY_YET_ADD = gettext_lazy("Du kannst oben eine verwaltete Person anlegen oder eine bereits registrierte Person aufnehmen.")
+NOBODY_YET_ADD = gettext_lazy(
+    "Mit „Person aufnehmen“ oben kannst du eine Person mit Konto aufnehmen oder eine verwaltete Person anlegen."
+)
 
 # Angezeigte Leitungsrollen (#99, PER-07), Wortlaut nach dem Text von #99 und den Szenarien vom 11.11.2026.
 # Eintragen, „schon …“, Entfernen und die Ablehnung beim Verschieben nutzen die Sätze für Leitungen mit

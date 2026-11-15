@@ -33,8 +33,9 @@ from roles.models import LEAD_ROLE, LEADS_IN_UNITS, AdminAccess, RoleKind
 from units import texts
 from units.models import Kind, Unit
 
-# Die Kennung des Knopfs „Verwaltete Person anlegen“; dorthin führt sein Dialog zurück (#117).
-ADD_MANAGED_ID = "verwaltete-person-anlegen"
+# Die Kennung des Knopfs „Person aufnehmen“; dorthin führen die Wahl und beide Wege zurück (#298, PA7; vorher
+# „Verwaltete Person anlegen“, #117).
+ADD_PERSON_ID = "person-aufnehmen"
 # Was unter jeder Ebene hängt, für „… hat noch keine …“ (A11); ein Bund mit Ringen bekommt Ringe.
 CHILDREN_WORD = {Kind.TROOP: texts.GROUPS, Kind.RING: texts.TROOPS, Kind.ASSOCIATION: texts.TROOPS}
 
@@ -153,13 +154,11 @@ class Page:
     persons: list[Lead] | None = None
     persons_count: str = ""
     persons_empty: str = ""
-    # Der Knopf „Person mit Konto aufnehmen“, nur wo die Person aufnehmen darf (PK-17, PK-26, EH-18).
-    admit_href: str | None = None
-    admit_label: str = texts.ADMIT_TITLE
-    # Daneben „Verwaltete Person anlegen“, nur wo die Person anlegen darf (VP-01, VP-17, EH-18; #117).
-    add_managed_href: str | None = None
-    add_managed_label: str = person_texts.ADD_TITLE
-    add_managed_id: str = ADD_MANAGED_ID
+    # Der Knopf „Person aufnehmen“ mit der Wahl im Dialog, nur wo die Person aufnehmen und anlegen darf
+    # (PK-17, PK-26, VP-01, VP-17, EH-18; #298).
+    add_person_href: str | None = None
+    add_person_label: str = texts.ADD_PERSON_TITLE
+    add_person_id: str = ADD_PERSON_ID
     # Der Knopf „… anlegen“ unter „Organisationen darunter“, nur wo die Person anlegen darf (#95).
     create_href: str | None = None
     create_label: str = ""
@@ -445,12 +444,12 @@ class Organisation:
 
         Personen mit Konto und verwaltete Personen stehen gemischt, alle nach Nachname, dann Vorname;
         die Zahl im Kopf zählt alle (#117, Frage 2). Ohne Personen steht der Satz aus N7, der zweite Satz
-        nur, wo die Person dort anlegen darf.
+        nur, wo die Person dort aufnehmen darf (#298, PA8). Im Kopf steht dann der Knopf „Person aufnehmen“.
         """
         if access != MANAGE:
             return {}
         may = {"expel": self.rights.may_expel(unit), "move": self.rights.may_move(unit)}
-        may_add = self.rights.may_add_managed(unit)
+        may_add = may_add_person(self.rights, unit)
         people = [(_user_by_name(user), self._person(user, unit, **may)) for user in self.rights.members(unit)]
         # Verwaltete Personen trägt man nur eine Ebene nach oben aus, im Bund gar nicht (#118, VP-18).
         may["expel"] = self.rights.may_expel_managed(unit)
@@ -463,9 +462,7 @@ class Organisation:
             "persons": persons,
             "persons_count": texts.PERSONS_COUNT % {"count": len(persons)},
             "persons_empty": empty,
-            "admit_href": to_section(reverse("organisation_admit", args=[unit.key]), sections.PERSONS)
-            if self.rights.may_admit(unit) else None,
-            "add_managed_href": to_section(reverse("organisation_add_managed", args=[unit.key]), sections.PERSONS)
+            "add_person_href": to_section(reverse("organisation_add_person", args=[unit.key]), sections.PERSONS)
             if may_add else None,
         }
 
@@ -731,12 +728,13 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
 
     Darunter „in … · ohne Konto, verwaltet“, die vier Felder und der dunkelblaue Knopf „Anlegen“ oder
     „Speichern“. × und „Abbrechen“ führen zur Seite zurück, mit der Kennung des Knopfs, der den Dialog
-    geöffnet hat, in der Adresse; dort bekommt er den Fokus wieder. `hidden` sind die versteckten Felder
+    geöffnet hat, in der Adresse; dort bekommt er den Fokus wieder. Beim Anlegen ist das der Knopf
+    „Person aufnehmen“, und statt „Abbrechen“ führt „Zurück“ zur Wahl (#298, PA7). `hidden` sind die versteckten Felder
     (Kennung des Dialogs oder Stand), `conflict` der Satz, wenn inzwischen jemand anderes gespeichert hat
     (MG6). Mit `delete_href` steht links unten „Verwaltete Person löschen“ (#118, Zielbild zu #117, N5).
     """
-    back = f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry) if entry else ADD_MANAGED_ID}"
-    return {
+    back = f"{reverse('organisation_unit', args=[unit.key])}#{edit_anchor(entry) if entry else ADD_PERSON_ID}"
+    dialog = {
         "title": person_texts.EDIT_TITLE % {"person": entry.display_name} if entry else person_texts.ADD_TITLE,
         "subtitle": person_texts.IN_UNIT % {"unit": unit_label(unit)},
         "close_href": back,
@@ -751,6 +749,53 @@ def managed_dialog(unit: Unit, form, action: str, entry=None, hidden: tuple = ()
         "conflict": conflict,
         "side_href": to_section(delete_href, sections.PERSONS) if delete_href else None,
         "side_label": person_texts.DELETE_BUTTON,
+    }
+    if entry is None:
+        dialog.update(back_to_choice(unit))
+    return dialog
+
+
+def may_add_person(rights: Rights, unit: Unit) -> bool:
+    """Gibt es dort den Knopf „Person aufnehmen“ und die Wahl? Nur wo beide Wege offen sind (#298, PA5, PV1 bis PV3).
+
+    Aufnehmen und Anlegen dürfen heute dieselben Personen (`Rights.may_admit()`, `Rights.may_add_managed()`);
+    nur im Verband geht keins von beiden. Die Wahl führt deshalb nie zu einem Weg, der „nicht gefunden“ ist.
+    """
+    return rights.may_admit(unit) and rights.may_add_managed(unit)
+
+
+def back_to_choice(unit: Unit) -> dict:
+    """„Zurück“ statt „Abbrechen“ unten in beiden Wegen, zur Wahl im Dialog „Person aufnehmen“ (#298, PA7, PG2)."""
+    return {
+        "cancel_label": texts.BACK_TO_CHOICE,
+        "cancel_href": to_section(reverse("organisation_add_person", args=[unit.key]), sections.PERSONS),
+    }
+
+
+def add_person_back(unit: Unit) -> str:
+    """Die Seite mit der Kennung des Knopfs „Person aufnehmen“: Dorthin führen × und Escape aus der Wahl und
+    aus beiden Wegen und die Weiterleitung nach dem Aufnehmen oder Anlegen; das Skript gibt ihm den Fokus (PA7)."""
+    return f"{reverse('organisation_unit', args=[unit.key])}#{ADD_PERSON_ID}"
+
+
+def choice_dialog(unit: Unit) -> dict:
+    """Der Dialog „Person aufnehmen“ mit zwei großen Flächen (#298, PA2, Zielbild vom 14.11.2026).
+
+    Oben „Person mit Konto aufnehmen“ mit dem Symbol „@“, darunter „Verwaltete Person anlegen“ mit dem Plus
+    (Nachklärung N1), je mit ihrem Satz; ein Tipp führt direkt zum Dialog dieses Wegs, nichts ist vorgewählt.
+    Die obere Fläche bekommt beim Öffnen den Fokus. Unten „Abbrechen“ zur Seite wie in jedem Dialog (N4).
+    Der Dialog zeigt keine Felder und schickt nichts ab.
+    """
+    return {
+        "title": texts.ADD_PERSON_TITLE,
+        "subtitle": texts.ADMIT_FOR % {"unit": unit_label(unit)},
+        "close_href": add_person_back(unit),
+        "tiles": [
+            {"href": to_section(reverse("organisation_admit", args=[unit.key]), sections.PERSONS), "symbol": "at",
+             "title": texts.ADMIT_TITLE, "text": texts.ADMIT_CHOICE_TEXT},
+            {"href": to_section(reverse("organisation_add_managed", args=[unit.key]), sections.PERSONS),
+             "symbol": "plus", "title": person_texts.ADD_TITLE, "text": person_texts.ADD_CHOICE_TEXT},
+        ],
     }
 
 
