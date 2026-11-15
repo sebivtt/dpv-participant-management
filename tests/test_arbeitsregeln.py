@@ -3,7 +3,7 @@
 Die Regeln dürfen umformuliert und verschoben werden, ohne dass ein Test angepasst werden muss.
 Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, siehe
 `docs/entscheidungen.md`, 05.11.2026). Sie prüfen stattdessen, dass Verweise auf Dateien, Abschnitte
-und Entscheidungen ins Ziel treffen und dass keine der 38 Kernregeln samt Kennung `<!-- Rnn -->`
+und Entscheidungen ins Ziel treffen und dass keine der 39 Kernregeln samt Kennung `<!-- Rnn -->`
 still verschwindet (die fünf Tests am Ende). Dazu kommen wenige Prüfungen von Form und Aufbau: dass
 jeder Skill auf CLAUDE.md verweist, statt Regeln zu wiederholen (ein Ort je Angabe, #169), die
 Überschriften der Skills und die Felder der Vorlagen, und dass es jede Musterdatei für neue Seiten
@@ -520,6 +520,7 @@ KENNUNGEN = {
     "R36": "Was bleibt unverändert",
     "R37": "Kurzform nur mit Sebastians Bestätigung",
     "R38": "Vorübergehenden Vorschau-Test löschen",
+    "R39": "Pull Request als Entwurf vor der unabhängigen Prüfung",  # #348, Szenarien S1 und S2
 }
 
 

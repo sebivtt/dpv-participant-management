@@ -34,7 +34,7 @@ Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-
 - Prüfungen auf GitHub für den letzten Stand (alle grün?):
 - Rauchtest des Hauptablaufs:
 - Nachziehen (Suchbegriffe und Ergebnis, `CLAUDE.md`, „Nachziehen“):
-- Unabhängige Prüfung: alle Befunde mit Schweregrad und einem Stichwort zur Fehlerart und was daraus wurde (keine Befunde: das nennen):
+- Unabhängige Prüfung: alle Befunde mit Schweregrad und einem Stichwort zur Fehlerart und was daraus wurde (keine Befunde: das nennen; im Entwurf bis zum Ende der Prüfung „läuft“):
 
 ## Datenmodell oder Rechte
 
