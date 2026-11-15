@@ -44,6 +44,20 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-15 · Vor- und Nachname verwalteter Personen höchstens 50 Zeichen (#330)
+
+**Entscheidung** (Sebastian, 14.11.2026; [Protokoll der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/330#issuecomment-6876865081), Frage 2; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/330#issuecomment-6876861670) mit „Alles passt (Empfehlung)“; maßgeblich sind Text und Szenarien des Issues):
+
+1. Vor- und Nachname einer verwalteten Person haben je höchstens **50 Zeichen**, beim Anlegen und beim Bearbeiten, auch in der Datenbank. Gezählt wird wie beim Fahrtennamen (31.10.2026, #214): ohne Leerzeichen am Rand. Vorher galten 100 Zeichen (#117).
+2. Gespeicherte längere Namen werden beim Umstellen nach dem 50. Zeichen gekürzt, ohne Leerzeichen am Ende; kürzere bleiben unverändert. Bei der Umstellung gab es nur erfundene Testdaten.
+3. Namen von Personen mit Konto kommen aus Keycloak und bleiben, wie sie sind (ORG-03); die Anzeige muss lange Namen deshalb weiter aushalten (#331, #327).
+
+**Begründung:** Je 100 Zeichen sprengen an einigen Stellen die Anzeige, etwa im Dialog „Verschieben“ (#331). Gemeldet mit dem Vorschlag 30 Zeichen; 50, damit lange Doppelnamen passen. Leeren statt Kürzen geht nicht, weil Vor- und Nachname Pflicht sind.
+
+**Technische Wahl** (KI): Die Grenze steht an einer Stelle im Code (`NAME_MAX_LENGTH` in `persons/models.py`); Zahl unter dem Feld und Meldung „zu lang“ folgen ihr von selbst (#215). Wie beim Fahrtennamen kein `maxlength` im Feld, damit beim Einfügen nichts still abgeschnitten wird. Die Umstellung kürzt wie die Stelle, die zu lange Namen aus Keycloak kürzt (`trimmed()`, #77), mit einer eigenen Kopie in der Migration, damit sie sich später nicht mitändert.
+
+**Umsetzung:** `persons/models.py`, `persons/migrations/0004_namen_50.py`, `persons/texts.py`, `tests/test_namen_grenze.py`, `rauchtests/test_namen_grenze.py`.
+
 ## 2026-11-14 · Dialoge: Seite bleibt an ihrer Stelle, ohne Skript Sprung zum Abschnitt (#220)
 
 **Entscheidung** (Sebastian; Klärung von #220 am 14.11.2026; maßgeblich sind Text und Szenarien des Issues):

@@ -13,8 +13,8 @@ from roles.models import LEADS_IN_UNITS, UNIT_KINDS, RoleKind, on_path
 from units import texts as unit_texts
 from units.models import Unit
 
-# Höchstens 100 Zeichen für Vor- und Nachname, nach dem Entfernen der Leerzeichen am Rand (#117).
-NAME_MAX_LENGTH = 100
+# Höchstens 50 Zeichen für Vor- und Nachname, nach dem Entfernen der Leerzeichen am Rand (#330; vorher 100, #117).
+NAME_MAX_LENGTH = 50
 # Die Angaben, die der Dialog anlegt und ändert; mehr gibt es in P2 nicht (#117), Gesundheitsangaben nie (FRM-04).
 EDITABLE_FIELDS = ("first_name", "last_name", "birth_date", "scout_name")
 

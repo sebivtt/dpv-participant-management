@@ -130,7 +130,7 @@ def _name_field(label, empty) -> forms.CharField:
 class ManagedPersonForm(forms.Form):
     """Die vier Angaben im Dialog „Verwaltete Person anlegen“ und „… bearbeiten“ (#117, PER-02).
 
-    Vor- und Nachname sind Pflicht, höchstens 100 Zeichen; das Geburtsdatum ist Pflicht, liegt nicht
+    Vor- und Nachname sind Pflicht, höchstens 50 Zeichen (#330); das Geburtsdatum ist Pflicht, liegt nicht
     in der Zukunft und höchstens 120 Jahre zurück; der Fahrtenname ist freiwillig, höchstens 30
     Zeichen (#214). Leerzeichen am Rand zählen wie beim Fahrtennamen auch in unsichtbarer Form nicht
     (`trimmed()`, #77); nur Leerzeichen gilt als leer. Die Längen prüft erst der Server, damit beim
