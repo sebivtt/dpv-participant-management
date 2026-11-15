@@ -52,6 +52,6 @@ Jede Anfrage läuft durch die Bausteine in `MIDDLEWARE` (`config/settings.py`). 
 - **Vorlagen** liegen in `core/templates/` (gemeinsame Rahmen, Fehlerseiten, alle Seiten von `core`) und `accounts/templates/accounts/` (Login, Abmelden).
 - **Bausteine** der Gestaltung sind die Vorlagen mit `_` am Anfang in `core/templates/core/`, dazu die Bausteine in `core/templatetags/layout.py`. Der Bausteinkatalog (`core/templates/core/bausteine.html`, Adresse `/bausteine/`) zeigt jeden; welche es gibt und wie eine Seite sie einbindet, steht in `docs/gestaltung.md`.
 - **Gestaltung und Skript** liegen in `core/static/core/` (`app.css`, `app.js`).
-- **Navigation:** Ein neuer Punkt der Seitenleiste kommt nach `core/navigation.py`.
+- **Navigation:** Ein neuer Punkt der Seitenleiste kommt nach `core/navigation.py`. Wo er hervorgehoben ist, steht in `docs/entscheidungen.md`, 15.11.2026, #266.
 - **Datenbank:** Modelle in `models.py` der App, Änderungen daran als Migration im Ordner `migrations` der App.
 - **Tests:** `tests/` für alles ohne Browser, `rauchtests/` für Rauchtests im Browser, `containertests/` für die Testumgebung im Container. Wie sie laufen, steht im `README.md`.

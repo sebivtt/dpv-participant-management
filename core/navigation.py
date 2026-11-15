@@ -29,42 +29,38 @@ class NavItem:
     label: str | Promise
     icon: str
     visible_for: Callable[[HttpRequest], bool] = lambda request: True
-    # Weitere Adressen, unter denen der Punkt hervorgehoben ist, z. B. die Seite je Organisation.
-    also_active: tuple[str, ...] = ()
+    # Hervorgehoben auf jeder Adresse, die mit der eigenen beginnt, also auf allen Seiten und Dialogen
+    # des Bereichs (#266). Ohne nur auf der eigenen Adresse, wie bei der Startseite unter „/“.
+    area: bool = True
 
 
 NAV_ITEMS = [
-    NavItem("start", _("Startseite"), "home"),
+    NavItem("start", _("Startseite"), "home", area=False),
     # Leitungen von Gruppe bis Bund (#189) und die Verbandsleitung (#94, EH-08); die Seite prüft selbst noch einmal.
-    NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_menu(),
-            also_active=("organisation_unit", "federation_appoint_verbandsleitung", "federation_search_verbandsleitung",
-                         "federation_appoint_team", "federation_search_team", "federation_appoint_lead",
-                         "federation_search_lead", "federation_remove", "organisation_support")),
+    NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_menu()),
     # Mit Zuordnung immer, ohne nur, solange die Person eine Veranstaltung leitet (#100); die Seiten prüfen selbst.
-    NavItem("events", event_texts.NAV, "kalender", lambda request: request.rights.sees_events(),
-            also_active=("event_create", "event_page", "event_edit")),
+    NavItem("events", event_texts.NAV, "kalender", lambda request: request.rights.sees_events()),
 ]
 
 
-def _current(request: HttpRequest) -> str | None:
-    """Name der aufgerufenen Adresse in config/urls.py, z. B. "start"."""
-    match = getattr(request, "resolver_match", None)
-    return match.url_name if match else None
+def _active(request: HttpRequest, url: str, area: bool = True) -> bool:
+    """Steht die Anfrage unter `url`, mit `area` auch auf einer Adresse darunter, z. B. einem Dialog (#266)?
 
-
-# Adressen, unter denen „Mein Profil“ steht: die Seite selbst und, mit Fehler, das Speichern des Fahrtennamens.
-PROFILE_PAGES = ("profile", "profile_scout_name")
+    Hervorgehoben wird nach dem Anfang der Adresse statt nach einer Liste von Hand; so hebt auch eine
+    neue Adresse ihren Punkt hervor. Die Adressen enden mit „/“, also gehört „/organisationen/“
+    nicht zu „/organisation/“.
+    """
+    return request.path.startswith(url) if area else request.path == url
 
 
 def items_for(request: HttpRequest) -> list[dict]:
     """Die Punkte, die diese Person sieht, mit Adresse und Markierung des aktiven Punkts."""
-    current = _current(request)
-    return [
-        {"url": reverse(item.url_name), "label": item.label, "icon": item.icon,
-         "active": current in (item.url_name, *item.also_active)}
-        for item in NAV_ITEMS
-        if item.visible_for(request)
-    ]
+    items = []
+    for item in NAV_ITEMS:
+        if item.visible_for(request):
+            url = reverse(item.url_name)
+            items.append({"url": url, "label": item.label, "icon": item.icon, "active": _active(request, url, item.area)})
+    return items
 
 
 def navigation(request: HttpRequest) -> dict:
@@ -74,13 +70,14 @@ def navigation(request: HttpRequest) -> dict:
     sie ab, bevor der Login-Baustein läuft. Auch dann gibt es keine Navigation (#58).
 
     „Mein Profil“ ist kein Punkt der Navigation; sein Zugang ist der Profilkreis, der
-    hervorgehoben ist, solange die Seite offen ist (#13, docs/gestaltung.md). Das gilt auch, wenn
-    die Seite nach dem Speichern des Fahrtennamens unter dessen Adresse steht (#111).
+    hervorgehoben ist, solange die Seite offen ist (#13, docs/gestaltung.md). Das gilt auf jeder
+    Adresse unter `/profil/`: nach dem Speichern des Fahrtennamens (#111) und mit offenem Dialog
+    „Austreten“ oder „Rolle abgeben“ (#266).
     """
     user = getattr(request, "user", None)
     if user is None or not user.is_authenticated:
         return {"nav_items": []}
-    return {"nav_items": items_for(request), "profile_active": _current(request) in PROFILE_PAGES}
+    return {"nav_items": items_for(request), "profile_active": _active(request, reverse("profile"))}
 
 
 class SupportShown:
