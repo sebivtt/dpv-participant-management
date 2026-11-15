@@ -20,7 +20,7 @@ gh api --paginate "repos/sebivtt/dpv-participant-management/issues?state=open&la
 
 **Was die Steuerungssession darf:** lesen, Aufträge verteilen und das Phasen-Issue pflegen, dazu, was ihr dieser Skill beim Start, bei neuen Issues und beim Abschluss zuweist (Issues mit `issue-anlegen` anlegen, Labels und Abhängigkeiten eintragen; am Phasenende den Leistungstest starten und die Markierung setzen, Abschnitt 5). Sie entscheidet nichts Fachliches. <!-- R09 -->
 
-Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben. Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2).
+Wann eine neue Steuerungssession beginnt, steht in Abschnitt 4. Gibt es schon ein Phasen-Issue, zuerst nur dieses lesen, besonders den Abschnitt „Stand für die nächste Steuerungssession“. Daraus ergibt sich, was gerade läuft und was als Nächstes kommt. Nicht nachfragen, was im alten Gespräch war; fehlt etwas Wichtiges im Stand, Sebastian fragen und die Antwort ins Phasen-Issue schreiben. Dazu den Lauf auf `main` abfragen (Befehl in Abschnitt 2).
 
 ```bash
 gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.title, .body'
@@ -48,7 +48,7 @@ Beim Start legt die Steuerungssession das Phasen-Issue nach Vorlage an und macht
 - **Auftrag:** Ein Auftrag besteht nur aus dem Link zum Issue und dem Verweis auf `CLAUDE.md`, etwa „Setze #123 um, nach `CLAUDE.md`.“ Was sonst wichtig ist, steht vorher im Issue. <!-- R11 --> Er geht an eine neue Session.
 - **Stand selbst feststellen:** Ob ein Lauf grün oder ein Pull Request übernommen ist, stellt die Steuerungssession selbst fest, nicht über Sebastians Meldung: für Läufe wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 6; für die Übernahme bei jedem Wiedereinstieg mit `gh pr view <nummer> --json state,mergedAt`, und wartet sie darauf, mit einem Hintergrundauftrag, der diese Abfrage wiederholt und sie bei der Übernahme weckt.
 - **Nachträge** zu einem geklärten Issue nach `CLAUDE.md` („Neuer Inhalt zu einem geklärten Issue“) an eine Klärung mit `grill-me` geben (Kurzform möglich).
-- **In der Claude-Code-Desktop-App:** Wird der Zug der Steuerungssession durch die Meldung einer anderen Session ausgelöst, kann sie selbst keine neue Session starten. Sie legt sie stattdessen als Vorschlag an (eine Karte in der App), den Sebastian mit einem Klick startet; der Inhalt ist der Auftrag nach Punkt „Auftrag“.
+- **In der Claude-Code-Desktop-App:** Wird der Zug der Steuerungssession durch die Meldung einer anderen Session oder durch ihren eigenen Hintergrundauftrag ausgelöst, kann sie selbst keine neue Session starten. Sie legt sie stattdessen als Vorschlag an (eine Karte in der App), den Sebastian mit einem Klick startet; der Inhalt ist der Auftrag nach Punkt „Auftrag“.
 - **Klären läuft voraus:** Richtwert sind die nächsten drei Issues der Reihe, geklärt in Gruppen, die fachlich zusammenhängen (also auch zwei, vier oder eines). Die nächste Gruppe ist spätestens in Klärung, wenn die Umsetzung der laufenden beginnt. Issues, die ein Zielbild brauchen (`CLAUDE.md`, „Zielbild vor Gestaltung“), kommen früher in Klärung, etwa zwei Gruppen vorher, weil das Warten auf das Zielbild dauert. <!-- R04 --> Dafür beim Start einer Umsetzung die nächste Gruppe zum Klären an Sebastian geben.
 
 ## 3. Phasen-Issue pflegen
@@ -61,7 +61,7 @@ gh api repos/sebivtt/dpv-participant-management/issues/<phasen-issue> --jq '.bod
 gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -F body=@phase.md
 ```
 
-- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`); auf sein Ende muss sie vor dem nächsten Auftrag nicht warten.
+- **Nach jeder übernommenen Umsetzung:** Häkchen beim Abschlusskriterium, das sie belegt, mit Beleg (Pull Request, Commit, Test oder Datei). Das Issue selbst ist erledigt, wenn es geschlossen ist; dafür kein eigener Vermerk. Dazu den Lauf auf `main` abfragen (`gh run list --branch main --limit 1`); auf sein Ende muss sie vor dem nächsten Auftrag nicht warten. Danach schreibt sie den Stand neu (Abschnitt 4) und vergibt den nächsten Auftrag (Abschnitt 2); sie wechselt dafür nicht.
 - **Roter Lauf auf `main`** (Regel in `CLAUDE.md`, „Roter Lauf auf `main` geht vor“): Die Steuerungssession stellt die Ursache fest. Erfüllt der Lauf die Bedingungen für den Neustart aus `CLAUDE.md`, Ablauf je Aufgabe Nr. 6, startet sie ihn neu; sieht es sonst nur nach einer Störung oder einem wackelnden Test aus, entscheidet Sebastian, ob sie neu startet. Sonst legt sie ein Fehler-Issue an; es läuft wie jedes Issue, auch vor einem offenen Pull Request.
 - **Neues Issue in der Phase:** Nummer an ihren Platz in der Reihenfolge, Abhängigkeiten auf GitHub (Skill `issue-anlegen`, Abschnitt „Laufende Phase“).
 - **Was nicht ins Phasen-Issue gehört,** ergibt sich aus `CLAUDE.md`, „Ein Ort je Angabe“: Es steht an seinem eigenen Ort und wird hier höchstens verlinkt.
@@ -69,11 +69,17 @@ gh api -X PATCH repos/sebivtt/dpv-participant-management/issues/<phasen-issue> -
 
 ## 4. Übergabe an die nächste Steuerungssession
 
-Die Steuerungssession wechselt nach jedem Issue, dessen Pull Request übernommen und im Phasen-Issue eingetragen ist, also zwischen zwei Umsetzungen, nie mitten in einer Umsetzung; Issues ohne Pull Request (Klärungen, Sammel-Issues) lösen keinen Wechsel aus. Vorher schreibt sie den Stand ins Phasen-Issue, mit allem, was noch läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge); die nächste macht allein damit weiter. Fasst Claude Code das Gespräch vorher automatisch zusammen, beginnt sie nichts Neues mehr, schreibt sofort den Stand ins Phasen-Issue und endet; ein Hook erinnert sie daran. <!-- R12 --> Beim Wechsel den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue neu schreiben.
+Eine Steuerungssession steuert die Phase über beliebig viele Issues. Sie wechselt nur bei drei Anlässen: nach einer automatischen Zusammenfassung durch Claude Code, am Ende der Phase und wenn Sebastian es sagt. Übernommene Umsetzungen, Klärungen und Sammel-Issues lösen keinen Wechsel aus. Je Phase steuert nur eine Session; eine neue startet Sebastian erst, wenn die alte den Startsatz genannt hat oder unerwartet geendet ist. <!-- R12 -->
+
+- **Nach einer automatischen Zusammenfassung** beginnt sie nichts Neues mehr, schreibt sofort den Stand ins Phasen-Issue und endet; ein Hook erinnert sie daran.
+- **Wenn Sebastian es sagt,** schreibt sie sofort den Stand und endet, auch mitten in einer Umsetzung. Ihre Hintergrundaufträge enden mit ihr; die nächste stellt den Stand der Pull Requests selbst fest (Abschnitt 2).
+- **Am Ende der Phase** (Abschnitt 5, das Phasen-Issue ist geschlossen) sagt sie Sebastian, dass sie endet, ohne Startsatz. Die nächste Phase beginnt in einer neuen Session mit dem Phasenstart (Abschnitt 1).
+
+Den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue schreibt sie nach jedem eingetragenen Issue neu (Abschnitt 3) und beim Wechsel noch einmal, jeweils mit allem, was gerade läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge). So macht die nächste auch nach einem unerwarteten Ende, etwa am Nutzungslimit, allein mit dem Phasen-Issue weiter. <!-- R40 -->
 
 Der Stand hat höchstens 15 Zeilen, keine Zeile länger als ein Satz, und nur diese fünf Angaben:
 
-- Datum und Uhrzeit der Übergabe,
+- Datum und Uhrzeit, zu der der Stand geschrieben wurde,
 - welches Issue zuletzt umgesetzt und eingetragen wurde,
 - was gerade läuft (Klärung, offene Frage an Sebastian, wartender Pull Request, Lauf auf `main`, Hintergrundauftrag), mit Link,
 - welches Issue als Nächstes beauftragt wird,
@@ -81,7 +87,7 @@ Der Stand hat höchstens 15 Zeilen, keine Zeile länger als ein Satz, und nur di
 
 Nichts Abgeschlossenes als „Davor: …“; der Verlauf steht in der Bearbeitungshistorie des Issues.
 
-Dann Sebastian sagen, dass die Session endet, mit genau diesem Startsatz für die nächste und sonst nichts: „Steuere Phase <Pn> weiter, Phasen-Issue #<nr>, nach `CLAUDE.md` und Skill `phase-steuern`.“
+Beim Wechsel nach einer Zusammenfassung oder auf Sebastians Wort sagt sie ihm danach, dass die Session endet, mit genau diesem Startsatz für die nächste und sonst nichts: „Steuere Phase <Pn> weiter, Phasen-Issue #<nr>, nach `CLAUDE.md` und Skill `phase-steuern`.“
 
 ## 5. Abschluss
 
