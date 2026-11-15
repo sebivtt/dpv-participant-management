@@ -34,7 +34,7 @@ body:
     id: commit
     attributes:
       label: Geprüfter Commit
-      description: Die Kennung (SHA) aus Schritt 2 des Leitfadens. Genau dieser Stand steckt in der ZIP-Datei.
+      description: Die Kennung (SHA) aus Schritt 4 des Leitfadens. Genau dieser Stand steckt in der ZIP-Datei.
       placeholder: 7d5f673d097ad2bdacec3366abd4d887bde780ff
     validations:
       required: true
@@ -62,7 +62,7 @@ body:
     id: modelle
     attributes:
       label: Modelle und Fassungen
-      description: Wer welchen Prüfauftrag bekam, mit Fassung, soweit bekannt. Ein drittes Modell nur in den Fällen aus dem Leitfaden.
+      description: Wer welchen Prüfauftrag bekam, mit Fassung, soweit bekannt, und ob es die ZIP-Datei lesen konnte (Leitfaden, Abschnitt 7). Ein drittes Modell nur in den Fällen aus dem Leitfaden.
       placeholder: |
         Prüfauftrag A (breiter Blick): ChatGPT, Modell laut Chat
         Prüfauftrag B (Sicherheit, Rechte, Datenschutz): Gemini, Modell laut Chat
@@ -72,7 +72,7 @@ body:
     id: ergebnisse
     attributes:
       label: Ergebnisse
-      description: Wird von der Zusammenführung ausgefüllt. Je Abschlusskriterium erfüllt, nicht erfüllt oder nicht prüfbar; dann je Befund eine Zeile mit Nummer, Fundstelle, Beleg oder Annahme, vorgeschlagener und entschiedener Stufe. Die Rohberichte stehen als eingeklappte Kommentare darunter.
+      description: Wird von der Zusammenführung ausgefüllt. Zuerst der Stand der Prüfungen auf GitHub für den geprüften Commit, mit Link zum Lauf. Je Abschlusskriterium erfüllt, nicht erfüllt oder nicht prüfbar; dann je Befund eine Zeile mit Nummer, Fundstelle, Beleg oder Annahme, vorgeschlagener und entschiedener Stufe. Die Rohberichte stehen als eingeklappte Kommentare darunter.
       placeholder: |
         | Nr | Befund | Fundstelle | Prüfung | Stufe | Entschieden |
         | --- | --- | --- | --- | --- | --- |

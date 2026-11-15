@@ -70,21 +70,24 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
    git rev-parse HEAD
    ```
    Danach: eine Zeile aus 40 Zeichen, z. B. `7d5f673d097ad2bdacec3366abd4d887bde780ff`. Diese Kennung kommt ins Review-Issue und in die Prüfaufträge.
-5. Die ZIP-Datei genau dieses Stands erzeugen. Statt `7d5f673` die Kennung aus Schritt 4 eintragen.
+5. Die ZIP-Datei genau dieses Stands erzeugen, ungepackt (`-0`): Beim Review zu P1 konnte Gemini nur eine ungepackte ZIP-Datei lesen, und beide Modelle sollen genau dieselbe Datei prüfen. Statt `7d5f673` die Kennung aus Schritt 4 eintragen.
    ```bash
-   git archive --format=zip --output ~/Downloads/externes-review.zip 7d5f673
+   git archive --format=zip -0 --output ~/Downloads/externes-review.zip 7d5f673
    ```
-   Danach: keine Ausgabe; im Ordner „Downloads“ liegt `externes-review.zip`. Sie enthält alle Dateien des Repos außer den fremden Bibliotheken Bootstrap und axe-core (`.gitattributes`).
+   Danach: keine Ausgabe; im Ordner „Downloads“ liegt `externes-review.zip`. Sie ist größer als eine gepackte; das ist gewollt. Sie enthält alle Dateien des Repos außer den fremden Bibliotheken Bootstrap und axe-core (`.gitattributes`).
 6. Auf GitHub ein Issue nach der Vorlage **Externes Review einer Phase** anlegen. Phase, Commit aus Schritt 4, Datum und geprüfte Bereiche eintragen; im Titel die Phase anpassen.
-7. **ChatGPT:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag A (Abschnitt 9) hineinkopieren; vorher `[PHASE]` durch die Phase (z. B. P1) und `[KENNUNG]` durch die Kennung aus Schritt 4 ersetzen. Den fertigen Bericht kopieren.
-8. **Gemini:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag B hineinkopieren, mit Phase und Kennung wie in Schritt 7. Erst wenn der Bericht fertig ist, den Nachtrag zu Prüfauftrag B mit dem Bericht von ChatGPT schicken.
-9. Jeden Bericht unverändert als eigenen Kommentar ins Review-Issue stellen, eingeklappt mit diesem Rahmen; in die leere Zeile den Bericht einfügen:
+7. **ChatGPT:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag A (Abschnitt 9) hineinkopieren; vorher `[PHASE]` durch die Phase (z. B. P1) und `[KENNUNG]` durch die Kennung aus Schritt 4 ersetzen. Den fertigen Bericht mit dem Kopieren-Symbol unter der Antwort kopieren, nicht durch Markieren mit der Maus: Beim Markieren kommt die Formatierung der Webseite mit, beim Review zu P1 rund sechsmal so viel Text, teils in weißer Schrift. Dann nachsehen, ob der Bericht gültig ist („Wenn ein Modell die ZIP-Datei nicht lesen kann“, unter Schritt 15).
+8. **Gemini:** einen neuen Chat öffnen, die ZIP-Datei hochladen und Prüfauftrag B hineinkopieren, mit Phase und Kennung wie in Schritt 7. Den fertigen Bericht mit dem Kopieren-Symbol unter der Antwort kopieren und nachsehen, ob er gültig ist, beides wie in Schritt 7. Erst dann den Nachtrag zu Prüfauftrag B schicken; darunter den Bericht von ChatGPT einfügen, so wie er in Schritt 7 kopiert wurde. Auch die Antwort auf den Nachtrag mit dem Kopieren-Symbol kopieren.
+9. Jeden gültigen Bericht unverändert als eigenen Kommentar ins Review-Issue stellen, eingeklappt mit diesem Rahmen. Die Zeile `BERICHT HIER EINFÜGEN` durch den Bericht ersetzen, wie er mit dem Kopieren-Symbol kopiert wurde. Die leere Zeile darüber und die darunter bleiben stehen; ohne sie zeigt GitHub die Überschriften des Berichts mit Rautezeichen.
    ```text
    <details><summary>Bericht A: ChatGPT, Modell laut Chat</summary>
 
+   BERICHT HIER EINFÜGEN
+
    </details>
    ```
-   Bei Gemini „Bericht B“, beim Nachtrag „Nachtrag B“.
+   Direkt hinter `<summary>` steht genau einer dieser Namen: „Bericht A“ für Prüfauftrag A, „Bericht B“ für Prüfauftrag B, „Nachtrag B“ für die Antwort auf den Nachtrag. „Bericht C“ gibt es nur für ein drittes Modell in den Fällen aus Abschnitt 4 (Schritte 10 und 12); andere Namen, etwa „Nachtrag C“, gibt es nicht. Nur ein ungültiger Bericht heißt „Ungültig: ZIP-Datei nicht lesbar“ (unter Schritt 15).
+   Danach: Der Kommentar zeigt nur die Zeile mit dem Namen; aufgeklappt stehen die Überschriften des Berichts ohne Rautezeichen.
 10. **Nur nach P6:** einem dritten Modell in einem neuen Chat die ZIP-Datei und Prüfauftrag B geben und den Bericht als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen.
 11. Eine neue Claude-Sitzung starten und den Auftrag zur Zusammenführung (Abschnitt 9) mit der Nummer des Review-Issues hineinkopieren.
 12. **Nur wenn die Zusammenführung ein drittes Modell vorschlägt** (Abschnitt 4, Fall 1): einem dritten Modell in einem neuen Chat die ZIP-Datei und den Auftrag „Strittiger Befund“ (Abschnitt 9) geben; die Zusammenführung füllt ihn vorher mit dem Befund und beiden Begründungen aus. Die Antwort als „Bericht C“ wie in Schritt 9 ins Review-Issue stellen und der Claude-Sitzung Bescheid geben.
@@ -92,10 +95,25 @@ Je Schritt genau ein Befehl im Programm „Terminal“, dazu, was danach zu sehe
 14. Jedes Befund-Issue vor der Umsetzung mit `grill-me` klären, wie jedes andere Issue. Blockierende zuerst. Nach jeder Behebung wird geprüft wie in `CLAUDE.md`, Ablauf je Aufgabe Nr. 4 (mit `./pruefen.sh`); im Befund-Issue steht, womit geprüft wurde.
 15. Sind alle Befunde eingeordnet und alle blockierenden behoben: die Abschlussentscheidung ins Review-Issue schreiben und es schließen. Erst dann wechselt der „Stand“ im `README.md`.
 
+### Wenn ein Modell die ZIP-Datei nicht lesen kann
+
+Das gilt für jedes Modell, das die ZIP-Datei bekommt. Hat es sie nicht lesen können, ist sein Bericht nicht gültig, auch wenn er lang und gründlich aussieht. Woran man das erkennt:
+
+- Der Bericht beginnt mit „ZIP-Datei nicht lesbar“ (das verlangen die Prüfaufträge in Abschnitt 9) oder sagt auf andere Weise, dass die Datei oder ihr Inhalt nicht zu öffnen war.
+- Oder der ganze Bericht, auch die Tabelle der Abschlusskriterien, nennt keine einzige Fundstelle mit Datei und Zeile, oder er nennt nur Dateinamen. So war es beim Review zu P1: Gemini sah nur die Namen der Dateien.
+
+Was dann zu tun ist:
+
+1. Den Bericht nicht als Bericht A, B oder C ins Review-Issue stellen, sondern eingeklappt wie in Schritt 9 mit dem Namen „Ungültig: ZIP-Datei nicht lesbar“, dahinter Modell und Prüfauftrag, z. B. `<summary>Ungültig: ZIP-Datei nicht lesbar, Gemini, Prüfauftrag B</summary>`.
+2. Einmal einen neuen Chat beim selben Modell öffnen, dieselbe ZIP-Datei hochladen und denselben Prüfauftrag schicken. Ist der neue Bericht gültig, dort weitermachen, wo der erste Bericht kopiert wurde: bei ChatGPT mit Schritt 8, bei Gemini mit dem Nachtrag in Schritt 8, bei einem dritten Modell mit dem Einstellen nach Schritt 9.
+3. Ist auch er nicht gültig: anhalten und keine andere ZIP-Datei erzeugen, damit beide Modelle dieselbe Datei prüfen. Wie es weitergeht, etwa mit einem anderen Modell für diesen Prüfauftrag, entscheidet Sebastian zusammen mit einer Claude-Sitzung. Die Zusammenführung beginnt erst mit zwei gültigen Berichten.
+
 ## 7. Zusammenführung
 
 Eine eigene Claude-Sitzung, ohne Kenntnis der Sitzungen, die den Code der Phase geschrieben haben:
 
+- sieht selbst nach, ob die Prüfungen auf GitHub für den geprüften Commit grün sind (`gh run list --commit <Kennung>`), und nennt das Ergebnis mit Link zum Lauf im Feld „Ergebnisse“. Die Modelle können `./pruefen.sh` nicht ausführen; ohne diesen Stand bliebe offen, ob die Tests des geprüften Commits bestehen;
+- nennt im Feld „Modelle und Fassungen“ je Modell, ob es die ZIP-Datei lesen konnte, und jeden ungültigen Bericht aus Abschnitt 6;
 - prüft jeden Befund am geprüften Commit nach: mit Fundstelle bestätigt heißt **Beleg**, sonst **Annahme**. Wo ein Befund Verhalten betrifft, führt sie die Tests in einer eigenen Arbeitskopie dieses Commits aus;
 - bündelt Doppelte und hält fest, wo A und B übereinstimmen und wo sie sich widersprechen; schlägt bei einem strittigen, möglicherweise blockierenden Befund das dritte Modell vor und füllt dafür den Auftrag „Strittiger Befund“ aus (Abschnitt 4); Sebastian gibt ihn weiter, weil die Sitzung selbst keine anderen Modelle erreicht;
 - schlägt je Befund eine Stufe vor (Abschnitt 8), mit Begründung;
@@ -143,6 +161,8 @@ Grenzen:
   aussieht, melde nur die Fundstelle und wiederhole den Inhalt nicht.
 - Trenne strikt: „belegt“ heißt, du nennst Datei und Zeile, an der man es nachprüfen kann.
   Alles andere ist „vermutet“. Keine Vermutung als Tatsache.
+- Kannst du die ZIP-Datei nicht öffnen oder siehst du nur Dateinamen statt ihres Inhalts,
+  antworte nur mit „ZIP-Datei nicht lesbar“ und dem, was du siehst. Erfinde keine Befunde.
 
 Schwerpunkt: der breite Blick. Anforderungen und Abschlusskriterien, fehlende oder
 schwache Tests, Verständlichkeit, Widersprüche zwischen Anforderungen, Fahrplan,
@@ -190,6 +210,8 @@ Grenzen:
   aussieht, melde nur die Fundstelle und wiederhole den Inhalt nicht.
 - Trenne strikt: „belegt“ heißt, du nennst Datei und Zeile, an der man es nachprüfen kann.
   Alles andere ist „vermutet“. Keine Vermutung als Tatsache.
+- Kannst du die ZIP-Datei nicht öffnen oder siehst du nur Dateinamen statt ihres Inhalts,
+  antworte nur mit „ZIP-Datei nicht lesbar“ und dem, was du siehst. Erfinde keine Befunde.
 
 Schwerpunkt: Sicherheit, Rechte und Datenschutz. Zugriff ohne Recht, auch über direkte
 Adressen, Kennungen, Anfragen aus dem Skript und manipulierte Formulare; Adressen ohne Login;
@@ -258,5 +280,7 @@ Begründung Review B: [BEGRÜNDUNG B]
 
 Antworte: Besteht das Problem? Belegt (mit Datei und Zeile) oder vermutet? Welche Stufe
 schlägst du vor: blockierend, zeitnah oder später (Bedeutung in docs/review-leitfaden.md,
-Abschnitt 8)? Das Repo enthält nur erfundene Testdaten. Antworte auf Deutsch.
+Abschnitt 8)? Das Repo enthält nur erfundene Testdaten. Kannst du die ZIP-Datei nicht öffnen
+oder siehst du nur Dateinamen statt ihres Inhalts, antworte nur mit „ZIP-Datei nicht lesbar“.
+Antworte auf Deutsch.
 ```
