@@ -75,7 +75,7 @@ Eine Steuerungssession steuert die Phase über beliebig viele Issues. Sie wechse
 - **Wenn Sebastian es sagt,** schreibt sie sofort den Stand und endet, auch mitten in einer Umsetzung. Ihre Hintergrundaufträge enden mit ihr; die nächste stellt den Stand der Pull Requests selbst fest (Abschnitt 2).
 - **Am Ende der Phase** (Abschnitt 5, das Phasen-Issue ist geschlossen) sagt sie Sebastian, dass sie endet, ohne Startsatz. Die nächste Phase beginnt in einer neuen Session mit dem Phasenstart (Abschnitt 1).
 
-Den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue schreibt sie nach jedem eingetragenen Issue neu (Abschnitt 3) und beim Wechsel noch einmal, jeweils mit allem, was gerade läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge). So macht die nächste auch nach einem unerwarteten Ende, etwa am Nutzungslimit, allein mit dem Phasen-Issue weiter. <!-- R40 -->
+Den Abschnitt „Stand für die nächste Steuerungssession“ im Phasen-Issue schreibt sie nach jedem eingetragenen Issue neu (Abschnitt 3) und beim Wechsel nach einer Zusammenfassung oder auf Sebastians Wort noch einmal, jeweils mit allem, was gerade läuft (Klärungen, wartende Pull Requests, Hintergrundaufträge). So macht die nächste auch nach einem unerwarteten Ende, etwa am Nutzungslimit, allein mit dem Phasen-Issue weiter. <!-- R40 -->
 
 Der Stand hat höchstens 15 Zeilen, keine Zeile länger als ein Satz, und nur diese fünf Angaben:
 

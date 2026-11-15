@@ -25,7 +25,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
 | Auswahl im schnellen Lauf | 13.11.2026, #304, Nr. 1, 2 und 4 | 03.11.2026, #235, Nr. 1 (nur dass der schnelle Lauf nur die genannten Dateien ausführt) |
-| Wechsel der Sessions | 15.11.2026, #353, Nr. 1 und 2; 03.11.2026, #240, Nr. 3 (ohne den ersten Satz) | 03.11.2026, #240, Nr. 3 (nur der erste Satz: Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
+| Wechsel der Sessions | 15.11.2026, #353, Nr. 1 und 2; 03.11.2026, #240, Nr. 3 (ohne den ersten Satz) | 03.11.2026, #240, Nr. 3 (nur der erste Satz: Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben); 26.10.2026, #169, Nr. 3 (nur der Halbsatz „nie mitten in einer Umsetzung“) |
 | Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge); 26.10.2026, #180, Nr. 4 |
 | Zweite Zeile der Rollenkacheln | 30.10.2026, #219, Nr. 1 | 25.10.2026, #161, Nr. 3 (Nachklärung Kacheln) |
 | Marke am eigenen Bund, Seite „Verband“ | 30.10.2026, #218, Nr. 2 | 30.10.2026, #94, Nr. 1 und 4 |
@@ -51,7 +51,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ## 2026-11-15 · Steuerungssession steuert mehrere Issues, Stand nach jedem Issue (#353)
 
-**Entscheidung** (Sebastian in der Klärung von #353 am 15.11.2026, Kurzform, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901159317), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901151970) mit „Alle passen“; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 03.11.2026 (#240), Nr. 3, nur im ersten Satz (Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); die übrigen Sätze dort gelten weiter.
+**Entscheidung** (Sebastian in der Klärung von #353 am 15.11.2026, Kurzform, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901159317), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901151970) mit „Alle passen“; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 03.11.2026 (#240), Nr. 3, nur im ersten Satz (Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); die übrigen Sätze dort gelten weiter. Ersetzt außerdem im Eintrag vom 26.10.2026 (#169), Nr. 3, den Halbsatz „nie mitten in einer Umsetzung“: Sagt Sebastian es, wechselt die Steuerung auch mitten in einer Umsetzung.
 
 1. Eine Steuerungssession steuert die Phase über mehrere Issues. Sie wechselt nur bei drei Anlässen: nach einer automatischen Zusammenfassung, am Ende der Phase und wenn Sebastian es sagt, dann sofort, auch mitten in einer Umsetzung. Eine feste Zahl von Issues gibt es nicht. Je Phase steuert nur eine Session.
 2. Den Stand für die nächste Steuerungssession schreibt sie nach jedem eingetragenen Issue neu und zusätzlich beim Wechsel. Form und Startsatz bleiben (Eintrag vom 03.11.2026, #240, Nr. 4).
