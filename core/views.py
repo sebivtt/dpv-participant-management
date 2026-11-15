@@ -1495,7 +1495,6 @@ def _organisation_examples() -> dict:
                          f"{texts.ANYWAY_REMOVE}"],
                "close_href": "#h-dialog", "confirm_action": "#h-dialog", "confirm_label": texts.REMOVE_BUTTON,
                "preview_id": "h-dialog-entfernen"}
-    # Löschen einer verwalteten Person (#118): der Knopf links unten im Dialog „Bearbeiten“ und die Rückfrage danach.
     # Der Dialog „Person aufnehmen“ mit der Wahl (#298); die Flächen führen hier nur zum Eintrag selbst.
     choosing = {"title": texts.ADD_PERSON_TITLE, "subtitle": texts.ADMIT_FOR % {"unit": "Sippe Falken"},
                 "close_href": "#h-wahlflaechen", "preview_id": "h-dialog-wahl",
@@ -1503,6 +1502,7 @@ def _organisation_examples() -> dict:
                            "text": texts.ADMIT_CHOICE_TEXT},
                           {"href": "#h-wahlflaechen", "symbol": "plus", "title": person_texts.ADD_TITLE,
                            "text": person_texts.ADD_CHOICE_TEXT}]}
+    # Löschen einer verwalteten Person (#118): der Knopf links unten im Dialog „Bearbeiten“ und die Rückfrage danach.
     managed_edit = {"title": person_texts.EDIT_TITLE % {"person": "Kiwi (Lena Probe)"},
                     "subtitle": person_texts.IN_UNIT % {"unit": "Sippe Falken"}, "close_href": "#h-dialog",
                     "side_href": "#h-dialog", "side_label": person_texts.DELETE_BUTTON, "confirm_action": "#h-dialog",

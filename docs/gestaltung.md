@@ -88,7 +88,7 @@ Zielbild wie bei der Seite „Organisation“ (`docs/zielbilder/organisation.htm
 - **Dialog:** ein Fenster über der Seite mit Titel, Zeile darunter, × oben rechts und „Abbrechen“ unten; Escape und Tippen daneben schließen ihn. Er hat eine eigene Adresse und kommt offen vom Server, deshalb geht er auch ohne Skript. Er steht senkrecht mittig im Fenster, gleich wo er im Inhalt der Seite steht; solange er offen ist, rollt die Seite dahinter nicht mit, auch ohne Skript. Ist er länger als das Fenster, bleibt oben und unten ein schmaler Rand, und nur er rollt (#210).
 - **Suchfeld:** das Textfeld mit dem Knopf „Suchen“ rechts daneben und einem Satz darunter; Enter sucht ebenso.
 - **Trefferliste:** Kreis, Fahrtenname und Name, darunter die Organisation, rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders Mitglied ist, eine Warnung.
-- **Knopf in der Überschrift einer Fläche:** rechts mit Plus, etwa „Gruppenleitung benennen“; am Handy unter der Überschrift (seit #298 am Handy nur das Plus in der Zeile, Abschnitt „Person aufnehmen“).
+- **Knopf in der Überschrift einer Fläche:** rechts mit Plus, etwa „Gruppenleitung benennen“; am Handy seit #298 nur das Plus in der Zeile der Überschrift (Abschnitt „Person aufnehmen“).
 - **Nach dem Benennen** eine kurze Meldung (#186), Ablehnungen fest im Dialog an der Stelle der Handlung.
 
 ### Leitung entfernen und Rolle abgeben (#191, 28.10.2026)
