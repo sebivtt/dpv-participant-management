@@ -286,8 +286,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* Knopf „Entfernen“ (core/_knopf_entfernen.html): zarte rote Fläche, rote Schrift, die Farben der Fehlermeldung. */
 .btn-entfernen { --bs-btn-color: var(--ab-text); --bs-btn-bg: var(--ab-grund); --bs-btn-border-color: var(--ab-grund); --bs-btn-hover-color: var(--ab-text); --bs-btn-hover-bg: var(--ab-grund); --bs-btn-hover-border-color: var(--ab-text); --bs-btn-active-color: var(--ab-text); --bs-btn-active-bg: var(--ab-grund); --bs-btn-active-border-color: var(--ab-text); }
 /* Knopf „Verschieben“ (core/_knopf_verschieben.html, #287): zarte blaue Fläche, blaue Schrift, die Farben der Informationsmeldung. */
-/* Seit #117 auch der zweite Knopf in der Überschrift einer Fläche (.btn-zweit), etwa „Verwaltete Person anlegen“ */
-.btn-verschieben, .btn-zweit { --bs-btn-color: var(--dpv); --bs-btn-bg: var(--dpv-hauch); --bs-btn-border-color: var(--dpv-hauch); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
+.btn-verschieben { --bs-btn-color: var(--dpv); --bs-btn-bg: var(--dpv-hauch); --bs-btn-border-color: var(--dpv-hauch); --bs-btn-hover-color: var(--dpv); --bs-btn-hover-bg: var(--dpv-hauch); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-color: var(--dpv); --bs-btn-active-bg: var(--dpv-hauch); --bs-btn-active-border-color: var(--dpv); }
 .btn-gefahr { --bs-btn-color: #fff; --bs-btn-bg: var(--ab-text); --bs-btn-border-color: var(--ab-text); --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #6e2222; --bs-btn-hover-border-color: #6e2222; --bs-btn-active-color: #fff; --bs-btn-active-bg: #6e2222; --bs-btn-active-border-color: #6e2222; }
 .a-dialog-inhalt p:last-child { margin-bottom: 0; }
 .a-leer-satz { margin: 0; color: var(--text-leise); }
@@ -478,9 +477,19 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 .a-flaeche-kopf { flex-wrap: wrap; }
 .a-flaeche-aktion { margin-left: auto; padding: .45rem .9rem; font-size: .92rem; }
 .a-flaeche-aktion .ic { width: 18px; height: 18px; }
-/* Seit #117 stehen die Knöpfe in einer Gruppe, links ein zweiter zart blauer, etwa „Verwaltete Person anlegen“ */
-.a-flaeche-aktionen { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
-.a-flaeche-aktionen .a-flaeche-aktion { margin-left: 0; }
+/* Wahl mit großen Flächen (#298, Zielbild vom 14.11.2026): je Weg eine Fläche als Link, links das Symbol im
+   Kästchen, daneben Titel und Satz, rechts der Pfeil; darüber fahren und der Fokus färben den Rand blau. */
+.a-wahlflaechen { display: grid; gap: 12px; margin: 8px 0 0; padding: 0; list-style: none; }
+.a-wahlflaeche { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche); color: var(--text); text-decoration: none; }
+.a-wahlflaeche:hover { border-color: var(--dpv); background: var(--dpv-hauch); color: var(--text); }
+.a-wahlflaeche:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; }
+.a-wahlflaeche-ic { width: 42px; height: 42px; display: grid; place-items: center; flex: none; border-radius: 12px; background: var(--dpv-hauch); color: var(--dpv); }
+.a-wahlflaeche-ic .ic { width: 22px; height: 22px; }
+.a-wahlflaeche-worte { min-width: 0; }
+.a-wahlflaeche strong { display: block; margin: 0 0 2px; font-size: 1.05rem; }
+.a-wahlflaeche-satz { color: var(--text-leise); font-size: .95rem; }
+.a-wahlflaeche-pfeil { align-self: center; margin-left: auto; color: var(--dpv); font-weight: 800; }
+@media (max-width: 600px) { .a-wahlflaeche-pfeil { display: none; } }
 /* Suchfeld: das Textfeld mit dem Knopf rechts daneben und einem Satz darunter */
 .a-textfeld-zeile { display: flex; gap: 8px; }
 .a-textfeld-zeile .form-control { flex: 1; min-width: 0; }
@@ -564,9 +573,13 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-treffer-knopf .btn { padding: .35rem .8rem; font-size: .88rem; }
 .a-treffer-warnung { flex-basis: 100%; }
 .a-treffer-leer { margin: 0 0 12px; }
+/* Einzeilig (#298, PA9): Titel und Zahl stehen zusammen links, bei Platzmangel die Zahl unter dem Titel; der Knopf
+   bleibt auch am Handy rechts in der Zeile, etwa „Person aufnehmen“. */
+.a-flaeche-titel { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
 @media (max-width: 700px) {
   .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
-  .a-flaeche-aktionen { margin-left: 0; flex-basis: 100%; }
+  .a-flaeche-kopf.ist-einzeilig { flex-wrap: nowrap; }
+  .a-flaeche-kopf.ist-einzeilig .a-flaeche-aktion { flex: none; margin-left: auto; }
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
 .a-kachel-knopf { margin-top: 8px; }

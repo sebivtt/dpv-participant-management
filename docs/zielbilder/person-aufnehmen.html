@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grober Entwurf #298 · Person aufnehmen</title>
+<!-- Grober Entwurf zur Klärung von #298 (14.11.2026). Nur erfundene Daten, nichts von fremden Servern, kein Skript.
+     Oben wechselt man zwischen vier Ansichten. Grundlage: Szenarien PA1 bis PA9 vom 14.11.2026, Farben aus app.css. -->
+<style>
+  :root { --dpv:#1a4b7e; --dpv-tief:#12385f; --dpv-hauch:#e9eff6; --grund:#f4f6f9; --flaeche:#fff; --linie:#dbe2ea;
+          --text:#1b2532; --leise:#566375; --zu-grund:#e6e9ee; --radius:14px; --klein:9px; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--grund); color:var(--text); }
+  .hinweis { background:#fbefd5; color:#74500c; padding:10px 16px; font-size:.9rem; }
+  nav.ansichten { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; background:var(--flaeche); border-bottom:1px solid var(--linie); }
+  nav.ansichten a { color:var(--dpv); font-weight:700; text-decoration:none; padding:6px 10px; border:1px solid var(--linie); border-radius:var(--klein); }
+  main { max-width:880px; margin:0 auto; padding:24px 16px; }
+  h1 { font-size:1.6rem; margin:0 0 4px; } .leise { color:var(--leise); }
+  .flaeche { background:var(--flaeche); border:1px solid var(--linie); border-radius:var(--radius); padding:20px; margin-top:20px; }
+  .kopf { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .kopf h3 { margin:0; font-size:1.15rem; } .zahl { color:var(--leise); font-size:.9rem; }
+  .btn { display:inline-flex; align-items:center; gap:6px; font:inherit; font-weight:700; padding:.55rem 1.1rem; border-radius:var(--klein);
+         border:1px solid var(--dpv); background:var(--dpv); color:#fff; text-decoration:none; cursor:pointer; }
+  .btn-zart { background:var(--flaeche); color:var(--dpv); border-color:var(--linie); }
+  .kopf .btn { margin-left:auto; }
+  ul.personen { list-style:none; margin:16px 0 0; padding:0; }
+  ul.personen li { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--linie); }
+  .kreis { width:38px; height:38px; border-radius:50%; background:var(--dpv-hauch); color:var(--dpv); display:grid; place-items:center; font-weight:800; flex:none; }
+  .kreis.grau { background:var(--zu-grund); color:var(--leise); }
+  .marke { font-size:.78rem; background:var(--zu-grund); color:#3f4a58; padding:2px 8px; border-radius:999px; }
+  .leer { color:var(--leise); margin:16px 0 0; }
+  /* Dialog */
+  .schleier { position:fixed; inset:0; background:rgb(27 37 50 / 55%); display:grid; place-items:center; padding:16px; }
+  .dialog { width:min(580px,100%); background:var(--flaeche); border-radius:var(--radius); box-shadow:0 20px 45px rgb(18 56 95 / 22%); }
+  .dialog-kopf { display:flex; align-items:flex-start; gap:12px; padding:20px 20px 0; }
+  .dialog-kopf h2 { margin:0; font-size:1.25rem; } .dialog-kopf .zu { margin-left:auto; font-size:1.4rem; color:var(--leise); text-decoration:none; line-height:1; }
+  .dialog-inhalt { padding:12px 20px 20px; }
+  .dialog-fuss { display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid var(--linie); }
+  /* Neuer Baustein: zwei große Flächen zur Wahl (nur grob; Aussehen kommt aus dem Zielbild) */
+  .wahl { display:grid; gap:12px; margin-top:8px; }
+  .wahl a { display:flex; gap:14px; align-items:flex-start; padding:16px; border:1px solid var(--linie); border-radius:var(--radius);
+            text-decoration:none; color:var(--text); background:var(--flaeche); }
+  .wahl a:hover { border-color:var(--dpv); background:var(--dpv-hauch); }
+  .wahl a:focus-visible { outline:3px solid var(--dpv); outline-offset:2px; }
+  .wahl .symbol { width:42px; height:42px; border-radius:12px; background:var(--dpv-hauch); color:var(--dpv); display:grid; place-items:center; flex:none; }
+  .wahl strong { display:block; font-size:1.05rem; margin-bottom:2px; }
+  .wahl span.satz { color:var(--leise); font-size:.95rem; }
+  .wahl .pfeil { margin-left:auto; color:var(--dpv); align-self:center; font-weight:800; }
+  .feld { margin-top:12px; } .feld label { display:block; font-weight:700; margin-bottom:4px; }
+  .feld .eingabe { border:1px solid var(--linie); border-radius:var(--klein); padding:.55rem .75rem; color:var(--leise); }
+  .zwei { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  /* Ansichten ohne Skript */
+  .ansicht { display:none; } .ansicht:target { display:grid; }
+  @media (max-width:600px) { .zwei { grid-template-columns:1fr; } .wahl .pfeil { display:none; } }
+</style>
+</head>
+<body>
+<div class="hinweis"><strong>Grober Entwurf zu #298</strong> (14.11.2026), nur zur Orientierung für dein Zielbild. Alle Personen sind erfunden. Oben zwischen den Ansichten wechseln; am Handy wird die Seite schmal.</div>
+<nav class="ansichten" aria-label="Ansichten des Entwurfs">
+  <a href="#seite">1 · Seite</a>
+  <a href="#wahl">2 · Dialog „Person aufnehmen“</a>
+  <a href="#anlegen">3 · Zweiter Schritt</a>
+  <a href="#leer">4 · Leere Liste</a>
+</nav>
+
+<!-- Ansicht 1 und Hintergrund: die Seite der Sippe Falken -->
+<main>
+  <p class="leise">Organisation › Pfadfinderbund Boreas › Stamm Walhall</p>
+  <h1>Sippe Falken</h1>
+  <p class="leise">Gruppe in Stamm Walhall</p>
+  <section class="flaeche" aria-labelledby="h-personen">
+    <div class="kopf">
+      <h3 id="h-personen">Personen</h3><span class="zahl">3 Personen</span>
+      <a class="btn" href="#wahl" id="person-aufnehmen">＋ Person aufnehmen</a>
+    </div>
+    <ul class="personen">
+      <li><span class="kreis">FG</span><div><strong>Fiete Gans</strong><br><span class="leise">fiete@example.org · Gruppenleitung Sippe Falken</span></div></li>
+      <li><span class="kreis">FM</span><div><strong>Finn Meise</strong><br><span class="leise">finn@example.org</span></div></li>
+      <li><span class="kreis grau">LP</span><div><strong>Kiwi (Lena Probe)</strong><br><span class="marke">verwaltet</span></div></li>
+    </ul>
+  </section>
+  <p class="leise" style="margin-top:24px">PA1: Im Kopf steht nur noch ein Knopf. Am Handy bleibt der Kopf einzeilig (PA9).</p>
+</main>
+
+<!-- Ansicht 2: Dialog „Person aufnehmen“ mit den zwei großen Flächen (neuer Baustein) -->
+<div class="ansicht schleier" id="wahl" role="dialog" aria-labelledby="t-wahl">
+  <div class="dialog">
+    <div class="dialog-kopf"><div><h2 id="t-wahl">Person aufnehmen</h2><span class="leise">in Sippe Falken</span></div><a class="zu" href="#seite" aria-label="Schließen">×</a></div>
+    <div class="dialog-inhalt">
+      <div class="wahl">
+        <a href="#suchen">
+          <span class="symbol" aria-hidden="true">🔍</span>
+          <span><strong>Person mit Konto aufnehmen</strong><span class="satz">Für Personen, die sich schon einmal mit ihrem DPV-Konto im Tool angemeldet haben.</span></span>
+          <span class="pfeil" aria-hidden="true">›</span>
+        </a>
+        <a href="#anlegen">
+          <span class="symbol" aria-hidden="true">＋</span>
+          <span><strong>Verwaltete Person anlegen</strong><span class="satz">Für Personen ohne eigenes Konto, meist Kinder und Jugendliche. Ihre Angaben pflegt die Leitung.</span></span>
+          <span class="pfeil" aria-hidden="true">›</span>
+        </a>
+      </div>
+    </div>
+    <div class="dialog-fuss"><a class="btn btn-zart" href="#seite">Abbrechen</a></div>
+  </div>
+</div>
+
+<!-- Ansicht 3a: zweiter Schritt, Person mit Konto (bleibt wie heute, nur „Zurück“) -->
+<div class="ansicht schleier" id="suchen" role="dialog" aria-labelledby="t-suchen">
+  <div class="dialog">
+    <div class="dialog-kopf"><div><h2 id="t-suchen">Person mit Konto aufnehmen</h2><span class="leise">in Sippe Falken</span></div><a class="zu" href="#seite" aria-label="Schließen">×</a></div>
+    <div class="dialog-inhalt">
+      <div class="feld"><label>Mail oder Benutzername</label><div class="eingabe">otto@example.org</div></div>
+      <p class="leise">Die Person muss sich schon einmal im Tool angemeldet haben. Gefunden wird sie nur über die genaue Mail oder den genauen Benutzernamen.</p>
+    </div>
+    <div class="dialog-fuss"><a class="btn btn-zart" href="#wahl">Zurück</a></div>
+  </div>
+</div>
+
+<!-- Ansicht 3b: zweiter Schritt, verwaltete Person (bleibt wie heute, nur „Zurück“) -->
+<div class="ansicht schleier" id="anlegen" role="dialog" aria-labelledby="t-anlegen">
+  <div class="dialog">
+    <div class="dialog-kopf"><div><h2 id="t-anlegen">Verwaltete Person anlegen</h2><span class="leise">in Sippe Falken · ohne Konto, verwaltet</span></div><a class="zu" href="#seite" aria-label="Schließen">×</a></div>
+    <div class="dialog-inhalt">
+      <div class="zwei"><div class="feld"><label>Vorname</label><div class="eingabe">Lena</div></div><div class="feld"><label>Nachname</label><div class="eingabe">Probe</div></div></div>
+      <div class="feld"><label>Geburtsdatum</label><div class="eingabe">14.05.2015</div></div>
+      <div class="feld"><label>Fahrtenname</label><div class="eingabe">Kiwi</div></div>
+      <p class="leise" style="margin-top:12px">… darunter der Schalter zur Einwilligung wie heute (#98).</p>
+    </div>
+    <div class="dialog-fuss"><a class="btn btn-zart" href="#wahl">Zurück</a><a class="btn" href="#seite">Anlegen</a></div>
+  </div>
+</div>
+
+<!-- Ansicht 4: leere Liste -->
+<div class="ansicht schleier" id="leer" style="background:var(--grund); place-items:start center;">
+  <main style="width:100%">
+    <h1>Meute Wölfe</h1>
+    <p class="leise">Gruppe in Stamm Walhall</p>
+    <section class="flaeche">
+      <div class="kopf"><h3>Personen</h3><span class="zahl">0 Personen</span><a class="btn" href="#wahl">＋ Person aufnehmen</a></div>
+      <p class="leer">Dieser Organisation sind noch keine Personen zugeordnet. Mit „Person aufnehmen“ oben kannst du eine Person mit Konto aufnehmen oder eine verwaltete Person anlegen.</p>
+    </section>
+    <p class="leise" style="margin-top:16px"><a href="#seite">Zurück zur Sippe Falken</a></p>
+  </main>
+</div>
+</body>
+</html>
+

@@ -30,9 +30,9 @@
         </section>
       {% endif %}
       {% if page.persons is not None %}
-        {# Abschnitt „Personen“ (#285): die direkten Mitglieder und, seit #117, die verwalteten Personen gemischt, nur im eigenen Bereich; „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“ nur, wo die Person das darf. #}
+        {# Abschnitt „Personen“ (#285): die direkten Mitglieder und, seit #117, die verwalteten Personen gemischt, nur im eigenen Bereich; seit #298 im Kopf nur „Person aufnehmen“ mit der Wahl im Dialog, nur wo die Person aufnehmen und anlegen darf. #}
         <section class="a-flaeche a-orga-flaeche" id="abschnitt-personen" aria-labelledby="h-personen">
-          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id=page.add_managed_id %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.admit_href action_label=page.admit_label second_href=page.add_managed_href second_label=page.add_managed_label second_id=page.add_managed_id %}{% endif %}
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id one_line=True %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id one_line=True %}{% endif %}
           {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
         </section>
       {% endif %}
@@ -51,9 +51,10 @@
     {% include "core/_dialog_zu.html" %}
   {% endif %}
   {% if removal %}
-    {# Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287); „… anlegen“ mit dem Textfeld „Name“, „… bearbeiten“ mit Name, Wahl des Rings und Schalter „Hat Ringe“ und die Rückfrage vor dem Einschalten (#95); „Verwaltete Person anlegen“ und „… bearbeiten“ mit vier Feldern (#117), seit #118 mit „Verwaltete Person löschen“ links unten und der Rückfrage „… endgültig löschen?“: eigene Adresse, kommt offen vom Server. #}
+    {# „Person aufnehmen“ mit zwei großen Flächen zur Wahl (#298); ein Tipp auf eine Fläche öffnet den Dialog dieses Wegs. Bestätigung „… entfernen?“ oder „Deine Rolle … abgeben?“ (#191), „… austragen?“ mit Wahl und Vorschau (#286), „Verschieben“ mit Wahl und, wenn eine Leitungsrolle nicht zum Ziel passt, der Fehlermeldung an der Stelle der Handlung (#287); „… anlegen“ mit dem Textfeld „Name“, „… bearbeiten“ mit Name, Wahl des Rings und Schalter „Hat Ringe“ und die Rückfrage vor dem Einschalten (#95); „Verwaltete Person anlegen“ und „… bearbeiten“ mit vier Feldern (#117), seit #118 mit „Verwaltete Person löschen“ links unten und der Rückfrage „… endgültig löschen?“: eigene Adresse, kommt offen vom Server. #}
     {% include "core/_dialog_auf.html" with dialog=removal %}
     {% for line in removal.lines %}<p>{{ line }}</p>{% endfor %}
+    {% if removal.tiles %}{% include "core/_wahlflaechen.html" with tiles=removal.tiles %}{% endif %}
     {% if removal.form %}{% textfeld removal.form.name %}{% endif %}
     {% if removal.person_form %}
       {# „Verwaltete Person anlegen“ und „… bearbeiten“ (#117): oben der Satz, wenn inzwischen jemand anderes gespeichert hat (MG6), dann Vor- und Nachname nebeneinander, Geburtsdatum und Fahrtenname. #}

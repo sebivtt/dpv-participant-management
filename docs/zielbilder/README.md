@@ -165,6 +165,21 @@ Vorlage für das Löschen ist [Fassung 1 des Zielbilds zu #117](https://github.c
 3. **Knöpfe aus den Bausteinen:** „Verwaltete Person löschen“ ist der Baustein „Knopf „Entfernen““ (zart rot, klein), „Nicht löschen“ hat das Aussehen von „Abbrechen“, „Endgültig löschen“ ist der rote Knopf des Dialogs.
 4. **Nur für wer löschen darf** (N5): die Leitung der eigenen Organisation der Person oder die einspringende, nicht jede, die bearbeiten darf, wie es das Zielbild zeigt.
 
+## Person aufnehmen
+
+- **Datei:** [`person-aufnehmen.html`](person-aufnehmen.html)
+- **Stand:** 14.11.2026, der grobe Entwurf aus der Klärung von #298 (`entwurf-298.html`) mit einer Korrektur der Lage des Dialogs; Sebastian: „Entwurf ist mein Zielbild“. Übernommen in #298 ([Kommentar mit Datei und Prüfsumme](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289041)), eingespielt mit #298.
+- **Prüfsumme (SHA-256):** `1a9d7d68b79aa79ce5234d341a5c5509a5a139235439b7c39957f923111be547`
+- **Inhalt der Datei:** nur erfundene Personen (Fiete Gans, Finn Meise, Kiwi (Lena Probe), Otto), alle Mails auf `example.org`. Nichts von fremden Servern, kein Skript, Systemschrift.
+- **Orientierung, keine Anforderung.** Geklärt in #298 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289269), N1 bis N5; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875044923)). Es zeigt den Knopf „Person aufnehmen“, den Dialog mit den zwei großen Flächen (neuer Baustein „Wahl mit großen Flächen“) und „Zurück“ in beiden Wegen; der Rest der Seite kommt aus `organisation.html`, `personen.html` und `verwaltete-personen.html`.
+
+### Abweichungen vom Zielbild (#298)
+
+1. **Symbole** (N1): oben das Symbol „@“ des Tools statt der Lupe, unten das Plus des Tools statt des Schriftzeichens.
+2. **Nur im Entwurf** (N2): die gelbe Hinweiszeile, die Leiste mit den vier Ansichten, der Satz „PA1: …“ unter der Fläche und „… darunter der Schalter zur Einwilligung wie heute“ kommen nicht ins Tool.
+3. **Was der Entwurf nur andeutet, bleibt wie heute** (N3): die Liste „Personen“, Seitenkopf und Pfad und die beiden Dialoge „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“ mit ihren Feldern und Knöpfen; dort kommt nur „Zurück“ dazu. Im Dialog „Person mit Konto aufnehmen“ steht wie heute bis zur Suche kein Knopf zum Bestätigen.
+4. **Knopf und Überschrift aus den Bausteinen:** „Person aufnehmen“ ist der Knopf der „Überschrift einer Fläche“ mit dem Plus des Tools statt des Schriftzeichens „＋“; der Dialog ist der Baustein „Dialog“ mit eigener Adresse, damit er ohne Skript geht.
+
 ## Support-Zugang
 
 - **Datei:** [`support-zugang.html`](support-zugang.html)

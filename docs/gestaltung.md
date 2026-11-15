@@ -145,12 +145,12 @@ Kein Zielbild (Frage 14 in #95); Entscheidungen in `docs/entscheidungen.md`, Ein
 Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 11.11.2026 zu #117. Ein Baustein neu, fünf erweitert:
 
 - **Datumsfeld** (neu, N3): das Datumsfeld des Browsers, mit Beschriftung und Fehler am Feld wie das Textfeld, ohne Zahl der Zeichen. Der Browser zeigt das Datum in seiner Schreibweise, am PC mit kleinem Kalender, am Handy mit Drehrädern; Tage nach „heute“ lässt er beim Geburtsdatum nicht wählen. Der Kalender aus `docs/zielbilder/mein-profil.html` entfällt hier.
-- **Überschrift einer Fläche:** links neben dem Knopf darf ein zweiter stehen, zart blau wie „Verschieben“, etwa „Verwaltete Person anlegen“ neben „Person mit Konto aufnehmen“ (N6); am Handy untereinander.
+- **Überschrift einer Fläche:** links neben dem Knopf darf ein zweiter stehen, zart blau wie „Verschieben“, etwa „Verwaltete Person anlegen“ neben „Person mit Konto aufnehmen“ (N6); am Handy untereinander. Seit #298 entfallen (Abschnitt „Person aufnehmen“ unten).
 - **Person in einer Liste:** Eine verwaltete Person hat einen grauen Kreis, in der zweiten Zeile die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Mail und Geburtsdatum stehen nicht in der Liste.
 - **Marke:** neu „verwaltet“, grau wie „nur lesen“, ohne Schloss.
 - **Knopf „Verschieben“:** auch für „Bearbeiten“ bei einer verwalteten Person, ohne Symbol.
 - **Dialog:** Nach dem Dialog bekommt der Knopf, der ihn geöffnet hat, wieder den Fokus; dafür trägt der Knopf eine Kennung, und der Dialog führt zur Seite mit dieser Kennung in der Adresse zurück. Bisher nur bei verwalteten Personen. Dort und seit #296 auch in den Dialogen „… anlegen“ und „… bearbeiten“ einer Organisation prüft der Browser die Felder nicht selbst (`novalidate`), damit die Meldungen des Tools am Feld erscheinen statt der Blase des Browsers.
-- **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5; seit #118 im Dialog „Bearbeiten“ für wer löschen darf, Abschnitt unten). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit dem zweiten Satz aus N7.
+- **„Verwaltete Person anlegen“ und „… bearbeiten“:** derselbe Dialog mit Vorname und Nachname nebeneinander (schmal untereinander), Geburtsdatum und Fahrtenname; darunter „in … · ohne Konto, verwaltet“; der Knopf „Anlegen“ oder „Speichern“ ist dunkelblau, einen Knopf zum Löschen gibt es nicht (N5; seit #118 im Dialog „Bearbeiten“ für wer löschen darf, Abschnitt unten). Bei leerer Liste steht „Dieser Organisation sind noch keine Personen zugeordnet.“, für wer dort anlegen darf mit einem zweiten Satz (seit #298 dessen Wortlaut, Abschnitt „Person aufnehmen“ unten).
 - **Danach** eine kurze Meldung (#186): „Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.“, „Die Angaben zu Kiwi (Lena Probe) sind gespeichert.“ Hat inzwischen jemand anderes gespeichert, steht die Fehlermeldung oben im Dialog, und er zeigt den neuen Stand.
 
 ### Verwaltete Personen verschieben, austragen und löschen (#118, 12.11.2026)
@@ -206,6 +206,15 @@ Kein Zielbild (Nachbesserung eines bestehenden Bausteins, Sebastian bei der Klä
 Kein Zielbild (Nachbesserung eines bestehenden Bausteins, Sebastian bei der Klärung am 14.11.2026). Ein Baustein erweitert:
 
 - **Dialog:** Jeder Text im Dialog bricht um, im Kopf und im Inhalt, ein Wort länger als eine Zeile notfalls mitten im Wort, wie beim Fahrtennamen (#214). Der Dialog bleibt so breit wie sonst und rollt nie seitlich; der Titel steht links, das × oben rechts bleibt sichtbar. Normale Namen brechen wie bisher nur an Leerzeichen um. Das gilt für jeden Dialog, ohne dass er etwas eigenes braucht. Der Umbruch auf den Seiten selbst gehört nicht dazu (#327).
+
+### Person aufnehmen (#298, 15.11.2026)
+
+Zielbild als `docs/zielbilder/person-aufnehmen.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 15.11.2026 zu #298. Ein Baustein neu, zwei erweitert:
+
+- **Wahl mit großen Flächen** (neu): im Dialog untereinander je Weg eine Fläche mit feinem Rand, links das Symbol im zart blauen Kästchen, daneben der Titel fett und ein Satz grau, rechts der Pfeil „›“, am Handy ohne. Darüberfahren färbt Rand und Fläche zart blau, der Fokus hat den Rahmen. Ein Tipp führt direkt zum Weg, nichts ist vorgewählt; die erste Fläche bekommt beim Öffnen den Fokus. Als Wahl zwischen wenigen Wegen, nicht zwischen Werten eines Formulars; dafür bleibt die „Auswahl im Dialog“.
+- **Überschrift einer Fläche:** wieder nur ein Knopf; er kann eine Kennung tragen, zu der sein Dialog zurückführt. Der zweite, zart blaue Knopf aus #117 entfällt. Wo es die Seite verlangt, bleibt der Knopf auch am Handy rechts in der Zeile (einzeilig), und die Zahl rückt bei Platzmangel unter den Titel; sonst steht er am Handy weiter unter der Überschrift (#190).
+- **Dialog:** Wo ein Dialog aus einer Wahl kommt, heißt „Abbrechen“ „Zurück“ und führt zur Wahl; × und Escape schließen zur Seite, und der Knopf, der die Wahl geöffnet hat, bekommt den Fokus.
+- **Abschnitt „Personen“:** im Kopf nur „Person aufnehmen“ im Aussehen des Hauptknopfs; am Handy bleibt der Kopf einzeilig. Der Dialog „Person aufnehmen“ hat oben „Person mit Konto aufnehmen“ mit dem Symbol „@“, darunter „Verwaltete Person anlegen“ mit dem Plus, unten „Abbrechen“. Bei leerer Liste steht für wer dort aufnehmen darf: „Mit „Person aufnehmen“ oben kannst du eine Person mit Konto aufnehmen oder eine verwaltete Person anlegen.“
 
 ### Textfelder (#111, 26.10.2026)
 
