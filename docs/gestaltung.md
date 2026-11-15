@@ -201,6 +201,12 @@ Kein Zielbild (Nachbesserung eines bestehenden Bausteins, Sebastian bei der Klä
 
 - **Auswahl im Dialog:** Ein Klick oder Tippen irgendwo in den Kasten einer Möglichkeit wählt sie, auch auf den Rand neben Text und rundem Knopf, auch ohne Skript; über dem ganzen Kasten zeigt der Mauszeiger die Hand. Ein Klick in die Lücke zwischen zwei Kästen ändert die Wahl nicht. Mit der Tastatur bleibt alles wie bisher, der Fokusrahmen sitzt am runden Knopf. Das Aussehen der Kästen bleibt gleich.
 
+### Dialog: lange Namen brechen um (#331, 15.11.2026)
+
+Kein Zielbild (Nachbesserung eines bestehenden Bausteins, Sebastian bei der Klärung am 14.11.2026). Ein Baustein erweitert:
+
+- **Dialog:** Jeder Text im Dialog bricht um, im Kopf und im Inhalt, ein Wort länger als eine Zeile notfalls mitten im Wort, wie beim Fahrtennamen (#214). Der Dialog bleibt so breit wie sonst und rollt nie seitlich; der Titel steht links, das × oben rechts bleibt sichtbar. Normale Namen brechen wie bisher nur an Leerzeichen um. Das gilt für jeden Dialog, ohne dass er etwas eigenes braucht. Der Umbruch auf den Seiten selbst gehört nicht dazu (#327).
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.

@@ -486,6 +486,9 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 dialog.a-dialog { position: fixed; inset: 0; z-index: 60; width: min(580px, calc(100% - 32px)); max-height: calc(100% - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--flaeche); color: var(--text); box-shadow: 0 20px 45px rgb(18 56 95 / 22%); }
 dialog.a-dialog:not(:modal) { box-shadow: 0 0 0 100vmax rgb(27 37 50 / 55%), 0 20px 45px rgb(18 56 95 / 22%); }
 dialog.a-dialog::backdrop { background: rgb(27 37 50 / 55%); }
+/* Jeder Text im Dialog bricht um, notfalls mitten im Wort, damit ein langer Name ihn nicht in die Breite schiebt (#331);
+   normale Namen brechen weiter nur an Leerzeichen um. */
+dialog.a-dialog { overflow-wrap: anywhere; }
 /* Solange ein Dialog oder das Handy-Menü offen ist, rollt die Seite dahinter nicht mit, auch ohne Skript (#210).
    Ist der Dialog länger als das Fenster, rollt nur er; overscroll-behavior sichert zusätzlich ab, dass das Rollen an seinem Ende nicht an die Seite weitergeht.
    Ohne Skript ist die Seite dahinter nicht gesperrt wie bei showModal; sie nimmt deshalb auch keine Maus an,
