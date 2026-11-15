@@ -139,7 +139,8 @@ def test_e1_offen_vor_der_testumgebung_nur_was_59_ohnehin_blockiert():
     ]
 
     for absicherung, ort in open_before_test:
-        assert set(re.findall(r"#\d+", ort)) <= {"#278", "#325"}, absicherung
+        issues = set(re.findall(r"#\d+", ort))
+        assert issues and issues <= {"#278", "#325"}, absicherung
 
 
 def test_e1_alle_absicherungen_aus_dem_issue_stehen_in_der_liste():
@@ -206,7 +207,7 @@ def _described(path: Path) -> dict[str, str]:
 
 def test_e2_jede_einstellung_steht_in_einer_vorlage():
     in_templates = set(_described(ENV_SERVER)) | set(_described(ENV_LOCAL))
-    # Diese beiden trägt die Compose-Datei der Testumgebung fest ein, nicht die Umgebungsdatei.
+    # Diese Einstellung trägt die Compose-Datei der Testumgebung fest ein, nicht die Umgebungsdatei.
     fixed_in_compose = {"TEST_ENVIRONMENT"}
 
     assert _variables_in_settings() - in_templates - fixed_in_compose == set()
@@ -306,6 +307,9 @@ def test_g3_pruefliste_nennt_den_hinweis_des_programms_davor():
 
     assert "X-Forwarded-Proto" in text
     assert "endlos" in text
+    # Befund G2 der unabhängigen Prüfung: Django wertet den Wert ganz links aus, also einen vom
+    # Browser mitgeschickten; das Programm davor muss ihn ersetzen, nicht nur anhängen.
+    assert "ersetzen" in text
 
 
 # ---------- E5: Sitzungen aufräumen (Aufbau; im Container: containertests/) ----------
@@ -327,6 +331,31 @@ def test_e5_eigener_dienst_raeumt_sitzungen_beim_start_und_mindestens_taeglich_a
     assert loop.index("manage.py clearsessions") < loop.index("sleep")
     seconds = int(re.search(r"sleep (\d+)", loop).group(1))
     assert 0 < seconds <= 24 * 60 * 60
+
+
+def test_e5_scheitert_ein_lauf_kommt_der_naechste_bald(tmp_path):
+    # Befund M2 der unabhängigen Prüfung: Ist die Datenbank etwa nach einem Neustart des Servers
+    # noch nicht bereit, darf der Dienst nicht 24 Stunden bis zum nächsten Versuch warten.
+    # Ersatz für python (erster Lauf scheitert) und sleep (merkt sich die Pause, endet nach zwei).
+    calls = tmp_path / "aufrufe"
+    (tmp_path / "python").write_text(f'#!/bin/sh\necho lauf >> "{calls}"\n[ "$(grep -c lauf "{calls}")" -gt 1 ]\n')
+    (tmp_path / "sleep").write_text(
+        f'#!/bin/sh\necho "pause $1" >> "{calls}"\n[ "$(grep -c pause "{calls}")" -lt 2 ] || kill -TERM $PPID\n'
+    )
+    for stub in ("python", "sleep"):
+        (tmp_path / stub).chmod(0o755)
+
+    subprocess.run(  # noqa: S603 -- festes Skript aus dem Repo, Ersatzbefehle aus diesem Test
+        ["/bin/sh", str(BASE_DIR / "docker" / "aufraeumen.sh")],
+        cwd=BASE_DIR,
+        env={"PATH": f"{tmp_path}:/usr/bin:/bin"},
+        timeout=30,
+        check=False,
+    )
+
+    pauses = [int(line.split()[1]) for line in calls.read_text().splitlines() if line.startswith("pause")]
+    assert pauses[0] <= 5 * 60, pauses
+    assert 0 < pauses[1] <= 24 * 60 * 60, pauses
 
 
 def test_e5_aufraeumen_erreicht_nur_die_datenbank():
