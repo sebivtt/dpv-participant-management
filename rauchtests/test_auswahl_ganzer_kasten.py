@@ -8,6 +8,8 @@ Stelle des Bildschirms, nicht auf ein Element. Jeder Test läuft in Chromium, Fi
 (conftest.py). Alle Namen sind erfunden.
 """
 
+import math
+
 import pytest
 from playwright.sync_api import Locator, Page, expect
 
@@ -52,6 +54,11 @@ def _point(box: Locator, where: str) -> tuple[float, float]:
 
 def _click(page: Page, box: Locator, where: str) -> None:
     x, y = _point(box, where)
+    if where == "linie":
+        # Firefox nimmt Mausklicks nur auf ganzen Pixeln an und rundet ab; die Linie ist 1 Pixel hoch und
+        # beginnt oft mitten in einem Pixel. Die nächste ganze Zahl liegt noch auf ihr.
+        y = math.ceil(y)
+        assert y < _point(box, where)[1] + 1
     page.mouse.click(x, y)
 
 
