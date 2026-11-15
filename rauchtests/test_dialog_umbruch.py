@@ -28,17 +28,22 @@ R = Role.Kind
 U = Unit.Kind
 
 # Szenario 1: Vor- und Nachname je 50 Zeichen ohne Leerzeichen.
-VORNAME_LANG = "Paulmaximilianfriedrichwilhelmkonstantinbartholom"
-NACHNAME_LANG = "Probehausenkirchbergwaldsteinmuehlenbachfeldhofen"
+VORNAME_LANG = "Paulmaximilianfriedrichwilhelmkonstantinbartholoma"
+NACHNAME_LANG = "Probehausenkirchbergwaldsteinmuehlenbachfeldhofenx"
 # Szenario 2: Name aus Keycloak mit 120 Zeichen ohne Leerzeichen.
-KONTO_LANG = "Finnfalkenflugwindwolkenbergsturmtalwiesenbachquellsteinhoehlenwaldrandhuegelseeuferdammweghofstaettenbrunnenplatzende"
+KONTO_LANG = "Finnfalkenflugwindwolkenbergsturmtalwiesenbachquellsteinhoehlenwaldrandhuegelseeuferdammweghofstaettenbrunnenplatzendeab"
 # Szenario 4: Leitung mit langem Nachnamen.
 LEITUNG_LANG = "Falkenhorstbergsteigerwaldlaeuferflussueberquererfeuerholzsammler"
 # Szenario 5: Organisation mit 100 Zeichen ohne Leerzeichen.
-ORGA_LANG = "Sippenachtfalkenmondscheinwanderungsgemeinschaftuebersiebenbergeundsiebentaelerbishinzumgrossensee"
+ORGA_LANG = "Sippenachtfalkenmondscheinwanderungsgemeinschaftuebersiebenbergeundsiebentaelerbishinzumgrossenseeab"
 # Szenario 7: normale, aber lange Namen mit Leerzeichen.
 VORNAME_NORMAL = "Maximiliane Konstantina"
 NACHNAME_NORMAL = "von Hohenzollern"
+
+
+def test_lange_namen_haben_die_laengen_aus_den_szenarien():
+    """Die Längen der Szenarien 1, 2 und 5, nachgezählt (Befund der unabhängigen Prüfung)."""
+    assert (len(VORNAME_LANG), len(NACHNAME_LANG), len(KONTO_LANG), len(ORGA_LANG)) == (50, 50, 120, 100)
 
 # Wo jede Zeile eines Textes endet, über alle Textteile des Elements hinweg; mit `normal` dieselbe Rechnung,
 # als bräche der Text nur an den üblichen Stellen um, wie vor #331.
