@@ -10,8 +10,24 @@ name: dpv-test
 
 services:
   datenbank:
-    # Gleiche Fassung wie lokal und in der Prüfung auf GitHub; unabhängig vom PostgreSQL des Servers.
-    image: postgres:18
+    # Hauptfassung 18 wie lokal und in der Prüfung auf GitHub; unabhängig vom PostgreSQL des
+    # Servers. Feste Fassung und Prüfsumme, damit jeder Bau dieselbe Grundlage hat (#324);
+    # aktualisiert wird nur per Pull Request (docs/betrieb.md).
+    image: postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc
+    # Ins Log des Datenbankservers kommen keine Befehle und keine Fehler einzelner Befehle (#324):
+    # Deren Text und Einzelheiten nennen sonst Werte wie Namen und Mail, etwa bei einem doppelten
+    # Eintrag. Es bleiben Meldungen ab der Stufe LOG, etwa Start, Prüfpunkte und abgewiesene
+    # Verbindungen. Fehler sieht man im Log des Tools, dort ohne Meldungstext (#6).
+    command:
+      - postgres
+      - -c
+      - log_min_messages=log
+      - -c
+      - log_min_error_statement=panic
+      - -c
+      - log_error_verbosity=terse
+      - -c
+      - log_statement=none
     # Nur die drei Angaben, die die Datenbank braucht, nicht die übrigen Zugangsdaten aus der
     # Umgebungsdatei. Docker Compose liest sie dafür aus testumgebung/.env.
     environment:
@@ -61,6 +77,29 @@ services:
       interval: 3s
       timeout: 5s
       retries: 40
+    restart: unless-stopped
+
+  aufraeumen:
+    # Löscht abgelaufene Sitzungen beim Start und danach alle 24 Stunden (#324, docker/aufraeumen.sh);
+    # Django selbst löscht sie nie. Dasselbe Abbild und dieselbe Umgebungsdatei wie das Tool, aber
+    # nur im Netz der Datenbank und ohne Port.
+    image: dpv-anmeldetool:${TESTUMGEBUNG_TAG:-test}
+    # Das Abbild baut der Dienst „tool“; es liegt nirgends zum Herunterladen.
+    pull_policy: never
+    command: ["sh", "docker/aufraeumen.sh"]
+    env_file: ${TESTUMGEBUNG_ENV_FILE:-.env}
+    environment:
+      TEST_ENVIRONMENT: "1"
+      POSTGRES_HOST: datenbank
+      POSTGRES_PORT: "5432"
+    depends_on:
+      # Erst, wenn das Tool läuft: Dann hat es die Datenbank auf den neuesten Stand gebracht.
+      tool:
+        condition: service_healthy
+    networks:
+      - intern
+    # Gibt das Anhalten an das Skript weiter, statt zehn Sekunden auf das Ende der Pause zu warten.
+    init: true
     restart: unless-stopped
 
   keycloak:

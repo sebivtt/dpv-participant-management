@@ -41,8 +41,27 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Wer Leitungen sieht | 24.10.2026, #136, Nr. 5 | 23.10.2026, #87, Nr. 6 |
 | Stunden erfassen | 06.11.2026, #271, Nr. 1 und 2; 22.10.2026, #68, Nr. 1 | 20.10.2026, „Neustart, Name …“; 20.10.2026, „Entscheidungen nach der Prüfung“; 21.10.2026, „P1 beginnt früher“; 21.10.2026, „Externes KI-Review“ (je der Stundenteil); 20.10.2026, „Offene Punkte“, Nr. 1; 22.10.2026, #68 (nur der Satz, dass die Stunden-Schätzungen als Planungsgrundlage stehen bleiben); 26.10.2026, #169, Nr. 1 und 2 (je nur der Stundenteil); 26.10.2026, #113, Nr. 2 (nur der Halbsatz zu den Stunden des Leistungstests) |
 | Code aus dem alten Repo | 20.10.2026, „Code aus dem alten Repo“ | 20.10.2026, „Neustart, Name …“ (ein Satz) |
+| Grundabbilder des Containers | 15.11.2026, #324, „Technische Wahl“, Nr. 4 | 22.10.2026, „Testumgebung im Container …“, „Technische Wahl“, „Abbild“ (nur der Satz, dass die Grundabbilder über ihre Fassung festgelegt sind, nicht über eine Prüfsumme) |
 
 ---
+
+## 2026-11-15 · Prüfliste „vor dem ersten Server“ und Absicherungen für die Testumgebung (#324)
+
+**Entscheidung** (Sebastian in der Klärung von #324 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/324#issuecomment-6875827472); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/324#issuecomment-6875813756) mit „Passen alle“; maßgeblich sind Text und Szenarien des Issues):
+
+1. Alle Absicherungen für den Betrieb auf einem Server stehen an einem Ort, `docs/betrieb.md`, je mit Ort oder Issue, Stand und Zeitpunkt. Daraus wird in P6 der Anfang des Betriebshandbuchs.
+2. Die Zeitpunkte der neun Befunde aus #292, Paket 1, stehen im Text von #324; die Gründe für „vor dem echten Betrieb“ und „nicht umsetzen“ nennt `docs/betrieb.md`.
+
+**Technische Wahl** (KI, in der Klärung genannt und von Sebastian mit „Ja, so“ bestätigt):
+
+1. Jede Einstellung der Umgebungsdatei ist genau einmal beschrieben, in `testumgebung/.env.example`; `.env.example` beschreibt nur, was allein für den eigenen Rechner gilt.
+2. Weiterleitung auf HTTPS und HSTS nur mit dem vorhandenen Schalter `DJANGO_BEHIND_HTTPS_PROXY=1`; HSTS ein Jahr, nur für genau diese Adresse, ohne Vorab-Liste der Browser.
+3. Abgelaufene Sitzungen löscht ein eigener kleiner Dienst der Testumgebung beim Start und danach alle 24 Stunden. Der Datenbankserver schreibt keine Befehle und keine Fehler einzelner Befehle ins Log.
+4. Die Grundabbilder des Tools und der Datenbank der Testumgebung sind über Fassung und Prüfsumme festgelegt; aktualisiert wird nur per Pull Request. Ersetzt den Eintrag vom 22.10.2026, „Testumgebung im Container …“ (#58), „Technische Wahl“, „Abbild“, teilweise (nur der Satz zur Prüfsumme).
+
+**Begründung:** Bis zur Inbetriebnahme geht so keine Absicherung verloren, und die Testumgebung auf dem Server ist eine echte Generalprobe für den Betrieb (#324). Zu 3: Fehler einzelner Befehle nennen in PostgreSQL oft die Werte, etwa bei einem doppelten Eintrag die Mail; das Tool schreibt seine Fehler selbst ohne Meldungstext (#6). Zu 4: Zweimal gebaut ergibt so dieselbe Grundlage, und eine neue Fassung kommt nur mit grünem Prüflauf.
+
+**Umsetzung:** `docs/betrieb.md`, `config/settings.py`, `testumgebung/docker-compose.yml`, `testumgebung/.env.example`, `.env.example`, `docker/aufraeumen.sh`, `Dockerfile`, `README.md`, Tests in `tests/test_betrieb.py` und `containertests/test_betrieb_container.py`.
 
 ## 2026-11-15 · Vor- und Nachname verwalteter Personen höchstens 50 Zeichen (#330)
 

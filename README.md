@@ -19,6 +19,8 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`docs/gestaltung.md`](docs/gestaltung.md) | Leitlinie für die Gestaltung jeder Seite |
 | [`docs/zielbilder/`](docs/zielbilder/) | Sebastians Entwürfe für einzelne Seiten |
 | [`docs/aufbau.md`](docs/aufbau.md) | Aufbau des Codes: Apps, Schichten und ihre Richtung, wo man was baut |
+| [`docs/betrieb.md`](docs/betrieb.md) | Prüfliste für den Betrieb auf einem Server: alle Absicherungen mit Stand und Zeitpunkt |
+| [`testumgebung/.env.example`](testumgebung/.env.example) | was jede Einstellung der Umgebungsdatei bedeutet (für den eigenen Rechner zusätzlich [`.env.example`](.env.example)) |
 | [`docs/leistungstest.md`](docs/leistungstest.md) | Ergebnisse des Leistungstests am Ende jeder Phase |
 
 Anforderungen und Fahrplan sind hier im Repo maßgeblich (Entscheidung vom 20.10.2026). Änderungen daran laufen wie alles andere über Pull Requests.
@@ -227,7 +229,7 @@ T2. Die Testumgebung bauen und starten. Derselbe Befehl bringt sie nach einer Ä
    ```bash
    docker compose -f testumgebung/docker-compose.yml --profile lokal up -d --build --wait
    ```
-   Danach: am Ende `Container dpv-test-datenbank-1 Healthy`, `Container dpv-test-tool-1 Healthy` und `Container dpv-test-keycloak-1 Healthy`. Beim ersten Mal lädt Docker vorher einiges herunter und baut das Tool; das dauert einige Minuten. Die Datenbank bringt sich beim Start selbst auf den neuesten Stand. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6. Steht dort `port is already allocated`, läuft auf dem Mac schon etwas auf Port 8000 oder 8081, etwa das Tool aus Schritt 9. Steht dort `is unhealthy`, ist das Tool nicht gestartet: Schritt T4 zeigt, warum, etwa `Die Umgebungsvariable DJANGO_SECRET_KEY fehlt`.
+   Danach: am Ende `Container dpv-test-aufraeumen-1 Healthy`, `Container dpv-test-datenbank-1 Healthy`, `Container dpv-test-tool-1 Healthy` und `Container dpv-test-keycloak-1 Healthy`; „aufraeumen“ löscht abgelaufene Sitzungen (`docs/betrieb.md`). Beim ersten Mal lädt Docker vorher einiges herunter und baut das Tool; das dauert einige Minuten. Die Datenbank bringt sich beim Start selbst auf den neuesten Stand. Steht dort `failed to connect to the docker API`, läuft Docker nicht: zurück zu Schritt 6. Steht dort `port is already allocated`, läuft auf dem Mac schon etwas auf Port 8000 oder 8081, etwa das Tool aus Schritt 9. Steht dort `is unhealthy`, ist das Tool nicht gestartet: Schritt T4 zeigt, warum, etwa `Die Umgebungsvariable DJANGO_SECRET_KEY fehlt`.
 T3. Im Browser http://localhost:8000/ öffnen. Es erscheint die Login-Seite mit dem gelben Band „Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.“ Anmelden mit einem erfundenen Konto aus der Tabelle oben, z. B. `erika.testfrau`; danach steht dort „Hallo Erika!“, ebenfalls mit Band. Keycloak läuft hier unter http://localhost:8081/.
 T4. Nur bei Bedarf: das Log des Tools ansehen. Auch wenn hier nur erfundene Daten stehen: Auszüge aus Logs gehören nicht in KI-Werkzeuge.
    ```bash
@@ -425,7 +427,7 @@ K3. Unter „Resource file“ auf „Browse...“ klicken, die Datei aus K1 ausw
 **Einmalig, sobald die Testdomain feststeht** (#59)
 
 K4. Im Realm `dpv-test` links „Clients“ öffnen, dann `dpv-anmeldetool`. Im Reiter „Settings“ steht bei „Valid redirect URIs“ und „Valid post logout redirect URIs“ der Platzhalter `https://testdomain-eintragen.invalid`. In beiden Feldern nur diesen Teil durch die Testdomain ersetzen, z. B. `https://anmeldetool-test.example.org`; der Rest (`/anmelden/keycloak/zurueck/` bzw. `/anmelden/`) bleibt. Dann unten „Save“.
-K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein. Die Zeile `KEYCLOAK_REALM_URL_INTERN` aus der Vorlage wird dort gelöscht; sie gilt nur für die Keycloak-Testumgebung auf dem eigenen Rechner, und mit ihr scheitert der Login auf dem Server.
+K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein; was jede Zeile bedeutet und welche dort wegfällt, steht in `testumgebung/.env.example`.
 
 **Einmalig: Passwörter setzen** (Sebastian)
 
