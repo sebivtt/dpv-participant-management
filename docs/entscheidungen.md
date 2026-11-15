@@ -48,6 +48,29 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-15 · Sperre für `.env`: Erlaubtliste statt Fehlalarm (#347)
+
+**Entscheidung** (Sebastian in der Klärung von #347 am 15.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/347#issuecomment-6899833011), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/347#issuecomment-6899832806) mit „Alle passen“; maßgeblich sind Text und Szenarien des Issues):
+
+1. Bei `.env` entscheidet die Sperre nach einer Erlaubtliste: Frei sind nur Befehle, die den Inhalt nicht berühren, also nachsehen, ob die Datei da ist, `git check-ignore`, `.env` aus der Vorlage `.env.example` anlegen (auch in einer Befehlskette und in einem anderen Ordner) und `.env` nur als Text oder als Suchmuster in Anführungszeichen. Jeder andere Befehl, der `.env` als Datei nennt, bleibt gesperrt.
+2. `.env` in eine andere Arbeitskopie kopieren bleibt gesperrt; für Prüfläufe dort reicht eine `.env` aus der Vorlage.
+
+**Begründung:** Vom 03.11. bis 15.11.2026 waren 35 von 36 Abweisungen wegen `.env` Fehlalarme ([Auswertung in #293, Punkt 1](https://github.com/sebivtt/dpv-participant-management/issues/293#issuecomment-6897640389)). Eine Erlaubtliste statt einer Liste lesender Programme, damit unbekannte Programme nicht unbemerkt an den Inhalt kommen.
+
+**Grenzen:** Ergänzt den Eintrag vom 02.11.2026 (#233), Nr. 2, und ersetzt ihn nicht: Gesperrt bleibt dort „`.env` lesen“; frei werden nur Befehle, die den Inhalt nicht lesen. Die Grenze „Schutz vor Versehen, nicht vor Absicht“ aus #233 bleibt, ebenso, dass Befehle, die `.env` gar nicht nennen, nicht erfasst sind.
+
+**Technische Wahl** (KI):
+
+1. Erlaubt sind `ls` und `stat` mit beliebigen Optionen, `test -f`/`test -e` und `[ -f … ]`/`[ -e … ]` (auch mit `!`), `git check-ignore` mit `.env` nach dem Wort `check-ignore` und `cp` von `.env.example` nach `<ordner>/.env` (Optionen nur `-f`, `-i`, `-n`, `-p`, `-v`). Andere Schreibweisen wie `[[ -f .env ]]` bleiben gesperrt; ein neuer harmloser Fall braucht ein eigenes Issue.
+2. Die Erlaubtliste gilt nicht, wenn die Ausgabe an ein anderes Programm geht (`|` oder `$(…)`), damit etwa `ls .env | xargs cat` gesperrt bleibt; auch nicht für eine Umleitung aus `.env` (`< .env`).
+3. Beim Zerlegen merkt sich der Prüfschritt je Wort, welche Zeichen außerhalb von Anführungszeichen standen: Nur `*`, `?` und `[` dort löst die Shell zu Dateinamen auf.
+4. Ein Wort mit Leerzeichen, das auf `/.env` endet, gilt als Text, außer der Ordner davor existiert oder kommt aus `$…` oder `` `…` ``; dafür sieht der Prüfschritt nur nach, ob es den Ordner gibt, Dateien liest er weiter nie.
+5. Abweisungen wegen `.env` nennen die erlaubten Wege als Hinweis.
+
+**Umsetzung:** `.claude/hooks/sperren.py`, Tests in `tests/test_sperren.py`.
+
+---
+
 ## 2026-11-15 · Navigation hebt nach dem Anfang der Adresse hervor (#266)
 
 **Entscheidung** (technische Wahl der KI in der Klärung von #266 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/266#issuecomment-6876369232); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/266#issuecomment-6876369080), von Sebastian bestätigt):

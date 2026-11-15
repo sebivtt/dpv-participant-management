@@ -12,6 +12,10 @@ würden. `git push origin feature/main-menu` geht also durch, `git push origin H
 nicht. Das ist ein Schutz vor Versehen und Gewohnheit, keiner gegen absichtliches Verschleiern
 (Skript, Variable): Solche Befehle kann der Prüfschritt nicht sehen.
 
+Bei `.env` gilt eine Erlaubtliste (#347): Ein Befehl, der `.env` als Datei nennt, geht nur durch,
+wenn er nachsieht, ob die Datei da ist, `git check-ignore` aufruft oder `.env` aus der Vorlage
+anlegt; `.env` nur als Text oder als Suchmuster in Anführungszeichen nennt sie nicht.
+
 Was sich nicht sicher zerlegen lässt (offenes Anführungszeichen, Ziel aus `$(…)` oder Variable,
 Inhalt aus einer Datei) und `git`, `gh` oder `.env` betrifft, wird abgewiesen. Scheitert der
 Prüfschritt selbst, macht `|| exit 2` im Befehl in `.claude/settings.json` daraus eine Abweisung,
@@ -35,6 +39,11 @@ SIMPLE = (
     "längere Texte als Datei (etwa --body-file oder -F body=@datei.md)."
 )
 INLINE = "Mit Feldern im Befehl geht es weiter, etwa -f 'labels[]=P2' oder -f query='…'; Texte weiter mit -F body=@datei.md."
+ENV = (
+    "Ohne den Inhalt zu lesen geht es weiter: nachsehen, ob die Datei da ist (ls .env, test -f .env, "
+    "[ -f .env ], stat .env, git check-ignore .env), oder .env aus der Vorlage anlegen "
+    "(cp .env.example .env, auch in einem anderen Ordner)."
+)
 LABEL = "geklärt"
 PROTECTED_BRANCH = "main"
 MENTIONS = re.compile(r"\bgit\b|\bgh\b|\.env")
@@ -61,6 +70,25 @@ class Unparsable(Exception):
 # --- Zerlegen ---------------------------------------------------------------------------------
 
 SEPARATORS = ("&&", "||", "|&", ";;", "&", "|", ";", "(", ")")
+PIPES = ("|&", "|")
+GLOB = "*?["
+
+
+class Word(str):
+    """Ein Wort nach dem Auflösen der Anführungszeichen.
+
+    `pattern` ist das Muster, das die Shell daraus zu Dateinamen auflöst, oder None, wenn kein
+    `*`, `?` oder `[` außerhalb von Anführungszeichen steht; Zeichen in Anführungszeichen stehen
+    darin als `[*]`, `[?]`, `[[]`, wie fnmatch sie wörtlich liest.
+    """
+
+    pattern = None
+
+
+class Segment(list):
+    """Ein Teil der Befehlskette; `feeds` heißt: Seine Ausgabe geht an ein anderes Programm (`|`, `$(…)`)."""
+
+    feeds = False
 
 
 class _Lexer:
@@ -79,8 +107,10 @@ class _Lexer:
         self.pos = pos
         self.in_substitution = in_substitution
         self.depth = 0
-        self.segments = [[]]
+        self.segments = [Segment()]
         self.word = None
+        self.glob = ""
+        self.has_glob = False
         self.heredocs = []
         self.nested_segments = []
         self.redirect_segments = []
@@ -99,22 +129,38 @@ class _Lexer:
     def _result(self):
         return [segment for segment in self.segments + self.redirect_segments if segment]
 
-    def _add(self, chars):
+    def _add(self, chars, quoted=False):
         self.word = (self.word or "") + chars
+        if quoted:
+            chars = re.sub(r"([*?[])", r"[\1]", chars)
+        elif any(char in GLOB for char in chars):
+            self.has_glob = True
+        self.glob += chars
+
+    def _drop_word(self):
+        self.word, self.glob, self.has_glob = None, "", False
 
     def _end_word(self):
         if self.word is not None:
+            word = Word(self.word)
+            word.pattern = self.glob if self.has_glob else None
             if self.redirect_target:
-                self.redirect_segments.append(["<umleitung>", self.word])
+                self.redirect_segments.append(Segment(["<umleitung>", word]))
             else:
-                self.segments[-1].append(self.word)
-            self.word = None
+                self.segments[-1].append(word)
+            self._drop_word()
             self.redirect_target = False
 
     def _new_segment(self):
         self._end_word()
         self.redirect_target = False
-        self.segments.append([])
+        self.segments.append(Segment())
+
+    def _add_nested(self, segments):
+        """Teile aus `$(…)` und `` `…` ``: Ihre Ausgabe wird Teil eines anderen Befehls."""
+        for segment in segments:
+            segment.feeds = True
+        self.nested_segments.extend(segments)
 
     def _step(self):
         """Verarbeitet ein Zeichen oder eine Zeichenfolge; True am Ende von `$(…)`."""
@@ -146,13 +192,13 @@ class _Lexer:
         if char == "\\":
             following = text[pos + 1 : pos + 2]
             if following != "\n":
-                self._add(following)
+                self._add(following, quoted=True)
             self.pos += 2
         elif char == "'":
             end = text.find("'", pos + 1)
             if end == -1:
                 raise Unparsable("offenes Anführungszeichen (')")
-            self._add(text[pos + 1 : end])
+            self._add(text[pos + 1 : end], quoted=True)
             self.pos = end + 1
         elif char == '"':
             self._double_quoted()
@@ -166,40 +212,38 @@ class _Lexer:
 
     def _double_quoted(self):
         self.pos += 1
-        self._add("")
+        self._add("", quoted=True)
         while self.pos < len(self.text):
             char = self.text[self.pos]
             if char == '"':
                 self.pos += 1
                 return
             if char == "\\" and self.text[self.pos + 1 : self.pos + 2] in ('"', "\\", "$", "`"):
-                self._add(self.text[self.pos + 1])
+                self._add(self.text[self.pos + 1], quoted=True)
                 self.pos += 2
             elif self.text.startswith("$(", self.pos):
                 self._substitution()
             elif char == "`":
                 self._backtick()
             else:
-                self._add(char)
+                self._add(char, quoted=True)
                 self.pos += 1
         raise Unparsable('offenes Anführungszeichen (")')
 
     def _substitution(self):
         start = self.pos
         inner = _Lexer(self.text, self.pos + 2, in_substitution=True)
-        self.nested_segments.extend(inner.run())
-        self.nested_segments.extend(inner.nested_segments)
+        self._add_nested(inner.run() + inner.nested_segments)
         self.pos = inner.pos
-        self._add(self.text[start : self.pos])
+        self._add(self.text[start : self.pos], quoted=True)
 
     def _backtick(self):
         end = self.text.find("`", self.pos + 1)
         if end == -1:
             raise Unparsable("offenes Anführungszeichen (`)")
         inner = _Lexer(self.text[self.pos + 1 : end])
-        self.nested_segments.extend(inner.run())
-        self.nested_segments.extend(inner.nested_segments)
-        self._add(self.text[self.pos : end + 1])
+        self._add_nested(inner.run() + inner.nested_segments)
+        self._add(self.text[self.pos : end + 1], quoted=True)
         self.pos = end + 1
 
     def _redirect(self):
@@ -208,7 +252,7 @@ class _Lexer:
             self._heredoc_start()
             return
         if self.word is not None and self.word.isdigit():
-            self.word = None  # Nummer der Ausgabe wie in `2>&1`, kein Argument
+            self._drop_word()  # Nummer der Ausgabe wie in `2>&1`, kein Argument
         self._end_word()
         while self.pos < len(text) and text[self.pos] in "<>&|":
             self.pos += 1
@@ -255,14 +299,14 @@ class _Lexer:
                 pos += 2
             elif body.startswith("$(", pos):
                 inner = _Lexer(body, pos + 2, in_substitution=True)
-                self.nested_segments.extend(inner.run() + inner.nested_segments)
+                self._add_nested(inner.run() + inner.nested_segments)
                 pos = inner.pos
             elif body[pos] == "`":
                 end = body.find("`", pos + 1)
                 if end == -1:
                     raise Unparsable("offenes Anführungszeichen (`) im Heredoc")
                 inner = _Lexer(body[pos + 1 : end])
-                self.nested_segments.extend(inner.run() + inner.nested_segments)
+                self._add_nested(inner.run() + inner.nested_segments)
                 pos = end + 1
             else:
                 pos += 1
@@ -278,6 +322,8 @@ class _Lexer:
                     self.depth += 1
                 elif operator == ")":
                     self.depth -= 1
+                elif operator in PIPES:
+                    self.segments[-1].feeds = True
                 self._new_segment()
                 self.pos += len(operator)
                 return
@@ -318,8 +364,7 @@ def _program(word):
 def _check_segment(words, cwd):
     """Prüft einen Teil der Befehlskette; gibt das Arbeitsverzeichnis für die folgenden Teile zurück."""
     command = _strip_prefixes(words)
-    if not _is_template_copy(command):
-        _check_env(words)
+    _check_env(words, command, cwd)
     if not command:
         return cwd
     program = _program(command[0])
@@ -335,16 +380,6 @@ def _check_segment(words, cwd):
         elif _program(word) == "gh":
             _check_gh(command[index:])
     return cwd
-
-
-def _is_template_copy(command):
-    """`cp .env.example .env` wie im README legt `.env` aus der Vorlage an, ohne sie zu lesen."""
-    return (
-        len(command) == 3
-        and command[0] == "cp"
-        and command[1].endswith(".env.example")
-        and command[2] == command[1].removesuffix(".example")
-    )
 
 
 def _strip_prefixes(words):
@@ -371,16 +406,69 @@ def _normalized(text):
     return unicodedata.normalize("NFC", text).casefold()
 
 
-def _check_env(words):
-    """`.env` als Datei im Befehl ist gesperrt; `--env-file .env` (uv, Docker) liest sie nur für das Programm."""
-    for index, word in enumerate(words):
-        if word.startswith("--env-file") or (index and words[index - 1] == "--env-file"):
-            continue
-        name = word.rsplit("=", 1)[-1].rsplit("/", 1)[-1]
-        # Ein Muster trifft in der Shell eine versteckte Datei nur, wenn es selbst mit „.“ beginnt.
-        pattern = name.startswith(".") and any(char in name for char in "*?[")
-        if name == ".env" or (pattern and fnmatch.fnmatchcase(".env", name)):
-            raise Blocked(".env lesen")
+def _check_env(words, command, cwd):
+    """`.env` als Datei im Befehl ist gesperrt, außer in den Fällen der Erlaubtliste (#347)."""
+    named = [index for index, word in enumerate(words) if _names_env(word, words, index, cwd)]
+    if not named:
+        return
+    offset = len(words) - len(command)
+    positions = {index - offset for index in named}
+    if min(positions) < 0 or words.feeds or not _env_allowed(command, positions):
+        raise Blocked(".env lesen", ENV)
+
+
+def _names_env(word, words, index, cwd):
+    """Ob ein Wort die Datei `.env` nennt; `--env-file .env` (uv, Docker) liest sie nur für das Programm."""
+    if word.startswith("--env-file") or (index and words[index - 1] == "--env-file"):
+        return False
+    folder, _, name = word.rsplit("=", 1)[-1].rpartition("/")
+    if name == ".env":
+        # Ein Text mit Leerzeichen, etwa eine Commit-Nachricht, nennt die Datei nur, wenn es den
+        # Ordner davor gibt; ein Pfad mit Leerzeichen bleibt so gesperrt, ebenso einer, dessen
+        # Ordner erst die Shell einsetzt (`$HOME`, `$(…)`).
+        text = any(char.isspace() for char in word) and not any(char in folder for char in "$`")
+        return not text or os.path.isdir(os.path.join(cwd, os.path.expanduser(folder)))
+    # Nur ein Muster außerhalb von Anführungszeichen löst die Shell auf, und eine versteckte
+    # Datei trifft es nur, wenn es selbst mit „.“ beginnt.
+    pattern = (getattr(word, "pattern", None) or "").rsplit("=", 1)[-1].rsplit("/", 1)[-1]
+    return pattern.startswith(".") and fnmatch.fnmatchcase(".env", pattern)
+
+
+def _env_allowed(command, positions):
+    """Erlaubtliste: Befehle, die `.env` nennen, ohne den Inhalt zu lesen; `positions` sind die Stellen, die `.env` nennen."""
+    program, args = _program(command[0]), command[1:]
+    if program in ("ls", "stat"):
+        return True
+    if program == "test":
+        return _is_existence_test(command, 1, len(command), positions)
+    if program == "[":
+        return args[-1:] == ["]"] and _is_existence_test(command, 1, len(command) - 1, positions)
+    if program == "git":
+        subcommand = _git_subcommand(command)
+        return subcommand is not None and command[subcommand] == "check-ignore" and min(positions) > subcommand
+    return _is_template_copy(command, positions)
+
+
+def _is_existence_test(command, start, end, positions):
+    """`test -f .env`, `test -e .env`, auch mit `!` davor: nur nachsehen, ob die Datei da ist."""
+    if command[start : start + 1] == ["!"]:
+        start += 1
+    return end - start == 2 and command[start] in ("-f", "-e") and positions == {start + 1}
+
+
+def _is_template_copy(command, positions):
+    """`cp .env.example <ordner>/.env` legt `.env` aus der Vorlage an, ohne sie zu lesen."""
+    if command[0] != "cp":
+        return False
+    paths = [index for index, word in enumerate(command[1:], start=1) if not word.startswith("-")]
+    flags = [word for word in command[1:] if word.startswith("-")]
+    return (
+        all(re.fullmatch(r"-[finpv]+", flag) for flag in flags)
+        and len(paths) == 2
+        and command[paths[0]].rsplit("/", 1)[-1] == ".env.example"
+        and command[paths[1]].rsplit("/", 1)[-1] == ".env"
+        and positions == {paths[1]}
+    )
 
 
 # Git ---------------------------------------------------------------------------------------
@@ -388,6 +476,14 @@ def _check_env(words):
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env", "--super-prefix"}
 PUSH_OPTIONS_WITH_VALUE = {"--push-option", "--repo", "--receive-pack", "--exec"}
 PUSH_FORBIDDEN = {"--mirror", "--all", "--branches", "--delete", "--prune"}
+
+
+def _git_subcommand(words):
+    """Stelle des Git-Befehls (etwa `push`) nach den allgemeinen Optionen, oder None."""
+    index = 1
+    while index < len(words) and words[index].startswith("-"):
+        index += 1 + (words[index] in GIT_OPTIONS_WITH_VALUE)
+    return index if index < len(words) else None
 
 
 def _check_git(words, cwd):
