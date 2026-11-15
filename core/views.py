@@ -1349,12 +1349,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "auswahl": {
-        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95, 92],
+        "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95, 92, 329],
         "purpose": _("Wahlmöglichkeiten in einem Dialog als Optionsfelder untereinander, die erste gewählt oder, etwa "
                      "beim Anlass eines Support-Zugangs, keine; darunter "
                      "die Vorschau der gewählten Möglichkeit, die mit der Wahl wechselt, auch ohne Skript. Die "
                      "Vorschau ist freiwillig, beim Verschieben gibt es keine. Die Überschrift darf sichtbar sein, etwa "
-                     "„Ring“ im Dialog „… bearbeiten“. Nach einer Ablehnung bleibt die "
+                     "„Ring“ im Dialog „… bearbeiten“. Ein Klick irgendwo in den Kasten einer Möglichkeit wählt sie (#329). "
+                     "Nach einer Ablehnung bleibt die "
                      "abgelehnte Möglichkeit gewählt. Der Knopf des Dialogs schickt die Wahl mit, etwa beim "
                      "Austragen, beim Austreten und beim Verschieben."),
         "pages": [_("Mein Profil"), _("Organisation")],
