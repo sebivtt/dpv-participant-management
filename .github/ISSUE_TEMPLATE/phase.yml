@@ -57,6 +57,6 @@ body:
     id: stand
     attributes:
       label: Stand für die nächste Steuerungssession
-      description: Wird bei jeder Übergabe neu geschrieben (Skill `phase-steuern`, Abschnitt 4). Was zuletzt eingetragen wurde, was gerade läuft, was als Nächstes kommt, mit Links.
+      description: Wird nach jedem eingetragenen Issue und bei jedem Wechsel neu geschrieben (Skill `phase-steuern`, Abschnitt 4). Was zuletzt eingetragen wurde, was gerade läuft, was als Nächstes kommt, mit Links.
       placeholder: |
-        Übergabe am 03.11.2026, 18:40. Zuletzt eingetragen: #171 (PR #180). Läuft: Klärung von #172 und #175. Als Nächstes: Auftrag für #172.
+        Stand vom 03.11.2026, 18:40. Zuletzt eingetragen: #171 (PR #180). Läuft: Klärung von #172 und #175. Als Nächstes: Auftrag für #172.

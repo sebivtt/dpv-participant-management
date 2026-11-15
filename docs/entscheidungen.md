@@ -25,7 +25,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Anmerkungen aus der Vorschau | 04.11.2026, #249, Nr. 2 | 26.10.2026, #169, Nr. 2 (nur Anmerkungen zu Aussehen, Abständen und gleichbedeutendem Wortlaut) |
 | Lokaler Prüfumfang | 03.11.2026, #235, Nr. 2 | 21.10.2026, „Grundgerüst“: „lokal und auf GitHub wird gleich geprüft“ |
 | Auswahl im schnellen Lauf | 13.11.2026, #304, Nr. 1, 2 und 4 | 03.11.2026, #235, Nr. 1 (nur dass der schnelle Lauf nur die genannten Dateien ausführt) |
-| Wechsel der Sessions | 03.11.2026, #240, Nr. 3 | 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben) |
+| Wechsel der Sessions | 15.11.2026, #353, Nr. 1 und 2; 03.11.2026, #240, Nr. 3 (ohne den ersten Satz) | 03.11.2026, #240, Nr. 3 (nur der erste Satz: Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); 26.10.2026, #169, Nr. 3 und 4 (Prozentangaben); 26.10.2026, #169, Nr. 3 (nur der Halbsatz „nie mitten in einer Umsetzung“) |
 | Länge des Fahrtennamens | 31.10.2026, #214, Nr. 1 | 26.10.2026, #111, Nr. 5 (nur die Länge); 26.10.2026, #180, Nr. 4 |
 | Zweite Zeile der Rollenkacheln | 30.10.2026, #219, Nr. 1 | 25.10.2026, #161, Nr. 3 (Nachklärung Kacheln) |
 | Marke am eigenen Bund, Seite „Verband“ | 30.10.2026, #218, Nr. 2 | 30.10.2026, #94, Nr. 1 und 4 |
@@ -48,6 +48,19 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
 
 ---
+
+## 2026-11-15 · Steuerungssession steuert mehrere Issues, Stand nach jedem Issue (#353)
+
+**Entscheidung** (Sebastian in der Klärung von #353 am 15.11.2026, Kurzform, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901159317), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901151970) mit „Alle passen“; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 03.11.2026 (#240), Nr. 3, nur im ersten Satz (Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); die übrigen Sätze dort gelten weiter. Ersetzt außerdem im Eintrag vom 26.10.2026 (#169), Nr. 3, den Halbsatz „nie mitten in einer Umsetzung“: Sagt Sebastian es, wechselt die Steuerung auch mitten in einer Umsetzung.
+
+1. Eine Steuerungssession steuert die Phase über mehrere Issues. Sie wechselt nur bei drei Anlässen: nach einer automatischen Zusammenfassung, am Ende der Phase und wenn Sebastian es sagt, dann sofort, auch mitten in einer Umsetzung. Eine feste Zahl von Issues gibt es nicht. Je Phase steuert nur eine Session.
+2. Den Stand für die nächste Steuerungssession schreibt sie nach jedem eingetragenen Issue neu und zusätzlich beim Wechsel. Form und Startsatz bleiben (Eintrag vom 03.11.2026, #240, Nr. 4).
+
+**Begründung:** Nach jeder Übernahme musste Sebastian eine neue Steuerungssession starten, bevor das übernommene Issue eingetragen und das nächste beauftragt werden konnte (Beispiel im Text von #353). Gegen ein volles Gespräch hilft schon die Regel zur automatischen Zusammenfassung mit dem Hook; eine feste Zahl brächte wieder Wechsel, die Sebastian anstoßen muss (Frage 2). Weil der Stand nach jedem Issue neu geschrieben wird, stimmt er auch nach einem unerwarteten Ende, etwa am Nutzungslimit, nach einem Absturz oder wenn die App geschlossen wird (Frage 3).
+
+**Grenzen:** Für Umsetzungs-Sessions bleibt es bei einer frischen Session je Issue (`CLAUDE.md`, R13). Der Hook `.claude/hooks/zusammenfassung.py` und sein Hinweis bleiben unverändert. Wird der Zug der Steuerung durch die Meldung einer anderen Session oder durch ihren eigenen Hintergrundauftrag ausgelöst, legt sie den nächsten Auftrag wie bisher als Karte an; das gibt die App vor. Eine technische Sperre gegen zwei Steuerungssessions gleichzeitig gibt es nicht.
+
+**Umsetzung:** Skill `phase-steuern`, Abschnitte 0, 2, 3 und 4 (Kennungen R12 und neu R40), `.github/ISSUE_TEMPLATE/phase.yml`, `tests/test_arbeitsregeln.py`.
 
 ## 2026-11-15 · Pull Request als Entwurf vor der unabhängigen Prüfung (#348)
 

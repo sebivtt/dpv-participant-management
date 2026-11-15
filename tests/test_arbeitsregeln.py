@@ -3,7 +3,7 @@
 Die Regeln dürfen umformuliert und verschoben werden, ohne dass ein Test angepasst werden muss.
 Deshalb vergleichen diese Tests keine einzelnen Sätze (bis #262 taten sie es, siehe
 `docs/entscheidungen.md`, 05.11.2026). Sie prüfen stattdessen, dass Verweise auf Dateien, Abschnitte
-und Entscheidungen ins Ziel treffen und dass keine der 39 Kernregeln samt Kennung `<!-- Rnn -->`
+und Entscheidungen ins Ziel treffen und dass keine der 40 Kernregeln samt Kennung `<!-- Rnn -->`
 still verschwindet (die fünf Tests am Ende). Dazu kommen wenige Prüfungen von Form und Aufbau: dass
 jeder Skill auf CLAUDE.md verweist, statt Regeln zu wiederholen (ein Ort je Angabe, #169), die
 Überschriften der Skills und die Felder der Vorlagen, und dass es jede Musterdatei für neue Seiten
@@ -470,7 +470,7 @@ def test_verweise_auf_entscheidungen_treffen_einen_eintrag_des_tages():
 
 
 # Diese Einträge schützen heute Regeln; ihre Kopfzeilen ändern sich nie (CLAUDE.md).
-GESCHUETZTE_EINTRAEGE = [161, 162, 176, 235, 237, 239, 240, 244, 245, 249]
+GESCHUETZTE_EINTRAEGE = [161, 162, 176, 235, 237, 239, 240, 244, 245, 249, 353]
 
 
 def test_die_eintraege_zu_den_geschuetzten_regeln_gibt_es():
@@ -493,7 +493,7 @@ KENNUNGEN = {
     "R09": "Steuerungssession entscheidet nichts Fachliches",
     "R10": "Freigaben gibt nur Sebastian",
     "R11": "Auftrag ist nur Link und Verweis",
-    "R12": "Wechsel der Steuerungssession",
+    "R12": "Steuerungssession wechselt nur bei drei Anlässen",  # #353, Szenarien S3, S4, S5, S7 und S8
     "R13": "Frische Session je Issue",
     "R14": "Szenarien vor Code",
     "R15": "Ohne Szenarien nur mit Klärung",
@@ -521,6 +521,7 @@ KENNUNGEN = {
     "R37": "Kurzform nur mit Sebastians Bestätigung",
     "R38": "Vorübergehenden Vorschau-Test löschen",
     "R39": "Pull Request als Entwurf vor der unabhängigen Prüfung",  # #348, Szenarien S1 und S2
+    "R40": "Stand nach jedem eingetragenen Issue neu schreiben",  # #353, Szenarien S1 und S6
 }
 
 
