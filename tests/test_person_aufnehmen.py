@@ -18,7 +18,8 @@ import pytest
 from core.sections import to_section
 from persons.models import ManagedPerson
 from roles.models import Role
-from tests import test_verwaltete_personen
+from roles.models import AdminAccess
+from tests import test_personen, test_support_zugang, test_verwaltete_personen
 from tests.test_benennen import dialog_of, short_notices
 from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
 from tests.test_nicht_gefunden import assert_like_missing
@@ -38,6 +39,10 @@ org_189 = test_verwaltete_personen.org_189
 org_190 = test_verwaltete_personen.org_190
 org_285 = test_verwaltete_personen.org_285
 org = test_verwaltete_personen.org
+# Für PA6: die Personen aus #92 mit Max als Admin und der gestellten Uhr (tests/test_support_zugang.py).
+personen_org = test_personen.org
+clock = test_support_zugang.clock
+support_org = test_support_zugang.org
 
 ADMIT_TEXT = "Für Personen, die sich schon einmal mit ihrem DPV-Konto im Tool angemeldet haben."
 ADD_TEXT = "Für Personen ohne eigenes Konto, meist Kinder und Jugendliche. Ihre Angaben pflegt die Leitung."
@@ -170,6 +175,31 @@ def test_pa5_ohne_gruppenleitung_springt_wanda_in_den_woelfen_ein(org):
     assert add(org.walhall_leitung, org.woelfe, client=client).status_code == 302
     assert membership_of(org.ohne) == "Meute Wölfe"
     assert ManagedPerson.objects.get(first_name="Lena").unit_id == org.woelfe.pk
+
+
+@pytest.mark.rechtematrix("SZ-03")
+def test_pa6_im_support_zugang_kommt_das_oeffnen_der_wahl_als_ansehen_ins_protokoll(support_org):
+    """PA6 in der Fassung vom 15.11.2026: wie jeder Dialog „ansehen“, weil dahinter Personendaten stehen."""
+    o = support_org
+    A = AdminAccess.Action
+    client = client_for(o.max)
+    test_support_zugang.start(o.max, o.falken, client=client)
+    log = test_support_zugang.log
+
+    before = len(log())
+    found = tiles(dialog_of(open_choice(o.max, o.falken, client=client)))
+    assert [tile["title"] for tile in found] == ["Person mit Konto aufnehmen", "Verwaltete Person anlegen"]
+    assert log()[before:] == [(A.VIEWED, "", "Max Admin", "Sippe Falken (Walhall)")]
+
+    before = len(log())
+    assert "Otto Ohne" in _visible_text(find(o.max, o.falken, "otto.ohne@example.org", client=client))
+    assert admit(o.max, o.falken, o.ohne, client=client).status_code == 302
+    assert add(o.max, o.falken, client=client, first_name="Lotte").status_code == 302
+    # Suche, Aufnahme und Anlegen wie heute: die Suche als „ansehen · Kontosuche“, der Dialog „Verwaltete Person
+    # anlegen“ als „ansehen“, Aufnahme und Anlegen als „ändern“.
+    assert [entry[0] for entry in log()[before:]] == [A.VIEWED, A.CHANGED, A.VIEWED, A.CHANGED]
+    assert membership_of(o.ohne) == "Sippe Falken"
+    assert ManagedPerson.objects.get(first_name="Lotte").unit_id == o.falken.pk
 
 
 def test_pa7_in_beiden_wegen_fuehrt_zurueck_zur_wahl_und_schliessen_zum_knopf(org):
