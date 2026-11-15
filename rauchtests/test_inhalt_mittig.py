@@ -55,7 +55,8 @@ def _mittig_rechts_der_leiste(page: Page) -> None:
     for teil in TEILE:
         expect(page.locator(teil).first).to_be_visible()
         kasten = _kasten(page, teil)
-        links, rechts = kasten["left"] - LEISTE, kasten["vw"] - kasten["right"]
+        # Gemessen bis zum rechten Fensterrand; eine Scrollleiste liegt im freien Platz rechts (#332, Befund M1).
+        links, rechts = kasten["left"] - LEISTE, kasten["innen"] - kasten["right"]
         assert abs(links - rechts) <= 1, (teil, kasten)
         assert kasten["width"] == pytest.approx(_breite_wie_heute(kasten), abs=1), (teil, kasten)
     # Alle drei stehen als ein Block übereinander.
@@ -105,7 +106,38 @@ def test_grosser_bildschirm_kurze_meldung_mittig_unter_dem_inhalt(browser, brows
     inhalt = _kasten(page, ".a-main-inhalt")
     mitte = (box["left"] + box["right"]) / 2
     assert abs(mitte - (LEISTE + box["vw"]) / 2) < 2, box
-    assert abs(mitte - (inhalt["left"] + inhalt["right"]) / 2) < 2, (box, inhalt)
+    # Mit Scrollleiste steht der Block um ihre halbe Breite neben der Mitte der Meldung (#332, Befund M1).
+    leiste_rechts = box["innen"] - box["vw"]
+    assert abs(mitte - (inhalt["left"] + inhalt["right"]) / 2) < 2 + leiste_rechts / 2, (box, inhalt)
+
+
+# Befund M1 der unabhängigen Prüfung (Entscheidung Sebastian, 15.11.2026): Nimmt die Scrollleiste Platz weg
+# (meist Windows), verrutscht der Block nicht, wenn sie kommt oder geht, etwa beim Seitenwechsel oder hinter
+# einem Dialog. Die Browser im Test blenden die Leiste sonst aus; ein eigenes Aussehen erzwingt eine feste.
+FESTE_SCROLLLEISTE = "::-webkit-scrollbar { width: 16px; } ::-webkit-scrollbar-thumb { background: #888; }"
+
+
+def test_scrollleiste_laesst_den_block_nicht_verrutschen(browser, browser_name, mit_band):
+    page = _context(browser, browser_name, GROSS).new_page()
+    login(page)
+    page.goto(f"{BASE}/profil/")
+    # Als eigenes Stylesheet aus dem Skript, nicht als <style>: Das ließe die Sicherheitsrichtlinie nicht zu.
+    page.evaluate(
+        "css => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [s]; }",
+        FESTE_SCROLLLEISTE,
+    )
+    lagen = {}
+    for overflow in ("scroll", "hidden"):
+        page.evaluate(f"document.documentElement.style.overflowY = '{overflow}'")
+        kasten = _kasten(page, ".a-main-inhalt")
+        lagen[overflow] = kasten
+    if lagen["scroll"]["innen"] == lagen["scroll"]["vw"]:
+        pytest.skip(f"{browser_name} zeigt hier keine feste Scrollleiste; prüfbar in Chromium und WebKit")
+    assert lagen["scroll"]["left"] == pytest.approx(lagen["hidden"]["left"], abs=1), lagen
+    # Mit Scrollleiste: links von der Seitenleiste so viel Platz wie rechts bis zum Fensterrand.
+    mit = lagen["scroll"]
+    assert abs((mit["left"] - LEISTE) - (mit["innen"] - mit["right"])) <= 1, mit
+    _no_side_scroll(page)
 
 
 # Szenario 4: Füllt der Inhalt die Fläche, ändert sich nichts: links und rechts nur der gewohnte Rand.
