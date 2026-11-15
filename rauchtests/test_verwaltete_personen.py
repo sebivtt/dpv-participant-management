@@ -17,10 +17,12 @@ from playwright.sync_api import Page, expect
 from rauchtests.conftest import BASE, login, run_axe
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
-from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
+from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key, _type_like_a_phone
 
 PERSONS = '[aria-labelledby="h-personen"]'
-ADD_BUTTON = f'{PERSONS} .a-flaeche-aktion[href*="/verwaltete-person/anlegen/"]'
+# Seit #298 führt „Person aufnehmen“ zur Wahl; deren untere Fläche führt zum Anlegen.
+ADD_BUTTON = "#person-aufnehmen"
+LOWER_TILE = "dialog li:nth-child(2) > .a-wahlflaeche"
 EDIT_BUTTON = f'{PERSONS} a[href*="/bearbeiten/"]'
 # Der Regler der Einwilligung (#98, DSG-02): ein Ankreuzfeld im Baustein „Schalter“.
 CONSENT = 'dialog input[name="consent"]'
@@ -44,7 +46,11 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_bearbeiten(pc):
 
     stations = _stations_to_element(pc, ADD_BUTTON, steps=60)
     _all_visible(stations)
-    expect(pc.locator(ADD_BUTTON)).to_have_text("Verwaltete Person anlegen")
+    expect(pc.locator(ADD_BUTTON)).to_have_text("Person aufnehmen")
+    pc.keyboard.press("Enter")
+    pc.wait_for_url(f"{page_address}person-aufnehmen/")
+    pc.keyboard.press(_tab_key(pc))
+    expect(pc.locator(LOWER_TILE)).to_be_focused()
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{page_address}verwaltete-person/anlegen/")
@@ -80,7 +86,7 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_bearbeiten(pc):
     _all_visible(stations)
     pc.keyboard.press("Enter")
 
-    pc.wait_for_url(f"{page_address}#verwaltete-person-anlegen")
+    pc.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(pc.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(pc.locator(PERSONS)).to_contain_text("Kiwi")
     expect(pc.locator(PERSONS)).to_contain_text("verwaltet")
@@ -128,7 +134,7 @@ def test_am_pc_fehler_am_feld_und_escape_legt_niemanden_an(pc):
     assert run_axe(pc) == []
 
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{page_address}#verwaltete-person-anlegen")
+    pc.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(pc.locator(PERSONS)).not_to_contain_text("Kiwi")
 
 
@@ -142,6 +148,10 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
 
     stations = _stations_to_element(handy, ADD_BUTTON, steps=60)
     _all_visible(stations)
+    handy.keyboard.press("Enter")
+    handy.wait_for_url(f"{page_address}person-aufnehmen/")
+    handy.keyboard.press(_tab_key(handy))
+    expect(handy.locator(LOWER_TILE)).to_be_focused()
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{page_address}verwaltete-person/anlegen/")
     dialog = _dialog(handy)
@@ -171,7 +181,7 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, SUBMIT, steps=6)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(f"{page_address}#verwaltete-person-anlegen")
+    handy.wait_for_url(f"{page_address}#person-aufnehmen")
     expect(handy.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(handy.locator(PERSONS)).to_contain_text("Kiwi")
     _no_side_scroll(handy)

@@ -74,7 +74,7 @@ def _dialog_addresses(user, dialog: str) -> dict:
     assert response.status_code == 200
     box = dialog_of(_tree(response))
     close = _one(_all(box, lambda e: "a-schliessen" in _classes(e)))
-    cancel = _one(_all(box, lambda e: e.name == "a" and _visible_text(e) in ("Abbrechen", "Nicht löschen")))
+    cancel = _one(_all(box, lambda e: e.name == "a" and _visible_text(e) in ("Abbrechen", "Nicht löschen", "Zurück")))
     # Auch „Suchen“ und die Knöpfe in der Trefferliste sind Formulare im Dialog.
     forms = [_attr(form, "action") for form in _by_tag(box, "form")]
     return {"close": _attr(close, "href"), "cancel": _attr(cancel, "href"), "forms": forms}
@@ -90,16 +90,21 @@ def _cases(o) -> list[tuple]:
     managed = f"{walhall}verwaltete-person/{o.paul.key}/"
     federation = "/organisation/"
     bund = f"bund-{o.boreas.key}"
+    choice = f"{walhall}person-aufnehmen/"
+    button = f"{walhall}#person-aufnehmen"
     return [
         (o.wanda, walhall, f"{walhall}benennen/", "leitungen", None),
         (o.wanda, walhall, f"{walhall}entfernen/{o.lea_role.key}/", "leitungen", None),
         (o.wanda, walhall, f"{walhall}entfernen-anzeige/{displayed.key}/", "leitungen", None),
         (o.wanda, walhall, f"{walhall}anlegen/", "darunter", None),
-        (o.wanda, walhall, f"{walhall}aufnehmen/", "personen", None),
+        # Seit #298 öffnet „Person aufnehmen“ die Wahl; × führt zum Knopf, die Flächen öffnen die beiden Wege,
+        # und dort führt × ebenso zum Knopf, „Zurück“ zur Wahl.
+        (o.wanda, walhall, choice, "personen", button),
+        (o.wanda, choice, f"{walhall}aufnehmen/", "personen", button),
         (o.wanda, walhall, f"{walhall}austragen/{o.mia.key}/", "personen", None),
         (o.wanda, walhall, f"{walhall}verschieben/{o.mia.key}/", "personen", None),
-        # Verwaltete Personen (#117): × führt wie bisher zum Knopf selbst (S13).
-        (o.wanda, walhall, f"{walhall}verwaltete-person/anlegen/", "personen", f"{walhall}#verwaltete-person-anlegen"),
+        # Verwaltete Personen (#117): × führt wie bisher zum Knopf selbst (S13), seit #298 zu „Person aufnehmen“.
+        (o.wanda, choice, f"{walhall}verwaltete-person/anlegen/", "personen", button),
         (o.wanda, walhall, f"{managed}bearbeiten/", "personen", f"{walhall}#bearbeiten-{o.paul.key}"),
         (o.wanda, walhall, f"{managed}verschieben/", "personen", None),
         (o.wanda, walhall, f"{managed}austragen/", "personen", None),
@@ -126,14 +131,16 @@ def test_ohne_skript_fuehrt_jeder_dialog_zum_abschnitt_seines_knopfs(org):
         assert _opener(user, page, dialog) == [f"{dialog}{jump}"], dialog
         found = _dialog_addresses(user, dialog)
         back = page
-        if dialog.endswith("/loeschen/"):
-            # „Nicht löschen“ führt zurück in den Dialog „Bearbeiten“ (#118), dort an denselben Abschnitt.
+        if dialog.endswith("/loeschen/") or page.endswith("/person-aufnehmen/"):
+            # „Nicht löschen“ führt zurück in den Dialog „Bearbeiten“ (#118), „Zurück“ in die Wahl (#298),
+            # dort an denselben Abschnitt.
             assert found["cancel"] == f"{page}{jump}", dialog
             back = unit_address(org.walhall)
         else:
             assert found["cancel"] == (close or f"{back}{jump}"), dialog
         assert found["close"] == (close or f"{back}{jump}"), dialog
-        assert found["forms"], dialog
+        # Die Wahl (#298) schickt nichts ab; ihre Flächen sind Links.
+        assert found["forms"] or dialog.endswith("/person-aufnehmen/"), dialog
         for action in found["forms"]:
             assert action.endswith(jump) if jump else "#" not in action, (dialog, action)
         if section is None:

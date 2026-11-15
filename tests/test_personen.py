@@ -114,13 +114,14 @@ def persons_head(root) -> str:
 
 
 def admit_button(user, where) -> str | None:
-    """Die Beschriftung des Knopfs „Person mit Konto aufnehmen“ im Abschnitt „Personen“, oder None.
+    """Die Beschriftung des Knopfs im Abschnitt „Personen“, der zum Aufnehmen führt, oder None.
 
-    Seit #117 steht daneben „Verwaltete Person anlegen“; gemeint ist der Knopf, der zum Aufnehmen führt.
+    Seit #298 ist das „Person aufnehmen“ mit der Wahl im Dialog; die Fläche „Person mit Konto aufnehmen“
+    darin führt zum Dialog von #285 (tests/test_person_aufnehmen.py).
     """
     section = persons_section(page_tree(user, unit_address(where)))
     links = [link for link in _all(section, lambda e: "a-flaeche-aktion" in _classes(e))
-             if _attr(link, "href") == to_section(admit_address(where), "personen")]
+             if _attr(link, "href") == to_section(f"{unit_address(where)}person-aufnehmen/", "personen")]
     if not links:
         return None
     return _visible_text(_one(links))
@@ -170,7 +171,8 @@ def test_eine_person_heisst_im_kopf_eine_person(org):
 def test_ohne_direkte_mitglieder_steht_der_satz(org):
     """Seit #117 (N7) der Satz „Dieser Organisation sind noch keine Personen zugeordnet. …“ statt „Zu Sippe Falken gehört direkt noch niemand.“ (#65 N2).
 
-    Ohne Gruppenleitung springt Wanda in den Falken ein und darf dort anlegen; deshalb liest sie beide Sätze.
+    Ohne Gruppenleitung springt Wanda in den Falken ein und darf dort aufnehmen; deshalb liest sie beide Sätze,
+    den zweiten seit #298 (PA8).
     """
     Role.objects.get(user=org.falke, kind=R.MEMBER).delete(by=BY)
     remove(org.falken_leitung, R.GROUP_LEAD, org.falken)
@@ -180,8 +182,8 @@ def test_ohne_direkte_mitglieder_steht_der_satz(org):
 
     assert persons_on_page(root) == {}
     assert persons_head(root) == "0 Personen"
-    assert ("Dieser Organisation sind noch keine Personen zugeordnet. Du kannst oben eine verwaltete Person anlegen "
-            "oder eine bereits registrierte Person aufnehmen.") in _visible_text(persons_section(root))
+    assert ("Dieser Organisation sind noch keine Personen zugeordnet. Mit „Person aufnehmen“ oben kannst du eine "
+            "Person mit Konto aufnehmen oder eine verwaltete Person anlegen.") in _visible_text(persons_section(root))
     zugvoegel = page_tree(org.bundesleitung, unit_address(org.zugvoegel))
     assert set(persons_on_page(zugvoegel)) == {"Zimt"}
 
@@ -190,7 +192,7 @@ def test_u1_die_leseseite_hat_keinen_abschnitt_personen(org):
     root = page_tree(org.walhall_leitung, unit_address(org.boreas))
 
     assert persons_section(root) is None
-    assert admit_button(org.walhall_leitung, org.walhall) == "Person mit Konto aufnehmen"
+    assert admit_button(org.walhall_leitung, org.walhall) == "Person aufnehmen"
 
 
 def test_u1_leitungen_und_organisationen_darunter_bleiben(org):
@@ -215,7 +217,7 @@ def test_den_knopf_hat_die_leitung_der_eigenen_organisation(org):
         (org.kueste_leitung, org.kueste),
     ]
     for user, where in allowed:
-        assert admit_button(user, where) == "Person mit Konto aufnehmen", (user.username, where.name)
+        assert admit_button(user, where) == "Person aufnehmen", (user.username, where.name)
 
 
 @pytest.mark.rechtematrix("PK-26")
@@ -264,7 +266,8 @@ def test_p1_fiete_findet_otto_und_nimmt_ihn_ohne_zustimmung_in_die_falken_auf(or
     response = admit(org.falken_leitung, org.falken, org.ohne, client=client)
 
     assert response.status_code == 302
-    assert response.url == unit_address(org.falken)
+    # Seit #298 zum Knopf „Person aufnehmen“, der danach wieder den Fokus hat (PA7).
+    assert response.url == f"{unit_address(org.falken)}#person-aufnehmen"
     assert membership_of(org.ohne) == "Sippe Falken"
     assert roles_of(org.ohne) == {(R.MEMBER, "Sippe Falken")}
     page = client.get(response.url)
@@ -296,7 +299,7 @@ def test_den_benutzernamen_findet_der_dialog_auch(org):
 def test_p12_ohne_gruppenleitung_nimmt_wanda_otto_in_die_falken_auf(org):
     remove(org.falken_leitung, R.GROUP_LEAD, org.falken)
 
-    assert admit_button(org.walhall_leitung, org.falken) == "Person mit Konto aufnehmen"
+    assert admit_button(org.walhall_leitung, org.falken) == "Person aufnehmen"
     assert list(hits(find(org.walhall_leitung, org.falken, "otto.ohne@example.org"))) == ["Otto Ohne"]
     assert admit(org.walhall_leitung, org.falken, org.ohne).status_code == 302
     assert membership_of(org.ohne) == "Sippe Falken"
