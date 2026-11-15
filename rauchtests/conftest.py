@@ -36,6 +36,7 @@ from django.conf import settings
 from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
 from tests.check_ports import PORT_RELEASE_SECONDS, SMOKE_TEST_LOCK_PORT, SMOKE_TEST_PORT, fail_if_busy, tell, wait_for_turn
+from tests.nur_lokales_keycloak import require_local_keycloak
 
 # Das Kennzeichen der Tests zum Bausteinkatalog für den schnellen Lauf (#304), wie in tests/.
 pytest_plugins = ["tests.katalogtests"]
@@ -67,6 +68,12 @@ def _selected_browser() -> str | None:
 
 def pytest_configure(config):
     _selected_browser()
+
+
+def pytest_collection_finish(session):
+    """Jeder Rauchtest meldet sich bei Keycloak an: nur gegen das auf dem eigenen Rechner (#325, V11)."""
+    if session.items:
+        require_local_keycloak()
 
 
 def pytest_generate_tests(metafunc):

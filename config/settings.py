@@ -48,7 +48,8 @@ TEST_ENVIRONMENT = os.environ.get("TEST_ENVIRONMENT") == "1"
 # Die Fehleranzeige für Entwickler zeigt Formularinhalte und Einstellungen. Sie ist
 # deshalb nur an, wenn sie ausdrücklich eingeschaltet wird, nie als Standard. In der
 # Testumgebung bleibt sie aus, auch wenn die Umgebungsdatei sie einschalten will: Die
-# Testumgebung ist im Internet erreichbar.
+# Testumgebung ist im Internet erreichbar. Auf einem Server bricht der Start mit dem Schalter ganz ab
+# (Startprüfung, core/server_checks.py, #325).
 DEBUG = os.environ.get("DJANGO_DEBUG") == "1" and not TEST_ENVIRONMENT
 
 # Eigener Rechner (#103): Nur dann legt der Befehl `testdata` Konten an und leert die Datenbank; sonst

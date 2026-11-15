@@ -45,6 +45,24 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-15 · Startprüfung: auf dem Server kein Start mit unsicheren Einstellungen (#325)
+
+**Entscheidung** (Sebastian in der Klärung von #325 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/325#issuecomment-6875827671), Fragen 5 bis 9; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/325#issuecomment-6875813923) mit „Passen alle“; maßgeblich sind Text und Szenarien des Issues):
+
+1. „Server“ erkennt das Tool an den Namen in `DJANGO_ALLOWED_HOSTS`, nicht an einem eigenen Schalter.
+2. Was dort den Start abbricht, sind die Bedingungen 1 bis 8 im Text von #325, auch `DJANGO_DEBUG=1` in der Testumgebung.
+3. Rauchtests und Keycloak-Tests brechen gegen jedes Keycloak außer dem auf dem eigenen Rechner ab, bevor sie es ansprechen.
+4. Das Log nennt alle Probleme auf einmal, je eine Zeile, nie einen Wert.
+
+**Technische Wahl** (KI, in der Klärung genannt und von Sebastian mit „Ja, so“ bestätigt; Einzelheiten aus der Umsetzung):
+
+1. Die Startprüfung ist eine Systemprüfung von Django (`core/server_checks.py`); sie läuft vor `migrate` in `docker/start.sh` und vor jeder Datenbankverbindung.
+2. Djangos Prüfung für den Betrieb (`check --deploy`) gehört auf dem Server dazu. Nicht gemeldet werden die beiden Funde zu HSTS, die die Klärung von #324 so entschieden hat, und Funde mit derselben Ursache wie eine eigene Zeile (etwa die Folgen des fehlenden HTTPS-Schalters), damit jedes Problem genau einmal im Log steht.
+3. Die Beispielwerte stehen im Code, weil die Vorlagen nicht ins Abbild kommen; ein Test gleicht sie mit beiden `.env.example` ab.
+4. Die Sperre für Tests prüft nach dem Sammeln der Tests beide Keycloak-Adressen (`tests/nur_lokales_keycloak.py`); in `tests/` gilt sie für die Dateien `*_echt.py`, die als einzige das echte Keycloak ansprechen.
+
+**Begründung:** Ein vergessener Wert beim Einrichten des Servers (#59) bleibt so nicht unbemerkt, und kein Test legt Konten im Keycloak des DPV an (#292, Paket 5).
+
 ## 2026-11-15 · Prüfliste „vor dem ersten Server“ und Absicherungen für die Testumgebung (#324)
 
 **Entscheidung** (Sebastian in der Klärung von #324 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/324#issuecomment-6875827472); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/324#issuecomment-6875813756) mit „Passen alle“; maßgeblich sind Text und Szenarien des Issues):

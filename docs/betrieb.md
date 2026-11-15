@@ -15,7 +15,7 @@ Zeitpunkte:
 | Absicherung | Wo umgesetzt oder welches Issue | Stand | Zeitpunkt |
 |---|---|---|---|
 | Server-Einstellungen an einem Ort: diese Liste und je Einstellung genau eine Beschreibung | diese Datei, `testumgebung/.env.example`, `.env.example` (#324) | erledigt | vor der Testumgebung |
-| Fehleranzeige für Entwickler aus, auch wenn die Umgebungsdatei sie einschaltet | `config/settings.py` (`DEBUG`), #58 | erledigt | vor der Testumgebung |
+| Fehleranzeige für Entwickler aus, auch wenn die Umgebungsdatei sie einschaltet; auf einem Server startet das Tool damit gar nicht | `config/settings.py` (`DEBUG`), #58; `core/server_checks.py`, #325 | erledigt | vor der Testumgebung |
 | Band „Testumgebung“ auf jeder Seite und Bitte an Suchmaschinen | `testumgebung/docker-compose.yml` (`TEST_ENVIRONMENT`), `core/testumgebung.py`, #58 | erledigt | vor der Testumgebung |
 | Mails nur als Hinweis ins Log, nie an einen Mailserver | `config/settings.py` (`MAILERS`), #58; Versand nur an Testadressen: #60 | erledigt | vor der Testumgebung |
 | Testumgebung hat eine eigene Datenbank und ein eigenes Netz; Datenbank ohne Port nach außen, keine gemeinsamen Ablagen | `testumgebung/docker-compose.yml`, #58 | erledigt | vor der Testumgebung |
@@ -24,7 +24,7 @@ Zeitpunkte:
 | HTTPS: Sitzungs- und Formular-Cookies nur verschlüsselt | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #58 | erledigt | vor der Testumgebung |
 | HTTPS: Weiterleitung von `http` auf `https` und HSTS | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #324 | erledigt | vor der Testumgebung |
 | Sicherheitsrichtlinie für Skripte | `config/settings.py` (`SECURE_CSP`), #278 | erledigt | vor der Testumgebung |
-| Startprüfung: Tool startet nicht mit unsicheren Einstellungen | #325 | offen | vor der Testumgebung |
+| Startprüfung: Tool startet nicht mit unsicheren Einstellungen | `core/server_checks.py` (läuft mit `migrate` in `docker/start.sh`), #325 | erledigt | vor der Testumgebung |
 | Abgelaufene Sitzungen löschen, beim Start und danach alle 24 Stunden | `testumgebung/docker-compose.yml` (Dienst `aufraeumen`), `docker/aufraeumen.sh`, #324 | erledigt | vor der Testumgebung |
 | Log des Datenbankservers ohne Befehle und ohne Werte aus Fehlern | `testumgebung/docker-compose.yml` (Dienst `datenbank`, `command`), #324 | erledigt | vor der Testumgebung |
 | Fehlerprotokoll des Tools ohne Personendaten | `core/errors.py`, `config/settings.py` (`LOGGING`), #6 | erledigt | vor der Testumgebung |
