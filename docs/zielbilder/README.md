@@ -179,6 +179,7 @@ Vorlage für das Löschen ist [Fassung 1 des Zielbilds zu #117](https://github.c
 2. **Nur im Entwurf** (N2): die gelbe Hinweiszeile, die Leiste mit den vier Ansichten, der Satz „PA1: …“ unter der Fläche und „… darunter der Schalter zur Einwilligung wie heute“ kommen nicht ins Tool.
 3. **Was der Entwurf nur andeutet, bleibt wie heute** (N3): die Liste „Personen“, Seitenkopf und Pfad und die beiden Dialoge „Person mit Konto aufnehmen“ und „Verwaltete Person anlegen“ mit ihren Feldern und Knöpfen; dort kommt nur „Zurück“ dazu. Im Dialog „Person mit Konto aufnehmen“ steht wie heute bis zur Suche kein Knopf zum Bestätigen.
 4. **Knopf und Überschrift aus den Bausteinen:** „Person aufnehmen“ ist der Knopf der „Überschrift einer Fläche“ mit dem Plus des Tools statt des Schriftzeichens „＋“; der Dialog ist der Baustein „Dialog“ mit eigener Adresse, damit er ohne Skript geht.
+5. **Am Handy nur das Plus** (Sebastian bei der Vorschau, 15.11.2026): Im Zielbild steht der Knopf auch am Handy mit Text. Im Tool zeigt er dort nur das Plus und bleibt in der Zeile der Überschrift, wie jeder Knopf in der „Überschrift einer Fläche“; die Zahl „3 Personen“ rückt bei Platzmangel unter den Titel.
 
 ## Support-Zugang
 
