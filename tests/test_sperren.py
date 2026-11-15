@@ -479,3 +479,155 @@ def test_andere_werkzeuge_als_bash_laesst_der_pruefschritt_unberuehrt():
     payload = {"tool_name": "Read", "tool_input": {"file_path": ".env.example"}, "cwd": str(BASE_DIR)}
 
     assert _run(json.dumps(payload)).returncode == 0
+
+
+# --- .env: Erlaubtliste statt Fehlalarm (#347) -------------------------------------------------
+# Frei ist nur, was den Inhalt von `.env` nicht berührt: nachsehen, ob die Datei da ist,
+# `git check-ignore`, `.env` aus der Vorlage anlegen und `.env` nur als Text oder als Suchmuster
+# in Anführungszeichen. Jeder andere Befehl, der `.env` als Datei nennt, bleibt gesperrt
+# (Klärung vom 15.11.2026, Frage 2; Szenarien S1 bis S11 zu #347).
+
+ENV_HINT = "Hinweis:"
+
+
+def _assert_allowed(command, cwd=None):
+    result = _check(command, cwd)
+
+    assert result.returncode == 0, (command, result.stderr)
+
+
+def _assert_env_blocked(command, cwd=None):
+    result = _check(command, cwd)
+
+    assert result.returncode == BLOCKED, (command, result.stderr)
+    assert "Grund: .env lesen." in result.stderr, (command, result.stderr)
+
+
+@pytest.mark.parametrize(
+    "command", ["ls -la .env", "ls .env", "test -f .env", "test -e .env", "[ -f ../../../.env ]", "stat .env"]
+)
+def test_s1_nachsehen_ob_env_da_ist_geht_durch(command):
+    _assert_allowed(command)
+
+
+@pytest.mark.parametrize(
+    "command", ["git check-ignore .env", "git check-ignore -v '.env*'", "git check-ignore -q .env*"]
+)
+def test_s2_git_check_ignore_geht_durch(command):
+    _assert_allowed(command)
+
+
+def test_s3_env_aus_vorlage_anlegen_und_pruefen_in_einer_kette_geht_durch():
+    _assert_allowed("cp .env.example .env && git check-ignore .env")
+
+
+def test_s4_env_aus_vorlage_in_anderem_ordner_anlegen_geht_durch():
+    _assert_allowed("cp .env.example ../arbeitskopie-zwei/.env")
+
+
+def test_s5_env_nur_als_text_einer_commit_nachricht_geht_durch(tmp_path):
+    _assert_allowed('git commit -m "Prüflauf mit cp .env.example <ordner>/.env"', cwd=tmp_path)
+
+
+def test_s6_suchmuster_in_anfuehrungszeichen_geht_durch():
+    _assert_allowed('find tests -name ".?*" -prune -o -name "*.py" -print')
+
+
+@pytest.mark.parametrize("command", ["cat .env", "grep SECRET .env", "source .env"])
+def test_s7_inhalt_lesen_wird_abgewiesen_und_nennt_die_erlaubten_wege(command):
+    result = _check(command)
+
+    assert result.returncode == BLOCKED, (command, result.stderr)
+    assert "Grund: .env lesen." in result.stderr
+    assert ENV_HINT in result.stderr
+    hint = result.stderr.split(ENV_HINT, 1)[-1]
+    assert "ls .env" in hint
+    assert "cp .env.example .env" in hint
+
+
+def test_s8_env_in_andere_arbeitskopie_kopieren_wird_abgewiesen():
+    _assert_env_blocked("cp .env ../arbeitskopie-zwei/.env")
+
+
+def test_s9_vorlage_mit_dem_inhalt_ueberschreiben_wird_abgewiesen():
+    _assert_env_blocked("cp .env .env.example")
+
+
+def test_s10_kette_mit_einem_gesperrten_teil_wird_abgewiesen():
+    _assert_env_blocked("ls .env && cat .env")
+
+
+def test_s11_platzhalter_ohne_anfuehrungszeichen_wird_abgewiesen():
+    _assert_env_blocked("cat .?*")
+
+
+# Risikovarianten: Die Erlaubtliste darf keinen neuen Weg zum Inhalt öffnen.
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # Name aus einem erlaubten Befehl als Argument eines anderen
+        "cat $(ls .env)",
+        "cat `ls .env`",
+        "ls .env | xargs cat",
+        "find . -maxdepth 1 -name .env | xargs cat",
+        # Ordner, den erst die Shell einsetzt, auch mit Leerzeichen im Befehl
+        'cat "$(git rev-parse --show-toplevel)/.env"',
+        'cat "$HOME/Mein Ordner/.env"',
+        # git liest .env als Datei mit Ausschlussmustern und zeigt mit -v die passende Zeile
+        "git -c core.excludesFile=.env check-ignore -v x",
+        # Inhalt über die Eingabe
+        "git check-ignore --stdin < .env",
+        # nur Nachsehen ist frei, nicht jede Prüfung mit test
+        "test -s .env -a -f x",
+        # Kopieren mit anderem Ziel oder anderer Quelle als der Vorlage
+        "cp .env.example .env ../arbeitskopie-zwei/",
+        "cp .env* ../arbeitskopie-zwei/.env",
+        # Platzhalter nur zum Teil in Anführungszeichen
+        'cat ".e"*',
+    ],
+)
+def test_erlaubtliste_oeffnet_keinen_neuen_weg_zum_inhalt(command):
+    _assert_env_blocked(command)
+
+
+def test_text_mit_leerzeichen_bleibt_datei_wenn_der_ordner_da_ist(tmp_path):
+    # Ein Pfad mit Leerzeichen ist kein Text: Gibt es den Ordner, nennt das Wort die Datei.
+    (tmp_path / "Mein Ordner").mkdir()
+
+    _assert_env_blocked('cat "Mein Ordner/.env"', cwd=tmp_path)
+
+
+# Befunde der unabhängigen Prüfung zu #347
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "(ls .env) | xargs cat",
+        "{ ls .env; } | xargs cat",
+        "bash -c 'ls .env' | xargs cat",
+        "eval 'ls .env' | xargs cat",
+        "cat $(bash -c 'ls .env')",
+        "xargs cat < <(ls .env)",
+        "(git check-ignore .env) | xargs cat",
+    ],
+)
+def test_ausgabe_eines_erlaubten_befehls_ueber_umweg_bleibt_gesperrt(command):
+    _assert_env_blocked(command)
+
+
+@pytest.mark.parametrize("command", ["cp -v .env.example .env | tail -1", "cp .env.example .env 2>&1 | tail -3"])
+def test_env_aus_vorlage_anlegen_geht_auch_mit_weitergegebener_ausgabe(command):
+    # So ging es schon vor #347 (Eintrag vom 02.11.2026, #233, Nr. 2); cp gibt den Inhalt nie aus.
+    _assert_allowed(command)
+
+
+@pytest.mark.parametrize("command", ["./ls .env", "tools/stat .env"])
+def test_eigenes_skript_mit_dem_namen_eines_erlaubten_programms_bleibt_gesperrt(command):
+    _assert_env_blocked(command)
+
+
+def test_erlaubtes_programm_mit_systempfad_geht_durch():
+    _assert_allowed("/bin/ls -la .env")
