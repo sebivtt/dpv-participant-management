@@ -25,7 +25,7 @@ SUFFIX = " (docs/betrieb.md)."
 # Namen, die nur den eigenen Rechner meinen. Jeder andere Name in DJANGO_ALLOWED_HOSTS heißt Server.
 OWN_MACHINE = {"localhost", "127.0.0.1"}
 # Wohin KEYCLOAK_REALM_URL auf dem Server nie zeigen darf: eigener Rechner und Container der Testumgebung.
-LOCAL_KEYCLOAK = {"localhost", "127.0.0.1", "keycloak"}
+LOCAL_KEYCLOAK = {"localhost", "127.0.0.1", "::1", "keycloak"}
 TEST_REALM = "dpv-test"
 
 # Einstellungen mit geheimem Wert.
@@ -97,7 +97,7 @@ def _keycloak(env: Mapping[str, str]) -> list[tuple[str, str]]:
         found.append(
             (
                 "core.E104",
-                "KEYCLOAK_REALM_URL beginnt nicht mit https:// oder zeigt auf localhost, 127.0.0.1 oder keycloak. "
+                "KEYCLOAK_REALM_URL beginnt nicht mit https:// oder zeigt auf localhost, 127.0.0.1, [::1] oder keycloak. "
                 "Bitte die Adresse des Realms im Keycloak des DPV eintragen",
             )
         )

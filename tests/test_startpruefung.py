@@ -106,6 +106,7 @@ UNSAFE = {
     "V4 Keycloak ohne https": ({"KEYCLOAK_REALM_URL": "http://login.example.org/realms/dpv-test"}, "KEYCLOAK_REALM_URL"),
     "V4 Keycloak auf localhost": ({"KEYCLOAK_REALM_URL": "https://localhost:8443/realms/dpv-test"}, "KEYCLOAK_REALM_URL"),
     "V4 Keycloak auf 127.0.0.1": ({"KEYCLOAK_REALM_URL": "https://127.0.0.1/realms/dpv-test"}, "KEYCLOAK_REALM_URL"),
+    "V4 Keycloak auf ::1": ({"KEYCLOAK_REALM_URL": "https://[::1]:8443/realms/dpv-test"}, "KEYCLOAK_REALM_URL"),
     "V4 Keycloak im Container": ({"KEYCLOAK_REALM_URL": "https://keycloak:8080/realms/dpv-test"}, "KEYCLOAK_REALM_URL"),
     "V5 interne Adresse": ({"KEYCLOAK_REALM_URL_INTERN": "https://login.example.org/realms/dpv-test"}, "KEYCLOAK_REALM_URL_INTERN"),
     "V6 lokaler Schalter": ({"LOCAL_ENVIRONMENT": "1"}, "LOCAL_ENVIRONMENT"),
@@ -174,7 +175,7 @@ def test_g1_alle_probleme_auf_einmal_je_eine_zeile():
 
 
 # Was eine Zeile als Grund nennen darf, auch wenn es im Wert vorkommt.
-NAMED_IN_REASON = "https:// localhost 127.0.0.1 keycloak /realms/dpv-test"
+NAMED_IN_REASON = "https:// localhost 127.0.0.1 [::1] keycloak /realms/dpv-test"
 
 
 def _fragments(value: str) -> set[str]:
@@ -284,8 +285,12 @@ FOREIGN_KEYCLOAK = "https://keycloak.invalid/realms/dpv"
 V11_MESSAGE = "Kein Test hat Keycloak angesprochen"
 
 
-def _pytest_with_foreign_keycloak(*arguments: str) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "KEYCLOAK_REALM_URL": FOREIGN_KEYCLOAK, "KEYCLOAK_REALM_URL_INTERN": ""}
+def _pytest_with_foreign_keycloak(*arguments: str, intern_only: bool = False) -> subprocess.CompletedProcess[str]:
+    if intern_only:
+        addresses = {"KEYCLOAK_REALM_URL": "http://localhost:8080/realms/dpv", "KEYCLOAK_REALM_URL_INTERN": FOREIGN_KEYCLOAK}
+    else:
+        addresses = {"KEYCLOAK_REALM_URL": FOREIGN_KEYCLOAK, "KEYCLOAK_REALM_URL_INTERN": ""}
+    env = {**os.environ, **addresses}
     return subprocess.run(  # noqa: S603 -- fester Befehl mit Dateien aus diesem Repo
         [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", *arguments],
         cwd=BASE_DIR,
@@ -323,3 +328,13 @@ def test_v11_rauchtests_brechen_gegen_fremdes_keycloak_ab_bevor_sie_es_anspreche
     # Abgebrochen, bevor der erste Test oder seine Vorbereitung lief.
     assert "ERROR at setup" not in output, output
     assert " passed" not in output, output
+
+
+def test_v11_auch_die_interne_adresse_muss_auf_den_eigenen_rechner_zeigen():
+    # Befund G-4 der unabhängigen Prüfung: Der Browser ginge zum lokalen Keycloak, das Tool selbst zum fremden.
+    result = _pytest_with_foreign_keycloak("tests/test_keycloak_echt.py", intern_only=True)
+    output = result.stdout + result.stderr
+
+    assert result.returncode != 0, output
+    assert V11_MESSAGE in output and "KEYCLOAK_REALM_URL_INTERN" in output, output
+    assert "ERROR at setup" not in output, output

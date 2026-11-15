@@ -15,7 +15,7 @@ Zeitpunkte:
 | Absicherung | Wo umgesetzt oder welches Issue | Stand | Zeitpunkt |
 |---|---|---|---|
 | Server-Einstellungen an einem Ort: diese Liste und je Einstellung genau eine Beschreibung | diese Datei, `testumgebung/.env.example`, `.env.example` (#324) | erledigt | vor der Testumgebung |
-| Fehleranzeige für Entwickler aus, auch wenn die Umgebungsdatei sie einschaltet | `config/settings.py` (`DEBUG`), #58 | erledigt | vor der Testumgebung |
+| Fehleranzeige für Entwickler aus, auch wenn die Umgebungsdatei sie einschaltet; auf einem Server startet das Tool damit gar nicht | `config/settings.py` (`DEBUG`), #58; `core/server_checks.py`, #325 | erledigt | vor der Testumgebung |
 | Band „Testumgebung“ auf jeder Seite und Bitte an Suchmaschinen | `testumgebung/docker-compose.yml` (`TEST_ENVIRONMENT`), `core/testumgebung.py`, #58 | erledigt | vor der Testumgebung |
 | Mails nur als Hinweis ins Log, nie an einen Mailserver | `config/settings.py` (`MAILERS`), #58; Versand nur an Testadressen: #60 | erledigt | vor der Testumgebung |
 | Testumgebung hat eine eigene Datenbank und ein eigenes Netz; Datenbank ohne Port nach außen, keine gemeinsamen Ablagen | `testumgebung/docker-compose.yml`, #58 | erledigt | vor der Testumgebung |
