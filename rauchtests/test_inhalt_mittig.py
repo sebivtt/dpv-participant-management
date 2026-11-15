@@ -132,7 +132,7 @@ def test_scrollleiste_laesst_den_block_nicht_verrutschen(browser, browser_name, 
         kasten = _kasten(page, ".a-main-inhalt")
         lagen[overflow] = kasten
     if lagen["scroll"]["innen"] == lagen["scroll"]["vw"]:
-        pytest.skip(f"{browser_name} zeigt hier keine feste Scrollleiste; prüfbar in Chromium und WebKit")
+        pytest.skip(f"{browser_name} zeigt hier keine feste Scrollleiste; geprüft in Browsern, die eine zeigen (lokal WebKit)")
     assert lagen["scroll"]["left"] == pytest.approx(lagen["hidden"]["left"], abs=1), lagen
     # Mit Scrollleiste: links von der Seitenleiste so viel Platz wie rechts bis zum Fensterrand.
     mit = lagen["scroll"]
