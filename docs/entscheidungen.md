@@ -66,6 +66,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 3. Knopf und Wahl gibt es nur, wo Aufnehmen und Anlegen beide erlaubt sind (`may_add_person()` in `units/organisation.py`); das sind heute dieselben Personen. Sonst ist die Wahl „nicht gefunden“ wie die beiden Wege.
 4. Der zweite, zart blaue Knopf in der „Überschrift einer Fläche“ (#117) entfällt mit seiner einzigen Seite; der Knopf dort kann stattdessen eine Kennung tragen.
 
+**Anmerkung aus der Vorschau** (Sebastian, 15.11.2026, [Kommentar „Vorschau“](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6895097208)): Am Handy zeigt der Knopf in der „Überschrift einer Fläche“ überall nur das Plus und bleibt in der Zeile der Überschrift; am PC bleibt der Text. Bisher stand er dort am Handy unter der Überschrift (`docs/gestaltung.md`, Abschnitt zu #190).
+
 **Umsetzung:** `config/urls.py`, `core/views.py`, `units/organisation.py`, `units/texts.py`, `persons/texts.py`, `core/templates/core/organisation.html`, `_flaechenkopf.html`, `_wahlflaechen.html` (neu), `bausteine.html`, `core/static/core/app.css`, `docs/gestaltung.md`, Zielbild `docs/zielbilder/person-aufnehmen.html`; Tests in `tests/test_person_aufnehmen.py` und `rauchtests/test_person_aufnehmen.py`.
 
 ## 2026-11-15 · Startprüfung: auf dem Server kein Start mit unsicheren Einstellungen (#325)

@@ -1279,7 +1279,7 @@ BUILDING_BLOCKS = {
         "name": _("Überschrift einer Fläche"), "template": "core/_flaechenkopf.html",
         "issues": [161, 190, 94, 218, 285, 117, 298],
         "purpose": _("Überschrift einer Fläche mit einem Symbol im Kästchen davor; rechts darf ein Knopf mit Plus "
-                     "stehen, etwa „Gruppenleitung benennen“ oder „Person aufnehmen“. Der Titel darf ein Link sein, etwa der eigene Bund "
+                     "stehen, etwa „Gruppenleitung benennen“ oder „Person aufnehmen“; am Handy zeigt er nur das Plus. Der Titel darf ein Link sein, etwa der eigene Bund "
                      "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
                      "„4 Personen“."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],

@@ -473,7 +473,7 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 
 /* Leitung benennen (#190), nach Sebastians Zielbild (docs/zielbilder/organisation.html). */
-/* Knopf rechts in der Überschrift einer Fläche, z. B. „Gruppenleitung benennen“; am Handy darunter */
+/* Knopf rechts in der Überschrift einer Fläche, z. B. „Gruppenleitung benennen“; am Handy nur das Plus (#298) */
 .a-flaeche-kopf { flex-wrap: wrap; }
 .a-flaeche-aktion { margin-left: auto; padding: .45rem .9rem; font-size: .92rem; }
 .a-flaeche-aktion .ic { width: 18px; height: 18px; }
@@ -573,13 +573,14 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-treffer-knopf .btn { padding: .35rem .8rem; font-size: .88rem; }
 .a-treffer-warnung { flex-basis: 100%; }
 .a-treffer-leer { margin: 0 0 12px; }
-/* Einzeilig (#298, PA9): Titel und Zahl stehen zusammen links, bei Platzmangel die Zahl unter dem Titel; der Knopf
-   bleibt auch am Handy rechts in der Zeile, etwa „Person aufnehmen“. */
-.a-flaeche-titel { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+/* Titel und Zahl stehen zusammen links, bei Platzmangel die Zahl unter dem Titel; ein langer Titel bricht um. Am Handy
+   zeigt der Knopf nur das Plus und bleibt rechts in der Zeile; sein Text bleibt für Vorleseprogramme (#298, Vorschau). */
+.a-flaeche-titel { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
-  .a-flaeche-aktion { margin-left: 0; flex-basis: 100%; }
-  .a-flaeche-kopf.ist-einzeilig { flex-wrap: nowrap; }
-  .a-flaeche-kopf.ist-einzeilig .a-flaeche-aktion { flex: none; margin-left: auto; }
+  .a-flaeche-kopf { flex-wrap: nowrap; }
+  .a-flaeche-aktion { flex: none; display: inline-grid; place-items: center; width: 40px; height: 40px; margin-left: auto; padding: 0; }
+  .a-flaeche-aktion .ic { width: 20px; height: 20px; }
+  .a-flaeche-aktion-text { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .a-dialog-kopf, .a-dialog-inhalt, .a-dialog-fuss { padding-left: 16px; padding-right: 16px; }
 }
 .a-kachel-knopf { margin-top: 8px; }

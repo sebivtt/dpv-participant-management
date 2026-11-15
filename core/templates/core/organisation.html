@@ -32,7 +32,7 @@
       {% if page.persons is not None %}
         {# Abschnitt „Personen“ (#285): die direkten Mitglieder und, seit #117, die verwalteten Personen gemischt, nur im eigenen Bereich; seit #298 im Kopf nur „Person aufnehmen“ mit der Wahl im Dialog, nur wo die Person aufnehmen und anlegen darf. #}
         <section class="a-flaeche a-orga-flaeche" id="abschnitt-personen" aria-labelledby="h-personen">
-          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id one_line=True %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id one_line=True %}{% endif %}
+          {% if start %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" level=3 count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id %}{% else %}{% include "core/_flaechenkopf.html" with symbol="personen" title=_("Personen") heading_id="h-personen" count=page.persons_count action_href=page.add_person_href action_label=page.add_person_label action_id=page.add_person_id %}{% endif %}
           {% if page.persons %}<ul class="a-leitungen">{% for lead in page.persons %}{% include "core/_leitung.html" %}{% endfor %}</ul>{% else %}<p class="a-leer-satz">{{ page.persons_empty }}</p>{% endif %}
         </section>
       {% endif %}
