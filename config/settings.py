@@ -199,8 +199,9 @@ AUTHENTICATION_BACKENDS = ["allauth.account.auth_backends.AuthenticationBackend"
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "start"
 
-# Fehlen Adresse des Realms oder Zugang des Login-Clients, meldet die Systemprüfung beim Start einen Fehler (accounts/checks.py). Sie
-# sind hier nicht Pflicht, damit sich die übrigen Einstellungen auch ohne sie laden lassen.
+# Fehlen Adresse des Realms oder Zugang des Login-Clients, meldet die Systemprüfung beim Start
+# einen Fehler (accounts/checks.py). Sie sind hier nicht Pflicht, damit sich die übrigen
+# Einstellungen auch ohne sie laden lassen.
 KEYCLOAK_REALM_URL = os.environ.get("KEYCLOAK_REALM_URL", "").rstrip("/")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "")
 KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")

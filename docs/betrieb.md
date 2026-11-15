@@ -22,7 +22,7 @@ Zeitpunkte:
 | Zugangsdaten nur in der Umgebungsdatei auf dem Server, nie im Abbild oder im Repo | `testumgebung/.env.example` (nur erfundene Werte), `.dockerignore`, #58 | erledigt | vor der Testumgebung |
 | Tool im Container nicht als Verwalter | `Dockerfile`, #58 | erledigt | vor der Testumgebung |
 | HTTPS: Sitzungs- und Formular-Cookies nur verschlüsselt | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #58 | erledigt | vor der Testumgebung |
-| HTTPS: Weiterleitung von `http` auf `https` und HSTS (ein Jahr, nur diese Adresse, ohne Vorab-Liste der Browser) | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #324 | erledigt | vor der Testumgebung |
+| HTTPS: Weiterleitung von `http` auf `https` und HSTS | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #324 | erledigt | vor der Testumgebung |
 | Sicherheitsrichtlinie für Skripte | `config/settings.py` (`SECURE_CSP`), #278 | erledigt | vor der Testumgebung |
 | Startprüfung: Tool startet nicht mit unsicheren Einstellungen | #325 | offen | vor der Testumgebung |
 | Abgelaufene Sitzungen löschen, beim Start und danach alle 24 Stunden | `testumgebung/docker-compose.yml` (Dienst `aufraeumen`), `docker/aufraeumen.sh`, #324 | erledigt | vor der Testumgebung |
@@ -33,7 +33,7 @@ Zeitpunkte:
 | Grundabbilder mit fester Fassung und Prüfsumme | `Dockerfile`, `testumgebung/docker-compose.yml` (Dienst `datenbank`), #324; Aktualisieren: unten | erledigt | vor der Testumgebung |
 | Schwachstellenprüfung der Pakete | `pruefen.sh` (`pip-audit`), `CONTRIBUTING.md`, Abschnitt 6 | erledigt | vor der Testumgebung |
 | Schwachstellenprüfung für Bootstrap | keine eigene Prüfung; stattdessen der Hinweis unten | erledigt | nicht umsetzen; Grund von Sebastian (#324): Das Tool nutzt nur die Gestaltungsdatei von Bootstrap ohne Skript; bekannte Lücken betrafen bisher das Skript. |
-| Selbstregistrierung im Test-Realm aus | `testumgebung/keycloak/dpv-test-realm.json`, #38 (#62) | erledigt | vor der Testumgebung |
+| Selbstregistrierung im Test-Realm aus | Importdatei `testumgebung/keycloak/dpv-test-realm.json` (#62); eingespielt wird sie beim Einrichten (#38) | erledigt | vor der Testumgebung |
 | Protokolle „nur anhängbar“ auch gegenüber dem Datenbankkonto | #334 | offen | vor dem echten Betrieb |
 | Sicherung vor `migrate` beim Start | #335 | offen | vor dem echten Betrieb |
 | Konten löschen | #202, #66 | offen | vor dem echten Betrieb |
@@ -43,11 +43,12 @@ Zeitpunkte:
 | Backups: verschlüsselt, an einem zweiten Ort, Zurückspielen geübt | OP-4, NFA-06 (`docs/anforderungen.md`), P6 | offen | vor dem echten Betrieb |
 | zweiter Faktor beim Login für Admins | P6 (`docs/fahrplan.md`, NFA-10) | offen | vor dem echten Betrieb |
 | `SECURITY.md` | P6 (`docs/fahrplan.md`, NFA-10) | offen | vor dem echten Betrieb |
+| Datenbank-Log und Aufräumen der Sitzungen auch im echten Betrieb, nicht nur in der Testumgebung | P6 (Betriebshandbuch); bisher nur `testumgebung/docker-compose.yml` | offen | vor dem echten Betrieb |
 
 ## Beim Einrichten auf dem Server (#59)
 
-- **Hinweis auf HTTPS:** Das Programm vor dem Tool, das die verschlüsselte Verbindung annimmt, muss jeder Anfrage die Kopfzeile `X-Forwarded-Proto: https` mitgeben. Fehlt sie, hält das Tool mit `DJANGO_BEHIND_HTTPS_PROXY=1` jede Anfrage für unverschlüsselt und leitet endlos weiter. Leitet das Programm davor selbst schon auf HTTPS weiter, schadet das nicht. Nach dem Einrichten prüft Sebastian den Login auf dem Server einmal von Hand (#59).
-- **Sitzungen:** Der Dienst `aufraeumen` startet mit der Testumgebung von selbst. `docker compose -f testumgebung/docker-compose.yml ps aufraeumen` zeigt ihn mit `Up`, solange er läuft; sein Log bleibt leer, außer ein Lauf scheitert.
+- **Hinweis auf HTTPS:** Das Programm vor dem Tool, das die verschlüsselte Verbindung annimmt, muss bei jeder Anfrage die Kopfzeile `X-Forwarded-Proto: https` selbst setzen und einen vom Browser mitgeschickten Wert ersetzen, nicht nur anhängen. Fehlt sie, hält das Tool mit `DJANGO_BEHIND_HTTPS_PROXY=1` jede Anfrage für unverschlüsselt und leitet endlos weiter. Leitet das Programm davor selbst schon auf HTTPS weiter, schadet das nicht. Nach dem Einrichten prüft Sebastian den Login auf dem Server einmal von Hand (#59).
+- **Sitzungen:** Der Dienst `aufraeumen` startet mit der Testumgebung von selbst. `docker compose -f testumgebung/docker-compose.yml ps aufraeumen` zeigt ihn mit `Up`, solange er läuft; sein Log bleibt leer, außer ein Lauf scheitert (dann neuer Versuch nach einer Minute).
 
 ## Aktualisieren
 
