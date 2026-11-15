@@ -39,7 +39,8 @@ def _too_long(page: Page, field_id: str, message: str) -> None:
     expect(error).to_have_text(message)
     expect(count).to_have_class(re.compile(r"\bist-zu-lang\b"))
     assert count.evaluate("e => getComputedStyle(e).color") == error.evaluate("e => getComputedStyle(e).color")
-    expect(page.locator(f"#{field_id}")).to_have_accessible_description(message)
+    # Erst die Meldung, dann die Zahl, wie beim Fahrtennamen (#215).
+    expect(page.locator(f"#{field_id}")).to_have_accessible_description(re.compile("^" + re.escape(message)))
 
 
 def _type(page: Page, field, text: str, device: str) -> None:
@@ -72,8 +73,8 @@ def test_s5_s6_zahl_beim_tippen_rot_bei_einundfuenfzig_und_dieselbe_meldung_nach
     # „Anlegen“: dieselbe Meldung am Feld, die Eingabe bleibt, niemand wird angelegt.
     page.get_by_label("Nachname").fill("Probe")
     page.get_by_label("Geburtsdatum").fill("2015-05-14")
-    _press(page, page.locator("dialog .a-schalter"), device)
-    _press(page, page.locator('dialog button[type="submit"]'), device)
+    _press(page, page.locator("dialog.a-dialog .a-schalter"), device)
+    _press(page, page.locator('dialog.a-dialog button[type="submit"]'), device)
     expect(page.locator(f"#{first_id}-fehler")).to_have_text(FIRST_TOO_LONG)
     expect(page.get_by_label("Vorname")).to_have_value("L" * 51)
     expect(page.get_by_label("Vorname")).to_have_attribute("aria-invalid", "true")
@@ -89,7 +90,7 @@ def test_s5_s6_zahl_beim_tippen_rot_bei_einundfuenfzig_und_dieselbe_meldung_nach
     _type(page, last, "P" * 51, device)
     _shows(page, last_id, 51)
     _too_long(page, last_id, LAST_TOO_LONG)
-    _press(page, page.locator('dialog button[type="submit"]'), device)
+    _press(page, page.locator('dialog.a-dialog button[type="submit"]'), device)
     expect(page.locator(f"#{last_id}-fehler")).to_have_text(LAST_TOO_LONG)
     expect(page.get_by_label("Nachname")).to_have_value("P" * 51)
     lena.refresh_from_db()
