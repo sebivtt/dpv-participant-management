@@ -25,7 +25,7 @@ COMPOSE = BASE_DIR / "testumgebung" / "docker-compose.yml"
 
 DOMAIN = "test.anmeldung.example.org"
 PREFIX = "Unsichere Einstellung für den Server: "
-SUFFIX = "(docs/betrieb.md)"
+SUFFIX = "(docs/betrieb.md)."
 
 # E1: Max richtet die Testumgebung auf dem Server mit eigenen Werten ein.
 TEST_SERVER = {
