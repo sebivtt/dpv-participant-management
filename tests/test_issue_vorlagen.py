@@ -212,8 +212,11 @@ def test_rahmen_fuer_berichte_hat_eine_leerzeile_vor_und_nach_dem_bericht():
     # Steht der Bericht direkt unter <summary>, zeigt GitHub die erste Überschrift mit
     # Rautezeichen an (#74). Der Rahmen hält deshalb eine eigene Zeile für den Bericht frei,
     # mit je einer Leerzeile darüber und darunter.
-    [frame] = [block for block in re.findall(r"```text\n(.*?)```", GUIDE.read_text(encoding="utf-8"), flags=re.DOTALL)
-               if "<details>" in block]
+    [frame] = [
+        block
+        for block in re.findall(r"```text\n(.*?)```", GUIDE.read_text(encoding="utf-8"), flags=re.DOTALL)
+        if "<details>" in block
+    ]
     lines = [line.strip() for line in frame.strip().splitlines()]
 
     assert lines[0].startswith("<details><summary>") and lines[0].endswith("</summary>")
