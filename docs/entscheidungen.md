@@ -48,6 +48,17 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-15 · Navigation hebt nach dem Anfang der Adresse hervor (#266)
+
+**Entscheidung** (technische Wahl der KI in der Klärung von #266 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/266#issuecomment-6876369232); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/266#issuecomment-6876369080), von Sebastian bestätigt):
+
+1. Ein Navigationspunkt ist auf jeder Adresse hervorgehoben, die mit seiner eigenen beginnt: „Organisation“ unter `/organisation/`, „Veranstaltungen“ unter `/veranstaltungen/`, der Profilkreis unter `/profil/`. Nur „Startseite“ gilt allein für `/`. Listen von Adressen je Punkt gibt es nicht mehr.
+2. Die Seiten und Dialoge eines Bereichs liegen deshalb unter dessen Adresse; ein neuer Punkt der Navigation bekommt seinen eigenen Bereich.
+
+**Begründung:** Die von Hand gepflegten Listen waren die Ursache des Fehlers: Auf rund 15 Dialogen einer Organisation und auf „Austreten“ und „Rolle abgeben“ fehlte die Hervorhebung (Projektprüfung BF-020). Mit der Regel kann eine neue Adresse nicht mehr vergessen werden. Wer welchen Punkt sieht, die Rechteprüfung jeder Seite und das Aussehen der Hervorhebung bleiben unverändert.
+
+**Umsetzung:** `core/navigation.py`, `docs/aufbau.md`; Tests in `tests/test_navigation.py` (GF1 geht jede Adresse des Tools durch).
+
 ## 2026-11-15 · Ein Knopf „Person aufnehmen“ mit Wahl im Dialog (#298, PER-01, PER-02)
 
 **Entscheidung** (Sebastian in der Klärung von #298 am 14.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875044763); [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875044923) mit „Alle passen“; [Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289041) und [Nachklärung](https://github.com/sebivtt/dpv-participant-management/issues/298#issuecomment-6875289269); maßgeblich sind Text und Szenarien des Issues):
