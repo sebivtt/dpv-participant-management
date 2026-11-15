@@ -61,8 +61,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 **Technische Wahl** (KI):
 
-1. Erlaubt sind `ls` und `stat` mit beliebigen Optionen, `test -f`/`test -e` und `[ -f … ]`/`[ -e … ]` (auch mit `!`), `git check-ignore` mit `.env` nach dem Wort `check-ignore` und `cp` von `.env.example` nach `<ordner>/.env` (Optionen nur `-f`, `-i`, `-n`, `-p`, `-v`). Andere Schreibweisen wie `[[ -f .env ]]` bleiben gesperrt; ein neuer harmloser Fall braucht ein eigenes Issue.
-2. Die Erlaubtliste gilt nicht, wenn die Ausgabe an ein anderes Programm geht (`|` oder `$(…)`), damit etwa `ls .env | xargs cat` gesperrt bleibt; auch nicht für eine Umleitung aus `.env` (`< .env`).
+1. Erlaubt sind, nach dem genauen Programmnamen (auch mit `/bin/` oder `/usr/bin/`, nicht ein eigenes Skript wie `./ls`), `ls` und `stat` mit beliebigen Optionen, `test -f`/`test -e` und `[ -f … ]`/`[ -e … ]` (auch mit `!`), `git check-ignore` mit `.env` nach dem Wort `check-ignore` und `cp` von `.env.example` nach `<ordner>/.env` (Optionen nur `-f`, `-i`, `-n`, `-p`, `-v`). Andere Schreibweisen wie `[[ -f .env ]]` bleiben gesperrt; ein neuer harmloser Fall braucht ein eigenes Issue.
+2. Geht irgendwo im Befehl eine Ausgabe an ein anderes Programm (`|`, `$(…)`, `` `…` ``, `<(…)`, `>(…)`, auch über `bash -c` oder `eval`), gilt von der Erlaubtliste nur das Anlegen aus der Vorlage, weil `cp` den Inhalt nie ausgibt. So bleiben etwa `ls .env | xargs cat` und `(ls .env) | xargs cat` gesperrt; seltene Ketten wie `ls .env && git status | head` dafür auch. Eine Umleitung aus `.env` (`< .env`) ist nie erlaubt.
 3. Beim Zerlegen merkt sich der Prüfschritt je Wort, welche Zeichen außerhalb von Anführungszeichen standen: Nur `*`, `?` und `[` dort löst die Shell zu Dateinamen auf.
 4. Ein Wort mit Leerzeichen, das auf `/.env` endet, gilt als Text, außer der Ordner davor existiert oder kommt aus `$…` oder `` `…` ``; dafür sieht der Prüfschritt nur nach, ob es den Ordner gibt, Dateien liest er weiter nie.
 5. Abweisungen wegen `.env` nennen die erlaubten Wege als Hinweis.

@@ -85,12 +85,6 @@ class Word(str):
     pattern = None
 
 
-class Segment(list):
-    """Ein Teil der Befehlskette; `feeds` heißt: Seine Ausgabe geht an ein anderes Programm (`|`, `$(…)`)."""
-
-    feeds = False
-
-
 class _Lexer:
     """Zerlegt einen Shell-Befehl in Teile (je Teil eine Wortliste), wie die Shell es täte.
 
@@ -100,6 +94,8 @@ class _Lexer:
     Anführungszeichen, führt die Shell `$(…)` darin aber aus, deshalb wird das mitgeprüft.
     Das Ziel einer Umleitung (`> datei`, `2>&1`) kommt in einen eigenen Teil: Es ist kein
     Argument des Programms, wird aber weiter auf `.env` geprüft.
+    `feeds` heißt: Irgendwo im Befehl geht eine Ausgabe an ein anderes Programm (`|`, `$(…)`,
+    `` `…` ``, `<(…)`, `>(…)`).
     """
 
     def __init__(self, text, pos=0, in_substitution=False):
@@ -107,7 +103,8 @@ class _Lexer:
         self.pos = pos
         self.in_substitution = in_substitution
         self.depth = 0
-        self.segments = [Segment()]
+        self.segments = [[]]
+        self.feeds = False
         self.word = None
         self.glob = ""
         self.has_glob = False
@@ -145,7 +142,7 @@ class _Lexer:
             word = Word(self.word)
             word.pattern = self.glob if self.has_glob else None
             if self.redirect_target:
-                self.redirect_segments.append(Segment(["<umleitung>", word]))
+                self.redirect_segments.append(["<umleitung>", word])
             else:
                 self.segments[-1].append(word)
             self._drop_word()
@@ -154,12 +151,11 @@ class _Lexer:
     def _new_segment(self):
         self._end_word()
         self.redirect_target = False
-        self.segments.append(Segment())
+        self.segments.append([])
 
     def _add_nested(self, segments):
         """Teile aus `$(…)` und `` `…` ``: Ihre Ausgabe wird Teil eines anderen Befehls."""
-        for segment in segments:
-            segment.feeds = True
+        self.feeds = True
         self.nested_segments.extend(segments)
 
     def _step(self):
@@ -256,6 +252,8 @@ class _Lexer:
         self._end_word()
         while self.pos < len(text) and text[self.pos] in "<>&|":
             self.pos += 1
+        if text.startswith("(", self.pos):
+            self.feeds = True  # Prozess-Ersetzung `<(…)`, `>(…)`
         while self.pos < len(text) and text[self.pos] in " \t":
             self.pos += 1
         self.redirect_target = True
@@ -323,7 +321,7 @@ class _Lexer:
                 elif operator == ")":
                     self.depth -= 1
                 elif operator in PIPES:
-                    self.segments[-1].feeds = True
+                    self.feeds = True
                 self._new_segment()
                 self.pos += len(operator)
                 return
@@ -332,10 +330,10 @@ class _Lexer:
 
 
 def _lex(text):
-    """Alle Teile eines Befehls, auch die aus `$(…)` und `` `…` ``."""
+    """Alle Teile eines Befehls, auch die aus `$(…)` und `` `…` ``, und ob eine Ausgabe weitergeht."""
     lexer = _Lexer(text)
     segments = lexer.run()
-    return segments + lexer.nested_segments
+    return segments + lexer.nested_segments, lexer.feeds
 
 
 # --- Prüfen -----------------------------------------------------------------------------------
@@ -345,33 +343,36 @@ PREFIXES = {"env", "command", "exec", "nohup", "time", "sudo", "{", "!", "if", "
 SHELLS = {"bash", "sh", "zsh", "dash"}
 
 
-def check(command, cwd):
-    """Prüft einen ganzen Bash-Befehl; wirft `Blocked`, wenn ein Teil gesperrt ist."""
+def check(command, cwd, feeds=False):
+    """Prüft einen ganzen Bash-Befehl; wirft `Blocked`, wenn ein Teil gesperrt ist.
+
+    `feeds` heißt: Der Befehl steht in einem anderen (`bash -c`, `eval`), dessen Ausgabe weitergeht.
+    """
     try:
-        segments = _lex(command)
+        segments, own_feeds = _lex(command)
     except Unparsable as error:
         if MENTIONS.search(command):
             raise Blocked(f"Befehl nicht sicher zerlegbar ({error})", SIMPLE) from error
         return
     for words in segments:
-        cwd = _check_segment(words, cwd)
+        cwd = _check_segment(words, cwd, feeds or own_feeds)
 
 
 def _program(word):
     return word.rsplit("/", 1)[-1]
 
 
-def _check_segment(words, cwd):
+def _check_segment(words, cwd, feeds):
     """Prüft einen Teil der Befehlskette; gibt das Arbeitsverzeichnis für die folgenden Teile zurück."""
     command = _strip_prefixes(words)
-    _check_env(words, command, cwd)
+    _check_env(words, command, cwd, feeds)
     if not command:
         return cwd
     program = _program(command[0])
     if program == "cd" and len(command) > 1:
         return os.path.join(cwd, os.path.expanduser(command[1]))
     if program in SHELLS or program == "eval":
-        _check_shell(program, command, cwd)
+        _check_shell(program, command, cwd, feeds)
     # `git` und `gh` an jeder Stelle, damit Vorsätze wie `timeout 60`, `xargs` oder
     # `git submodule foreach` nichts verdecken.
     for index, word in enumerate(command):
@@ -392,13 +393,13 @@ def _strip_prefixes(words):
     return words[index:]
 
 
-def _check_shell(program, words, cwd):
+def _check_shell(program, words, cwd, feeds):
     if program == "eval":
-        check(" ".join(words[1:]), cwd)
+        check(" ".join(words[1:]), cwd, feeds)
         return
     for index, word in enumerate(words[1:-1], start=1):
         if word.startswith("-") and not word.startswith("--") and "c" in word:
-            check(words[index + 1], cwd)
+            check(words[index + 1], cwd, feeds)
             return
 
 
@@ -406,14 +407,20 @@ def _normalized(text):
     return unicodedata.normalize("NFC", text).casefold()
 
 
-def _check_env(words, command, cwd):
-    """`.env` als Datei im Befehl ist gesperrt, außer in den Fällen der Erlaubtliste (#347)."""
+def _check_env(words, command, cwd, feeds):
+    """`.env` als Datei im Befehl ist gesperrt, außer in den Fällen der Erlaubtliste (#347).
+
+    Geht im Befehl eine Ausgabe an ein anderes Programm (`feeds`), gilt nur noch das Anlegen aus
+    der Vorlage: `cp` gibt den Inhalt nie aus, die anderen erlaubten Befehle aber den Namen.
+    """
     named = [index for index, word in enumerate(words) if _names_env(word, words, index, cwd)]
     if not named:
         return
     offset = len(words) - len(command)
     positions = {index - offset for index in named}
-    if min(positions) < 0 or words.feeds or not _env_allowed(command, positions):
+    if min(positions) < 0:
+        raise Blocked(".env lesen", ENV)
+    if not (_is_template_copy(command, positions) or (not feeds and _env_allowed(command, positions))):
         raise Blocked(".env lesen", ENV)
 
 
@@ -436,7 +443,7 @@ def _names_env(word, words, index, cwd):
 
 def _env_allowed(command, positions):
     """Erlaubtliste: Befehle, die `.env` nennen, ohne den Inhalt zu lesen; `positions` sind die Stellen, die `.env` nennen."""
-    program, args = _program(command[0]), command[1:]
+    program, args = _system_program(command[0]), command[1:]
     if program in ("ls", "stat"):
         return True
     if program == "test":
@@ -446,7 +453,12 @@ def _env_allowed(command, positions):
     if program == "git":
         subcommand = _git_subcommand(command)
         return subcommand is not None and command[subcommand] == "check-ignore" and min(positions) > subcommand
-    return _is_template_copy(command, positions)
+    return False
+
+
+def _system_program(word):
+    """Name eines Programms ohne `/bin/` oder `/usr/bin/`; ein eigenes Skript wie `./ls` behält seinen Pfad."""
+    return re.sub(r"^/(usr/)?bin/", "", word)
 
 
 def _is_existence_test(command, start, end, positions):
@@ -458,7 +470,7 @@ def _is_existence_test(command, start, end, positions):
 
 def _is_template_copy(command, positions):
     """`cp .env.example <ordner>/.env` legt `.env` aus der Vorlage an, ohne sie zu lesen."""
-    if command[0] != "cp":
+    if _system_program(command[0]) != "cp":
         return False
     paths = [index for index, word in enumerate(command[1:], start=1) if not word.startswith("-")]
     flags = [word for word in command[1:] if word.startswith("-")]

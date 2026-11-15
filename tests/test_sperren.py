@@ -539,8 +539,8 @@ def test_s7_inhalt_lesen_wird_abgewiesen_und_nennt_die_erlaubten_wege(command):
 
     assert result.returncode == BLOCKED, (command, result.stderr)
     assert "Grund: .env lesen." in result.stderr
-    hint = result.stderr.split(ENV_HINT, 1)[-1]
     assert ENV_HINT in result.stderr
+    hint = result.stderr.split(ENV_HINT, 1)[-1]
     assert "ls .env" in hint
     assert "cp .env.example .env" in hint
 
@@ -597,3 +597,37 @@ def test_text_mit_leerzeichen_bleibt_datei_wenn_der_ordner_da_ist(tmp_path):
     (tmp_path / "Mein Ordner").mkdir()
 
     _assert_env_blocked('cat "Mein Ordner/.env"', cwd=tmp_path)
+
+
+# Befunde der unabhängigen Prüfung zu #347
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "(ls .env) | xargs cat",
+        "{ ls .env; } | xargs cat",
+        "bash -c 'ls .env' | xargs cat",
+        "eval 'ls .env' | xargs cat",
+        "cat $(bash -c 'ls .env')",
+        "xargs cat < <(ls .env)",
+        "(git check-ignore .env) | xargs cat",
+    ],
+)
+def test_ausgabe_eines_erlaubten_befehls_ueber_umweg_bleibt_gesperrt(command):
+    _assert_env_blocked(command)
+
+
+@pytest.mark.parametrize("command", ["cp -v .env.example .env | tail -1", "cp .env.example .env 2>&1 | tail -3"])
+def test_env_aus_vorlage_anlegen_geht_auch_mit_weitergegebener_ausgabe(command):
+    # So ging es schon vor #347 (Eintrag vom 02.11.2026, #233, Nr. 2); cp gibt den Inhalt nie aus.
+    _assert_allowed(command)
+
+
+@pytest.mark.parametrize("command", ["./ls .env", "tools/stat .env"])
+def test_eigenes_skript_mit_dem_namen_eines_erlaubten_programms_bleibt_gesperrt(command):
+    _assert_env_blocked(command)
+
+
+def test_erlaubtes_programm_mit_systempfad_geht_durch():
+    _assert_allowed("/bin/ls -la .env")
