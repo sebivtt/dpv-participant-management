@@ -558,3 +558,50 @@ def test_u3_meine_anmeldungen_gibt_es_nicht(org, sammelanmeldung):
     assert client_for(org.wanda).get("/meine-anmeldungen/").status_code == 404
     profile = _visible_text(page_tree(org.wanda, "/profil/"))
     assert "Probelager" not in profile
+
+
+# ---------- Befunde der unabhängigen Prüfung (PR #367) ----------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_b1_wechselt_der_stamm_gleichzeitig_den_ring_meldet_kai_karl_nicht_an():
+    """Befund B1: Wechselt Leuchtturm gleichzeitig von Küste nach Nord, wartet das Anmelden und prüft danach frisch."""
+    o = build_people()
+    mona = lead("mona.mosaik", "Mona", "Mosaik", R.ASSOCIATION_LEAD, o.mosaik)
+    results = []
+
+    def change_ring():
+        done, _text = Rights(mona).change_ring(o.leuchtturm, o.nord.key)
+        assert done
+
+    def register():
+        try:
+            Rights(o.kai).register(o.probelager, [o.karl])
+        except ValidationError:
+            results.append("abgelehnt")
+
+    _one_after_the_other(change_ring, register)
+
+    assert results == ["abgelehnt"]
+    assert not Registration.objects.exists()
+
+
+def test_b2_die_kopie_kommt_aus_der_datenbank_nicht_aus_dem_objekt_im_speicher(org):
+    """Befund B2: Ein ungespeichert verändertes Objekt ändert die Kopie nicht."""
+    org.lena.first_name = "Gekapert"
+    org.wanda.scout_name = "Gekapert"
+
+    created = Rights(org.wanda).register(org.probelager, [org.wanda, org.lena])
+
+    assert [row[:4] for row in copies(created)] == [("Wanda", "Walhall", None, ""),
+                                                    ("Lena", "Probe", date(2015, 5, 14), "Kiwi")]
+
+
+def test_b5_ein_gesperrtes_konto_meldet_niemanden_an_auch_sich_selbst_nicht(org):
+    org.wanda.is_active = False
+    org.wanda.save()
+
+    refused(lambda: Registration.create(org.probelager, org.wanda, [org.wanda]))
+    refused(lambda: Registration.create(org.probelager, org.wanda, [org.paul]))
+
+    assert not Registration.objects.exists()
