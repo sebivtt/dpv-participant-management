@@ -6,4 +6,16 @@ Jeder Abschnitt ist die Zusammenfassung des Laufs auf GitHub, unverändert über
 
 ## P2
 
-Noch nicht gemessen. Der erste Lauf am Ende von P2 legt den Ausgangswert ab; dazu kommt einmal die Messung von Hand in der Testumgebung auf dem Server, mit Server- und Browserzeit.
+Lauf vom 16.11.2026, Commit `9b95975`. Ausgangswert: Es gibt noch keine vorige Phase, jede Seite prüft nur gegen die 2 Sekunden.
+
+| Seite | Zeit | Wert der vorigen Phase | Abweichung | Ergebnis |
+|---|---|---|---|---|
+| Gliederung „Organisation“ | 0,05 s | – | – | im Rahmen |
+| Seite mit 500 Personen | 0,10 s | – | – | im Rahmen |
+| Namensvorschläge zu „Pro“ | 0,03 s | – | – | im Rahmen |
+| Suche bei „Person aufnehmen“ | 0,05 s | – | – | im Rahmen |
+| Veranstaltung mit 40 Anmeldungen | 0,06 s | – | – | im Rahmen |
+| Anmeldung mit 595 Personen | 0,02 s | – | – | im Rahmen |
+| Dialog „Verschieben“ auf der Seite mit 500 Personen | 0,14 s | – | – | im Rahmen |
+
+Seiten mit Personen ohne Messung: keine.

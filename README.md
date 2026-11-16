@@ -292,7 +292,7 @@ D5. Die Testdaten in der Testumgebung im Container anlegen.
 
 ## Leistungstest (am Ende einer Phase)
 
-Am Ende jeder Phase prüft der Leistungstest, ob jede Seite mit Personen auch bei 5.000 erfundenen Personen in unter 2 Sekunden vom Server kommt (#104). Er legt dafür mit dem Zusatz `--mass-data` am Befehl `testdata` zusätzlich 40 Probestämme mit je 5 Gruppen und 5.000 erfundene Personen im Pfadfinderbund Boreas an. Die normalen Prüfungen machen das nicht. Warum so, steht in `docs/entscheidungen.md` (13.11.2026, #104).
+Am Ende jeder Phase prüft der Leistungstest, ob jede Seite mit Personen auch bei 5.000 erfundenen Personen in unter 2 Sekunden vom Server kommt (#104). Er legt dafür mit dem Zusatz `--mass-data` am Befehl `testdata` zusätzlich 40 Probestämme mit je 5 Gruppen und 5.000 erfundene Personen im Pfadfinderbund Boreas an, dazu die erfundene Veranstaltung „Probe-Bundeslager 2028“ mit allen 5.000 Personen: je Probestamm eine Anmeldung seiner Stammesleitung mit den Personen des Stamms und seiner Gruppen (#369). Die normalen Prüfungen machen das nicht. Warum so, steht in `docs/entscheidungen.md` (13.11.2026, #104).
 
 Am Phasenende misst er relativ zur vorigen Phase (#145): In einem Lauf auf GitHub misst er abwechselnd den Stand vom Ende der vorigen Phase und den neuen Stand, mit denselben erzeugten Daten. Den alten Stand findet er über die feste Markierung `phasenende-p<n>` im Repo (etwa `phasenende-p2`). Rot ist der Lauf, wenn eine Seite eine der Grenzen aus `docs/entscheidungen.md` (14.11.2026, #145, Nr. 3) reißt oder ein Durchgang, alt oder neu, rot war; die Zeile der Seite sagt, was davon. Er meldet auch Seiten mit Personen, die noch keine Messung haben. Wann wer was tut, steht im Skill `phase-steuern`, Abschnitt 5; die Ergebnisse stehen in `docs/leistungstest.md`.
 
@@ -305,11 +305,11 @@ L2. Den Leistungstest starten.
    ```bash
    uv run --env-file .env pytest tests/leistungstest.py -rsfE
    ```
-   Danach: eine Tabelle „Leistungstest (#104), Grenze 2 s je Seite“ mit der Zeit je Seite, darunter `Seiten mit Personen ohne Messung (#145): …` und am Ende `10 passed`. Einen Vergleich mit der vorigen Phase gibt es nur auf GitHub (L1).
+   Danach: eine Tabelle „Leistungstest (#104), Grenze 2 s je Seite“ mit der Zeit je Seite, darunter `Seiten mit Personen ohne Messung (#145): …` und am Ende `14 passed`. Einen Vergleich mit der vorigen Phase gibt es nur auf GitHub (L1).
 
-Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen.` Anmelden kann sich mit diesen Konten niemand. Ein Lauf ohne Zusatz entfernt die Massendaten wieder bis auf die Konten, die dann ohne Rolle bleiben.
+Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen, dazu die Veranstaltung „Probe-Bundeslager 2028“ mit 40 Anmeldungen, je Probestamm eine mit allen Personen des Stamms und seiner Gruppen.` Anmelden kann sich mit diesen Konten niemand; die Veranstaltung sieht `ohne.nachname` als ihre Leitung. Ein Lauf ohne Zusatz entfernt die Massendaten wieder, auch Veranstaltung und Anmeldungen, bis auf die Konten, die dann ohne Rolle bleiben.
 
-Nur einmal, am Ende von P2: Messung von Hand in der Testumgebung auf dem Server (#145), sobald sie läuft (#59). Wie die Befehle dort genau heißen, legt #59 fest; bis dahin gelten sie nur für die Testumgebung im Container auf dem Mac (D5) und werden mit #59 nachgeprüft.
+Nur einmal, am Ende von P3: Messung von Hand in der Testumgebung auf dem Server (#145; am Ende von P2 entfallen, weil es noch keinen Server gab, `docs/entscheidungen.md`, 16.11.2026, #369). Wie die Befehle dort genau heißen, legt #59 fest; bis dahin gelten sie nur für die Testumgebung im Container auf dem Mac (D5) und werden mit #59 nachgeprüft.
 
 L3. In der Testumgebung im Browser einmal als `ohne.nachname` anmelden, damit Boreas dort eine Bundesleitung hat, mit dem Konto aus dem Test-Realm dort (Abschnitt „Test-Realm im Keycloak des DPV“).
    Danach: „Hallo“ mit dem gelben Band der Testumgebung.
@@ -319,7 +319,7 @@ L4. Die Testdaten mit den Massendaten anlegen (wie D5, mit Zusatz).
    ```
    Danach: wie in D5, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
 L5. In Safari zuerst unter „Safari“ → „Einstellungen“ → „Erweitert“ die Funktionen für Webentwickler einschalten. Dann als `ohne.nachname` anmelden, im Menü „Entwickler“ „Webinformationen einblenden“ wählen und dort „Netzwerk“. Nacheinander „Organisation“, die Seite „Probestamm 01“ und auf der Seite „Pfadfinderbund Boreas“ den Dialog „Person mit Konto aufnehmen“ mit einer Suche nach einer Mail öffnen.
-   Danach: Je Seite steht in der Liste in der Zeile der Seite selbst unter „Zeit“ die Zeit bis zur Antwort des Servers, und unten die Zeit, bis der Browser die Seite fertig geladen hat. Beide Zahlen je Seite notieren und der KI für `docs/leistungstest.md`, Abschnitt P2, geben. Heißen die Spalten in Safari anders, das der KI sagen.
+   Danach: Je Seite steht in der Liste in der Zeile der Seite selbst unter „Zeit“ die Zeit bis zur Antwort des Servers, und unten die Zeit, bis der Browser die Seite fertig geladen hat. Beide Zahlen je Seite notieren und der KI für `docs/leistungstest.md`, Abschnitt P3, geben. Heißen die Spalten in Safari anders, das der KI sagen.
 
 ## Verband und Bünde anlegen (Admins)
 

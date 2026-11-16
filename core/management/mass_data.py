@@ -18,6 +18,12 @@ haben sie eine bestätigte Mail und einen Zeitpunkt des letzten Logins, wie Kont
 angemeldet haben. Sie bleiben wie alle Konten über Läufe hinweg stehen; der nächste Lauf nimmt sie wieder.
 Jeder Lauf ergibt dieselben Daten, nur die zufälligen Kennungen für Adressen sind neu.
 
+Seit dem Ende von P2 (#369) dazu die erfundene Veranstaltung `EVENT` mit allen Personen: je Probestamm eine
+Anmeldung, abgegeben von seiner Stammesleitung, mit den Personen des Stamms und seiner Gruppen (#369, Frage 2).
+Leitung der Veranstaltung ist die Bundesleitung Boreas; fehlt sie (in der Testumgebung vor ihrem ersten Login),
+hat die Veranstaltung keine Leitung, und die Anmeldungen gibt es trotzdem. Auch sie entstehen in einem Rutsch,
+an `Registration.create()` vorbei; wer darin steht, dürfte die Stammesleitung auch im Tool anmelden (ANM-01).
+
 Erweitern am Ende einer Phase (#145): Was neue Seiten mit Personen oder Anmeldungen brauchen, kommt als
 weitere Funktion hierher und wird in `create()` aufgerufen.
 """
@@ -31,6 +37,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.management.base import CommandError
 
 from core import texts
+from events.models import Event, RegisteredPerson, Registration, copy_of
 from persons.models import ManagedPerson
 from roles.models import Role, RoleKind
 from units.models import Kind, Unit
@@ -54,6 +61,9 @@ SCOUT_NAMES = ("Dachs", "Eule", "Falke", "Hummel", "Krähe", "Lerche", "Otter", 
 LAST_LOGIN = datetime(2026, 1, 1, tzinfo=UTC)
 CONSENT_AT = datetime(2026, 1, 1, tzinfo=UTC)
 FIRST_BIRTH_DATE = date(2008, 1, 1)
+# Die erfundene Veranstaltung mit allen Personen (#369); die Anmeldungen kommen im Abstand einer Minute.
+EVENT = {"name": "Probe-Bundeslager 2028", "start": date(2028, 7, 20), "end": date(2028, 7, 29)}
+FIRST_REGISTRATION_AT = datetime(2027, 11, 1, tzinfo=UTC)
 
 
 def create(association: Unit, consent_by) -> dict:
@@ -70,8 +80,10 @@ def create(association: Unit, consent_by) -> dict:
         raise CommandError(texts.MASS_DATA_TAKEN % {"usernames": ", ".join(sorted(linked))})
     units = _units(association)
     accounts = _accounts(usernames)
-    roles = _persons(units, accounts, consent_by)
-    return {"units": len(units), "accounts": len(accounts), "managed": PERSONS - len(accounts), "roles": roles}
+    roles, people, leads = _persons(units, accounts, consent_by)
+    registrations = _registrations(units, people, leads, consent_by)
+    return {"units": len(units), "accounts": len(accounts), "managed": PERSONS - len(accounts), "roles": roles,
+            "event": EVENT["name"], "registrations": registrations}
 
 
 def username(number: int) -> str:
@@ -130,17 +142,20 @@ def _accounts(usernames: list[str]) -> dict[str, object]:
     return found
 
 
-def _persons(units: list[Unit], accounts: dict, consent_by) -> int:
+def _persons(units: list[Unit], accounts: dict, consent_by) -> tuple[int, dict, dict]:
     """Verteilt die Personen: die ersten `OUTLIER` in den Ausreißer, die übrigen reihum auf alle anderen.
 
-    Gibt zurück, wie viele Rollen entstanden sind.
+    Gibt zurück, wie viele Rollen entstanden sind, je Organisation ihre Personen (Konten und verwaltete Personen in
+    der Reihenfolge des Anlegens) und je Organisation das Konto ihrer Leitung, alles nach der Nummer der Organisation.
     """
     others = units[1:]
     roles, managed, leads = [], [], {}
+    people = {unit.pk: [] for unit in units}
     for number in range(PERSONS):
         unit = units[0] if number < OUTLIER else others[(number - OUTLIER) % len(others)]
         if has_account(number):
             user = accounts[username(number)]
+            people[unit.pk].append(user)
             roles.append(Role(user=user, kind=RoleKind.MEMBER, unit=unit))
             # Das erste Mitglied mit Konto leitet die Organisation; die Leitung liegt so auf dem Pfad (#89).
             if unit.pk not in leads:
@@ -154,9 +169,34 @@ def _persons(units: list[Unit], accounts: dict, consent_by) -> int:
                 scout_name=SCOUT_NAMES[number % len(SCOUT_NAMES)] if number % 7 == 0 else "",
                 consent_by=consent_by, consent_at=CONSENT_AT,
             ))
+            people[unit.pk].append(managed[-1])
     Role.objects.bulk_create([*roles, *leads.values()])
+    # Die Datenbank gibt die neuen Nummern zurück; die Personen in `people` sind dieselben Objekte.
     ManagedPerson.objects.bulk_create(managed)
-    return len(roles) + len(leads)
+    return len(roles) + len(leads), people, {pk: role.user for pk, role in leads.items()}
+
+
+def _registrations(units: list[Unit], people: dict, leads: dict, event_lead) -> int:
+    """Die Veranstaltung `EVENT` und je Probestamm die Anmeldung seiner Leitung mit allen Personen des Stamms und seiner
+    Gruppen, der Stamm zuerst (#369). Gibt zurück, wie viele Anmeldungen entstanden sind.
+
+    Die Kopie der Angaben ist dieselbe wie beim Anmelden im Tool (`copy_of()` in `events/models.py`, A5).
+    """
+    event = Event.objects.create(**EVENT)
+    if event_lead is not None:
+        event.leads.add(event_lead)
+    troops = [unit for unit in units if unit.kind == Kind.TROOP]
+    registrations = Registration.objects.bulk_create([
+        Registration(event=event, contact=leads[troop.pk], created_at=FIRST_REGISTRATION_AT + timedelta(minutes=index))
+        for index, troop in enumerate(troops)
+    ])
+    entries = []
+    for troop, registration in zip(troops, registrations, strict=True):
+        members = [troop, *[unit for unit in units if unit.parent_id == troop.pk]]
+        for person in [person for unit in members for person in people[unit.pk]]:
+            entries.append(RegisteredPerson(registration=registration, **copy_of(person)))
+    RegisteredPerson.objects.bulk_create(entries)
+    return len(registrations)
 
 
 def _name(number: int) -> tuple[str, str]:

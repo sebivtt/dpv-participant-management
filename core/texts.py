@@ -35,7 +35,8 @@ NO_REGISTRATION = gettext_lazy(
 )
 MASS_DATA_DONE = gettext_lazy(
     "Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: %(units)s Probe-Organisationen, "
-    "%(accounts)s erfundene Konten ohne Login und %(managed)s verwaltete Personen."
+    "%(accounts)s erfundene Konten ohne Login und %(managed)s verwaltete Personen, dazu die Veranstaltung "
+    "„%(event)s“ mit %(registrations)s Anmeldungen, je Probestamm eine mit allen Personen des Stamms und seiner Gruppen."
 )
 MASS_DATA_TAKEN = gettext_lazy(
     "Keine Massendaten, weil diese Benutzernamen schon zu einem Konto mit Login gehören: %(usernames)s. Der Befehl "

@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Messung von Hand beim Leistungstest | 16.11.2026, #369, Nr. 1 | 14.11.2026, #145, Nr. 9 (nur der Satz „Die Messung von Hand am Ende von P2 (Server- und Browserzeit) beschreibt das `README.md` (L3, L4).“) |
 | Gesundheitsblock (Probe von FRM-04, #102) in P4 statt P2 | 16.11.2026, #368, Nr. 1 bis 5 | W2 und F1 (nur der Teil zu FRM-04) aus der Bestandsaufnahme in #106, die bisher nur dort standen; 21.10.2026, „P1 beginnt früher, Restpunkte von P0 laufen parallel“, „Begründung“ (nur der Satzteil zum Gesundheitsblock in P2) |
 | Zeitpunkt des Pull Requests | 15.11.2026, #348, Nr. 1 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“, „Arbeitsweise aus dem alten Repo“ (nur der Zeitpunkt in „unabhängige Prüfung vor jedem Pull Request“) |
 | Testdaten für den Leistungstest | 13.11.2026, #104, Nr. 1 und 2 | 13.11.2026, #103, Nr. 4 und 5 (nur für die Massendaten des Zusatzes `--mass-data`) |
@@ -49,6 +50,19 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
 
 ---
+
+## 2026-11-16 · Leistungstest am Ende von P2 ohne Messung von Hand; sie kommt einmal am Ende von P3 (#369, NFA-05)
+
+**Entscheidung** (Sebastian am 16.11.2026; [Protokoll der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/369#issuecomment-6922351905), Fragen 1 und 2; maßgeblich ist der Text von #369). Ersetzt den Eintrag vom 14.11.2026 (#145), Nr. 9, nur den Satz „Die Messung von Hand am Ende von P2 (Server- und Browserzeit) beschreibt das `README.md` (L3, L4).“; alles andere dort gilt weiter.
+
+1. **Messung von Hand erst am Ende von P3:** Am Ende von P2 gibt es keine Messung von Hand in der Testumgebung auf dem Server, weil es dort noch keinen Server gibt (#59). Sie kommt einmal am Ende von P3, im Issue „Leistungstest am Ende von P3“; die Schritte stehen weiter im `README.md` (L3 bis L5), das Ergebnis in `docs/leistungstest.md`, Abschnitt P3.
+2. **Anmeldungen mit 5.000 Personen:** Für die Seiten zu Veranstaltung und Anmeldung legt der Zusatz `--mass-data` eine erfundene Veranstaltung mit allen 5.000 Massenpersonen an, je Probestamm eine Anmeldung (40), abgegeben von seiner Stammesleitung mit den Personen des Stamms und seiner Gruppen. Die größte ist die des Probestamms 01 mit 595 Personen. Mehrere kleine Veranstaltungen oder eine eigene Messung mit 1.000 Teilnehmenden (Ziel von P6) gibt es jetzt nicht.
+
+**Begründung:** Zu 1: Sebastian: „Keine Messung per Hand, solang es keinen Server gibt. Machen wir dann erst am Ende von P3.“ Zu 2: 5.000 ist der schlimmste Fall aus NFA-05; je Probestamm eine Anmeldung ist, wie im Tool eine Stammesleitung ihren Stamm anmeldet.
+
+**Grenzen:** Die Anmeldungen entstehen wie die übrigen Massendaten in einem Rutsch, am Datenmodell vorbei (13.11.2026, #104); ein Test prüft, dass die Stammesleitung jede Person darin auch im Tool anmelden dürfte. Der Generator fügt nur Daten hinzu; die Verteilung von Organisationen, Personen und Rollen bleibt (14.11.2026, #145, „Grenzen“).
+
+**Umsetzung:** `core/management/mass_data.py`, `tests/leistungstest.py` (`PAGES`, `NOT_MEASURED`), `README.md` („Leistungstest (am Ende einer Phase)“), Skill `phase-steuern`, Abschnitt 5, `docs/leistungstest.md`; Tests in `tests/test_massendaten.py`.
 
 ## 2026-11-16 · Probe Gesundheitsangaben (#102) von P2 nach P4 (#368, FRM-04, OP-2)
 
