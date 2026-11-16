@@ -217,7 +217,7 @@ In P2 als Probe: Veranstaltungen mit Name, Beginn und Ende (#100); Anmeldungen e
 
 ## Gesundheitsangaben
 
-Die Probe in Anmeldungen (#102) kommt in P4, nicht mehr in P2 (#368); bis dahin beschreiben GA-01 bis GA-04 die Regel, die beim Bau gilt. Gesundheitsangaben im eigenen Profil kommen frühestens in P4 (FRM-04, unter Vorbehalt).
+Die Probe in Anmeldungen (#102) kommt in P4, nicht mehr in P2 (#368); GA-01 bis GA-04 beschreiben die Regel bis zum Bau; #102 wird in P4 vor dem Bau neu geklärt. Gesundheitsangaben im eigenen Profil kommen frühestens in P4 (FRM-04, unter Vorbehalt).
 
 | Kennung | Wer | Daten | Aktion | Ergebnis | Quelle | Stand |
 | --- | --- | --- | --- | --- | --- | --- |
