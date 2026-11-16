@@ -11,6 +11,9 @@ Sebastians Entscheidung „Alle passen so“. Die Besetzung ist die aus #103: Bu
 `ohne.nachname`, Max (`max.testmann`) die Stammesleitung der Zugvögel, Nils (`bundesleitung.nordstern`)
 die Bundesleitung Nordstern. Alle Namen sind erfunden.
 
+G4 und M6 bis M8 kommen aus #369 (Leistungstest am Ende von P2) und haben keine Szenarien, weil sich für Nutzende
+nichts ändert (Klärung vom 16.11.2026, Frage 3); sie prüfen dessen Akzeptanzkriterien.
+
 Erweitern am Ende einer Phase (#145): neue Seiten mit Personen oder Anmeldungen als weiteren Test mit Eintrag
 in `PAGES`, oder mit Grund in `NOT_MEASURED`; was sie brauchen, kommt in den Zusatz `--mass-data`
 (`core/management/mass_data.py`). Seiten mit Personen, die in keinem von beiden stehen, meldet der Lauf als
@@ -89,7 +92,7 @@ NOT_MEASURED = {
     "openid_connect_callback": "Login: legt nur das eigene Konto an",
     # Seit dem Ende von P2 (#369). Diese Dialoge zeigen die Seite der Organisation, gemessen als „Seite mit 500
     # Personen“, mit einem Dialog ohne eigene Liste von Personen; stellvertretend gemessen ist der Dialog
-    # „Verschieben“, der als einziger dazu eine Auswahl von Organisationen zeigt.
+    # „Verschieben“, der dazu die Auswahl der Organisationen darunter zeigt.
     "organisation_add_managed": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
     "organisation_add_person": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
     "organisation_admit": "Dialog auf der Seite der Organisation; die Suche darin ist gemessen",

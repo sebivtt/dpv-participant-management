@@ -1,6 +1,7 @@
 """Massendaten für den Leistungstest (#104): was bei jedem Prüflauf mitläuft.
 
-Den Leistungstest selbst mit 5.000 Personen (G1 bis G3, M1 bis M4, R1 bis R3) enthält `tests/leistungstest.py`;
+Den Leistungstest selbst mit 5.000 Personen (G1 bis G3, M1 bis M4, R1 bis R3; seit #369 auch G4 und M6 bis M8)
+enthält `tests/leistungstest.py`;
 er läuft nur am Ende einer Phase. Hier stehen die Szenarien U1 bis U3 und M5 aus dem Kommentar
 „Szenarien (13.11.2026)“ in #104
 (https://github.com/sebivtt/dpv-participant-management/issues/104#issuecomment-6862671822), mit Sebastians
