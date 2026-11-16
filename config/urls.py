@@ -43,6 +43,7 @@ from core.views import (
     profile_leave,
     profile_leave_team,
     profile_scout_name,
+    registration_page,
     start,
     support_end,
 )
@@ -110,6 +111,9 @@ urlpatterns = [
     path("veranstaltungen/erstellen/", event_create, name="event_create"),
     path("veranstaltungen/<key:event>/", event_page, name="event_page"),
     path("veranstaltungen/<key:event>/bearbeiten/", event_edit, name="event_edit"),
+    # Anmeldungen (#101, Probe in P2): nur die Seite je Anmeldung, ohne Formular (AN-06); die Ansprechperson kommt in P2
+    # nur über die Adresse hierher.
+    path("anmeldungen/<key:registration>/", registration_page, name="registration_page"),
     path("bausteine/", building_blocks, name="building_blocks"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),

@@ -57,7 +57,7 @@ from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
-from events.models import Event
+from events.models import Event, RegisteredPerson, Registration
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS, DisplayedLead, ManagedPerson, displayed_off_path, roles_blocking
 from roles import texts as role_texts
@@ -1130,6 +1130,47 @@ class Rights:
             entry.save()
         return entry, str(event_texts.SAVED % {"event": entry.name})
 
+    # Anmeldungen (#101, ANM-01, ANM-02; Probe in P2)
+    #
+    # Eine Anmeldung sehen nur die Veranstaltungsleitung (AN-01) und ihre Ansprechperson (AN-02), auch nach Verlust
+    # einer Leitungsrolle oder der Zuordnung; sonst niemand, auch nicht die Leitungen der Einheit der angemeldeten
+    # Personen und Admins im Support-Zugang (AN-03, #92, #110). Anmelden geht in P2 nur im Datenmodell (AN-06); wer
+    # wen anmelden darf, prüft das Datenmodell selbst (`events.models.may_register()`, AN-04, AN-05).
+
+    def register(self, event: Event, people: list) -> Registration:
+        """Meldet `people` zu `event` an; die Person wird Ansprechperson (AN-04). Ohne Recht `ValidationError` (AN-05).
+
+        Wen die Person anmelden darf, prüft `Registration.create()` im Datenmodell; ein Support-Zugang zählt dort nie.
+
+        `Registration.create()` sperrt Konten, Bünde und verwaltete Personen und prüft darunter frisch: Endet eine
+        Leitungsrolle oder wechselt ein Stamm gleichzeitig den Ring, entsteht nichts (AG1, Befund B1). In P2 rufen
+        das nur der Testdaten-Befehl und Tests auf; ein Formular gibt es nicht (AN-06).
+        """
+        return Registration.create(event, self.user, people)
+
+    def registrations(self) -> QuerySet:
+        """Die Anmeldungen, die die Person sieht: zu ihren Veranstaltungen (AN-01) und die eigenen (AN-02)."""
+        if self.user is None:
+            return Registration.objects.none()
+        return Registration.objects.filter(Q(event__in=self.events()) | Q(contact_id=self.user.pk))
+
+    def event_registrations(self, event: Event) -> list[Registration]:
+        """Die Anmeldungen zu einer eigenen Veranstaltung, die älteste zuerst (AN-01, S1); sonst keine.
+
+        Mit Ansprechperson und Personen vorab geladen; so bleibt die Zahl der Abfragen gleich, egal wie viele
+        Anmeldungen es sind (AG2).
+        """
+        entries = Registration.objects.filter(event__in=self.events(), event=event)
+        return list(_with_persons(entries.select_related("contact")).order_by("created_at", "pk"))
+
+    def registration(self, key) -> Registration:
+        """Eine Anmeldung über ihre Kennung, mit Veranstaltung, Ansprechperson und Personen; sonst „nicht gefunden“ (AN-03)."""
+        return self.entry(_with_persons(self.registrations().select_related("event", "contact")), key)
+
+    def leads_event(self, event: Event) -> bool:
+        """Leitet die Person diese Veranstaltung (VA-02)? Nur dann führt die Seite der Anmeldung zu ihr (S3)."""
+        return self.events().filter(pk=event.pk).exists()
+
     # Verschieben, Austragen und Löschen verwalteter Personen (#118, PER-02)
     #
     # Wie bei Personen mit Konto (#286, #287) darf das nur die Leitung der eigenen Organisation der Person und,
@@ -2002,6 +2043,12 @@ def _displayed_off_path_sentence(person: ManagedPerson, leads: list[DisplayedLea
     roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)}) for lead in leads]
     text = unit_texts.RING_CHANGE_ROLE_BLOCKS if len(roles) == 1 else unit_texts.RING_CHANGE_ROLES_BLOCK
     return str(text % {"person": person.display_name, "roles": listed(roles), "unit": unit_label(person.unit)})
+
+
+def _with_persons(registrations: QuerySet) -> QuerySet:
+    """Anmeldungen mit ihren Personen in der Reihenfolge des Anmeldens, unter `shown_persons`, samt Konto (#101)."""
+    persons = RegisteredPerson.objects.select_related("account").order_by("pk")
+    return registrations.prefetch_related(Prefetch("persons", queryset=persons, to_attr="shown_persons"))
 
 
 def unit_label(unit: Unit) -> str:

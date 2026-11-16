@@ -27,6 +27,12 @@ USERNAME_TAKEN = gettext_lazy(
 NO_CREATOR = gettext_lazy(
     "Ohne verwaltete Personen, weil dort niemand mit Konto sie anlegen darf: %(units)s."
 )
+NO_EVENT = gettext_lazy(
+    "Ohne „%(event)s“ und ohne Anmeldung, weil das Konto der Veranstaltungsleitung fehlt: %(username)s."
+)
+NO_REGISTRATION = gettext_lazy(
+    "„%(event)s“ ist angelegt, aber ohne Anmeldung, weil das Konto der Ansprechperson fehlt: %(username)s."
+)
 MASS_DATA_DONE = gettext_lazy(
     "Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: %(units)s Probe-Organisationen, "
     "%(accounts)s erfundene Konten ohne Login und %(managed)s verwaltete Personen."

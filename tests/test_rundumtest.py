@@ -286,6 +286,9 @@ PERSONAL_MODELS = {
     "DisplayedLead",
     # Veranstaltungen mit ihrer Veranstaltungsleitung (#100).
     "Event",
+    # Anmeldungen mit Ansprechperson und den angemeldeten Personen (#101).
+    "Registration",
+    "RegisteredPerson",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {
@@ -297,6 +300,9 @@ ALLOWED_FILES = {
     # Ringwechsel eines Stammes (#99). Namen stehen nur in Ablehnungen für Leitungen, die die Person ohnehin
     # sehen (unabhängige Prüfung, Befund B3); wie bei roles/models.py.
     "persons/models.py",
+    # Die Regel beim Anlegen einer Anmeldung, wer wen anmelden darf (#101, ANM-01): liest nur Rollen, Organisationen
+    # und die Organisation einer verwalteten Person, damit das Datenmodell sie selbst prüft; zeigt nichts an.
+    "events/models.py",
     # Der Abgleich mit Keycloak beim Login: ändert nur das Konto, das sich gerade anmeldet,
     # und zeigt nichts an (#76).
     "accounts/keycloak_abgleich.py",
@@ -315,8 +321,8 @@ ALLOWED_FILES = {
 # prefetch_related("roles"). Ein bloßes "roles" oder "user" zählt nur als Angabe an eine Abfrage;
 # sonst heißen so auch die App und das Konto der Anfrage.
 LOOKUP_THROUGH_PERSONS = re.compile(
-    r"(^-?|__)(roles|user|managed_persons|displayed_leads|led_events)__\w"
-    r"|__(roles|user|managed_persons|displayed_leads|led_events)$")
+    r"(^-?|__)(roles|user|managed_persons|displayed_leads|led_events|registrations|persons)__\w"
+    r"|__(roles|user|managed_persons|displayed_leads|led_events|registrations|persons)$")
 QUERY_METHODS = {"select_related", "prefetch_related", "values", "values_list", "only", "order_by", "annotate"}
 # Ordner, die nur Tests enthalten; jeder andere Python-Ordner gehört zum Tool und wird durchsucht.
 ONLY_FOR_TESTS = {"tests", "rauchtests", "containertests"}
@@ -337,7 +343,7 @@ def bypasses(source: str) -> list[str]:
             owner = ast.unparse(node.value)
             if node.attr in ("objects", "_default_manager", "_base_manager") and owner in PERSONAL_MODELS:
                 found.append(f"{owner}.{node.attr}")
-            elif node.attr in ("roles", "managed_persons", "led_events") or node.attr in ("raw", "cursor"):
+            elif node.attr in ("roles", "managed_persons", "led_events", "registrations") or node.attr in ("raw", "cursor"):
                 found.append(f"{owner}.{node.attr}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             if LOOKUP_THROUGH_PERSONS.search(node.value):
@@ -428,6 +434,13 @@ def test_ausnahmen_gibt_es_noch():
         "request.user.led_events.all()",
         "Unit.objects.filter(roles__user__led_events__name='x')",
         "get_user_model().objects.values('led_events__name')",
+        # Anmeldungen und ihre Personen, auch über die Veranstaltung oder das Konto (#101).
+        "Registration.objects.all()",
+        "RegisteredPerson.objects.filter(first_name='Lena')",
+        "event.registrations.all()",
+        "request.user.registrations.all()",
+        "Event.objects.filter(registrations__persons__first_name='Lena')",
+        "Unit.objects.values('roles__user__registrations__key')",
     ],
 )
 def test_lesen_vorbei_an_der_zentralen_stelle_wird_erkannt(source):

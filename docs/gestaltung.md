@@ -188,6 +188,13 @@ Kein Zielbild (Probe, Entscheidung F1 aus #106). Nur schlichte Platzhalter, bis 
 - **„Veranstaltung erstellen“ und „… bearbeiten“:** Dialog mit Textfeld „Name“ und den Datumsfeldern „Beginn“ und „Ende“, Knopf „Anlegen“ oder „Speichern“; danach eine kurze Meldung (#186).
 - **Seite einer Veranstaltung:** Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“. Einen Knopf zum Löschen gibt es nicht.
 
+### Anmeldungen, Probe (#101, 15.11.2026)
+
+Kein Zielbild (Probe, Entscheidung F1 aus #106). Schlichte Platzhalter wie bei den Veranstaltungen, bis #29 die Seiten gestaltet (`docs/entscheidungen.md`, Eintrag vom 15.11.2026 zu #101). Kein Baustein neu oder erweitert:
+
+- **Abschnitt „Anmeldungen“** auf der Seite einer Veranstaltung, nur für ihre Leitung, mit dem Symbol Personen: je Anmeldung die Ansprechperson als Link zur Anmeldung und dahinter die Namen der angemeldeten Personen (mit Fahrtenname wie überall), die älteste zuerst. Ohne Anmeldungen steht „Zu dieser Veranstaltung gibt es noch keine Anmeldungen.“
+- **Seite einer Anmeldung:** Überschrift „Anmeldung“, darunter eine Fläche mit dem Namen der Veranstaltung (nur für die Leitung ein Link), dem Zeitraum und „Ansprechperson: …“, darunter die Fläche „Angemeldete Personen“ mit Namen und Geburtsdatum (bei Personen mit Konto ohne). Knöpfe zum Anlegen, Ändern oder Löschen gibt es nicht.
+
 ### Dialog: Seite bleibt an ihrer Stelle (#220, 14.11.2026)
 
 Kein Zielbild (Nachbesserung eines bestehenden Bausteins). Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 14.11.2026 zu #220. Ein Baustein erweitert:

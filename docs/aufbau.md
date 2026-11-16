@@ -14,7 +14,7 @@ Django teilt das Tool in Apps, also Ordner mit je einem Fachbereich; `access` un
 | `units/` | Einheiten (Verband, Bund, Ring, Stamm, Gruppe) mit ihrem Protokoll, die Aufbereitung der Seite „Organisation“ (`units/organisation.py`) und die Befehle `federation` und `association`. |
 | `roles/` | Rollen (Leitungen, Mitglieder, Teams, Admin) mit ihrem Protokoll und die Befehle `admin` und `federation_lead`. |
 | `persons/` | Verwaltete Personen: Profile ohne Konto, die eine Leitung für ihre Organisation anlegt (#117, PER-02). |
-| `events/` | Veranstaltungen mit ihrer Veranstaltungsleitung; in P2 die Probe mit Name, Beginn und Ende (#100, TEAM-01). |
+| `events/` | Veranstaltungen mit ihrer Veranstaltungsleitung und Anmeldungen mit ihrer Ansprechperson und den angemeldeten Personen; in P2 die Proben mit Name, Beginn und Ende (#100, TEAM-01) und Anmeldungen nur im Datenmodell (#101, ANM-02). |
 | `config/` | Einstellungen (`config/settings.py`) und die Liste aller Adressen (`config/urls.py`). |
 
 Die Apps hängen gegenseitig voneinander ab, weil Grundbausteine in Apps liegen, die auch obere Teile enthalten (etwa `access/keys.py` neben `access/rights.py`). Die Richtung legen deshalb nicht die Apps fest, sondern die Schichten.

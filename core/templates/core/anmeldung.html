@@ -1,0 +1,18 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{{ title }} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Seite einer Anmeldung (#101, Probe in P2, kein Zielbild): schlicht wie die Seite einer Veranstaltung, bis #29 die Seiten gestaltet. Oben die Veranstaltung mit Zeitraum und die Ansprechperson, darunter die angemeldeten Personen mit Namen und Geburtsdatum aus der Kopie (bei Personen mit Konto ohne). Veranstaltungsleitung und Ansprechperson sehen dasselbe; nur für die Leitung ist der Name der Veranstaltung ein Link (VA-03). Knöpfe zum Ändern gibt es nicht (AN-06). #}
+  <div class="a-kopf"><h1>{{ title }}</h1></div>
+  <section class="a-flaeche" aria-labelledby="h-anmeldung-veranstaltung">
+    {% include "core/_flaechenkopf.html" with symbol="kalender" title=event.name title_href=event_href heading_id="h-anmeldung-veranstaltung" %}
+    <p>{{ period }}</p>
+    <p>{{ contact }}</p>
+  </section>
+  <section class="a-flaeche" aria-labelledby="h-anmeldung-personen">
+    {% include "core/_flaechenkopf.html" with symbol="personen" title=persons_title heading_id="h-anmeldung-personen" %}
+    <ul>
+      {% for person in persons %}<li><span>{{ person.name }}</span>{% if person.born %} <span>{{ person.born }}</span>{% endif %}</li>{% endfor %}
+    </ul>
+  </section>
+{% endblock %}
