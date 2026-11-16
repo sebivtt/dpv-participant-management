@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Gesundheitsblock (Probe von FRM-04, #102) in P4 statt P2 | 16.11.2026, #368, Nr. 1 bis 5 | W2 und F1 (nur der Teil zu FRM-04) aus der Bestandsaufnahme in #106, die bisher nur dort standen; 21.10.2026, „P1 beginnt früher, Restpunkte von P0 laufen parallel“, „Begründung“ (nur der Satzteil zum Gesundheitsblock in P2) |
 | Zeitpunkt des Pull Requests | 15.11.2026, #348, Nr. 1 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“, „Arbeitsweise aus dem alten Repo“ (nur der Zeitpunkt in „unabhängige Prüfung vor jedem Pull Request“) |
 | Testdaten für den Leistungstest | 13.11.2026, #104, Nr. 1 und 2 | 13.11.2026, #103, Nr. 4 und 5 (nur für die Massendaten des Zusatzes `--mass-data`) |
 | Sperre für rote Pull Requests | 13.11.2026, #16, Nr. 1 | 21.10.2026, „Grundgerüst: nur grüne Pull Requests, Werkzeuge und Fassungen“, Nr. 1 (nur der Satz, dass die Regel die Sperre durch GitHub ersetzt); 03.11.2026, #239, und 03.11.2026, #237, „Grenzen“ (je nur der Satz „Eine rote Prüfung sperrt das Übernehmen weiterhin nicht (#16)“) |
@@ -46,6 +47,24 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Knöpfe im Abschnitt „Personen“ | 15.11.2026, #298, Nr. 1 | 11.11.2026, #117, Nr. 2 (nur Knopf „Person mit Konto aufnehmen“ mit „Verwaltete Person anlegen“ daneben, N6) |
 | Satz bei leerer Liste „Personen“ | 15.11.2026, #298, Nr. 3 | 11.11.2026, #117, Nr. 2 (nur der zweite Satz „Du kannst oben …“, N7) |
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
+
+---
+
+## 2026-11-16 · Probe Gesundheitsangaben (#102) von P2 nach P4 (#368, FRM-04, OP-2)
+
+**Entscheidung** (Sebastian am 16.11.2026; [Protokoll der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/368#issuecomment-6921986374), Fragen 1 bis 5; maßgeblich ist der Text von #368). Ersetzt W2 aus der [Bestandsaufnahme in #106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6342842432) vom 22.10.2026, die bisher nur dort stand, und dort in F1 den Teil zu FRM-04 („wie W2“). Ersetzt außerdem im Eintrag vom 21.10.2026 „P1 beginnt früher, Restpunkte von P0 laufen parallel“, Absatz „Begründung“, den Satzteil „OP-2 blockiert erst den Gesundheitsblock in P2 (spätestens 31.05.2027; sonst rückt er an den Anfang von P4)“: OP-2 blockiert den Gesundheitsblock in P4.
+
+1. Die Probe „Gesundheitsangaben sieht nur die Veranstaltungsleitung“ (#102) kommt schon jetzt aus P2 nach P4, nicht erst, wenn am 31.05.2027 die Folgenabschätzung fehlt. Das Abschlusskriterium „Gesundheitsblock nur für die Veranstaltungsleitung“ steht wortgleich bei P4 und nicht mehr bei P2; P2 kann ohne #102 abschließen.
+2. Der Fahrplan legt keine Stelle innerhalb von P4 fest; die Reihenfolge bestimmt das Phasen-Issue von P4.
+3. #102 bleibt ein eigenes Issue mit Szenarien und Protokoll als Ausgangspunkt, bekommt das Label `P4` und verliert `geklärt`: In P4 wird es vor dem Bau neu geklärt, weil Sebastian dabei Entscheidungen zu den Gesundheitsdaten hinterfragen will.
+4. Die Frist 31.05.2027 für die Folgenabschätzung (OP-2) bleibt.
+5. GA-01 bis GA-04 bleiben in der Rechtematrix, mit Stand „geplant (#102, P4)“, und zählen beim Abschlusskriterium von P2 „jede Zeile mit Test“ nicht mit; Formulierungen wie „verboten in P2“ bleiben, weil sie die Regel bis zum Bau beschreiben. GA-05 bleibt unverändert.
+
+**Begründung:** Alle anderen Abschlusskriterien von P2 können vor der Antwort der Datenschutzperson fertig sein; nach W2 bliebe P2 trotzdem bis zum 31.05.2027 offen. Die Schutzregel bleibt als ausdrücklicher Prüfpunkt erhalten, nur in P4 (Frage 1). Eine Reihenfolge ohne technischen Grund steht nur im Phasen-Issue (`CLAUDE.md`, „Ein Ort je Angabe“), und die neue Klärung hängt auch an der Antwort der Datenschutzperson (Frage 2). Die Anfrage vom 16.11.2026 bittet um Antwort bis zum 31.05.2027, und bis P4 bleibt Puffer (Frage 4). Die Zeilen der Matrix zu löschen hieße, sie in P4 neu zu schreiben (Frage 5).
+
+**Grenzen:** Rechte im Tool ändern sich nicht; GA-01 bis GA-05 gelten unverändert, nur der Zeitpunkt des Baus verschiebt sich. Welche Entscheidungen zu den Gesundheitsdaten in P4 neu bewertet werden, klärt #102 (auch zusammen mit #121).
+
+**Umsetzung:** `docs/fahrplan.md` (Abschnitt 3: Phasen P2 und P4, kritischer Pfad, OP-2; Abschnitt 6, Nr. 54), `docs/rechtematrix.md` (Abschnitt „Gesundheitsangaben“). Auf GitHub, sobald der Pull Request auf „bereit“ steht: #102 (Label, Titel, Text, `geklärt` ab), Phasen-Issue #106 und #121.
 
 ---
 
