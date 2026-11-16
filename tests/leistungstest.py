@@ -425,7 +425,7 @@ def test_m8_dialog_verschieben_auf_der_seite_mit_500_personen(data):
 
     root = _tree(call())
     assert entries_on_page_tree(root) == 500
-    dialog = _one(_by_tag(root, "dialog"))
+    dialog = _one(_all(root, lambda element: element.name == "dialog" and "a-dialog" in _classes(element)))
     assert "Probegruppe 5" in _text(dialog), "mit der Auswahl der Organisationen darunter"
     check_page("Dialog „Verschieben“ auf der Seite mit 500 Personen", measure(call))
 

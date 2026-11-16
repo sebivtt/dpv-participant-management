@@ -99,7 +99,7 @@ Abgeschlossen ist eine Phase, wenn alle Häkchen im Phasen-Issue einen Beleg hab
      ```bash
      gh workflow run leistungstest.yml --ref <zweig> -f phase=P<n> -f vorige_phase=phasenende-p<n-1>
      ```
-     Am Ende von P2 bleibt `vorige_phase` leer; der Lauf legt den Ausgangswert ab, und dazu kommt einmal die Messung von Hand in der Testumgebung auf dem Server (L3 bis L5). Den Abschnitt aus der Zusammenfassung des Laufs gibt sie der Umsetzungs-Session (`SendMessage`).
+     Am Ende von P2 bleibt `vorige_phase` leer; der Lauf legt den Ausgangswert ab. Am Ende von P3 kommt einmal die Messung von Hand in der Testumgebung auf dem Server dazu (L3 bis L5; `docs/entscheidungen.md`, 16.11.2026, #369). Den Abschnitt aus der Zusammenfassung des Laufs gibt sie der Umsetzungs-Session (`SendMessage`).
    - **Ablegen:** Die Umsetzungs-Session übernimmt ihn unverändert in `docs/leistungstest.md`.
 
    Was bei Rot gilt, steht in `docs/entscheidungen.md` (14.11.2026, #145, Nr. 3): Bei „blockiert“ endet die Phase nicht, der Fehler kommt als Issue. Bei „Sebastian entscheidet“ hält die Phase an, bis er entschieden hat; seine Entscheidung steht in seinen Worten im Issue und mit Link unter dem Abschnitt in `docs/leistungstest.md`. Ist der alte Stand rot, klärt die Steuerungssession die Ursache, bevor sie neu misst. Nach der Übernahme:

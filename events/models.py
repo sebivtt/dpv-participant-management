@@ -110,7 +110,7 @@ class Registration(models.Model):
             registration._creating = True
             registration.save()
             for person in people:
-                entry = RegisteredPerson(registration=registration, **_copy_of(person))
+                entry = RegisteredPerson(registration=registration, **copy_of(person))
                 entry._creating = True
                 entry.save()
         return registration
@@ -218,7 +218,7 @@ def _locked(contact, people: list) -> list:
     return [fresh(person) for person in people]
 
 
-def _copy_of(person) -> dict:
+def copy_of(person) -> dict:
     """Die Angaben einer Person für ihren Eintrag in der Anmeldung, wie sie jetzt sind (A5)."""
     values = {"first_name": person.first_name, "last_name": person.last_name, "scout_name": person.scout_name}
     if isinstance(person, ManagedPerson):

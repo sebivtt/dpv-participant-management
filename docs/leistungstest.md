@@ -6,4 +6,4 @@ Jeder Abschnitt ist die Zusammenfassung des Laufs auf GitHub, unverändert über
 
 ## P2
 
-Noch nicht gemessen. Der erste Lauf am Ende von P2 legt den Ausgangswert ab; dazu kommt einmal die Messung von Hand in der Testumgebung auf dem Server, mit Server- und Browserzeit.
+Noch nicht gemessen. Der erste Lauf am Ende von P2 legt den Ausgangswert ab. Die Messung von Hand in der Testumgebung auf dem Server kommt erst am Ende von P3 (`docs/entscheidungen.md`, 16.11.2026, #369).
