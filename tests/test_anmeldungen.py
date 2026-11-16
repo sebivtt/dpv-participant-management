@@ -311,7 +311,7 @@ def test_s3_auch_aus_dem_skript_sieht_wanda_ihre_anmeldung(org, sammelanmeldung)
     assert "Kiwi (Lena Probe)" in response.content.decode()
 
 
-@pytest.mark.rechtematrix("AN-02")
+@pytest.mark.rechtematrix("AN-02", "EP-06")
 def test_s4_wanda_verliert_leitung_und_zuordnung_und_sieht_ihre_anmeldung_weiter(org, sammelanmeldung):
     remove(org.wanda, R.TROOP_LEAD, org.walhall)
     remove(org.wanda, R.MEMBER, org.walhall)
@@ -326,7 +326,7 @@ def test_s4_wanda_verliert_leitung_und_zuordnung_und_sieht_ihre_anmeldung_weiter
 # ---------- Verboten ----------
 
 
-@pytest.mark.rechtematrix("AN-05")
+@pytest.mark.rechtematrix("AN-04", "AN-05")
 def test_av1_fiete_und_wanda_melden_niemanden_ausserhalb_ihres_bereichs_an(org):
     cases = (
         (org.fiete, [org.wilma]),
@@ -344,7 +344,7 @@ def test_av1_fiete_und_wanda_melden_niemanden_ausserhalb_ihres_bereichs_an(org):
     assert not RegisteredPerson.objects.exists()
 
 
-@pytest.mark.rechtematrix("AN-05")
+@pytest.mark.rechtematrix("AN-04", "AN-05")
 def test_av1_auch_am_datenmodell_vorbei_entsteht_nichts(org, sammelanmeldung):
     """Das Datenmodell prüft selbst, nicht nur die Rechteprüfung davor (ANM-01, damit P4 nicht daran vorbeikommt)."""
     refused(lambda: Registration.create(org.probelager, org.fiete, [org.ole]))
@@ -446,8 +446,10 @@ def test_av7_es_gibt_keinen_knopf_und_keine_adresse_zum_anlegen_aendern_oder_loe
     client = client_for(org.bea)
     for address in (event_address(org.probelager), registration_address(sammelanmeldung)):
         main = _one(_by_tag(_tree(client.get(address)), "main"))
-        assert _by_tag(main, "form") == [], address
-        text = _visible_text(main)
+        # Ohne das Formular „Abmelden“ der Navigation am Seitenende (#281); die gehört nicht zur Seite.
+        forms = [form for form in _by_tag(main, "form") if _attr(form, "action") != "/abmelden/"]
+        assert forms == [], address
+        text = " ".join(_visible_text(part) for part in _by_tag(main, "section") if "a-flaeche" in _classes(part))
         for word in ("öschen", "bmelden", "hinzufügen", "ändern", "Anmeldung erstellen"):
             assert word not in text, (address, word)
     attempts = (

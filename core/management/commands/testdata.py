@@ -2,7 +2,8 @@
 
 Jeder Lauf leert die Datenbank bis auf die Konten, auch alle Protokolle, und legt dieselben erfundenen
 Daten neu an: Verband, Bünde, Ring, Stämme, Gruppen, Rollen und verwaltete Personen. Was genau, steht
-im Text von #103 und in der Besetzung des Kommentars „Szenarien (12.11.2026)“ dort. Er läuft nur,
+im Text von #103 und in der Besetzung des Kommentars „Szenarien (12.11.2026)“ dort. Seit #101 dazu
+„Probelager 2027“ mit einer Sammelanmeldung (Text von #101, Szenario AG3). Er läuft nur,
 wenn die Einstellungen ausdrücklich „lokal“ (`LOCAL_ENVIRONMENT`) oder „Testumgebung“
 (`TEST_ENVIRONMENT`) sagen; sonst bricht er ab, bevor er etwas löscht.
 
@@ -14,7 +15,8 @@ wenn die Einstellungen ausdrücklich „lokal“ (`LOCAL_ENVIRONMENT`) oder „T
 
 Alles läuft über die normalen Wege des Tools, damit die Regeln greifen und das Protokoll wie im echten
 Ablauf entsteht: Einheiten und Rollen einzeln mit `save(by=SERVER_COMMAND)`, verwaltete Personen über
-die zentrale Rechteprüfung, angelegt und bestätigt von der Leitung, die das auch im Tool dürfte. Wer vor
+die zentrale Rechteprüfung, angelegt und bestätigt von der Leitung, die das auch im Tool dürfte; ebenso
+Veranstaltung und Anmeldung. Wer vor
 dem Lauf Admin ist, wird es danach wieder, mit neuem Eintrag im Protokoll. Alles geschieht in einer
 Transaktion: Scheitert etwas, bleibt die Datenbank, wie sie war.
 
@@ -124,6 +126,13 @@ MANAGED = {
     ),
 }
 
+# „Probelager 2027“ (#101, AG3): geleitet von der Bundesleitung Boreas; Erika meldet als Stammesleitung von Walhall sich
+# selbst und diese verwalteten Personen an, je aus Walhall, Sippe Falken und Meute Wölfe (Vorname, Nachname).
+PROBELAGER = {"name": "Probelager 2027", "start": date(2027, 5, 15), "end": date(2027, 5, 17)}
+EVENT_LEAD = "ohne.nachname"
+CONTACT = "erika.testfrau"
+REGISTERED = {"Walhall": ("Paul", "Probe"), "Sippe Falken": ("Lena", "Probe"), "Meute Wölfe": ("Theo", "Probe")}
+
 # Was zu den Konten gehört und deshalb stehen bleibt: das Konto, seine Verknüpfung mit Keycloak, seine
 # Mail-Liste und seine Anmeldung, dazu Djangos eigene Verzeichnisse. Alles andere leert jeder Lauf, auch
 # Tabellen, die spätere Issues dazubringen (#101, #102).
@@ -157,6 +166,7 @@ class Command(BaseCommand):
                 if not Role.objects.filter(user=user, kind=RoleKind.ADMIN).exists():
                     Role(user=user, kind=RoleKind.ADMIN).save(by=SERVER_COMMAND)
             without_creator = _managed(units, accounts)
+            probelager_notes = _probelager(units, accounts)
             if options["mass_data"]:
                 mass = mass_data.create(units["Pfadfinderbund Boreas"], accounts.get("ohne.nachname"))
         if admins:
@@ -166,6 +176,7 @@ class Command(BaseCommand):
             notes.append(message % {"usernames": ", ".join(missing)})
         if without_creator:
             notes.append(texts.NO_CREATOR % {"units": ", ".join(without_creator)})
+        notes += probelager_notes
         counts = {"units": len(units), "roles": Role.objects.count(), "managed": ManagedPerson.objects.count()}
         if mass is not None:
             # Die Zahlen oben ohne die Massendaten, damit sie zu README und #103 passen.
@@ -286,3 +297,26 @@ def _managed(units: dict[str, Unit], accounts: dict) -> list[str]:
                       "scout_name": scout_name, "consent": True}
             creator.add_managed(unit, values, new_key())
     return without_creator
+
+
+def _probelager(units: dict[str, Unit], accounts: dict) -> list[str]:
+    """Legt „Probelager 2027“ und Erikas Sammelanmeldung an wie im Tool, über die zentrale Rechteprüfung (#101, AG3).
+
+    Die Bundesleitung Boreas legt die Veranstaltung an und leitet sie; Erika meldet als Stammesleitung von Walhall
+    sich selbst, Paul, Lena und Theo an. Fehlt das Konto der Leitung, entstehen weder Veranstaltung noch Anmeldung;
+    fehlt Erikas Konto, nur die Anmeldung nicht. Gibt dann den Satz für die Ausgabe zurück, sonst keinen.
+    """
+    lead = accounts.get(EVENT_LEAD)
+    if lead is None:
+        return [str(texts.NO_EVENT % {"event": PROBELAGER["name"], "username": EVENT_LEAD})]
+    event, _text = Rights(lead).create_event(PROBELAGER, new_key())
+    contact = accounts.get(CONTACT)
+    if contact is None:
+        return [str(texts.NO_REGISTRATION % {"event": PROBELAGER["name"], "username": CONTACT})]
+    rights = Rights(contact)
+    people = [contact]
+    for name, (first_name, last_name) in REGISTERED.items():
+        people += [person for person in rights.managed_in(units[name])
+                   if (person.first_name, person.last_name) == (first_name, last_name)]
+    rights.register(event, people)
+    return []

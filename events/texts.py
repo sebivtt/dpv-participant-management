@@ -1,6 +1,7 @@
-"""Texte zu Veranstaltungen (#100), übersetzbar (NFA-02).
+"""Texte zu Veranstaltungen (#100) und Anmeldungen (#101), übersetzbar (NFA-02).
 
-Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026.
+Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026, für Anmeldungen aus den Szenarien zu #101 vom
+15.11.2026.
 """
 
 from django.utils.translation import gettext_lazy
@@ -32,3 +33,14 @@ END_BEFORE_START = gettext_lazy("Das Ende liegt vor dem Beginn.")
 # Kurze Meldungen (#186)
 CREATED = gettext_lazy("%(event)s ist angelegt. Du leitest diese Veranstaltung.")
 SAVED = gettext_lazy("Die Angaben zu %(event)s sind gespeichert.")
+
+# Anmeldungen (#101): Abschnitt auf der Seite der Veranstaltung und Seite der Anmeldung
+REGISTRATIONS = gettext_lazy("Anmeldungen")
+NO_REGISTRATIONS = gettext_lazy("Zu dieser Veranstaltung gibt es noch keine Anmeldungen.")
+REGISTRATION_TITLE = gettext_lazy("Anmeldung")
+CONTACT = gettext_lazy("Ansprechperson: %(person)s")
+REGISTERED_PERSONS = gettext_lazy("Angemeldete Personen")
+# Ablehnungen im Datenmodell; in P2 sieht sie nur, wer Anmeldungen im Programm anlegt (AN-06).
+REGISTRATION_ONLY_WITH_PERSONS = gettext_lazy(
+    "Eine Anmeldung entsteht nur zusammen mit ihrer Veranstaltung, ihrer Ansprechperson und mindestens einer Person.")
+NOT_REGISTERABLE = gettext_lazy("Diese Personen kannst du nicht anmelden: %(persons)s.")

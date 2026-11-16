@@ -300,6 +300,9 @@ ALLOWED_FILES = {
     # Ringwechsel eines Stammes (#99). Namen stehen nur in Ablehnungen für Leitungen, die die Person ohnehin
     # sehen (unabhängige Prüfung, Befund B3); wie bei roles/models.py.
     "persons/models.py",
+    # Die Regel beim Anlegen einer Anmeldung, wer wen anmelden darf (#101, ANM-01): liest nur Rollen, Organisationen
+    # und die Organisation einer verwalteten Person, damit das Datenmodell sie selbst prüft; zeigt nichts an.
+    "events/models.py",
     # Der Abgleich mit Keycloak beim Login: ändert nur das Konto, das sich gerade anmeldet,
     # und zeigt nichts an (#76).
     "accounts/keycloak_abgleich.py",

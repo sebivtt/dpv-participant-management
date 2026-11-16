@@ -49,6 +49,22 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-15 · Probe: Anmeldungen nennen konkrete Personen (#101, ANM-01, ANM-02)
+
+**Entscheidung** (Sebastian; Klärung von #101 am 22.10.2026, Nachklärungen vom 22.10.2026 in #106 und vom 15.11.2026 in #101, Szenarien vom 15.11.2026; maßgeblich sind Text und Szenarien des Issues): keine neue fachliche Entscheidung über das Issue hinaus.
+
+**Technische Wahl** (KI):
+
+1. **Zwei Modelle in der App `events`:** `Registration` (Veranstaltung, Ansprechperson, Zeitpunkt, Kennung) und je angemeldeter Person `RegisteredPerson` mit der Kopie ihrer Angaben und der Verbindung zum Konto oder zur verwalteten Person. Die Kopie hält die Anmeldung unabhängig vom Profil (A5); wird eine verwaltete Person gelöscht, leert die Datenbank nur die Verbindung (A6). Ein Konto lässt sich in P2 nicht löschen (EP-09), deshalb sperrt die Datenbank das Löschen eines angemeldeten Kontos, bis das eigens geklärt ist. Dass eine Person nie mit Konto und verwalteter Person zugleich verbunden ist und Personen mit Konto kein Geburtsdatum haben, prüft auch die Datenbank.
+2. **Das Datenmodell prüft selbst, wer angemeldet wird:** Eine Anmeldung entsteht nur über `Registration.create()`, zusammen mit allen Personen in einer Transaktion; ein einzelnes `save()` einer Anmeldung oder Person lehnt das Modell ab, ebenso jede spätere Änderung. `create()` prüft dafür mit `events.models.may_register()` (sich selbst; als Leitung die Mitglieder und verwalteten Personen des eigenen Bereichs) und liest dazu nur die eigenen Rollen, nie einen Support-Zugang (Nachklärung vom 15.11.2026, Frage 2). Die Regel steht im Modell, weil ein Modell die Rechteprüfung nicht einbinden darf (`docs/aufbau.md`, Schichten); deshalb erlaubt der Rundumtest `events/models.py`, Rollen selbst zu lesen, wie bei `persons/models.py`. So kommt auch das Formular in P4 nicht daran vorbei. `Rights.register()` sperrt vorher das eigene Konto, damit eine gleichzeitig beendete Leitungsrolle zählt (AG1, wie VG9 aus #100).
+3. **Ansehen** über `Rights.registrations()`: zu den eigenen Veranstaltungen (AN-01) und die eigenen als Ansprechperson (AN-02), sonst „nicht gefunden“ (AN-03). Die Adresse einer Anmeldung ist `/anmeldungen/<kennung>/`, ohne die Kennung der Veranstaltung, weil die Ansprechperson die Veranstaltung in P2 nicht sieht (VA-03).
+4. **Seiten nur als schlichte Platzhalter** wie bei #100 (Eintrag vom 13.11.2026, Nr. 4): der Abschnitt „Anmeldungen“ als Aufzählung auf der Seite der Veranstaltung und eine schlichte Seite der Anmeldung aus vorhandenen Bausteinen (Überschrift einer Fläche); kein Baustein neu oder erweitert, kein Zielbild (Probe, #106 F1).
+5. **Code-Namen** (`CONTRIBUTING.md`, Abschnitt 1): Anmeldung `registration` (`Registration`, die Anmeldungen einer Veranstaltung und eines Kontos `registrations`), angemeldete Person `RegisteredPerson` (die Personen einer Anmeldung `persons`), Ansprechperson `contact`, anmelden `register`, „darf anmelden“ `may_register`.
+
+**Umsetzung:** `events/models.py`, `events/texts.py`, Migration `events/migrations/0002_anmeldungen.py`, `access/rights.py`, `core/views.py`, `config/urls.py`, `core/templates/core/veranstaltung.html`, `anmeldung.html`, `core/management/commands/testdata.py` und `core/texts.py` („Probelager 2027“ mit Erikas Sammelanmeldung), `docs/rechtematrix.md`, `docs/gestaltung.md`, `README.md`; Tests in `tests/test_anmeldungen.py`, `tests/test_testdaten.py` und `rauchtests/test_anmeldungen.py`; `tests/test_rundumtest.py` kennt Anmeldungen als Daten, die nur die zentrale Rechteprüfung liest.
+
+---
+
 ## 2026-11-15 · Steuerungssession steuert mehrere Issues, Stand nach jedem Issue (#353)
 
 **Entscheidung** (Sebastian in der Klärung von #353 am 15.11.2026, Kurzform, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901159317), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/353#issuecomment-6901151970) mit „Alle passen“; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 03.11.2026 (#240), Nr. 3, nur im ersten Satz (Wechsel nach jedem Issue mit übernommenem und eingetragenem Pull Request); die übrigen Sätze dort gelten weiter. Ersetzt außerdem im Eintrag vom 26.10.2026 (#169), Nr. 3, den Halbsatz „nie mitten in einer Umsetzung“: Sagt Sebastian es, wechselt die Steuerung auch mitten in einer Umsetzung.

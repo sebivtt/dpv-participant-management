@@ -30,6 +30,7 @@ from core.forms import (
 from core.sections import to_section
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
+from events.models import name_of
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
 from roles import texts as role_texts
@@ -885,11 +886,23 @@ def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpRespon
 
 
 def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> HttpResponse:
-    """Die Seite einer Veranstaltung: Name und Zeitraum, der Knopf „Bearbeiten“; auf Wunsch mit offenem Dialog."""
+    """Die Seite einer Veranstaltung: Name und Zeitraum, der Knopf „Bearbeiten“ und der Abschnitt „Anmeldungen“ (#101).
+
+    Im Abschnitt je Anmeldung die Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen,
+    die älteste zuerst (S1); ohne Anmeldungen ein Satz (S2). Auf Wunsch mit offenem Dialog.
+    """
+    registrations = [{
+        "contact": name_of(registration.contact),
+        "names": ", ".join(person.shown_name for person in registration.shown_persons),
+        "href": reverse("registration_page", args=[registration.key]),
+    } for registration in request.rights.event_registrations(entry)]
     return render(request, "core/veranstaltung.html", {
         "event": entry,
         "period": period(entry),
         "edit_href": reverse("event_edit", args=[entry.key]),
+        "registrations": registrations,
+        "registrations_title": event_texts.REGISTRATIONS,
+        "no_registrations": event_texts.NO_REGISTRATIONS,
         "dialog": dialog,
     })
 
@@ -996,8 +1009,28 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
 
 @checks_rights("AN-01", "AN-02", "AN-03", "AN-06")
 def registration_page(request: HttpRequest, registration: str) -> HttpResponse:
-    """Die Seite einer Anmeldung (#101). Gerüst."""
-    raise Http404
+    """Die Seite einer Anmeldung: Veranstaltung mit Zeitraum, Ansprechperson und die angemeldeten Personen (#101, S3).
+
+    Nur für die Veranstaltungsleitung und die Ansprechperson, sonst „nicht gefunden“ (AN-01 bis AN-03); beide sehen
+    dasselbe, nur führt der Name der Veranstaltung allein die Leitung zu deren Seite. Die Personen stehen mit Namen
+    und Geburtsdatum aus der Kopie, bei Personen mit Konto ohne. Ändern, anlegen und löschen gibt es in P2 nicht
+    (AN-06): Andere Anfragen als Lesen ergeben „nicht gefunden“.
+    """
+    rights = request.rights
+    entry = rights.registration(registration)
+    if request.method not in READING:
+        raise Http404
+    event = entry.event
+    return render(request, "core/anmeldung.html", {
+        "title": event_texts.REGISTRATION_TITLE,
+        "event": event,
+        "period": period(event),
+        "event_href": reverse("event_page", args=[event.key]) if rights.leads_event(event) else None,
+        "contact": event_texts.CONTACT % {"person": name_of(entry.contact)},
+        "persons_title": event_texts.REGISTERED_PERSONS,
+        "persons": [{"name": person.shown_name, "born": person.birth_date.strftime("%d.%m.%Y")
+                     if person.birth_date else ""} for person in entry.shown_persons],
+    })
 
 
 def _managed_values(entry) -> dict:
