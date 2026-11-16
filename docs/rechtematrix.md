@@ -217,14 +217,14 @@ In P2 als Probe: Veranstaltungen mit Name, Beginn und Ende (#100); Anmeldungen e
 
 ## Gesundheitsangaben
 
-In P2 nur als Probe in Anmeldungen (#102), und nur, wenn bis 31.05.2027 die Folgenabschätzung fertig ist oder die Datenschutzperson schriftlich bestätigt, dass keine nötig ist (W2, #102); sonst in P4. Gesundheitsangaben im eigenen Profil kommen frühestens in P4 (FRM-04, unter Vorbehalt).
+Die Probe in Anmeldungen (#102) kommt in P4, nicht mehr in P2 (#368); bis dahin beschreiben GA-01 bis GA-04 die Regel, die beim Bau gilt. Gesundheitsangaben im eigenen Profil kommen frühestens in P4 (FRM-04, unter Vorbehalt).
 
 | Kennung | Wer | Daten | Aktion | Ergebnis | Quelle | Stand |
 | --- | --- | --- | --- | --- | --- | --- |
-| GA-01 | Veranstaltungsleitung | Gesundheitsangaben in Anmeldungen zur eigenen Veranstaltung | ansehen | erlaubt | BER-01, TEAM-01, #102 | geplant (#102) |
-| GA-02 | Ansprechperson | Gesundheitsangaben in der eigenen Anmeldung, auch dass es welche gibt | ansehen | verboten in P2; der Abschnitt fehlt ganz. Ab P4 ändert die Ansprechperson sie (ANM-08, ANM-09, ANM-12); das klärt #121 | BER-01, #90, #102, #136 (A8) | geplant (#102) |
-| GA-03 | Alle außer der Veranstaltungsleitung (GA-01), z. B. Gruppen-, Stammes-, Ring- und Bundesleitung der angemeldeten Person, Verbandsleitung, DPV-Veranstaltungsteam, Mitglied, Konto ohne Zuordnung, Admin (auch im Support-Zugang); zur Ansprechperson GA-02 | Gesundheitsangaben in Anmeldungen | ansehen | verboten | BER-01, #102, #136 (A9) | geplant (#102) |
-| GA-04 | Jede Person mit Konto | Gesundheitsangaben in Anmeldungen | im Tool eingeben, ändern | verboten in P2; nur der Testdaten-Befehl legt sie an | #102 | geplant (#102) |
+| GA-01 | Veranstaltungsleitung | Gesundheitsangaben in Anmeldungen zur eigenen Veranstaltung | ansehen | erlaubt | BER-01, TEAM-01, #102 | geplant (#102, P4) |
+| GA-02 | Ansprechperson | Gesundheitsangaben in der eigenen Anmeldung, auch dass es welche gibt | ansehen | verboten in P2; der Abschnitt fehlt ganz. Ab P4 ändert die Ansprechperson sie (ANM-08, ANM-09, ANM-12); das klärt #121 | BER-01, #90, #102, #136 (A8) | geplant (#102, P4) |
+| GA-03 | Alle außer der Veranstaltungsleitung (GA-01), z. B. Gruppen-, Stammes-, Ring- und Bundesleitung der angemeldeten Person, Verbandsleitung, DPV-Veranstaltungsteam, Mitglied, Konto ohne Zuordnung, Admin (auch im Support-Zugang); zur Ansprechperson GA-02 | Gesundheitsangaben in Anmeldungen | ansehen | verboten | BER-01, #102, #136 (A9) | geplant (#102, P4) |
+| GA-04 | Jede Person mit Konto | Gesundheitsangaben in Anmeldungen | im Tool eingeben, ändern | verboten in P2; nur der Testdaten-Befehl legt sie an | #102 | geplant (#102, P4) |
 | GA-05 | Jede Person mit Konto | Gesundheitsangaben im Profil einer verwalteten Person | speichern | verboten; das Feld gibt es nicht | PER-02, FRM-04, #117 | gebaut (#117): erlaubt `tests/test_verwaltete_personen.py::test_m1_fiete_legt_lena_in_den_falken_an`; verboten `tests/test_verwaltete_personen.py::test_mv6_gesundheitsangaben_werden_nicht_gespeichert` |
 
 ## Support-Zugang der Admins
