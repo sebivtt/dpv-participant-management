@@ -36,12 +36,14 @@ from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test.utils import override_settings
+from django.urls import reverse
 
 from access.rights import Rights
+from events.models import Event, RegisteredPerson, Registration
 from persons.models import ManagedPerson
 from roles.models import Role
 from tests.leistungsvergleich import LIMIT, seconds
-from tests.test_gestaltung import _all, _classes, _tree
+from tests.test_gestaltung import _all, _by_tag, _classes, _one, _text, _tree
 from tests.test_nicht_gefunden import assert_like_missing
 from tests.test_organisation import ADDRESS, client_for, unit_address
 from tests.test_personen import persons_section
@@ -54,6 +56,10 @@ U = Unit.Kind
 RUNS = 5
 BOREAS = "Pfadfinderbund Boreas"
 OUTLIER = "Probestamm 01"
+# Die erfundene Veranstaltung der Massendaten (#369) und ihre größte Anmeldung: Probestamm 01 mit 500 direkten
+# Personen und seinen 5 Gruppen mit je 19 (#369, Frage 2).
+MASS_EVENT = "Probe-Bundeslager 2028"
+LARGEST = 595
 # Die Organisationen aus #103 in Boreas: der Bund, Walhall mit zwei Gruppen, Zugvögel mit einer.
 BOREAS_FROM_103 = 6
 
@@ -67,6 +73,10 @@ PAGES = {
     "Seite mit 500 Personen": "organisation_unit",
     "Namensvorschläge zu „Pro“": "organisation_suggestions",
     "Suche bei „Person aufnehmen“": "organisation_admit_search",
+    # Seit dem Ende von P2 (#369).
+    "Veranstaltung mit 40 Anmeldungen": "event_page",
+    "Anmeldung mit 595 Personen": "registration_page",
+    "Dialog „Verschieben“ auf der Seite mit 500 Personen": "organisation_move",
 }
 # Seiten mit Personen (`@checks_rights`), die bewusst nicht gemessen werden, mit Grund. Alle übrigen meldet der
 # Test als „ohne Messung“ (#145); am Phasenende kommen sie nach `PAGES` oder mit Grund hierher.
@@ -77,6 +87,36 @@ NOT_MEASURED = {
     "profile_leave_team": "ändert nur die eigene Rolle",
     "profile_leave": "ändert nur das eigene Konto",
     "openid_connect_callback": "Login: legt nur das eigene Konto an",
+    # Seit dem Ende von P2 (#369). Diese Dialoge zeigen die Seite der Organisation, gemessen als „Seite mit 500
+    # Personen“, mit einem Dialog ohne eigene Liste von Personen; stellvertretend gemessen ist der Dialog
+    # „Verschieben“, der als einziger dazu eine Auswahl von Organisationen zeigt.
+    "organisation_add_managed": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
+    "organisation_add_person": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
+    "organisation_admit": "Dialog auf der Seite der Organisation; die Suche darin ist gemessen",
+    "organisation_appoint": "Dialog auf der Seite der Organisation; Suche und Namensvorschläge darin sind gemessen",
+    "organisation_create": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
+    "organisation_delete_managed": "Rückfrage zu einer Person auf der Seite der Organisation",
+    "organisation_edit": "Dialog auf der Seite der Organisation, ohne Liste von Personen",
+    "organisation_edit_managed": "Dialog zu einer Person auf der Seite der Organisation",
+    "organisation_expel": "Rückfrage zu einer Person auf der Seite der Organisation",
+    "organisation_expel_managed": "Rückfrage zu einer Person auf der Seite der Organisation",
+    "organisation_move_managed": "derselbe Dialog wie der gemessene „Verschieben“, für eine verwaltete Person",
+    "organisation_remove": "Rückfrage zu einer Rolle auf der Seite der Organisation",
+    "organisation_remove_displayed": "Rückfrage zu einer Rolle auf der Seite der Organisation",
+    "organisation_search": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
+    "organisation_support": "Dialog für Admin auf der Seite der Organisation, ohne Liste von Personen",
+    "support_end": "beendet nur den eigenen Support-Zugang, ohne eigene Seite",
+    # Die Seite „Verband“ zeigt nur Verbandsleitung, Team und Bundesleitungen, nie die Personen der Bünde.
+    "federation_appoint_lead": "Dialog auf der Seite „Verband“, ohne Personen der Bünde",
+    "federation_appoint_team": "Dialog auf der Seite „Verband“, ohne Personen der Bünde",
+    "federation_appoint_verbandsleitung": "Dialog auf der Seite „Verband“, ohne Personen der Bünde",
+    "federation_remove": "Rückfrage auf der Seite „Verband“, ohne Personen der Bünde",
+    "federation_search_lead": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
+    "federation_search_team": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
+    "federation_search_verbandsleitung": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
+    "events": "zeigt nur die Veranstaltungen, die die Person leitet, ohne Personen",
+    "event_create": "Dialog auf der Liste „Veranstaltungen“, ohne Personen",
+    "event_edit": "Dialog auf der gemessenen Seite der Veranstaltung, ohne weitere Liste",
 }
 
 
@@ -201,7 +241,11 @@ def snapshot_accounts() -> list[tuple]:
 
 def entries_on_page(response) -> int:
     """Wie viele Personen der Abschnitt „Personen“ zeigt, mit und ohne Konto."""
-    section = persons_section(_tree(response))
+    return entries_on_page_tree(_tree(response))
+
+
+def entries_on_page_tree(root) -> int:
+    section = persons_section(root)
     return len(_all(section, lambda element: "a-leitung" in _classes(element) and element.name == "li"))
 
 
@@ -228,6 +272,17 @@ def test_g1_boreas_hat_40_probestaemme_mit_je_5_gruppen_und_5000_personen(data):
     # Die Besetzung aus #103 ist unverändert da.
     assert Role.objects.get(user=data.bund, kind=R.ASSOCIATION_LEAD).unit == data.boreas
     assert Role.objects.get(user=data.max_, kind=R.TROOP_LEAD).unit == data.zugvoegel
+
+
+def test_g4_eine_veranstaltung_mit_je_probestamm_einer_anmeldung_und_allen_5000_personen(data):
+    """#369, Frage 2: die größte Anmeldung ist die des Probestamms 01 mit seinen Gruppen, 500 + 5 × 19 = 595."""
+    event = Event.objects.get(name=MASS_EVENT)
+    assert list(event.leads.all()) == [data.bund]
+    registrations = Registration.objects.filter(event=event)
+    assert registrations.count() == 40
+    assert RegisteredPerson.objects.filter(registration__event=event).count() == 5000
+    sizes = {entry.contact.roles.get(kind=R.TROOP_LEAD).unit.name: entry.persons.count() for entry in registrations}
+    assert max(sizes.values()) == sizes[OUTLIER] == LARGEST
 
 
 def test_g2_ein_zweiter_lauf_ergibt_genau_dieselben_daten(data):
@@ -316,6 +371,63 @@ def test_m4_suche_bei_person_aufnehmen_ueber_die_genaue_mail(data):
     assert f"{account.first_name} {account.last_name}" in content
     assert "Probestamm 01" in content
     check_page("Suche bei „Person aufnehmen“", measure(call))
+
+
+def event_address(entry: Event) -> str:
+    return reverse("event_page", args=[entry.key])
+
+
+def largest_registration() -> Registration:
+    return Registration.objects.get(event__name=MASS_EVENT, contact__roles__kind=R.TROOP_LEAD,
+                                    contact__roles__unit__name=OUTLIER)
+
+
+def test_m6_seite_der_veranstaltung_mit_40_anmeldungen(data):
+    client = client_for(data.bund)
+    address = event_address(Event.objects.get(name=MASS_EVENT))
+
+    def call():
+        response = client.get(address)
+        assert response.status_code == 200
+        return response
+
+    items = _by_tag(_one(_by_tag(_tree(call()), "section", aria_labelledby="h-anmeldungen")), "li")
+    assert len(items) == 40
+    # Je Anmeldung die Namen ihrer Personen, mit Komma getrennt: zusammen alle 5.000.
+    assert sum(len(_text(_one(_by_tag(item, "span"))).split(", ")) for item in items) == 5000
+    check_page("Veranstaltung mit 40 Anmeldungen", measure(call))
+
+
+def test_m7_seite_der_groessten_anmeldung(data):
+    client = client_for(data.bund)
+    address = reverse("registration_page", args=[largest_registration().key])
+
+    def call():
+        response = client.get(address)
+        assert response.status_code == 200
+        return response
+
+    section = _one(_by_tag(_tree(call()), "section", aria_labelledby="h-anmeldung-personen"))
+    assert len(_by_tag(section, "li")) == LARGEST
+    check_page("Anmeldung mit 595 Personen", measure(call))
+
+
+def test_m8_dialog_verschieben_auf_der_seite_mit_500_personen(data):
+    lead = Role.objects.get(kind=R.TROOP_LEAD, unit=data.outlier).user
+    member = Role.objects.filter(kind=R.MEMBER, unit=data.outlier).exclude(user=lead).order_by("user__username")[0]
+    client = client_for(lead)
+    address = f"{unit_address(data.outlier)}verschieben/{member.user.key}/"
+
+    def call():
+        response = client.get(address)
+        assert response.status_code == 200
+        return response
+
+    root = _tree(call())
+    assert entries_on_page_tree(root) == 500
+    dialog = _one(_by_tag(root, "dialog"))
+    assert "Probegruppe 5" in _text(dialog), "mit der Auswahl der Organisationen darunter"
+    check_page("Dialog „Verschieben“ auf der Seite mit 500 Personen", measure(call))
 
 
 # ---------- Rechte bei 5.000 Personen ----------

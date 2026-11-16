@@ -25,6 +25,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from events.models import Event, RegisteredPerson, Registration, may_register
 from persons.models import ManagedPerson
 from roles.models import Role
 from tests.keycloak_fake import login
@@ -39,6 +40,8 @@ R = Role.Kind
 U = Unit.Kind
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORKFLOW = BASE_DIR / ".github" / "workflows" / "leistungstest.yml"
+# Die erfundene Veranstaltung der Massendaten mit je Probestamm einer Anmeldung (#369).
+MASS_EVENT = "Probe-Bundeslager 2028"
 
 
 @pytest.fixture
@@ -194,6 +197,86 @@ def test_der_zusatz_laeuft_auch_in_der_testumgebung_ohne_angemeldete_bundesleitu
     assert "Massendaten" in out
 
 
+# ---------- Veranstaltung mit Anmeldungen (#369) ----------
+# Keine Szenarien: #369 ändert nichts, was Nutzende im Tool sehen oder tun (Klärung vom 16.11.2026, Frage 3). Die
+# Tests prüfen die Akzeptanzkriterien „Erweitern und Messen“ mit wenigen Personen, aus demselben Grund wie oben.
+
+
+def troop_and_groups(troop: Unit) -> list[Unit]:
+    return [troop, *Unit.objects.filter(parent=troop)]
+
+
+def persons_in(units: list[Unit]) -> set[tuple[str, int]]:
+    """Die Personen dieser Organisationen: Konten als („konto“, pk), verwaltete Personen als („verwaltet“, pk)."""
+    accounts = Role.objects.filter(kind=R.MEMBER, unit__in=units).values_list("user_id", flat=True)
+    managed = ManagedPerson.objects.filter(unit__in=units).values_list("pk", flat=True)
+    return {("konto", pk) for pk in accounts} | {("verwaltet", pk) for pk in managed}
+
+
+def registered(registration: Registration) -> list[tuple[str, int]]:
+    return [("konto", entry.account_id) if entry.account_id else ("verwaltet", entry.managed_id)
+            for entry in registration.persons.order_by("pk")]
+
+
+def test_klein_eine_veranstaltung_mit_je_probestamm_einer_anmeldung_seiner_leitung(small):
+    out = run("--mass-data")
+
+    event = Event.objects.get(name=MASS_EVENT)
+    assert list(event.leads.values_list("username", flat=True)) == ["ohne.nachname"]
+    troops = Unit.objects.filter(kind=U.TROOP, name__startswith="Probestamm ").order_by("name")
+    registrations = list(Registration.objects.filter(event=event).order_by("created_at", "pk"))
+    assert len(registrations) == troops.count() == 2
+    for troop, registration in zip(troops, registrations, strict=True):
+        lead = Role.objects.get(kind=R.TROOP_LEAD, unit=troop).user
+        assert registration.contact == lead, troop.name
+        people = registered(registration)
+        assert len(people) == len(set(people)), "niemand doppelt"
+        assert set(people) == persons_in(troop_and_groups(troop)), troop.name
+    # Alle 60 Personen sind genau einmal angemeldet, der Ausreißer mit seinen Gruppen ist die größte Anmeldung.
+    assert RegisteredPerson.objects.filter(registration__event=event).count() == 60
+    assert max(len(registered(entry)) for entry in registrations) == len(registered(registrations[0]))
+    # Die Kopie der Angaben wie beim Anmelden im Tool: Namen, bei verwalteten Personen auch Geburtsdatum (A5).
+    for entry in RegisteredPerson.objects.filter(registration__event=event).select_related("account", "managed"):
+        source = entry.account or entry.managed
+        assert (entry.first_name, entry.last_name, entry.scout_name) == (
+            source.first_name, source.last_name, source.scout_name)
+        assert entry.birth_date == (entry.managed.birth_date if entry.managed else None)
+    assert "Veranstaltung" in out and "Anmeldungen" in out
+
+
+def test_klein_jede_angemeldete_person_duerfte_die_leitung_auch_im_tool_anmelden(small):
+    """Der Zusatz schreibt am Datenmodell vorbei (#104); die Daten halten die Regel trotzdem ein (ANM-01)."""
+    run("--mass-data")
+
+    entries = RegisteredPerson.objects.filter(registration__event__name=MASS_EVENT)
+    assert entries.count() == 60
+    for entry in entries.select_related("registration__contact", "account", "managed"):
+        assert may_register(entry.registration.contact, entry.account or entry.managed), entry.pk
+
+
+def test_klein_die_veranstaltung_bleibt_bei_der_besetzung_aus_103_und_ein_zweiter_lauf_aendert_nichts(small):
+    run("--mass-data")
+    # Das Probelager aus #101 ist unverändert da, mit Erikas Anmeldung.
+    assert Registration.objects.filter(event__name="Probelager 2027").count() == 1
+    before = snapshot()
+
+    run("--mass-data")
+
+    assert snapshot() == before
+    assert Event.objects.filter(name=MASS_EVENT).count() == 1
+
+
+def test_klein_in_der_testumgebung_ohne_bundesleitung_gibt_es_die_anmeldungen_ohne_leitung(settings, small):
+    settings.LOCAL_ENVIRONMENT = False
+    settings.TEST_ENVIRONMENT = True
+
+    run("--mass-data")
+
+    event = Event.objects.get(name=MASS_EVENT)
+    assert not event.leads.exists()
+    assert Registration.objects.filter(event=event).count() == 2
+
+
 # ---------- Was bleibt unverändert? ----------
 
 
@@ -207,6 +290,7 @@ def test_u1_ohne_zusatz_genau_die_daten_aus_103_auch_nach_einem_lauf_mit_zusatz(
 
     assert snapshot() == plain
     assert not probe_units().exists()
+    assert not Event.objects.filter(name=MASS_EVENT).exists()
     assert units_now() == UNITS
     assert roles_now() == ROLES
 
