@@ -1,4 +1,4 @@
-"""Datenmodell der Veranstaltungen (#100, TEAM-01, Probe in P2)."""
+"""Datenmodell der Veranstaltungen (#100, TEAM-01) und Anmeldungen (#101, ANM-01, ANM-02), Proben in P2."""
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -90,15 +90,22 @@ class Registration(models.Model):
         Erlaubt sind die Ansprechperson selbst und Personen, die sie verwalten darf (`may_register()`);
         ist auch nur eine Person nicht erlaubt, fehlt die Veranstaltung, die Ansprechperson oder jede Person,
         entsteht nichts, auch nicht für die übrigen (AV1, AG1), und das Ergebnis ist `ValidationError`.
-        Jede Person bekommt eine Kopie ihrer Angaben von jetzt, bei Personen mit Konto ohne Geburtsdatum (A5).
+        Jede Person bekommt eine Kopie ihrer Angaben, wie sie jetzt in der Datenbank stehen, bei Personen mit Konto
+        ohne Geburtsdatum (A5); ein im Speicher geändertes Objekt zählt nicht (Befund B2 der unabhängigen Prüfung).
+
+        Vor der Prüfung sperrt es in der Reihenfolge wie beim Speichern von Rollen und Einheiten (`_lock_structure()`
+        in `access/rights.py`): die Konten (Ansprechperson und angemeldete Konten), alle Bünde, dann die verwalteten
+        Personen. Ein gleichzeitiges Beenden einer Rolle, Verschieben, Austragen oder ein Ringwechsel ist danach
+        entweder schon gespeichert oder wartet, nie halb (AG1, Befund B1).
         """
         if event is None or contact is None or not people:
             raise ValidationError(texts.REGISTRATION_ONLY_WITH_PERSONS, code="only_with_persons")
-        not_allowed = [person for person in people if not may_register(contact, person)]
-        if not_allowed:
-            names = ", ".join(name_of(person) for person in not_allowed)
-            raise ValidationError(texts.NOT_REGISTERABLE % {"persons": names}, code="not_allowed")
         with transaction.atomic():
+            people = _locked(contact, people)
+            not_allowed = [person for person in people if not may_register(contact, person)]
+            if not_allowed:
+                names = ", ".join(name_of(person) for person in not_allowed)
+                raise ValidationError(texts.NOT_REGISTERABLE % {"persons": names}, code="not_allowed")
             registration = cls(event=event, contact=contact)
             registration._creating = True
             registration.save()
@@ -186,6 +193,29 @@ def may_register(contact, person) -> bool:
             return True
         unit_id = Unit.objects.filter(pk=unit_id).values_list("parent_id", flat=True).first()
     return False
+
+
+def _locked(contact, people: list) -> list:
+    """Sperrt Konten, Bünde und verwaltete Personen einer Anmeldung bis zum Ende der Transaktion (Befund B1).
+
+    Gibt die Personen in derselben Reihenfolge frisch aus der Datenbank zurück; was es nicht mehr gibt oder weder
+    Konto noch verwaltete Person ist, bleibt, wie es war, und `may_register()` lehnt es ab.
+    """
+    users = get_user_model()
+    account_ids = {contact.pk} | {p.pk for p in people if isinstance(p, users) and p.pk is not None}
+    accounts = {u.pk: u for u in users.objects.select_for_update().filter(pk__in=account_ids).order_by("pk")}
+    list(Unit.objects.select_for_update().filter(kind=Unit.Kind.ASSOCIATION).order_by("pk").values_list("pk"))
+    managed_ids = {p.pk for p in people if isinstance(p, ManagedPerson) and p.pk is not None}
+    managed = {m.pk: m for m in ManagedPerson.objects.select_for_update().filter(pk__in=managed_ids).order_by("pk")}
+
+    def fresh(person):
+        if isinstance(person, ManagedPerson):
+            return managed.get(person.pk, person)
+        if isinstance(person, users):
+            return accounts.get(person.pk, person)
+        return person
+
+    return [fresh(person) for person in people]
 
 
 def _copy_of(person) -> dict:

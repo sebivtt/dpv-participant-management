@@ -1142,13 +1142,11 @@ class Rights:
 
         Wen die Person anmelden darf, prüft `Registration.create()` im Datenmodell; ein Support-Zugang zählt dort nie.
 
-        Gesperrt ist das eigene Konto, und `Registration.create()` prüft darunter frisch: Endet eine Leitungsrolle
-        gleichzeitig, entsteht nichts (AG1); das Beenden einer Rolle sperrt dasselbe Konto. In P2 rufen das nur
-        der Testdaten-Befehl und Tests auf; ein Formular gibt es nicht (AN-06).
+        `Registration.create()` sperrt Konten, Bünde und verwaltete Personen und prüft darunter frisch: Endet eine
+        Leitungsrolle oder wechselt ein Stamm gleichzeitig den Ring, entsteht nichts (AG1, Befund B1). In P2 rufen
+        das nur der Testdaten-Befehl und Tests auf; ein Formular gibt es nicht (AN-06).
         """
-        with transaction.atomic():
-            me = self._lock_with(self.user.pk) if self.user is not None else None
-            return Registration.create(event, me, people)
+        return Registration.create(event, self.user, people)
 
     def registrations(self) -> QuerySet:
         """Die Anmeldungen, die die Person sieht: zu ihren Veranstaltungen (AN-01) und die eigenen (AN-02)."""
