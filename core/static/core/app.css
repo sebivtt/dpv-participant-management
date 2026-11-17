@@ -613,9 +613,13 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-katalog-balken .a-supportbalken { position: static; }
 
 /* Datumsfeld mit Uhrzeit (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 2): rechts neben dem Datum
-   die freiwillige Uhrzeit, etwas schmaler; der Fokusrahmen wie beim Datum (oben). */
-.a-datum-zeit { display: grid; grid-template-columns: minmax(0, 3fr) minmax(5.75rem, 2fr); gap: 8px; }
+   die freiwillige Uhrzeit, halb so breit wie das Datum (Sebastian bei der Vorschau, 17.11.2026: „Wie Zielbild“), aber
+   nie so schmal, dass „18:00“ mit dem Uhr-Symbol des Browsers nicht mehr ganz zu sehen ist. Fokusrahmen wie oben. */
+.a-datum-zeit { display: grid; grid-template-columns: minmax(0, 2fr) minmax(6.75rem, 1fr); gap: 8px; }
 .a-datumsfeld .a-datum-zeit .form-control { min-width: 0; }
+/* Neben Kalender- und Uhr-Symbol des Browsers ist kein Platz für das rote Ausrufezeichen von Bootstrap; es bleiben der
+   rote Rahmen und der Fehler darunter, sonst würde das Datum abgeschnitten. */
+.a-datum-zeit .form-control.is-invalid { padding-right: .75rem; background-image: none; }
 /* Bootstrap zeigt den Fehler nur direkt neben einem roten Feld; mit Uhrzeit stehen beide Felder eine Ebene tiefer.
    Der Fehler steht nur da, wenn es einen gibt, also immer sichtbar. */
 .a-datumsfeld .invalid-feedback { display: block; }
