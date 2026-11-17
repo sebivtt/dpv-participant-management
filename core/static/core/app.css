@@ -658,3 +658,16 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
   .a-kalenderblatt { flex-basis: 84px; }
   .a-kalender-mitte { min-width: 44px; gap: 4px; }
 }
+
+/* Fortschrittsanzeige (#380, Zielbild Ansichten 2 bis 5): die Schritte nebeneinander als weiße Flächen, schmal
+   untereinander; der aktuelle fett mit sonnengelbem Strich unten, erledigte mit dunkelblauem, spätere mit grauem. */
+.a-schritte { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
+.a-schritt { flex: 1 1 140px; padding: 10px 12px; border-radius: var(--radius-klein); border-bottom: 4px solid var(--linie); background: var(--flaeche); color: var(--text-leise); font-weight: 600; }
+.a-schritt.ist-fertig { border-bottom-color: var(--dpv); color: var(--text); }
+.a-schritt.ist-jetzt { border-bottom-color: var(--akzent); color: var(--text); font-weight: 800; }
+.a-schritt-nr { display: block; color: var(--text-leise); font-size: .8rem; font-weight: 700; }
+
+/* Knöpfe unter einem Schritt (#380): links „Abbrechen“, rechts „Zurück“ und der Hauptknopf; schmal rutschen sie in
+   eine zweite Zeile, der Hauptknopf bleibt rechts. */
+.a-schritt-knoepfe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0 0; }
+.a-schritt-rechts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-left: auto; }

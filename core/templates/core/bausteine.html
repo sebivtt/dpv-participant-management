@@ -166,6 +166,11 @@
     <div class="a-kacheln">{% for calendar in examples.calendars %}<div class="a-flaeche">{% include "core/_kalenderblaetter.html" %}</div>{% endfor %}</div>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-fortschritt">
+    {% include "core/_katalogeintrag.html" with block=blocks.fortschritt %}
+    {% include "core/_fortschritt.html" with steps=examples.steps %}
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-schalter">
     {% include "core/_katalogeintrag.html" with block=blocks.schalter %}
     <div class="a-flaeche">{% for switch in examples.switches %}{% include "core/_schalter.html" %}{% endfor %}</div>
@@ -198,6 +203,10 @@
     {% include "core/_dialog_auf.html" with dialog=examples.deleting preview=True %}
     {% for line in examples.deleting.lines %}<p>{{ line }}</p>{% endfor %}
     {% include "core/_dialog_zu.html" with dialog=examples.deleting preview=True %}
+    {# Statt „Abbrechen“ zwei Knöpfe wie im Dialog „Anlegen abbrechen?“ (#380); sie schicken nichts ab. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.cancel_dialog preview=True %}
+    <p>{{ examples.cancel_dialog.text }}</p>
+    {% include "core/_dialog_zu.html" with dialog=examples.cancel_dialog preview=True %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-auswahl">

@@ -309,7 +309,9 @@ def _probelager(units: dict[str, Unit], accounts: dict) -> list[str]:
     lead = accounts.get(EVENT_LEAD)
     if lead is None:
         return [str(texts.NO_EVENT % {"event": PROBELAGER["name"], "username": EVENT_LEAD})]
-    event, _text = Rights(lead).create_event(PROBELAGER, new_key())
+    event = Rights(lead).create_event(PROBELAGER, new_key())
+    # Wie nach „Veranstaltung speichern“: Das Anlegen in Schritten ist beendet (#380).
+    Rights(lead).finish_creating(event.key)
     contact = accounts.get(CONTACT)
     if contact is None:
         return [str(texts.NO_REGISTRATION % {"event": PROBELAGER["name"], "username": CONTACT})]

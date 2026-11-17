@@ -118,7 +118,12 @@ NOT_MEASURED = {
     "federation_search_team": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
     "federation_search_verbandsleitung": "Suche über genaue Mail oder Benutzernamen wie die gemessene bei „Person aufnehmen“",
     "events": "zeigt nur die Veranstaltungen, die die Person leitet, ohne Personen",
-    "event_create": "Dialog auf der Liste „Veranstaltungen“, ohne Personen",
+    # Anlegen in Schritten (#380): Seiten und Dialog nur zu einem eigenen Entwurf, ohne Personen und ohne Liste.
+    "event_create": "Schritt 1 beim Anlegen, ohne Personen und ohne Liste",
+    "event_create_basics": "Schritt 1 eines eigenen Entwurfs, ohne Personen und ohne Liste",
+    "event_create_summary": "Zusammenfassung eines eigenen Entwurfs, ohne Personen und ohne Liste",
+    "event_create_cancel": "Dialog auf der Zusammenfassung, ohne Personen",
+    "event_create_delete": "löscht nur einen eigenen Entwurf ohne Anmeldungen, ohne eigene Seite",
     "event_edit": "Dialog auf der gemessenen Seite der Veranstaltung, ohne weitere Liste",
 }
 

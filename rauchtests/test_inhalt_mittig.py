@@ -13,6 +13,7 @@ from rauchtests.conftest import BASE, HANDY, _context, login
 from rauchtests.test_kurzmeldung import _later, _save, _set_scout_name, _short, _stop_clock
 from rauchtests.test_organisation import _no_side_scroll, _walhall_for_erika
 from rauchtests.test_veranstaltungen import _erika_in_den_falken
+from tests.test_veranstaltungen import event_of
 from roles.models import Role
 from tests.test_rollen import give
 
@@ -186,7 +187,9 @@ def test_dialog_mittig_im_ganzen_fenster(browser, browser_name, mit_band):
     page = _context(browser, browser_name, GROSS).new_page()
     login(page)
     _erika_in_den_falken()
-    page.goto(f"{BASE}/veranstaltungen/erstellen/")
+    # Seit #380 ist „Veranstaltung erstellen“ kein Dialog mehr; hier der Dialog des Stifts einer eigenen Veranstaltung.
+    lager = event_of(get_user_model().objects.get(username="erika.testfrau"))
+    page.goto(f"{BASE}/veranstaltungen/{lager.key}/bearbeiten/")
     expect(page.locator("dialog.a-dialog")).to_be_visible()
     kasten = _kasten(page, "dialog.a-dialog")
     assert abs((kasten["left"] + kasten["right"]) / 2 - kasten["vw"] / 2) <= 1, kasten

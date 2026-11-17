@@ -1,6 +1,8 @@
 {% extends "base_app.html" %}
 {% load i18n layout %}
 {% block content %}
+  {# Kurze Meldungen (#186) wie auf „Mein Profil“; seit #380 kommt etwa „Der Entwurf … ist gelöscht.“ hierher, wenn es ohne Zuordnung die Liste „Veranstaltungen“ nicht mehr gibt (BG5). #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf">
     <h1>{% with name=user.short_name %}{% if name %}{% blocktranslate with first_name=name %}Hallo {{ first_name }}!{% endblocktranslate %}{% else %}{% translate "Hallo!" %}{% endif %}{% endwith %}</h1>
     <p>{% translate "Hier entsteht das DPV Anmeldetool" %}</p>

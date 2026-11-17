@@ -11,6 +11,10 @@ from accounts import views as accounts_views
 from core.views import (
     building_blocks,
     event_create,
+    event_create_basics,
+    event_create_cancel,
+    event_create_delete,
+    event_create_summary,
     event_edit,
     event_page,
     events,
@@ -111,6 +115,12 @@ urlpatterns = [
     path("veranstaltungen/erstellen/", event_create, name="event_create"),
     path("veranstaltungen/<key:event>/", event_page, name="event_page"),
     path("veranstaltungen/<key:event>/bearbeiten/", event_edit, name="event_edit"),
+    # Anlegen in Schritten (#380): Schritt 1 eines gespeicherten Entwurfs, Zusammenfassung, „Anlegen abbrechen?“ und
+    # „Entwurf löschen“. Schritt 1 einer neuen Veranstaltung ist „veranstaltungen/erstellen/“.
+    path("veranstaltungen/<key:event>/anlegen/", event_create_basics, name="event_create_basics"),
+    path("veranstaltungen/<key:event>/anlegen/zusammenfassung/", event_create_summary, name="event_create_summary"),
+    path("veranstaltungen/<key:event>/anlegen/abbrechen/", event_create_cancel, name="event_create_cancel"),
+    path("veranstaltungen/<key:event>/anlegen/loeschen/", event_create_delete, name="event_create_delete"),
     # Anmeldungen (#101, Probe in P2): nur die Seite je Anmeldung, ohne Formular (AN-06); die Ansprechperson kommt in P2
     # nur über die Adresse hierher.
     path("anmeldungen/<key:registration>/", registration_page, name="registration_page"),

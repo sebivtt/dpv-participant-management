@@ -211,7 +211,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 #379 baut Ansicht 1 nur mit „Von mir geleitet“ und von Ansicht 6 den Kopf und die Kachel „Grunddaten“; dazu Uhrzeiten und Ort im Dialog „Veranstaltung erstellen“.
 
 1. **Plus weiß** (E1 aus #356): „Veranstaltung erstellen“ ist der Knopf der „Überschrift einer Fläche“ mit weißem Plus, wie im Zielbild; die frühere Regel „Sonnengelb für das Symbol von ‚Veranstaltung erstellen‘“ in `docs/gestaltung.md` gilt nicht mehr (`docs/entscheidungen.md`, 17.11.2026, #379).
-2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359), „Für mich ausgeschrieben“ (#362), die vier Schritte beim Anlegen und „Abbrechen“ (#380; bis dahin bleibt „Veranstaltung erstellen“ der Dialog aus #100 mit Uhrzeiten und Ort), Zustand, „Einladung ansehen“ und „Veröffentlicht“ auf der Leitungsseite (#359, #362), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163). Was fehlt, fehlt ganz, ohne Platzhalter.
+2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359), „Für mich ausgeschrieben“ (#362), Zustand, „Einladung ansehen“ und „Veröffentlicht“ auf der Leitungsseite (#359, #362), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163). Was fehlt, fehlt ganz, ohne Platzhalter.
 3. **Kachel allein:** Solange „Grunddaten“ die einzige Kachel ist, steht sie am PC in der linken Spalte, rechts bleibt frei; schmal steht sie über die ganze Breite.
 4. **Bausteine statt nachgebautem Aussehen:** die Zeilen der Liste als neuer Baustein „Veranstaltung in einer Liste“, die Kachel als Fläche mit „Überschrift einer Fläche“ und „Bearbeiten-Symbol“, Beginn und Ende als neuer Baustein „Kalenderblätter“, die Felder im Dialog als „Textfeld“ und „Datumsfeld“ mit Uhrzeit (Sebastian, 17.11.2026, [Kommentar in #379](https://github.com/sebivtt/dpv-participant-management/issues/379#issuecomment-6956297747)). Der Stift öffnet einen Dialog mit eigener Adresse, den das Zielbild nicht zeigt.
 5. **Vorleseprogramme** hören vor den Kalenderblättern „Beginn:“ und „Ende:“ und vor dem Ort „Ort:“; sichtbar ist das nicht.
@@ -219,3 +219,15 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 7. **Datum und Uhrzeit** wie im Zielbild im Verhältnis 2 zu 1 (Sebastian bei der Vorschau: „Wie Zielbild“); die Uhrzeit ist aber nie schmaler als nötig, damit „18:00“ mit dem Uhr-Symbol des Browsers auch im schmaleren Dialog ganz zu sehen ist. Bei einem Fehler zeigen beide Felder den roten Rahmen ohne das rote Ausrufezeichen von Bootstrap, für das neben Kalender- und Uhr-Symbol kein Platz ist.
 8. **Kein Satz „Die Uhrzeiten sind mit 18:00 und 12:00 vorausgefüllt; …“** unter Beginn und Ende: Er erklärt nur den Entwurf (Sebastian bei der Vorschau: „Nur Erklärung“).
 9. **Zahl der Zeichen** unter Name und Ort („0/100“), die das Zielbild nicht zeigt: Sie gehört zum Baustein „Textfeld“ bei einer fachlichen Grenze (#215).
+
+### Abweichungen vom Zielbild (#380)
+
+#380 baut die Ansichten 2 (Schritt 1 „Grunddaten“), 5 (Zusammenfassung) und 5b (Dialog „Anlegen abbrechen?“).
+
+1. **Zwei Schritte statt vier:** „Schritt 1 Grunddaten · Schritt 2 Zusammenfassung“; „Einladungstext“ und „Anmeldung“ (Ansichten 3 und 4) bringen ihre Issues (#358, #360, #361, #151) und fügen sich dazwischen ein. Die Zusammenfassung zeigt deshalb nur die Grunddaten.
+2. **„Zurück“ auch auf der Zusammenfassung** (Frage 4 aus #29, `docs/entscheidungen.md`, 17.11.2026, #380, Nr. 2), blau umrandet zwischen „Abbrechen“ und „Veranstaltung speichern“.
+3. **Grunddaten als Kalenderblätter** wie in der Kachel der Leitungsseite statt der Liste mit Name, Zeitraum und Ort (Sebastian, 17.11.2026: „Kalenderblätter“); der Name steht oben im Kopf.
+4. **Beschriftung „Ort“** ohne „(freiwillig)“, wie in #379 (Sebastian, 17.11.2026: „Nur „Ort““); kein Satz zu den vorausgefüllten Uhrzeiten (wie #379, Nr. 8); keine Adresse unter dem Ort (#163).
+5. **Satz im Dialog** „Sommerfahrt 2028 ist als Entwurf gespeichert. …“ ohne „bis Schritt 3“, wie im Text von #380. Darf die Person nicht löschen (Mitleitung, Anmeldung), stehen nur „Entwurf speichern“ und der Satz ohne „oder ihn löschen“.
+6. **Kopf von Schritt 1:** „Veranstaltung erstellen“ wie im Zielbild; für einen gespeicherten Entwurf (nach „Zurück“ oder dem Stift) sein Name mit „Entwurf · Veranstaltung erstellen“ wie auf der Zusammenfassung.
+7. **Stift** mit dem Baustein „Bearbeiten-Symbol“; Vorleseprogramme hören „Grunddaten ändern“. Er führt zu Schritt 1, nicht zu einem Dialog.

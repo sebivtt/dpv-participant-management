@@ -54,6 +54,12 @@ class Event(models.Model):
     # Kennung des Formulars „Veranstaltung erstellen“: Ein zweites Abschicken desselben Formulars, etwa
     # ein Doppelklick, legt die Veranstaltung nicht ein zweites Mal an (VG8, wie MG7 aus #117).
     creation_key = models.CharField(max_length=KEY_LENGTH, unique=True, default=new_key, editable=False)
+    # Wer die Veranstaltung gerade in Schritten anlegt (#380); leer, sobald das Anlegen mit „Veranstaltung
+    # speichern“ oder „Entwurf speichern“ beendet ist, und bei Veranstaltungen von vor #380. Nur solange es gesetzt
+    # ist, gibt es den Ablauf und „Entwurf löschen“, und nur für diese Person (VA-06). Ein Konto lässt sich nicht
+    # löschen (EP-09), deshalb PROTECT wie bei der Ansprechperson einer Anmeldung.
+    creating_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+                                    editable=False, related_name="+")
 
     class Meta:
         constraints = [
