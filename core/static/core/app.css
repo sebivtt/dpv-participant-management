@@ -616,6 +616,11 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
    die freiwillige Uhrzeit, etwas schmaler; der Fokusrahmen wie beim Datum (oben). */
 .a-datum-zeit { display: grid; grid-template-columns: minmax(0, 3fr) minmax(5.75rem, 2fr); gap: 8px; }
 .a-datumsfeld .a-datum-zeit .form-control { min-width: 0; }
+/* Bootstrap zeigt den Fehler nur direkt neben einem roten Feld; mit Uhrzeit stehen beide Felder eine Ebene tiefer.
+   Der Fehler steht nur da, wenn es einen gibt, also immer sichtbar. */
+.a-datumsfeld .invalid-feedback { display: block; }
+/* „Ja, die Dauer stimmt“ unter Beginn und Ende: Abstand zum Ort darunter, wie zwischen zwei Feldern. */
+.a-felder-nebeneinander + .a-schalter-zeile { margin: 0 0 16px; }
 
 /* Veranstaltung in einer Liste (#379, Zielbild Ansicht 1): breite, flache Zeilen mit feinem Rand; der Name fett in
    DPV-Blau, darunter grau Zeitraum und Ort. Rechts kommen mit #359 Zustandsmarken dazu. */
