@@ -130,7 +130,7 @@ def admit_button(user, where) -> str | None:
 # ---------- Abschnitt „Personen“ ----------
 
 
-@pytest.mark.rechtematrix("PK-01")
+@pytest.mark.rechtematrix("PK-02")
 def test_p2_auf_walhall_stehen_nur_die_direkten_mitglieder_mit_name_fahrtenname_mail_und_rollen(org):
     root = page_tree(org.walhall_leitung, unit_address(org.walhall))
     shown = persons_on_page(root)
