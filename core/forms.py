@@ -255,6 +255,15 @@ def _event_time(label) -> forms.TimeField:
     )
 
 
+def _whole_minute(value):
+    """Eine Uhrzeit ohne Sekunden: Der Dialog zeigt nur Stunde und Minute, sonst gälte der Beginn später als geändert.
+
+    Unabhängige Prüfung, V1: Kommt „10:00:30“ am Browser vorbei, zeigt der Dialog „10:00“; beim nächsten Speichern
+    sähe das wie ein geänderter Beginn aus, und bei einer laufenden Veranstaltung käme „… in der Vergangenheit“.
+    """
+    return value.replace(second=0, microsecond=0) if value else value
+
+
 class EventForm(forms.Form):
     """Die Angaben in „Veranstaltung erstellen“ und im Dialog des Stifts der Kachel „Grunddaten“ (#100, #379).
 
@@ -342,6 +351,12 @@ class EventForm(forms.Form):
         if len(value) > EVENT_NAME_MAX_LENGTH:
             raise forms.ValidationError(event_texts.NAME_TOO_LONG, code="max_length")
         return value
+
+    def clean_start_time(self):
+        return _whole_minute(self.cleaned_data["start_time"])
+
+    def clean_end_time(self):
+        return _whole_minute(self.cleaned_data["end_time"])
 
     def clean_location(self) -> str:
         value = trimmed(self.cleaned_data["location"])

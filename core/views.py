@@ -1342,7 +1342,7 @@ BUILDING_BLOCKS = {
         "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
                      "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
                      "geklappt hat."),
-        "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation")],
+        "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "textfeld": {
         "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190, 215],

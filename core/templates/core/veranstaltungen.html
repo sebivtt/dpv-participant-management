@@ -18,7 +18,6 @@
   {% if dialog %}
     {# Dialog „Veranstaltung erstellen“: eigene Adresse, kommt offen vom Server. Name, darunter Beginn und Ende nebeneinander (schmal untereinander) im Baustein „Datumsfeld“ mit Uhrzeit (#379), bei der Nachfrage zur Dauer der Schalter „Ja, die Dauer stimmt“, darunter der Ort. Die Schritte kommen mit #380. #}
     {% include "core/_dialog_auf.html" %}
-    {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
     {% textfeld dialog.event_form.name %}
     <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start time=dialog.event_form.start_time %}{% datumsfeld dialog.event_form.end time=dialog.event_form.end_time %}</div>
     {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% endif %}
