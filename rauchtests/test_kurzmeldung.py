@@ -445,6 +445,27 @@ def test_axe_haelt_die_uhr_auch_an_wenn_der_browser_langsam_ist(pc, monkeypatch)
     assert_clock_stands()
 
 
+def test_uhr_anhalten_klappt_auch_wenn_der_browser_langsam_ist(pc, monkeypatch):
+    """Braucht der Browser zwischen Stellen und Anhalten der Uhr länger als 1 Sekunde, steht sie trotzdem (#349, aus #259).
+
+    Gleicher Mechanismus wie #253: Der Haltepunkt liegt dann schon in der Vergangenheit.
+    """
+    clock = pc.clock
+    assert pc.clock is clock  # Die Hülle unten trifft nur, wenn `page.clock` jedes Mal dasselbe Objekt liefert.
+    original = clock.install
+
+    def slow_install(**options):
+        original(**options)
+        time.sleep(1.5)
+
+    monkeypatch.setattr(clock, "install", slow_install)
+    _stop_clock(pc)
+    pc.goto(f"{BASE}/")
+    first = pc.evaluate("Date.now()")
+    time.sleep(0.3)
+    assert pc.evaluate("Date.now()") == first
+
+
 # Prüfung auf Barrierefreiheit und kurze Meldung (#232): `run_axe` wartet, bis die Meldung ganz sichtbar ist,
 # und hält sie während der Prüfung fest.
 SHORT_FADE_SLOWED = "2s"  # Ein- und Ausblenden so lang, dass ein Treffer mitten darin sicher ist
