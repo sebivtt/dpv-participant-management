@@ -1075,6 +1075,30 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
+
+@checks_rights(*EVENT_ROWS)
+def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#380): Schritt 1 „Grunddaten“ eines gespeicherten Entwurfs."""
+    raise Http404
+
+
+@checks_rights(*EVENT_ROWS)
+def event_create_summary(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#380): Zusammenfassung und „Veranstaltung speichern“."""
+    raise Http404
+
+
+@checks_rights(*EVENT_ROWS)
+def event_create_cancel(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#380): Dialog „Anlegen abbrechen?“ und „Entwurf speichern“."""
+    raise Http404
+
+
+@checks_rights(*EVENT_ROWS)
+def event_create_delete(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#380): „Entwurf löschen“."""
+    raise Http404
+
 def _event_form_of(entry) -> EventForm:
     """Der Dialog des Stifts mit den gespeicherten Grunddaten einer Veranstaltung."""
     return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry)
