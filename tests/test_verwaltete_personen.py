@@ -847,7 +847,8 @@ def test_der_bausteinkatalog_zeigt_das_datumsfeld_und_die_marke_verwaltet(org, s
 
     section = _one(_by_tag(root, "section", aria_labelledby="h-datumsfeld"))
     assert _text(_one(_by_tag(section, "h2"))) == "Datumsfeld"
-    assert _attr(_one(_by_tag(section, "input", type="date")), "max")
+    # Seit #379 zeigt der Abschnitt auch ein Datumsfeld mit Uhrzeit; „max“ gilt für das Geburtsdatum.
+    assert _attr(_one(_by_tag(section, "input", type="date", name="birth_date")), "max")
     marks = _one(_by_tag(root, "section", aria_labelledby="h-kennmarke"))
     assert "verwaltet" in _visible_text(marks)
 

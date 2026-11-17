@@ -2,11 +2,17 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Seite einer Veranstaltung (#100, Probe in P2, kein Zielbild): der Name als Überschrift, darunter der Zeitraum und der zart blaue Knopf „Bearbeiten“; ein schlichter Platzhalter, bis #28 und #29 die Seiten gestalten (Sebastian bei der Vorschau, 13.11.2026). Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Darunter seit #101 der Abschnitt „Anmeldungen“. #}
+  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Zustandsmarke, Schalter „Veröffentlicht“, „Einladung ansehen“ und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
-  <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ period }}</p></div>
-  <p>{% translate "Bearbeiten" as edit_label %}{% include "core/_knopf_verschieben.html" with href=edit_href label=edit_label name=event.name %}</p>
-  {# Abschnitt „Anmeldungen“ (#101, Probe in P2, kein Zielbild): je Anmeldung die Ansprechperson als Link zur Anmeldung und dahinter die Namen der angemeldeten Personen, die älteste zuerst; schlicht wie die Liste „Veranstaltungen“, bis #29 die Seite gestaltet. Anmelden geht hier nicht (AN-06). #}
+  <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ head_line }}</p></div>
+  <div class="a-kacheln">
+    <section class="a-flaeche a-kachel" aria-labelledby="h-grunddaten">
+      {% include "core/_stift.html" with href=edit_href label=basics_edit %}
+      {% include "core/_flaechenkopf.html" with symbol="kalender" title=basics_title heading_id="h-grunddaten" %}
+      {% include "core/_kalenderblaetter.html" %}
+    </section>
+  </div>
+  {# Abschnitt „Anmeldungen“ (#101, Probe in P2, kein Zielbild): je Anmeldung die Ansprechperson als Link zur Anmeldung und dahinter die Namen der angemeldeten Personen, die älteste zuerst; unverändert seit #101, auf der Leitungsseite unter den Kacheln (#356, Vorausblick auf P4). Anmelden geht hier nicht (AN-06). #}
   <section class="a-flaeche" aria-labelledby="h-anmeldungen">
     {% include "core/_flaechenkopf.html" with symbol="personen" title=registrations_title heading_id="h-anmeldungen" %}
     {% if registrations %}
@@ -18,10 +24,13 @@
     {% endif %}
   </section>
   {% if dialog %}
-    {# Dialog „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen. #}
+    {# Dialog des Stifts „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen. Hat inzwischen jemand gespeichert, steht der Satz dazu oben (AG7). #}
     {% include "core/_dialog_auf.html" %}
+    {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
     {% textfeld dialog.event_form.name %}
-    <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start %}{% datumsfeld dialog.event_form.end %}</div>
+    <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start time=dialog.event_form.start_time %}{% datumsfeld dialog.event_form.end time=dialog.event_form.end_time %}</div>
+    {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% endif %}
+    {% textfeld dialog.event_form.location %}
     {% include "core/_dialog_zu.html" %}
   {% endif %}
 {% endblock %}

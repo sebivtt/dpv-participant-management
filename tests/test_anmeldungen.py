@@ -29,7 +29,7 @@ from persons.models import ManagedPerson
 from roles.models import Role
 from tests.query_limit import assert_queries_do_not_grow
 from tests.test_benennen import _one_after_the_other
-from tests.test_gestaltung import _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
+from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
 from tests.test_nicht_gefunden import NO_ACCESS_TEXT, assert_like_missing
 from tests.test_organisation import client_for, nav_labels, page_tree, unit_address
 from tests.test_rechtepruefung import remove
@@ -543,10 +543,12 @@ def test_u1_die_seite_der_veranstaltung_bleibt_und_bekommt_nur_den_abschnitt(org
 
     assert _text(_one(_by_tag(main, "h1"))) == "Probelager 2027"
     assert "15.05.2027 bis 17.05.2027" in _visible_text(main)
-    edit = [link for link in _by_tag(main, "a") if _visible_text(link).startswith("Bearbeiten")]
+    # Seit #379 ist die Seite die Leitungsseite: statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“,
+    # und vor dem Abschnitt „Anmeldungen“ steht diese Kachel.
+    edit = _all(main, lambda e: "a-stift" in _classes(e))
     assert [_attr(link, "href") for link in edit] == [f"{event_address(org.probelager)}bearbeiten/"]
     surfaces = [section for section in _by_tag(main, "section") if "a-flaeche" in _classes(section)]
-    assert [_attr(section, "aria-labelledby") for section in surfaces] == [SECTION]
+    assert [_attr(section, "aria-labelledby") for section in surfaces] == ["h-grunddaten", SECTION]
     for user in (org.wanda, org.fiete, org.vera, org.max):
         assert client_for(user).get(event_address(org.probelager)).status_code == 404, user.username
 

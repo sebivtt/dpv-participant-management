@@ -197,3 +197,25 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 2. **„Bitte wähle einen Anlass.“ als Baustein „Meldungen“** (Art Fehler) unter der Wahl statt einer roten Zeile mit ×, wie die Fehlermeldung beim Verschieben (#287).
 3. **Gliederung wie auf der Seite „Organisation“:** Marken, Leitungen und zugeklappte Teile kommen aus dem Baustein „Gliederung“ (#189); neben der Überschrift steht wie im Zielbild „alle Bünde“. Auf „Organisation“ steht neben der Gliederung zuerst der erste Bund nach dem Alphabet, nur mit dem Kopf.
 4. **Kein Steuerband und kein Hinweiskasten:** Beide gehören nicht zur Seite.
+
+## Veranstaltung
+
+- **Datei:** [`veranstaltung.html`](veranstaltung.html)
+- **Stand:** 16.11.2026, der grobe Entwurf 6 aus der Klärung von #356 (`grober-entwurf-veranstaltung-6.html`); Sebastian: „okay, der grobe entwurf 6 passt so und kann als Zielbild hinterlegt werden, danke!“ ([Kommentar „Zielbild (16.11.2026)“](https://github.com/sebivtt/dpv-participant-management/issues/356#issuecomment-6931549673), Datei unverändert aus dem [Kommentar zu Entwurf 6](https://github.com/sebivtt/dpv-participant-management/issues/356#issuecomment-6931507830)), eingespielt mit #379.
+- **Prüfsumme (SHA-256):** `9d1c86c1d2a7531e05df07457e8a787d7664ba7476026c92784ec84d1f19184a`
+- **Inhalt der Datei:** nur erfundene Personen, Organisationen und Adressen (Wanda, Finn, Stamm Walhall, „Burgweg 1, 99999 Musterhausen“ …). „Burg Ludwigstein“ ist ein echter Ortsname, als Bezeichnung eines Veranstaltungsorts aus dem Beispiel in #163 übernommen, ohne Personendaten. Nichts von fremden Servern, kein Skript, Systemschrift, die Symbole stehen in der Datei.
+- **Orientierung, keine Anforderung.** Geklärt in #356 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/356#issuecomment-6931638822), E1 bis E4 und N1 bis N5; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/356#issuecomment-6931639174)). Es zeigt alle Seiten rund um eine Veranstaltung: 1 Liste, 2 bis 5 Anlegen in vier Schritten, 5b Abbrechen, 6 Leitungsseite, 6b bis 6d Veröffentlichen und Zurücknehmen, 7 Einladung. Welches Issue welchen Teil baut, steht in #356 („Welches Unter-Issue baut was“); jedes ergänzt hier seine Abweichungen.
+
+### Abweichungen vom Zielbild (#379)
+
+#379 baut Ansicht 1 nur mit „Von mir geleitet“ und von Ansicht 6 den Kopf und die Kachel „Grunddaten“; dazu Uhrzeiten und Ort im Dialog „Veranstaltung erstellen“.
+
+1. **Plus weiß** (E1 aus #356): „Veranstaltung erstellen“ ist der Knopf der „Überschrift einer Fläche“ mit weißem Plus, wie im Zielbild; die frühere Regel „Sonnengelb für das Symbol von ‚Veranstaltung erstellen‘“ in `docs/gestaltung.md` gilt nicht mehr (`docs/entscheidungen.md`, 17.11.2026, #379).
+2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359), „Für mich ausgeschrieben“ (#362), die vier Schritte beim Anlegen und „Abbrechen“ (#380; bis dahin bleibt „Veranstaltung erstellen“ der Dialog aus #100 mit Uhrzeiten und Ort), Zustand, „Einladung ansehen“ und „Veröffentlicht“ auf der Leitungsseite (#359, #362), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163). Was fehlt, fehlt ganz, ohne Platzhalter.
+3. **Kachel allein:** Solange „Grunddaten“ die einzige Kachel ist, steht sie am PC in der linken Spalte, rechts bleibt frei; schmal steht sie über die ganze Breite.
+4. **Bausteine statt nachgebautem Aussehen:** die Zeilen der Liste als neuer Baustein „Veranstaltung in einer Liste“, die Kachel als Fläche mit „Überschrift einer Fläche“ und „Bearbeiten-Symbol“, Beginn und Ende als neuer Baustein „Kalenderblätter“, die Felder im Dialog als „Textfeld“ und „Datumsfeld“ mit Uhrzeit (Sebastian, 17.11.2026, [Kommentar in #379](https://github.com/sebivtt/dpv-participant-management/issues/379#issuecomment-6956297747)). Der Stift öffnet einen Dialog mit eigener Adresse, den das Zielbild nicht zeigt.
+5. **Vorleseprogramme** hören vor den Kalenderblättern „Beginn:“ und „Ende:“ und vor dem Ort „Ort:“; sichtbar ist das nicht.
+6. **Beschriftung „Ort“** ohne „(freiwillig)“: Freiwillige Felder stehen ohne Zusatz (`docs/gestaltung.md`, „Textfelder“; Sebastian bei der Vorschau, 17.11.2026: „Nur „Ort““). Beim Datum steht „(Pflicht, Uhrzeit freiwillig)“ wie im Zielbild, weil ein Feld dort beides enthält.
+7. **Datum und Uhrzeit** wie im Zielbild im Verhältnis 2 zu 1 (Sebastian bei der Vorschau: „Wie Zielbild“); die Uhrzeit ist aber nie schmaler als nötig, damit „18:00“ mit dem Uhr-Symbol des Browsers auch im schmaleren Dialog ganz zu sehen ist. Bei einem Fehler zeigen beide Felder den roten Rahmen ohne das rote Ausrufezeichen von Bootstrap, für das neben Kalender- und Uhr-Symbol kein Platz ist.
+8. **Kein Satz „Die Uhrzeiten sind mit 18:00 und 12:00 vorausgefüllt; …“** unter Beginn und Ende: Er erklärt nur den Entwurf (Sebastian bei der Vorschau: „Nur Erklärung“).
+9. **Zahl der Zeichen** unter Name und Ort („0/100“), die das Zielbild nicht zeigt: Sie gehört zum Baustein „Textfeld“ bei einer fachlichen Grenze (#215).

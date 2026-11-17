@@ -36,6 +36,7 @@
     {% include "core/_katalogeintrag.html" with block=blocks.datumsfeld %}
     <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
       {% datumsfeld examples.date_form.birth_date %}
+      {% datumsfeld examples.event_form.start time=examples.event_form.start_time %}
     </form>
   </section>
 
@@ -153,6 +154,16 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-stift">
     {% include "core/_katalogeintrag.html" with block=blocks.stift %}
     <div class="a-flaeche a-orga-kopf hat-stift">{% include "core/_stift.html" with href="#h-stift" label=examples.edit_example.label %}<p>{{ examples.edit_example.name }}</p></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-veranstaltungszeile">
+    {% include "core/_katalogeintrag.html" with block=blocks.veranstaltungszeile %}
+    <div class="a-flaeche"><ul class="a-va-zeilen">{% for row in examples.event_rows %}{% include "core/_veranstaltungszeile.html" %}{% endfor %}</ul></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-kalenderblaetter">
+    {% include "core/_katalogeintrag.html" with block=blocks.kalenderblaetter %}
+    <div class="a-kacheln">{% for calendar in examples.calendars %}<div class="a-flaeche">{% include "core/_kalenderblaetter.html" %}</div>{% endfor %}</div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-schalter">

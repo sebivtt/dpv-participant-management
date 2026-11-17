@@ -6,7 +6,11 @@ Wortlaute auf den Text von #100. VG10 (Datumsfeld, Handy, nur Tastatur, wie am H
 Rauchtest `rauchtests/test_veranstaltungen.py`. Personen wie in den Szenarien: Finn (Mitglied der Sippe
 Falken), Fiete (Gruppenleitung Falken), Wanda (Stammesleitung Walhall), Vera (Verbandsleitung), Tom
 (DPV-Veranstaltungsteam), Otto (Konto ohne Zuordnung), Max (nur Admin). Alle Namen sind erfunden.
-Geprüft wird, was beim Browser ankommt, und was danach in der Datenbank steht.
+Geprüft wird, was beim Browser ankommt, und was danach in der Datenbank steht. Seit #379 ist ein Beginn vor
+heute verboten; damit die Tage aus den Szenarien von #100 gültig bleiben, ist „heute“ hier der 05.01.2027.
+Was #379 an Seiten und Dialog geändert hat (Leitungsseite, Stift statt „Bearbeiten“, Uhrzeiten und Ort),
+prüft `tests/test_grunddaten.py`; hier sind nur die Hilfen und die Erwartungen nachgezogen, die sich dadurch
+geändert haben.
 """
 
 from datetime import date
@@ -14,6 +18,7 @@ from types import SimpleNamespace
 
 import pytest
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
 
 from access.rights import Rights
 from events.models import Event
@@ -38,6 +43,12 @@ PROBELAGER = {"name": "Probelager 2027", "start": "2027-05-15", "end": "2027-05-
 
 
 # ---------- Personen und Hilfen ----------
+
+
+@pytest.fixture(autouse=True)
+def heute(monkeypatch):
+    """„Heute“ liegt vor allen Tagen der Szenarien von #100, weil ein Beginn vor heute seit #379 verboten ist."""
+    monkeypatch.setattr(timezone, "localdate", lambda *args, **kwargs: date(2027, 1, 5))
 
 
 def build_people() -> SimpleNamespace:
@@ -120,8 +131,9 @@ def open_edit(user, entry, client=None):
 
 
 def save(user, entry, client=None, **values):
-    """Ändert im Dialog „… bearbeiten“ die Angaben und klickt auf „Speichern“."""
-    shown = {"name": entry.name, "start": entry.start.isoformat(), "end": entry.end.isoformat()}
+    """Ändert im Dialog „… bearbeiten“ die Angaben und klickt auf „Speichern“; seit #379 mit dem Stand (AG7)."""
+    shown = {"name": entry.name, "start": entry.start.isoformat(), "end": entry.end.isoformat(),
+             "version": str(entry.version)}
     return (client or client_for(user)).post(edit_address(entry), {**shown, **values})
 
 
@@ -131,20 +143,24 @@ def field_values(dialog) -> dict[str, str]:
 
 
 def field_errors(root) -> dict[str, str]:
-    """Die Fehler am Feld, je Feld (Baustein „Textfeld“ und „Datumsfeld“)."""
+    """Die Fehler am Feld, je Feld (Baustein „Textfeld“ und „Datumsfeld“).
+
+    Seit #379 kann ein Datumsfeld eine Uhrzeit daneben haben; der Fehler steht dann unter beiden und zählt
+    für das Datum, das erste Feld.
+    """
     found = {}
     for block in _all(root, lambda e: "a-textfeld" in _classes(e)):
         errors = _all(block, lambda e: "invalid-feedback" in _classes(e))
         if errors:
-            found[_attr(_one(_by_tag(block, "input")), "name")] = _visible_text(_one(errors))
+            found[_attr(_by_tag(block, "input")[0], "name")] = _visible_text(_one(errors))
     return found
 
 
 def listed(user) -> list[tuple[str, str]]:
     """Die Veranstaltungen in der Liste „Veranstaltungen“: Name und Zeitraum, in ihrer Reihenfolge."""
-    # Schlichte Aufzählung als Platzhalter bis #28 und #29 (Sebastian bei der Vorschau, 13.11.2026).
-    entries = _by_tag(list_section(user), "li")
-    return [(_visible_text(_one(_by_tag(entry, "a"))), _visible_text(_one(_by_tag(entry, "span")))) for entry in entries]
+    # Seit #379 Zeilen aus dem Baustein „Veranstaltung in einer Liste“: der Name als Link, darunter der Zeitraum.
+    entries = _all(list_section(user), lambda e: "a-va-zeile" in _classes(e))
+    return [(_visible_text(_one(_by_tag(entry, "a"))), _visible_text(_one(_by_tag(entry, "p")))) for entry in entries]
 
 
 def list_section(user):
@@ -183,7 +199,8 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
 
     found, _key = open_create(org.finn, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == CREATE_LABEL
-    assert list(field_values(found)) == ["name", "start", "end"]
+    # Seit #379 mit Uhrzeiten und Ort (VER-02, VER-04).
+    assert list(field_values(found)) == ["name", "start", "start_time", "end", "end_time", "location"]
     assert [_attr(field, "type") for field in _by_tag(found, "input") if _attr(field, "name") in ("start", "end")] == [
         "date", "date"]
     assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Anlegen"]
@@ -221,15 +238,15 @@ def test_v2_fiete_vera_und_tom_legen_ebenso_eine_veranstaltung_an(org):
 def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     client = client_for(org.finn)
     root = page_tree(org.finn, event_address(probelager))
-    # Der vorhandene zart blaue Knopf „Bearbeiten“ (Sebastian bei der Vorschau, 13.11.2026: schlichte Platzhalter).
-    edit = _one([link for link in _by_tag(root, "a") if _visible_text(link) == "Bearbeiten"])
+    # Seit #379 statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“.
+    edit = _one(_all(root, lambda e: "a-stift" in _classes(e)))
     assert _attr(edit, "href") == edit_address(probelager)
-    # Vorleseprogramme hören, welche Veranstaltung gemeint ist.
-    assert _text(_one(_all(edit, lambda e: "sr-nur" in _classes(e)))) == ": Probelager 2027"
+    assert _text(_one(_all(edit, lambda e: "sr-nur" in _classes(e)))) == "Grunddaten bearbeiten"
 
     found = open_edit(org.finn, probelager, client=client)
     assert _text(_one(_by_tag(found, "h2"))) == "Probelager 2027 bearbeiten"
-    assert field_values(found) == {"name": "Probelager 2027", "start": "2027-05-15", "end": "2027-05-17"}
+    assert field_values(found) == {"name": "Probelager 2027", "start": "2027-05-15", "start_time": "",
+                                   "end": "2027-05-17", "end_time": "", "location": ""}
     assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Speichern"]
 
     response = save(org.finn, probelager, client=client, end="2027-05-18")
@@ -253,7 +270,8 @@ def test_v4_finn_verliert_die_zuordnung_und_leitet_seine_veranstaltung_weiter(or
     assert create_button(org.finn) is None
     assert listed(org.finn) == [("Probelager 2027", "15.05.2027 bis 17.05.2027")]
     # Ohne Zuordnung auch kein Ersatztext für den Knopf: nur die Überschrift und die Veranstaltung.
-    assert _visible_text(section) == "Veranstaltungen, die du leitest Probelager 2027 15.05.2027 bis 17.05.2027"
+    # Seit #379 heißt die Fläche „Von mir geleitet“.
+    assert _visible_text(section) == "Von mir geleitet Probelager 2027 15.05.2027 bis 17.05.2027"
     assert client_for(org.finn).get(event_address(probelager)).status_code == 200
     open_edit(org.finn, probelager)
     assert save(org.finn, probelager, end="2027-05-18").status_code == 302
@@ -461,16 +479,20 @@ def test_vg4_ende_vor_beginn_geht_nicht_ende_gleich_beginn_geht(org):
     assert response.status_code == 200
     root = _tree(response)
     assert field_errors(root) == {"end": "Das Ende liegt vor dem Beginn."}
-    assert field_values(dialog_of(root)) == {"name": "Probelager 2027", "start": "2027-05-17", "end": "2027-05-15"}
+    assert field_values(dialog_of(root)) == {"name": "Probelager 2027", "start": "2027-05-17", "start_time": "",
+                                             "end": "2027-05-15", "end_time": "", "location": ""}
     assert not Event.objects.exists()
     assert create(org.finn, start="2027-05-15", end="2027-05-15").status_code == 302
     assert Event.objects.get().end == date(2027, 5, 15)
 
 
-def test_vg5_eine_veranstaltung_in_der_vergangenheit_geht(org):
-    assert create(org.finn, name="Rückblick", start="2026-03-01", end="2026-03-02").status_code == 302
+def test_vg5_ein_beginn_in_der_vergangenheit_geht_seit_379_nicht_mehr(org):
+    """VG5 erlaubte einen Beginn in der Vergangenheit; seit #379 (VER-03, AG1) ist ein Beginn vor heute verboten."""
+    response = create(org.finn, name="Rückblick", start="2026-03-01", end="2026-03-02")
 
-    assert listed(org.finn) == [("Rückblick", "01.03.2026 bis 02.03.2026")]
+    assert response.status_code == 200
+    assert field_errors(_tree(response)) == {"start": "Der Beginn liegt in der Vergangenheit."}
+    assert listed(org.finn) == []
 
 
 def test_vg6_beim_bearbeiten_gelten_dieselben_regeln(org, probelager):
