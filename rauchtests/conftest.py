@@ -24,9 +24,12 @@ und Tests ohne Browser laufen nur im Teil des ersten Browsers, damit jeder Test 
 Ohne RAUCHTEST_BROWSER laufen wie bisher alle drei.
 """
 
+import contextlib
 import os
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import urllib.request
@@ -201,9 +204,76 @@ def check_after_test(fixturenames: list[str]) -> None:
         assert_no_csp_violations(found)
 
 
+# Belege bei Rot (#349): Mit RAUCHTEST_SPUREN (auf GitHub gesetzt, .github/workflows/ci.yml) zeichnet jeder
+# Kontext auf, was im Browser geschah (Playwright-Trace: Schritte, Seiten, Anfragen). Die Aufzeichnung liegt
+# erst in einer Zwischendatei; nach dem Test bleibt sie im Ordner aus RAUCHTEST_SPUREN nur, wenn er rot war.
+# So lassen sich die seltenen Hänger beim Anmelden später nachvollziehen. Ohne RAUCHTEST_SPUREN, also lokal,
+# zeichnet nichts auf, und die Rauchtests laufen so schnell wie bisher.
+_recording: list[dict] = []
+_RED = pytest.StashKey[bool]()
+
+
+def _trace_folder() -> Path | None:
+    folder = os.environ.get("RAUCHTEST_SPUREN", "")
+    return Path(folder) if folder else None
+
+
+def _record(context: BrowserContext) -> None:
+    """Startet die Aufzeichnung dieses Kontexts, wenn RAUCHTEST_SPUREN gesetzt ist; beim Schließen endet sie."""
+    if _trace_folder() is None:
+        return
+    handle, target = tempfile.mkstemp(prefix="rauchtest-", suffix=".zip")
+    os.close(handle)
+    entry = {"context": context, "target": Path(target), "stopped": False}
+    _recording.append(entry)
+    context.tracing.start(screenshots=True, snapshots=True)
+    close = context.close
+
+    def close_after_trace(**options) -> None:
+        _stop_trace(entry)
+        close(**options)
+
+    context.close = close_after_trace
+
+
+def _stop_trace(entry: dict) -> None:
+    if entry["stopped"]:
+        return
+    entry["stopped"] = True
+    # Ist der Browser schon abgestürzt, gibt es nichts mehr zu sichern; der Test bleibt, wie er war.
+    with contextlib.suppress(Error):
+        entry["context"].tracing.stop(path=entry["target"])
+
+
 def keep_traces(name: str, failed: bool) -> list[Path]:
-    """Gerüst (#349): legt die Aufzeichnungen des laufenden Tests ab, wenn er rot war."""
-    return []
+    """Beendet die Aufzeichnungen des laufenden Tests und legt sie ab, wenn er rot war; sonst fallen sie weg.
+
+    Auch ein Kontext, den der Test nicht geschlossen hat, zählt. Die Dateien heißen `<name>-<Nummer>.zip`
+    und lassen sich mit `uv run playwright show-trace <Datei>` oder auf trace.playwright.dev ansehen.
+    """
+    folder = _trace_folder()
+    kept = []
+    for number, entry in enumerate(_recording, start=1):
+        _stop_trace(entry)
+        target = entry["target"]
+        if failed and folder is not None and target.exists() and target.stat().st_size:
+            folder.mkdir(parents=True, exist_ok=True)
+            kept.append(Path(shutil.move(target, folder / f"{name}-{number}.zip")))
+        else:
+            target.unlink(missing_ok=True)
+    _recording.clear()
+    return kept
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Nach dem Abbau jedes Tests (#349): Aufzeichnungen behalten, wenn Aufbau, Test oder Abbau rot war."""
+    outcome = yield
+    report = outcome.get_result()
+    if report.failed:
+        item.stash[_RED] = True
+    if report.when == "teardown":
+        keep_traces(re.sub(r"[^\w.-]+", "_", item.nodeid).strip("_")[:150], failed=item.stash.get(_RED, False))
 
 
 @pytest.fixture(scope="session")
@@ -227,13 +297,14 @@ def browser(_playwright, browser_name) -> Browser:
         if known_mac_problem:
             pytest.skip("Firefox startet unter macOS 27 nicht (bekanntes Problem); läuft auf GitHub mit.")
         raise
-    # Jeder Kontext beobachtet die Sicherheitsrichtlinie (#278), auch einer, den ein Test selbst
-    # mit browser.new_context oder browser.new_page anlegt.
+    # Jeder Kontext beobachtet die Sicherheitsrichtlinie (#278) und zeichnet auf GitHub auf (#349), auch
+    # einer, den ein Test selbst mit browser.new_context oder browser.new_page anlegt.
     new_context = browser.new_context
 
     def watched_context(**options) -> BrowserContext:
         context = new_context(**options)
         _watch_csp(context)
+        _record(context)
         return context
 
     def watched_page(**options) -> Page:

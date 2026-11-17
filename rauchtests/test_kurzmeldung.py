@@ -30,7 +30,7 @@ def _stop_clock(page: Page) -> None:
     # Bei angehaltener Uhr darf axe nie aufgerufen werden: axe wartet auf Zeitgeber, die dann nie
     # ablaufen, und der Test hängt (#186). `_axe` lässt die Uhr deshalb vorher kurz weiterlaufen.
     page.clock.install(time=datetime(2026, 10, 27, 10, 0, 0))
-    page.clock.pause_at(datetime(2026, 10, 27, 10, 0, 1))
+    _pause_at_or_soon(page, datetime(2026, 10, 27, 10, 0, 1))
 
 
 def _later(page: Page, ms: int) -> None:
@@ -40,6 +40,20 @@ def _later(page: Page, ms: int) -> None:
 def _pause_soon(page: Page) -> None:
     now = page.evaluate("Date.now()")
     page.clock.pause_at(datetime.fromtimestamp(now / 1000 + 0.05))
+
+
+def _pause_at_or_soon(page: Page, when: datetime) -> None:
+    """Hält die Uhr bei `when` an; ist das schon vorbei, weil der Browser langsam war, gleich danach (#349, wie #253).
+
+    Playwright hält die Uhr auch dann zuerst an und wirft erst danach; ein zweiter Versuch mit frisch gelesener
+    Zeit klappt also. Jede andere Meldung und ein zweites Scheitern bleiben ein Fehler.
+    """
+    try:
+        page.clock.pause_at(when)
+    except Error as error:
+        if "Cannot fast-forward to the past" not in str(error):
+            raise
+        _pause_soon(page)
 
 
 def _axe(page: Page) -> list[str]:
