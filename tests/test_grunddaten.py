@@ -18,8 +18,9 @@ import pytest
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from access.rights import Rights
 from events.models import Event
-from tests.test_benennen import dialog_of, short_notices
+from tests.test_benennen import _one_after_the_other, dialog_of, short_notices
 from tests.test_gestaltung import _all, _attr, _by_tag, _classes, _one, _text, _tree, _visible_text
 from tests.test_nicht_gefunden import assert_like_missing
 from tests.test_organisation import client_for, page_tree, unit_address
@@ -504,6 +505,40 @@ def test_ag7_ein_aelteres_zweites_fenster_ueberschreibt_nichts(org, pfingstlager
                                                      "version": version}).status_code == 302
     pfingstlager.refresh_from_db()
     assert (pfingstlager.name, pfingstlager.location) == ("Pfingstlager Walhall", "Burg Ludwigstein")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_ag7_gleichzeitig_gespeichert_gelingt_genau_eine_aenderung():
+    """Unabhängige Prüfung, B2: zwei Fenster speichern wirklich gleichzeitig; die Sperre lässt genau eines durch."""
+    o = build_people()
+    lager = event_of(o.wanda, "Pfingstlager 2028", date(2028, 6, 2), date(2028, 6, 5))
+    values = {"name": "Pfingstlager 2028", "start": date(2028, 6, 2), "start_time": None, "end": date(2028, 6, 5),
+              "end_time": None, "location": ""}
+
+    results = _one_after_the_other(
+        lambda: Rights(o.wanda).edit_event(lager.key, {**values, "location": "Burg Ludwigstein"}, "1"),
+        lambda: Rights(o.wanda).edit_event(lager.key, {**values, "name": "Pfingstlager Walhall"}, "1"))
+
+    assert sorted(done for done, _entry, _text in results) == [False, True]
+    lager.refresh_from_db()
+    assert (lager.name, lager.location, lager.version) == ("Pfingstlager 2028", "Burg Ludwigstein", 2)
+
+
+def test_ag2_eine_uhrzeit_mit_sekunden_blockiert_spaeter_nicht_den_namen(org, monkeypatch):
+    """Unabhängige Prüfung, V1: Am Browser vorbei mit Sekunden gespeichert, zeigt der Dialog nur Stunde und Minute.
+
+    Ändert die Leitung bei der laufenden Veranstaltung danach nur den Namen, ist das kein geänderter Beginn (AG2).
+    """
+    assert create(org.wanda, name="Thing", start="2028-01-05", start_time="10:00:30").status_code == 302
+    thing = Event.objects.get(name="Thing")
+    assert thing.start_time == time(10, 0)
+    monkeypatch.setattr(timezone, "localdate", lambda *args, **kwargs: date(2028, 1, 6))
+
+    response = save(org.wanda, thing, name="Stammesthing", start_time="10:00")
+
+    assert response.status_code == 302
+    thing.refresh_from_db()
+    assert thing.name == "Stammesthing"
 
 
 # ---------- Datenmodell ----------
