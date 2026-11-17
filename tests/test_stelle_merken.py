@@ -118,7 +118,7 @@ def _cases(o) -> list[tuple]:
         (o.vera, federation, f"/organisation/verband/entfernen/{o.tom_role.key}/", "team", None),
         (o.vera, federation, f"/organisation/verband/bund/{o.boreas.key}/benennen/", bund, None),
         (o.vera, federation, f"/organisation/verband/entfernen/{o.bruno_role.key}/", bund, None),
-        (o.wanda, "/veranstaltungen/", "/veranstaltungen/erstellen/", None, None),
+        # „Veranstaltung erstellen“ ist seit #380 kein Dialog mehr, sondern Schritt 1 eines Ablaufs mit eigener Seite.
         (o.wanda, f"/veranstaltungen/{o.event.key}/", f"/veranstaltungen/{o.event.key}/bearbeiten/", None, None),
         (o.admin, walhall, f"{walhall}support-zugang/", None, None),
     ]

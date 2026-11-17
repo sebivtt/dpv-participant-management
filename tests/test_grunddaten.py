@@ -6,7 +6,9 @@ den Text von #379. AG8 (Handy, nur Tastatur) prüft der Rauchtest `rauchtests/te
 in allen Szenarien der 05.01.2028; die Tests stellen den Tag des Servers darauf. Personen wie in den Szenarien:
 Wanda (Stammesleitung Walhall), Fiete (Gruppenleitung Falken), Finn (Mitglied Sippe Falken), Vera
 (Verbandsleitung), Max (nur Admin), Otto (Konto ohne Zuordnung). Alle Namen sind erfunden; „Burg Ludwigstein“
-ist als Bezeichnung eines Orts aus dem Zielbild übernommen (#356).
+ist als Bezeichnung eines Orts aus dem Zielbild übernommen (#356). Seit #380 ist „Veranstaltung erstellen“ kein
+Dialog mehr, sondern Schritt 1 eines Ablaufs (`tests/test_veranstaltung_anlegen.py`); nachgezogen sind nur die Stellen,
+die das Formular dort suchen, und A4, wohin „Weiter“ führt.
 """
 
 import hashlib
@@ -39,6 +41,8 @@ from tests.test_veranstaltungen import (
     field_values,
     leads_of,
     open_create,
+    step_form,
+    summary_address,
 )
 
 pytestmark = pytest.mark.django_db
@@ -221,7 +225,7 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
     assert not _all(button, lambda e: "a-akzent" in _classes(e))
 
     found, _key = open_create(org.wanda, client=client)
-    assert _text(_one(_by_tag(found, "h2"))) == CREATE_LABEL
+    assert _text(_one(_by_tag(page_tree(org.wanda, CREATE), "h1"))) == CREATE_LABEL
     assert field_values(found) == {"name": "", "start": "", "start_time": "18:00", "end": "", "end_time": "12:00",
                                    "location": ""}
     labels = [_visible_text(label) for label in _by_tag(found, "label") if "sr-nur" not in _classes(label)]
@@ -234,10 +238,14 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
     assert (created.name, created.start, created.start_time, created.end, created.end_time, created.location) == (
         "Stammesthing Walhall", date(2028, 1, 14), time(18, 0), date(2028, 1, 16), time(12, 0), "")
     assert leads_of(created) == {"wanda.walhall"}
+    # Seit #380 führt „Weiter“ zur Zusammenfassung, erst „Veranstaltung speichern“ dort zur Leitungsseite.
     assert response.status_code == 302
+    assert response.url == summary_address(created)
+    response = client.post(response.url)
     assert response.url == event_address(created)
     page = client.get(response.url)
-    assert short_notices(page) == ["Stammesthing Walhall ist angelegt. Du leitest diese Veranstaltung."]
+    assert short_notices(page) == [
+        "Stammesthing Walhall ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."]
     assert head(_tree(page)) == ("Stammesthing Walhall", "14.01.2028 bis 16.01.2028")
 
 
@@ -379,7 +387,7 @@ def test_ag3_ende_vor_beginn_auch_am_selben_tag_mit_frueherer_uhrzeit(org, pfing
         root = _tree(response)
         assert field_errors(root) == {"end": END_BEFORE_START}, values
         # Die Eingaben bleiben stehen.
-        assert {name: field_values(dialog_of(root))[name] for name in values} == values
+        assert {name: field_values(step_form(root))[name] for name in values} == values
         response = save(org.wanda, pfingstlager, **values)
         assert field_errors(_tree(response)) == {"end": END_BEFORE_START}, values
 
@@ -402,7 +410,7 @@ def test_ag4_ab_29_tagen_fragt_das_tool_ob_die_dauer_stimmt(org):
     assert response.status_code == 200
     root = _tree(response)
     assert field_errors(root) == {"end": "Die Veranstaltung dauert 41 Tage. Stimmt das?"}
-    switch = switch_of(dialog_of(root))
+    switch = switch_of(step_form(root))
     assert switch is not None
     assert _attr(switch, "checked") is None
     title = _one(_by_tag(root, "strong", id=_attr(switch, "aria-labelledby")))
@@ -448,7 +456,7 @@ def test_ag5_ort_mit_101_zeichen_und_ort_nur_aus_leerzeichen(org, pfingstlager):
     root = _tree(response)
     assert field_errors(root) == {"location": "Der Ort darf höchstens 100 Zeichen lang sein."}
     # Nichts wird abgeschnitten.
-    assert field_values(dialog_of(root))["location"] == "x" * 101
+    assert field_values(step_form(root))["location"] == "x" * 101
     response = save(org.wanda, pfingstlager, location="x" * 101)
     assert field_errors(_tree(response)) == {"location": "Der Ort darf höchstens 100 Zeichen lang sein."}
     assert not Event.objects.exclude(pk=pfingstlager.pk).exists()

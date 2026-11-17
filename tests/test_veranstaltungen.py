@@ -10,7 +10,9 @@ Geprüft wird, was beim Browser ankommt, und was danach in der Datenbank steht. 
 heute verboten; damit die Tage aus den Szenarien von #100 gültig bleiben, ist „heute“ hier der 05.01.2027.
 Was #379 an Seiten und Dialog geändert hat (Leitungsseite, Stift statt „Bearbeiten“, Uhrzeiten und Ort),
 prüft `tests/test_grunddaten.py`; hier sind nur die Hilfen und die Erwartungen nachgezogen, die sich dadurch
-geändert haben.
+geändert haben. Ebenso seit #380: „Veranstaltung erstellen“ ist kein Dialog mehr, sondern Schritt 1 eines Ablaufs;
+„Weiter“ führt zur Zusammenfassung, und erst „Veranstaltung speichern“ dort zur Leitungsseite
+(`tests/test_veranstaltung_anlegen.py`).
 """
 
 from datetime import date
@@ -109,16 +111,26 @@ def edit_address(entry) -> str:
     return f"{event_address(entry)}bearbeiten/"
 
 
+def step_form(root):
+    """Das Formular von Schritt 1 „Grunddaten“ beim Anlegen, seit #380 statt des Dialogs „Veranstaltung erstellen“."""
+    return _one(_by_tag(root, "form", id="f-schritt"))
+
+
 def open_create(user, client=None):
-    """Öffnet „Veranstaltung erstellen“; gibt den Dialog und die Kennung des Formulars zurück."""
+    """Öffnet „Veranstaltung erstellen“ (seit #380 Schritt 1); gibt das Formular und seine Kennung zurück."""
     response = (client or client_for(user)).get(CREATE)
     assert response.status_code == 200, response.status_code
-    found = dialog_of(_tree(response))
+    found = step_form(_tree(response))
     return found, _attr(_one(_by_tag(found, "input", name="creation_key")), "value")
 
 
+def summary_address(entry) -> str:
+    """Die Zusammenfassung beim Anlegen, wohin „Weiter“ seit #380 führt."""
+    return f"{event_address(entry)}anlegen/zusammenfassung/"
+
+
 def create(user, client=None, **values):
-    """Füllt „Veranstaltung erstellen“ aus und klickt auf „Anlegen“."""
+    """Füllt „Veranstaltung erstellen“ aus und klickt auf „Weiter“ (bis #380 „Anlegen“)."""
     client = client or client_for(user)
     _found, creation_key = open_create(user, client=client)
     return client.post(CREATE, {**PROBELAGER, **values, "creation_key": creation_key})
@@ -198,12 +210,13 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
     assert create_button(org.finn) == CREATE
 
     found, _key = open_create(org.finn, client=client)
-    assert _text(_one(_by_tag(found, "h2"))) == CREATE_LABEL
+    assert _text(_one(_by_tag(page_tree(org.finn, CREATE), "h1"))) == CREATE_LABEL
     # Seit #379 mit Uhrzeiten und Ort (VER-02, VER-04).
     assert list(field_values(found)) == ["name", "start", "start_time", "end", "end_time", "location"]
     assert [_attr(field, "type") for field in _by_tag(found, "input") if _attr(field, "name") in ("start", "end")] == [
         "date", "date"]
-    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Anlegen"]
+    # Seit #380 „Weiter“ statt „Anlegen“; danach die Zusammenfassung mit „Veranstaltung speichern“.
+    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Weiter"]
 
     response = create(org.finn, client=client)
 
@@ -211,9 +224,11 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
     assert (created.name, created.start, created.end) == ("Probelager 2027", date(2027, 5, 15), date(2027, 5, 17))
     assert leads_of(created) == {"finn.falke"}
     assert response.status_code == 302
+    assert response.url == summary_address(created)
+    response = client.post(response.url)
     assert response.url == event_address(created)
     page = client.get(response.url)
-    assert short_notices(page) == ["Probelager 2027 ist angelegt. Du leitest diese Veranstaltung."]
+    assert short_notices(page) == ["Probelager 2027 ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."]
     root = _tree(page)
     assert _text(_one(_by_tag(root, "h1"))) == "Probelager 2027"
     assert "15.05.2027 bis 17.05.2027" in _visible_text(root)
@@ -434,7 +449,7 @@ def test_vg1_name_leer_oder_nur_leerzeichen(org):
         root = _tree(response)
         assert field_errors(root) == {"name": "Bitte gib den Namen ein."}, repr(empty)
         # Die übrigen Eingaben bleiben stehen.
-        assert field_values(dialog_of(root))["start"] == "2027-05-15"
+        assert field_values(step_form(root))["start"] == "2027-05-15"
 
     assert not Event.objects.exists()
     assert create(org.finn, name="  Probelager ").status_code == 302
@@ -448,7 +463,7 @@ def test_vg2_hundert_zeichen_gehen_bei_hunderteins_kommt_die_meldung(org):
     root = _tree(response)
     assert field_errors(root) == {"name": "Der Name darf höchstens 100 Zeichen lang sein."}
     # Nichts wird abgeschnitten.
-    assert field_values(dialog_of(root))["name"] == "x" * 101
+    assert field_values(step_form(root))["name"] == "x" * 101
     assert not Event.objects.exists()
     assert create(org.finn, name="x" * 100).status_code == 302
     assert Event.objects.get().name == "x" * 100
@@ -468,7 +483,7 @@ def test_vg3_fehlender_beginn_fehlendes_ende_und_unmoegliches_datum(org):
         assert response.status_code == 200, values
         root = _tree(response)
         assert field_errors(root) == errors, values
-        assert field_values(dialog_of(root))["name"] == "Probelager 2027", values
+        assert field_values(step_form(root))["name"] == "Probelager 2027", values
 
     assert not Event.objects.exists()
 
@@ -479,7 +494,7 @@ def test_vg4_ende_vor_beginn_geht_nicht_ende_gleich_beginn_geht(org):
     assert response.status_code == 200
     root = _tree(response)
     assert field_errors(root) == {"end": "Das Ende liegt vor dem Beginn."}
-    assert field_values(dialog_of(root)) == {"name": "Probelager 2027", "start": "2027-05-17", "start_time": "",
+    assert field_values(step_form(root)) == {"name": "Probelager 2027", "start": "2027-05-17", "start_time": "",
                                              "end": "2027-05-15", "end_time": "", "location": ""}
     assert not Event.objects.exists()
     assert create(org.finn, start="2027-05-15", end="2027-05-15").status_code == 302
@@ -529,6 +544,7 @@ def test_vg7_zwei_veranstaltungen_mit_gleichem_namen_sind_erlaubt(org):
 
 
 def test_vg8_doppelklick_auf_anlegen_legt_sie_nur_einmal_an(org):
+    """Seit #380 heißt der Knopf „Weiter“ und führt zur Zusammenfassung, ohne Meldung (#380, BG1)."""
     client = client_for(org.finn)
     _found, creation_key = open_create(org.finn, client=client)
     form = {**PROBELAGER, "creation_key": creation_key}
@@ -538,8 +554,7 @@ def test_vg8_doppelklick_auf_anlegen_legt_sie_nur_einmal_an(org):
 
     assert (first.status_code, second.status_code) == (302, 302)
     assert Event.objects.count() == 1
-    assert second.url == event_address(Event.objects.get())
-    assert short_notices(client.get(second.url)) == ["Probelager 2027 ist angelegt. Du leitest diese Veranstaltung."]
+    assert second.url == summary_address(Event.objects.get())
 
 
 def test_vg8_eine_kennung_in_falscher_form_legt_nichts_an(org):
