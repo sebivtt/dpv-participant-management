@@ -1078,7 +1078,6 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
-
 def _steps(current: int) -> list[dict]:
     """Die Fortschrittsanzeige beim Anlegen (#380): je Schritt Nummer, Name und ob er erledigt oder der aktuelle ist.
 
@@ -1237,22 +1236,36 @@ def event_create_delete(request: HttpRequest, event: str) -> HttpResponse:
     Nur als Formular; lesend „nicht gefunden“. Nur die Person, die anlegt, als einzige Leitung und ohne Anmeldung
     (`Rights.delete_draft()`); sonst löscht die Anfrage nichts und führt zurück in den Dialog, der dann nur
     „Entwurf speichern“ bietet (BV3). Ist das Anlegen beendet, führt sie zur Leitungsseite (BV2). Ein zweites
-    Abschicken nach dem Löschen, etwa ein Doppelklick, führt ohne Fehler zur Liste (BG2).
+    Abschicken, etwa ein Doppelklick, auch gleichzeitig, führt ohne Fehler zur Liste (BG2). Ohne Zuordnung und ohne
+    weitere geleitete Veranstaltung gibt es die Liste danach nicht; dann führt es zur Startseite (BG5).
     """
     if request.method != "POST":
         raise Http404
     if event in request.session.get(DELETED_DRAFTS, []):
-        return redirect("events")
+        return redirect(_after_deleting(request.rights))
     entry, finished = _draft(request, event)
     if finished:
         return finished
-    name = request.rights.delete_draft(event)
+    rights = request.rights
+    try:
+        name = rights.delete_draft(event)
+    except Http404:
+        # Die Person hat sich eben über `_draft()` als die ausgewiesen, die anlegt; fehlt der Entwurf jetzt, hat ihn
+        # ein gleichzeitiger zweiter Klick schon gelöscht (BG2, Befund B1 der unabhängigen Prüfung).
+        return redirect(_after_deleting(rights))
     if name is None:
         return redirect("event_create_cancel", event=entry.key)
     messages.success(request, event_texts.DRAFT_DELETED % {"event": name})
     # Nur die letzten Kennungen; mehr braucht ein Doppelklick nicht.
     request.session[DELETED_DRAFTS] = [*request.session.get(DELETED_DRAFTS, [])[-9:], event]
-    return redirect("events")
+    return redirect(_after_deleting(rights))
+
+
+def _after_deleting(rights) -> str:
+    """Wohin „Entwurf löschen“ führt: zur Liste; ohne Zuordnung und ohne geleitete Veranstaltung gibt es sie nicht mehr,
+    dann zur Startseite, damit die kurze Meldung dort steht statt „kein Zugriff“ (BG5, Befund B2)."""
+    return reverse("events") if rights.sees_events() else reverse("start")
+
 
 def _event_form_of(entry, form_id: str = "f-dialog") -> EventForm:
     """Die Felder mit den gespeicherten Grunddaten einer Veranstaltung, im Dialog des Stifts oder in Schritt 1 (#380)."""
