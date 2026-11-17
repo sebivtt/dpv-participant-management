@@ -25,7 +25,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, ERIKA, PC, _context, focus_visible, login
+from rauchtests.conftest import BASE, ERIKA, PC, _context, focus_visible, login, wait_for_page_below
 from rauchtests.test_rauchtest import _all_visible, _keycloak_look, _keycloak_marks_focus, _stations_to_element, _tab_key, _tab_to
 from roles.models import Role
 from tests.test_rollen import give, unit
@@ -167,7 +167,7 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
         expect(page.locator(CONSENT)).to_be_checked()
         page.locator(SUBMIT).click()
 
-    page.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(page, page_address, "person-aufnehmen")
     expect(page.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(page.locator(PERSONS)).to_contain_text("Kiwi")
     return ManagedPerson.objects.get(first_name="Lena", last_name="Probe")
@@ -295,3 +295,26 @@ def test_hauptablauf_mit_der_maus(new_window):
 def test_hauptablauf_nur_mit_der_tastatur(new_window):
     """H6: derselbe Ablauf nur mit Tab, Enter, Leertaste und Escape, auch die Anmeldung, mit sichtbarem Fokus."""
     _main_flow(new_window, keyboard=True)
+
+
+def test_hauptablauf_mit_der_maus_auch_wenn_der_test_spaet_nach_der_adresse_fragt(new_window):
+    """Wie mit der Maus, nur fragt der Test jedes Mal erst 1,5 Sekunden später nach der Adresse (#349, aus #384).
+
+    So spät kam der Test in Firefox auf GitHub einmal (Lauf 44066493301): Die Seite war schon geladen, und ihr Skript
+    hatte die Kennung `#person-aufnehmen` schon aus der Adresse genommen. Vertreter für alle Rauchtests, die nach
+    einem Dialog mit Skript auf die Seite darunter warten.
+    """
+
+    def late_window() -> Page:
+        page = new_window()
+        original = page.wait_for_url
+
+        def late_wait_for_url(*args, **options):
+            # Nicht time.sleep: Dann stünde auch Playwright still und erführe erst danach, was die Seite inzwischen tat.
+            page.wait_for_timeout(1500)
+            return original(*args, **options)
+
+        page.wait_for_url = late_wait_for_url
+        return page
+
+    _main_flow(late_window, keyboard=False)

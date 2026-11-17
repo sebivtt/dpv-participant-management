@@ -54,7 +54,9 @@ jobs:
             browser: webkit
     services:
       postgres:
-        image: postgres:18
+        # Dieselbe feste Fassung wie in testumgebung/docker-compose.yml (#324), damit jeder Lauf dieselbe
+        # Datenbank hat; tests/test_pruefung_auf_github.py vergleicht alle Stellen (#349).
+        image: postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc
         env:
           POSTGRES_USER: dpv
           POSTGRES_PASSWORD: nur-in-der-pruefung
@@ -150,13 +152,32 @@ jobs:
           docker logs keycloak
           exit 1
       - name: Prüfungen dieses Teils
+        id: pruefen
         # Eigenes Limit, damit ein hängender Test den Teil nicht bis zum Limit des Teils blockiert
         # (#256, #307).
         timeout-minutes: 25
         env:
           # Hier schreibt pruefen.sh das Ergebnis des Teils für die Gesamtprüfung hin.
           PRUEFTEIL_ERGEBNIS: ${{ runner.temp }}/${{ matrix.teil }}
+          # Hier legen die Rauchtests die Aufzeichnung jedes roten Tests ab (rauchtests/conftest.py, #349).
+          RAUCHTEST_SPUREN: ${{ runner.temp }}/belege
         run: ./pruefen.sh teil ${{ matrix.teil }}
+      # Belege bei Rot (#349): Ist ein Rauchtest rot, kommen seine Aufzeichnung und das Protokoll von Keycloak
+      # an den Lauf (unten auf der Seite des Laufs, „Artifacts“), damit sich etwa ein Hänger beim Anmelden
+      # nachvollziehen lässt. Beides enthält nur die erfundenen Testdaten. Je Versuch ein eigener Name, damit
+      # ein Neustart die Belege des ersten Versuchs nicht ersetzt.
+      - name: Protokoll von Keycloak sichern
+        if: failure() && steps.pruefen.outcome == 'failure' && matrix.browser
+        run: |
+          mkdir -p "$RUNNER_TEMP/belege"
+          docker logs keycloak > "$RUNNER_TEMP/belege/keycloak.log" 2>&1
+      - name: Belege des roten Rauchtests hochladen
+        if: failure() && steps.pruefen.outcome == 'failure' && matrix.browser
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: belege-${{ matrix.teil }}-versuch-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/belege
+          retention-days: 30
       # Auch bei Rot, damit die Gesamtprüfung den roten Teil nennt. Fehlt die Datei, weil der Teil
       # vorher abgebrochen ist, findet die Gesamtprüfung kein Ergebnis und ist rot. Beim Neustart
       # gescheiterter Teile ersetzt das neue Ergebnis das alte.

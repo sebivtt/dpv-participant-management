@@ -20,6 +20,10 @@ Issue #348 (15.11.2026): Der Pull Request entsteht als Entwurf vor der unabhäng
 GitHub gleichzeitig prüft. Das wirkt nur, solange „Prüfungen“ und „PR-Angaben“ auch Entwürfe prüfen,
 und der zuletzt geprüfte Stand bleibt nur gültig, solange „bereit“ keinen neuen Lauf startet.
 
+Issue #349 (17.11.2026): Ist ein Rauchtest rot, liegen am Lauf die Aufzeichnung des Browsers und das
+Protokoll von Keycloak zum Herunterladen (Belege für die seltenen Hänger beim Anmelden). Die Datenbank
+läuft auf GitHub, im Leistungstest und lokal in derselben festen Fassung wie in der Testumgebung.
+
 Diese Tests sorgen dafür, dass das nicht still aus ci.yml verschwindet. Ob GitHub es
 tatsächlich so ausführt, zeigt erst ein Lauf dort.
 """
@@ -33,6 +37,9 @@ import yaml
 BASE_DIR = Path(__file__).resolve().parent.parent
 CI = BASE_DIR / ".github" / "workflows" / "ci.yml"
 PR_ANGABEN = BASE_DIR / ".github" / "workflows" / "pr-angaben.yml"
+LEISTUNGSTEST = BASE_DIR / ".github" / "workflows" / "leistungstest.yml"
+DEV_COMPOSE = BASE_DIR / "dev" / "docker-compose.yml"
+TESTUMGEBUNG_COMPOSE = BASE_DIR / "testumgebung" / "docker-compose.yml"
 INSTALL_NAME = "Browser für den Rauchtest installieren"
 INSTALL_COMMAND = "uv run --locked playwright install --with-deps ${{ matrix.browser }}"
 TEIL_COMMAND = "./pruefen.sh teil ${{ matrix.teil }}"
@@ -207,7 +214,13 @@ def test_jeder_teil_ruft_pruefen_sh_mit_seinem_namen_auf():
 def test_jeder_teil_laedt_sein_ergebnis_hoch_auch_wenn_er_rot_ist():
     tests = _tests()
     ergebnis = tests["env"]["PRUEFTEIL_ERGEBNIS"]
-    uploads = [step for step in _steps() if str(step.get("uses", "")).startswith("actions/upload-artifact@")]
+    # Seit #349 lädt ein Teil mit rotem Rauchtest auch Belege hoch (Test weiter unten); hier zählt nur das Ergebnis.
+    uploads = [
+        step
+        for step in _steps()
+        if str(step.get("uses", "")).startswith("actions/upload-artifact@")
+        and not str(step["with"]["name"]).startswith("belege-")
+    ]
 
     assert len(uploads) == 1
     upload = uploads[0]
@@ -299,3 +312,59 @@ def test_bereit_stellen_startet_keinen_neuen_lauf():
     """S4: Der zuletzt geprüfte Stand bleibt gültig, wenn die KI den Entwurf auf „bereit“ stellt."""
     for pfad in (CI, PR_ANGABEN):
         assert "ready_for_review" not in _ereignisse(pfad), pfad.name
+
+
+def _yaml(pfad: Path) -> dict:
+    return yaml.safe_load(pfad.read_text(encoding="utf-8"))
+
+
+def test_datenbank_ueberall_in_derselben_festen_fassung_wie_die_testumgebung():
+    """#349: Auf GitHub, im Leistungstest und lokal läuft dieselbe PostgreSQL-Fassung wie in der Testumgebung."""
+    fest = _yaml(TESTUMGEBUNG_COMPOSE)["services"]["datenbank"]["image"]
+    gefunden = {
+        "ci.yml": _job()["services"]["postgres"]["image"],
+        "leistungstest.yml": _yaml(LEISTUNGSTEST)["jobs"]["messen"]["services"]["postgres"]["image"],
+        "dev/docker-compose.yml": _yaml(DEV_COMPOSE)["services"]["postgres"]["image"],
+    }
+
+    assert re.fullmatch(r"postgres:18\.\d+@sha256:[0-9a-f]{64}", fest), fest
+    assert gefunden == dict.fromkeys(gefunden, fest)
+
+
+BELEGE = "${{ runner.temp }}/belege"
+BELEGE_BEDINGUNG = "failure() && steps.pruefen.outcome == 'failure' && matrix.browser"
+
+
+def _belege_schritte() -> tuple[dict, dict]:
+    """Die Schritte nach den Prüfungen eines Teils, die das Protokoll von Keycloak sichern und die Belege hochladen."""
+    nachher = _steps()[_index(_tests()) + 1 :]
+    keycloak = [step for step in nachher if "docker logs keycloak" in step.get("run", "")]
+    hochladen = [step for step in nachher if str(step.get("with", {}).get("name", "")).startswith("belege-")]
+    assert len(keycloak) == 1 and len(hochladen) == 1, [step.get("name") for step in nachher]
+    return keycloak[0], hochladen[0]
+
+
+def test_rauchtests_zeichnen_auf_github_fuer_rote_tests_auf():
+    """#349: Auf GitHub bekommen die Rauchtests einen Ablageort; dorthin kommt die Aufzeichnung jedes roten Tests.
+
+    Was dort landet und dass grüne Tests nichts ablegen, prüft rauchtests/test_aufzeichnung.py.
+    """
+    tests = _tests()
+
+    assert tests["id"] == "pruefen"
+    assert tests["env"]["RAUCHTEST_SPUREN"] == BELEGE
+
+
+def test_ist_ein_rauchtest_rot_liegen_aufzeichnung_und_keycloak_protokoll_zum_herunterladen():
+    """#349: Nur wenn die Prüfungen eines Teils mit Browser rot sind, kommen Aufzeichnungen und Keycloak-Protokoll an den Lauf."""
+    keycloak, hochladen = _belege_schritte()
+
+    assert _condition(keycloak) == BELEGE_BEDINGUNG
+    assert '"$RUNNER_TEMP/belege/keycloak.log"' in keycloak["run"]
+    assert _index(keycloak) < _index(hochladen)
+    assert _condition(hochladen) == BELEGE_BEDINGUNG
+    assert re.fullmatch(r"actions/upload-artifact@[0-9a-f]{40}", hochladen["uses"])
+    assert hochladen["with"]["path"] == BELEGE
+    # Je Versuch ein eigener Name: Nach einem Neustart bleiben die Belege des ersten Versuchs erhalten.
+    assert hochladen["with"]["name"] == "belege-${{ matrix.teil }}-versuch-${{ github.run_attempt }}"
+    assert "overwrite" not in hochladen["with"]

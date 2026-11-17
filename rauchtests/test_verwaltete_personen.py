@@ -14,7 +14,7 @@ tests/test_verwaltete_personen.py. Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key, _type_like_a_phone
@@ -86,7 +86,7 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_bearbeiten(pc):
     _all_visible(stations)
     pc.keyboard.press("Enter")
 
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(pc.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(pc.locator(PERSONS)).to_contain_text("Kiwi")
     expect(pc.locator(PERSONS)).to_contain_text("verwaltet")
@@ -134,7 +134,7 @@ def test_am_pc_fehler_am_feld_und_escape_legt_niemanden_an(pc):
     assert run_axe(pc) == []
 
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(pc.locator(PERSONS)).not_to_contain_text("Kiwi")
 
 
@@ -181,7 +181,7 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, SUBMIT, steps=6)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(handy, page_address, "person-aufnehmen")
     expect(handy.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(handy.locator(PERSONS)).to_contain_text("Kiwi")
     _no_side_scroll(handy)

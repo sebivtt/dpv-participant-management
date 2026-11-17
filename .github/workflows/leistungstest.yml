@@ -37,7 +37,8 @@ jobs:
     timeout-minutes: 75
     services:
       postgres:
-        image: postgres:18
+        # Dieselbe feste Fassung wie in ci.yml und testumgebung/docker-compose.yml (#349).
+        image: postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc
         env:
           POSTGRES_USER: dpv
           POSTGRES_PASSWORD: nur-in-der-pruefung

@@ -19,7 +19,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, login
+from rauchtests.conftest import BASE, login, wait_for_page_below
 from roles.models import Role
 from tests.test_rollen import give, person, unit
 from units.models import Unit
@@ -364,6 +364,27 @@ def test_spaeter_neu_geoeffnet_beginnt_die_seite_oben(pc):
 
 # S11: Der Knopf „Bearbeiten“ bekommt wie bisher den Fokus (#117), die Seite steht trotzdem an der gemerkten Stelle.
 def test_bearbeiten_bei_verwalteter_person_fokus_ohne_sprung(pc):
+    _bearbeiten_fokus_ohne_sprung(pc)
+
+
+def test_bearbeiten_fokus_ohne_sprung_auch_wenn_der_test_spaet_nach_der_adresse_fragt(pc, monkeypatch):
+    """Wie S11, nur fragt der Test jedes Mal erst 1,5 Sekunden später nach der Adresse (#349).
+
+    So langsam war Firefox auf GitHub einmal (Lauf 43705804661): Die Seite war schon geladen, und ihr Skript
+    hatte die Kennung des Knopfs schon aus der Adresse genommen.
+    """
+    original = pc.wait_for_url
+
+    def late_wait_for_url(*args, **options):
+        # Nicht time.sleep: Dann stünde auch Playwright still und erführe erst danach, was die Seite inzwischen tat.
+        pc.wait_for_timeout(1500)
+        return original(*args, **options)
+
+    monkeypatch.setattr(pc, "wait_for_url", late_wait_for_url)
+    _bearbeiten_fokus_ohne_sprung(pc)
+
+
+def _bearbeiten_fokus_ohne_sprung(pc: Page) -> None:
     login(pc)
     found = _lange_walhall(managed=True)
     address = _page_of(found["walhall"])
@@ -377,7 +398,7 @@ def test_bearbeiten_bei_verwalteter_person_fokus_ohne_sprung(pc):
     _steht_bei(pc, spot)
     _dialog(pc).get_by_role("link", name="Abbrechen").click()
 
-    pc.wait_for_url(f"{address}#bearbeiten-{found['paul'].key}")
+    wait_for_page_below(pc, address, f"bearbeiten-{found['paul'].key}")
     expect(edit).to_be_focused()
     _steht_bei(pc, spot)
 

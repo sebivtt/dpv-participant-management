@@ -14,7 +14,7 @@ from datetime import date
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
@@ -147,7 +147,7 @@ def test_am_pc_nicht_loeschen_fuehrt_zurueck_und_escape_schliesst(pc):
 
     pc.goto(_managed_address(units["falken"], units["lena"], "loeschen"))
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{_page_of(units['falken'])}#bearbeiten-{units['lena'].key}")
+    wait_for_page_below(pc, _page_of(units["falken"]), f"bearbeiten-{units['lena'].key}")
     expect(_dialog(pc)).to_have_count(0)
     assert ManagedPerson.objects.filter(pk=units["lena"].pk).exists()
 
