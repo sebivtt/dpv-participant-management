@@ -25,8 +25,9 @@ from rauchtests.test_veranstaltungen import CREATE_BUTTON, _dialog, _erika_in_de
 LIST = f"{BASE}/veranstaltungen/"
 STEP = "form#f-schritt"
 SUBMIT = f'{STEP} button[type="submit"]'
-BACK = f'{STEP} .a-schritt-knoepfe a:text-is("Zurück")'
-CANCEL = f'{STEP} .a-schritt-knoepfe a:text-is("Abbrechen")'
+# Einfaches CSS, weil der Fokus mit `matches()` des Browsers geprüft wird: „Zurück“ ist der Link rechts, „Abbrechen“ links.
+BACK = f"{STEP} .a-schritt-rechts > a"
+CANCEL = f"{STEP} .a-schritt-knoepfe > a.btn-zart"
 STEPS = "ol.a-schritte li"
 SAVED = "Pfingstlager 2028 ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."
 
@@ -137,7 +138,7 @@ def test_am_handy_nur_mit_der_tastatur_abbrechen_und_entwurf_loeschen(handy):
     expect(_dialog(handy)).to_be_visible()
     _no_side_scroll(handy)
     assert run_axe(handy) == []
-    _zu(handy, '.a-dialog-fuss button:text-is("Entwurf löschen")', steps=10)
+    _zu(handy, ".a-dialog-fuss button.btn-gefahr", steps=10)
     handy.wait_for_url(LIST)
     expect(handy.locator(".a-kurz")).to_contain_text("Der Entwurf Pfingstlager 2028 ist gelöscht.")
     expect(handy.locator('[aria-labelledby="h-veranstaltungen"]')).to_contain_text("Du leitest noch keine Veranstaltung.")

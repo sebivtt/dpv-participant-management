@@ -2,8 +2,8 @@
 
 Erika meldet sich wirklich bei der Keycloak-Testumgebung an und ist danach Mitglied der Sippe Falken, hat
 also eine Zuordnung (VA-01). Geprüft werden die Teile, die nur ein Browser zeigt: der Punkt
-„Veranstaltungen“ in der Seitenleiste und im Menü, „Veranstaltung erstellen“ als Dialog, der den Fokus
-hält, Beginn und Ende als Baustein „Datumsfeld“ (das Feld des Browsers, N3 zu #117), der Name auch wie am
+„Veranstaltungen“ in der Seitenleiste und im Menü, „Veranstaltung erstellen“ (bis #380 ein Dialog, der den
+Fokus hält), Beginn und Ende als Baustein „Datumsfeld“ (das Feld des Browsers, N3 zu #117), der Name auch wie am
 Handy mit Autokorrektur und Wortvorschlägen, die kurze Meldung, der Knopf „Bearbeiten“, nichts steht
 seitlich über, der Fokus ist zu sehen, und die Seiten bestehen die Prüfung auf Barrierefreiheit. Das Datum
 setzt der Test mit `fill`, weil jeder Browser sein Datumsfeld anders bedienen lässt; erreicht wird das

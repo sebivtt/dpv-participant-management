@@ -75,7 +75,7 @@ def pfingstlager(org):
 
 
 def create(user, client=None, **values):
-    """Füllt „Veranstaltung erstellen“ aus wie A4 und klickt auf „Anlegen“; die Uhrzeiten wie vorausgefüllt."""
+    """Füllt „Veranstaltung erstellen“ aus wie A4 und klickt auf „Weiter“ (bis #380 „Anlegen“); die Uhrzeiten wie vorausgefüllt."""
     client = client or client_for(user)
     _found, creation_key = open_create(user, client=client)
     form = {"name": "Stammesthing Walhall", "start": "2028-01-14", "start_time": "18:00", "end": "2028-01-16",
