@@ -11,7 +11,7 @@ tests/test_person_aufnehmen.py. Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key
@@ -72,7 +72,7 @@ def test_am_pc_nur_mit_der_tastatur_beide_wege_zurueck_und_schliessen(pc):
     expect(dialog.locator("h2")).to_have_text("Person mit Konto aufnehmen")
     expect(dialog.get_by_role("link", name="Zurück")).to_be_visible()
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address)
     expect(dialog).to_have_count(0)
     assert _focused_matches(pc, BUTTON)
 
@@ -80,7 +80,7 @@ def test_am_pc_nur_mit_der_tastatur_beide_wege_zurueck_und_schliessen(pc):
     pc.keyboard.press("Enter")
     pc.wait_for_url(choice)
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address)
     assert _focused_matches(pc, BUTTON)
 
 
@@ -97,7 +97,7 @@ def test_am_pc_mit_der_maus_aufnehmen_und_fokus_danach_auf_dem_knopf(pc):
     pc.keyboard.press("Enter")
     _dialog(pc).locator(".a-treffer-knopf button").click()
 
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address)
     expect(pc.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Sippe Falken.")
     # PA7: auch nach dem Aufnehmen hat „Person aufnehmen“ wieder den Fokus.
     assert _focused_matches(pc, BUTTON)
@@ -131,7 +131,7 @@ def test_am_handy_einzeilig_nur_mit_der_tastatur_und_mit_antippen(handy):
     _dialog(handy).get_by_role("link", name="Zurück").tap()
     handy.wait_for_url(f"{page_address}person-aufnehmen/")
     _dialog(handy).get_by_role("link", name="Schließen").tap()
-    handy.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(handy, page_address)
     expect(_dialog(handy)).to_have_count(0)
 
 

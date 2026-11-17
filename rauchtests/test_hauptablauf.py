@@ -25,7 +25,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, ERIKA, PC, _context, focus_visible, login
+from rauchtests.conftest import BASE, ERIKA, PC, _context, focus_visible, login, wait_for_page_below
 from rauchtests.test_rauchtest import _all_visible, _keycloak_look, _keycloak_marks_focus, _stations_to_element, _tab_key, _tab_to
 from roles.models import Role
 from tests.test_rollen import give, unit
@@ -167,7 +167,7 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
         expect(page.locator(CONSENT)).to_be_checked()
         page.locator(SUBMIT).click()
 
-    page.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(page, page_address)
     expect(page.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(page.locator(PERSONS)).to_contain_text("Kiwi")
     return ManagedPerson.objects.get(first_name="Lena", last_name="Probe")

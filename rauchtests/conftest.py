@@ -367,6 +367,18 @@ def handy_ohne_skript(browser, browser_name, tool) -> Page:
     context.close()
 
 
+def wait_for_page_below(page: Page, address: str) -> None:
+    """Wartet nach dem Schließen eines Dialogs mit Skript, bis die Seite darunter unter `address` geladen ist (#349).
+
+    Der Dialog führt zu `address` mit Kennung (etwa `#person-aufnehmen`), damit der Knopf wieder den Fokus bekommt.
+    Mit gemerkter Stelle nimmt das Skript die Kennung gleich nach dem Laden wieder aus der Adresse (#220). Gewartet
+    wird deshalb auf die Adresse ohne Kennung: Mit Kennung fände ein Test, der erst danach fragt, sie nie (Firefox
+    auf GitHub, aus #384). Dass die Kennung ankam, zeigt der Fokus. Ohne Skript bleibt die Kennung in der Adresse;
+    dort wartet der Test weiter mit `wait_for_url` auf die Adresse mit Kennung.
+    """
+    page.wait_for_url(address)
+
+
 def login(page: Page, account=ERIKA) -> None:
     """Meldet sich über die Login-Seite und das Formular von Keycloak an, wie eine Person mit der Maus."""
     page.goto(f"{BASE}/")

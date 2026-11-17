@@ -9,7 +9,7 @@ Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_personen.py. 
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
@@ -58,7 +58,7 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
     assert pc.evaluate("document.activeElement.closest('dialog') !== null")
     pc.keyboard.press("Enter")
 
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address)
     expect(pc.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     expect(pc.locator(PERSONS)).to_contain_text("Otto Ohne")
     expect(pc.locator(PERSONS)).to_contain_text("2 Personen")
@@ -74,7 +74,7 @@ def test_am_pc_escape_fuehrt_zurueck_und_nimmt_niemanden_auf(pc):
     pc.goto(f"{page_address}aufnehmen/")
     expect(_dialog(pc)).to_be_visible()
     pc.keyboard.press("Escape")
-    pc.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(pc, page_address)
     expect(_dialog(pc)).to_have_count(0)
     expect(pc.locator(PERSONS)).not_to_contain_text("Otto")
 
@@ -110,6 +110,6 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, ".a-treffer-knopf button", steps=10)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(f"{page_address}#person-aufnehmen")
+    wait_for_page_below(handy, page_address)
     expect(handy.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     _no_side_scroll(handy)

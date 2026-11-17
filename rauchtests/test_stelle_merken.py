@@ -19,7 +19,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, login
+from rauchtests.conftest import BASE, login, wait_for_page_below
 from roles.models import Role
 from tests.test_rollen import give, person, unit
 from units.models import Unit
@@ -398,10 +398,7 @@ def _bearbeiten_fokus_ohne_sprung(pc: Page) -> None:
     _steht_bei(pc, spot)
     _dialog(pc).get_by_role("link", name="Abbrechen").click()
 
-    # „Abbrechen“ führt zu `#bearbeiten-…`; mit gemerkter Stelle nimmt das Skript die Kennung gleich nach dem
-    # Laden aus der Adresse (#220). Gewartet wird deshalb auf die Adresse ohne Kennung: Mit Kennung fände ein
-    # Test, der erst danach fragt, sie nie (Firefox auf GitHub, #349). Dass die Kennung ankam, zeigt der Fokus.
-    pc.wait_for_url(address)
+    wait_for_page_below(pc, address)
     expect(edit).to_be_focused()
     _steht_bei(pc, spot)
 
