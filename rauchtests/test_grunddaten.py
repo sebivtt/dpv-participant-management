@@ -126,6 +126,9 @@ def test_am_pc_nur_mit_der_tastatur_die_nachfrage_zur_dauer(pc):
 
     end = pc.locator('dialog input[name="end"]')
     expect(end).to_have_accessible_description("Die Veranstaltung dauert 41 Tage. Stimmt das?")
+    # Die Frage ist auch zu sehen, nicht nur vorzulesen (Vorschau, 17.11.2026: Der Satz war unsichtbar).
+    expect(pc.locator("dialog .a-datumsfeld .invalid-feedback")).to_be_visible()
+    expect(pc.locator("dialog .a-datumsfeld .invalid-feedback")).to_have_text("Die Veranstaltung dauert 41 Tage. Stimmt das?")
     switch = pc.get_by_role("checkbox", name="Ja, die Dauer stimmt")
     expect(switch).not_to_be_checked()
     _no_side_scroll(pc)
