@@ -588,3 +588,36 @@ def test_der_katalog_zeigt_die_fortschrittsanzeige_und_den_dialog_mit_zwei_knoep
     assert "#380" in _visible_text(_one(_all(dialog, lambda e: "a-baustein-herkunft" in _classes(e))))
     preview = _one(_by_tag(dialog, "dialog", aria_labelledby="h-dialog-abbrechen"))
     assert set(dialog_buttons(preview)) == {"Entwurf löschen", "Entwurf speichern"}
+
+
+# ---------- Befunde der unabhängigen Prüfung ----------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_bg2_echter_doppelklick_auf_entwurf_loeschen_beide_klicks_fuehren_zur_liste():
+    """Befund B1: Beide Anfragen kommen, bevor die erste fertig ist; die zweite wartet und darf nicht „nicht gefunden“ zeigen."""
+    o = build_people()
+    entry = Rights(o.wanda).create_event(
+        {"name": "Sommerfahrt 2028", "start": date(2028, 7, 20), "end": date(2028, 7, 30)}, "g" * 20)
+    client = client_for(o.wanda)
+
+    results = _one_after_the_other(lambda: client.post(delete_address(entry)),
+                                   lambda: client.post(delete_address(entry)))
+
+    assert [(response.status_code, response.url) for response in results] == [(302, LIST), (302, LIST)]
+    assert not Event.objects.exists()
+
+
+def test_bg5_ohne_zuordnung_fuehrt_entwurf_loeschen_zur_startseite_mit_der_meldung(org, entwurf):
+    """Befund B2: Ohne Zuordnung und ohne geleitete Veranstaltung gibt es die Liste nicht; „kein Zugriff“ darf nicht kommen."""
+    remove(org.wanda, R.TROOP_LEAD, org.walhall)
+    remove(org.wanda, R.MEMBER, org.walhall)
+    client = client_for(org.wanda)
+
+    response = client.post(delete_address(entwurf))
+
+    assert response.status_code == 302
+    page = client.get(response.url)
+    assert page.status_code == 200
+    assert short_notices(page) == [DELETED % "Pfingstlager 2028"]
+    assert not Event.objects.exists()
