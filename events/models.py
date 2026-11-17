@@ -1,4 +1,4 @@
-"""Datenmodell der Veranstaltungen (#100, TEAM-01) und Anmeldungen (#101, ANM-01, ANM-02), Proben in P2."""
+"""Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379) und Anmeldungen (#101, ANM-01, ANM-02)."""
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -17,20 +17,24 @@ from units.models import Unit
 
 # Höchstens 100 Zeichen für den Namen, nach dem Entfernen der Leerzeichen am Rand (#100).
 NAME_MAX_LENGTH = 100
-# Die Angaben, die „Veranstaltung erstellen“ anlegt und „… bearbeiten“ ändert; mehr gibt es in P2 nicht (#100).
+# Höchstens 100 Zeichen für den Ort, ebenso ohne die Leerzeichen am Rand (#379, VER-04).
+LOCATION_MAX_LENGTH = 100
+# Die Angaben, die „Veranstaltung erstellen“ anlegt und der Stift der Kachel „Grunddaten“ ändert (#100, #379).
 EDITABLE_FIELDS = ("name", "start", "end")
 # Kopierte Namen: so lang wie bei Konten (Django: 150), damit jede Kopie passt; verwaltete Personen haben höchstens 50.
 PERSON_NAME_MAX_LENGTH = 150
 
 
 class Event(models.Model):
-    """Eine Veranstaltung mit Name, Beginn und Ende und ihrer Veranstaltungsleitung (TEAM-01).
+    """Eine Veranstaltung mit Name, Beginn und Ende, Ort und ihrer Veranstaltungsleitung (TEAM-01).
 
     Wer sie anlegt, ist ihre Veranstaltungsleitung; die Leitung kommt immer aus der Anmeldung, nie aus
     einem Formular (#100, VV3). In P2 hat jede Veranstaltung genau eine Leitung; weitere kommen mit
-    TEAM-01 in P3, deshalb kann die Datenbank schon mehrere halten. Beginn und Ende sind Tage ohne
-    Uhrzeit, das Ende liegt nicht vor dem Beginn; beides prüft auch die Datenbank. Gelesen und
-    geändert wird eine Veranstaltung nur über die zentrale Rechteprüfung (`access/rights.py`).
+    TEAM-01 in P3, deshalb kann die Datenbank schon mehrere halten. Beginn und Ende sind Tage, je mit
+    freiwilliger Uhrzeit; ohne Uhrzeit gilt der ganze Tag (#379, VER-02). Das Ende liegt nicht vor dem
+    Beginn, am selben Tag auch nicht mit früherer Uhrzeit; das prüft auch die Datenbank. Der Ort ist eine
+    freiwillige Bezeichnung (VER-04, die Adresse kommt mit #163). Gelesen und geändert wird eine
+    Veranstaltung nur über die zentrale Rechteprüfung (`access/rights.py`).
     """
 
     # Zufällige Kennung für Adressen (#64).
@@ -38,6 +42,13 @@ class Event(models.Model):
     name = models.CharField(max_length=NAME_MAX_LENGTH)
     start = models.DateField()
     end = models.DateField()
+    # Freiwillige Uhrzeiten (#379, VER-02); Veranstaltungen aus P2 haben keine.
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    # Bezeichnung des Orts, etwa „Burg Ludwigstein“; leer heißt ohne Ort (#379, VER-04).
+    location = models.CharField(max_length=LOCATION_MAX_LENGTH, blank=True, default="")
+    # Stand für gleichzeitiges Speichern: Ein älteres Fenster überschreibt nichts (#379, AG7, wie bei #117).
+    version = models.PositiveIntegerField(default=1, editable=False)
     # Die Veranstaltungsleitung (TEAM-01). Setzt nur `Rights.create_event()` aus der Anmeldung.
     leads = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="led_events", editable=False)
     # Kennung des Formulars „Veranstaltung erstellen“: Ein zweites Abschicken desselben Formulars, etwa
@@ -48,6 +59,12 @@ class Event(models.Model):
         constraints = [
             models.CheckConstraint(condition=~Q(name="") & Q(name=Trim("name")), name="event_name_trimmed_not_empty"),
             models.CheckConstraint(condition=Q(end__gte=F("start")), name="event_end_not_before_start"),
+            # Am selben Tag liegt eine Uhrzeit des Endes nicht vor der des Beginns (#379, AG3).
+            models.CheckConstraint(
+                condition=Q(end__gt=F("start")) | Q(start_time__isnull=True) | Q(end_time__isnull=True)
+                | Q(end_time__gte=F("start_time")),
+                name="event_end_time_not_before_start_time"),
+            models.CheckConstraint(condition=Q(location=Trim("location")), name="event_location_trimmed"),
         ]
 
     def __str__(self) -> str:
