@@ -201,6 +201,11 @@ def check_after_test(fixturenames: list[str]) -> None:
         assert_no_csp_violations(found)
 
 
+def keep_traces(name: str, failed: bool) -> list[Path]:
+    """Gerüst (#349): legt die Aufzeichnungen des laufenden Tests ab, wenn er rot war."""
+    return []
+
+
 @pytest.fixture(scope="session")
 def browser(_playwright, browser_name) -> Browser:
     """Startet den Browser einmal je Lauf.
