@@ -1092,7 +1092,8 @@ class Rights:
             fresh.require_section(fresh.may_create_event())
             if Event.objects.filter(creation_key=creation_key).exists():
                 return fresh._created_before(creation_key), ""
-            created = Event(creation_key=creation_key, **{name: values[name] for name in EVENT_FIELDS})
+            # Was das Formular nicht kennt, bleibt wie im Datenmodell: ohne Uhrzeit und ohne Ort (#379).
+            created = Event(creation_key=creation_key, **{name: values[name] for name in EVENT_FIELDS if name in values})
             try:
                 with transaction.atomic():
                     created.save()
@@ -1111,13 +1112,15 @@ class Rights:
             raise Http404
         return found
 
-    def edit_event(self, key, values: dict) -> tuple[Event, str]:
-        """Speichert Name, Beginn und Ende einer eigenen Veranstaltung; gibt sie und die kurze Meldung zurück (VA-02).
+    def edit_event(self, key, values: dict, version) -> tuple[bool, Event, str]:
+        """Speichert die Grunddaten einer eigenen Veranstaltung; gibt zurück, ob es geklappt hat, sie und die Meldung (VA-02).
 
-        Eine Zuordnung braucht es dafür in P2 nicht (V4; danach #146). Ohne Leitung „nicht gefunden“, auch für
-        eine Kennung, die die Person gerade nicht mehr leitet (VA-03). Gesperrt sind das eigene Konto und die
-        Veranstaltung; in P2 hat jede Veranstaltung genau eine Leitung, eine Regel für gleichzeitiges Bearbeiten
-        gibt es deshalb nicht (#100).
+        Grunddaten sind Name, Beginn und Ende mit Uhrzeiten und Ort (#379). Eine Zuordnung braucht es dafür in
+        P2 nicht (V4; danach #146). Ohne Leitung „nicht gefunden“, auch für eine Kennung, die die Person gerade
+        nicht mehr leitet (VA-03). Gesperrt sind das eigene Konto und die Veranstaltung. `version` ist der Stand,
+        den der Dialog beim Öffnen gezeigt hat; hat inzwischen jemand gespeichert, auch in einem zweiten Fenster,
+        wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Veranstaltung, wie sie jetzt ist,
+        und dem Satz „… wurde inzwischen geändert. …“ (#379, AG7, wie bei verwalteten Personen).
         """
         if self.user is None or not is_key(key):
             raise Http404
@@ -1125,10 +1128,13 @@ class Rights:
             me = self._lock_with(self.user.pk)
             fresh = Rights(me)
             entry = fresh.entry(fresh.events().select_for_update(), key)
+            if str(entry.version) != str(version):
+                return False, entry, str(event_texts.CHANGED_MEANWHILE % {"event": entry.name})
             for name in EVENT_FIELDS:
                 setattr(entry, name, values[name])
+            entry.version += 1
             entry.save()
-        return entry, str(event_texts.SAVED % {"event": entry.name})
+        return True, entry, str(event_texts.SAVED % {"event": entry.name})
 
     # Anmeldungen (#101, ANM-01, ANM-02; Probe in P2)
     #

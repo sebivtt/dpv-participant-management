@@ -20,7 +20,7 @@ NAME_MAX_LENGTH = 100
 # Höchstens 100 Zeichen für den Ort, ebenso ohne die Leerzeichen am Rand (#379, VER-04).
 LOCATION_MAX_LENGTH = 100
 # Die Angaben, die „Veranstaltung erstellen“ anlegt und der Stift der Kachel „Grunddaten“ ändert (#100, #379).
-EDITABLE_FIELDS = ("name", "start", "end")
+EDITABLE_FIELDS = ("name", "start", "start_time", "end", "end_time", "location")
 # Kopierte Namen: so lang wie bei Konten (Django: 150), damit jede Kopie passt; verwaltete Personen haben höchstens 50.
 PERSON_NAME_MAX_LENGTH = 150
 
@@ -69,6 +69,11 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def days(self) -> int:
+        """Die Dauer in Tagen, Beginn und Ende mitgezählt: 02.06. bis 05.06. sind 4 Tage (#379, Kachel „Grunddaten“)."""
+        return (self.end - self.start).days + 1
 
 
 class Registration(models.Model):

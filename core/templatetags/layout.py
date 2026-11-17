@@ -138,14 +138,40 @@ def textfeld(field, button: str = "", help_text: str = "") -> dict:
 
 
 @register.inclusion_tag("core/_datumsfeld.html")
-def datumsfeld(field) -> dict:
+def datumsfeld(field, time=None) -> dict:
     """Baustein „Datumsfeld“ (#117, N3): das Datumsfeld des Browsers mit Beschriftung und Fehler am Feld.
 
     Wie das Textfeld, nur ohne Zahl der Zeichen; das Formular legt das Feld als Datum fest
     (`type="date"`) und mit `max` den letzten wählbaren Tag. Der Browser schickt das Datum immer als
     JJJJ-MM-TT, egal wie er es anzeigt; ein Datum, das er nicht versteht, kommt leer an.
+
+    Erweitert mit #379 (Sebastian, 17.11.2026: „Datumsfeld erweitern“): Mit `time` steht rechts neben dem Datum
+    ein freiwilliges Uhrzeitfeld des Browsers (`type="time"`), unter einer gemeinsamen Beschriftung, bei einem
+    Pflichtdatum „(Pflicht, Uhrzeit freiwillig)“. Vorleseprogramme hören für die Uhrzeit deren eigene
+    Beschriftung. Die Fehler beider Felder stehen zusammen darunter und sind mit beiden verknüpft.
     """
-    return _textfeld(field)
+    if time is None:
+        return _textfeld(field)
+    error_id = f"{field.auto_id}-fehler"
+    errors = [*field.errors, *time.errors]
+
+    def widget(of):
+        attrs = {"class": "form-control"}
+        if of.errors:
+            attrs = {"class": "form-control is-invalid", "aria-invalid": "true"}
+        if errors:
+            attrs["aria-describedby"] = error_id
+        return of.as_widget(attrs=attrs)
+
+    return {
+        "field": field,
+        "widget": widget(field),
+        "time": time,
+        "time_widget": widget(time),
+        "errors": errors,
+        "error_id": error_id,
+        "required": field.field.required,
+    }
 
 
 @register.inclusion_tag("core/_schalter.html")

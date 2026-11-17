@@ -611,3 +611,41 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 }
 /* Im Bausteinkatalog steht der Balken an seinem Platz und bleibt nicht oben stehen. */
 .a-katalog-balken .a-supportbalken { position: static; }
+
+/* Datumsfeld mit Uhrzeit (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 2): rechts neben dem Datum
+   die freiwillige Uhrzeit, etwas schmaler; der Fokusrahmen wie beim Datum (oben). */
+.a-datum-zeit { display: grid; grid-template-columns: minmax(0, 3fr) minmax(5.75rem, 2fr); gap: 8px; }
+.a-datumsfeld .a-datum-zeit .form-control { min-width: 0; }
+
+/* Veranstaltung in einer Liste (#379, Zielbild Ansicht 1): breite, flache Zeilen mit feinem Rand; der Name fett in
+   DPV-Blau, darunter grau Zeitraum und Ort. Rechts kommen mit #359 Zustandsmarken dazu. */
+.a-va-zeilen { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.a-va-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px 16px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
+.a-va-zeile-wer { flex: 1 1 260px; min-width: 0; }
+.a-va-zeile-wer a { color: var(--dpv); font-size: 1.05rem; font-weight: 800; text-decoration: none; overflow-wrap: anywhere; }
+.a-va-zeile-wer a:hover { text-decoration: underline; }
+.a-va-zeile-wer p { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; overflow-wrap: anywhere; }
+
+/* Kacheln der Leitungsseite (#379, Zielbild Ansicht 6): am PC zwei nebeneinander, schmal untereinander. Eine
+   Kachel ist eine Fläche mit Stift oben rechts (Baustein „Bearbeiten-Symbol“); der Titel rückt nicht darunter. */
+.a-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 20px; margin: 0 0 20px; }
+.a-kachel { position: relative; }
+.a-kachel > .a-flaeche-kopf { padding-right: 44px; }
+
+/* Kalenderblätter (#379, Zielbild Ansicht 6, Kachel „Grunddaten“): Beginn und Ende als zart blaue Blätter, dazwischen
+   auf einer Linie die Dauer; darunter der Ort auf grauer Fläche. */
+.a-kalender-reihe { display: flex; align-items: stretch; gap: 10px; }
+.a-kalenderblatt { flex: 0 0 96px; display: grid; justify-items: center; align-content: start; padding: 8px 6px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); text-align: center; }
+.a-kalender-wt, .a-kalender-monat { font-size: .8rem; font-weight: 700; }
+.a-kalender-tag { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.a-kalender-zeit { margin-top: 4px; padding: 1px 8px; border-radius: 20px; background: var(--flaeche); font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.a-kalender-mitte { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 60px; }
+.a-kalender-linie { flex: 1; height: 2px; background: var(--linie); }
+.a-kalender-dauer { color: var(--text-leise); font-size: .85rem; font-weight: 700; white-space: nowrap; }
+.a-kalender-ort { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0 0; padding: 12px; border-radius: var(--radius-klein); background: var(--grund); overflow-wrap: anywhere; }
+.a-kalender-ort-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
+.a-kalender-ort strong { align-self: center; min-width: 0; }
+@media (max-width: 390px) {
+  .a-kalenderblatt { flex-basis: 84px; }
+  .a-kalender-mitte { min-width: 44px; gap: 4px; }
+}

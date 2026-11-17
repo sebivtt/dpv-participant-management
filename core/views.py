@@ -1,7 +1,7 @@
 """Seiten der App „core“."""
 
 import logging
-from datetime import date
+from datetime import date, time
 
 from django.conf import settings
 from django.contrib import messages
@@ -9,6 +9,7 @@ from django.db import DatabaseError
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import dateformat
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_control, never_cache
 
@@ -30,6 +31,7 @@ from core.forms import (
 from core.sections import to_section
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
+from events.models import Event
 from events.models import name_of
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
@@ -856,26 +858,72 @@ def organisation_delete_managed(request: HttpRequest, unit: str, person: str) ->
     return _with_dialog(request, found, delete_dialog(found, rights.deleting_managed(found, person), action=request.path))
 
 
-# Veranstaltungen (#100, Probe in P2). Liste, Seite je Veranstaltung und zwei Dialoge mit eigener Adresse, damit
-# sie auch ohne Skript gehen. Eine Veranstaltung kommt immer über ihre Kennung aus der zentralen Rechteprüfung,
-# fremde sind „nicht gefunden“ (VA-03); die Bereiche ohne Kennung zeigen ohne Recht „kein Zugriff“ (VA-05, #64).
-# Löschen gibt es in P2 nicht (VA-04): keine Adresse, und andere Anfragen als Lesen ergeben „nicht gefunden“.
+# Veranstaltungen (#100, Probe in P2; Leitungsseite seit #379). Liste, Leitungsseite je Veranstaltung und zwei
+# Dialoge mit eigener Adresse, damit sie auch ohne Skript gehen. Eine Veranstaltung kommt immer über ihre Kennung
+# aus der zentralen Rechteprüfung, fremde sind „nicht gefunden“ (VA-03); die Bereiche ohne Kennung zeigen ohne
+# Recht „kein Zugriff“ (VA-05, #64). Löschen gibt es nicht (VA-04): keine Adresse, und andere Anfragen als Lesen
+# ergeben „nicht gefunden“.
 EVENT_ROWS = ("VA-01", "VA-02", "VA-03", "VA-04", "VA-05")
 
 
 def period(entry) -> str:
-    """Der Zeitraum einer Veranstaltung wie in Liste und Seite: „15.05.2027 bis 17.05.2027“, ein Tag nur „05.06.2027“."""
+    """Der Zeitraum ohne Uhrzeit, etwa im Kopf der Leitungsseite: „15.05.2027 bis 17.05.2027“, ein Tag nur „05.06.2027“."""
     start, end = entry.start.strftime("%d.%m.%Y"), entry.end.strftime("%d.%m.%Y")
     return start if start == end else str(event_texts.PERIOD % {"start": start, "end": end})
 
 
+def _day(day, at) -> str:
+    """Ein Tag, mit Uhrzeit, falls eingetragen: „02.06.2028, 18:00“ (#379, A5)."""
+    shown = day.strftime("%d.%m.%Y")
+    return str(event_texts.DAY_WITH_TIME % {"day": shown, "time": at.strftime("%H:%M")}) if at else shown
+
+
+def period_with_times(entry) -> str:
+    """Der Zeitraum in der Liste „Von mir geleitet“, mit Uhrzeiten, wo eingetragen (#379, A5).
+
+    Ein Tag ohne Uhrzeiten steht ohne „bis“ wie bisher; mit einer Uhrzeit steht auch am selben Tag „bis“,
+    damit klar bleibt, ob sie den Beginn oder das Ende meint.
+    """
+    if entry.start_time is None and entry.end_time is None:
+        return period(entry)
+    return str(event_texts.PERIOD % {"start": _day(entry.start, entry.start_time), "end": _day(entry.end, entry.end_time)})
+
+
+def with_location(shown: str, entry) -> str:
+    """Hinter dem Zeitraum „· Ort“, ohne Ort nichts (#379, A2)."""
+    return str(event_texts.WITH_LOCATION % {"period": shown, "location": entry.location}) if entry.location else shown
+
+
+def _sheet(day, at, label) -> dict:
+    """Ein Kalenderblatt: Wochentag, Tag, Monat mit Jahr und die Uhrzeit, falls eingetragen („Fr 02 Jun 2028 18:00“)."""
+    return {
+        "label": label,
+        "weekday": dateformat.format(day, "D"),
+        "day": day.strftime("%d"),
+        "month": dateformat.format(day, "M Y"),
+        "time": at.strftime("%H:%M") if at else "",
+        "datetime": f"{day.isoformat()}T{at.strftime('%H:%M')}" if at else day.isoformat(),
+    }
+
+
+def calendar_sheets(entry) -> dict:
+    """Was der Baustein „Kalenderblätter“ für die Kachel „Grunddaten“ zeigt: Beginn, Dauer, Ende und Ort (#379)."""
+    return {
+        "start": _sheet(entry.start, entry.start_time, event_texts.SHEET_START),
+        "end": _sheet(entry.end, entry.end_time, event_texts.SHEET_END),
+        "days": event_texts.DAYS % {"count": entry.days},
+        "place": entry.location,
+        "place_label": event_texts.LOCATION_LABEL,
+    }
+
+
 def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpResponse:
-    """Die Liste „Veranstaltungen“, auf Wunsch mit offenem Dialog „Veranstaltung erstellen“."""
+    """Die Liste „Veranstaltungen“ mit dem Abschnitt „Von mir geleitet“, auf Wunsch mit offenem Dialog (#379, A5)."""
     rights = request.rights
-    entries = [{"name": entry.name, "period": period(entry), "href": reverse("event_page", args=[entry.key])}
-               for entry in rights.own_events()]
+    rows = [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
+             "href": reverse("event_page", args=[entry.key])} for entry in rights.own_events()]
     return render(request, "core/veranstaltungen.html", {
-        "entries": entries,
+        "rows": rows,
         # Den Knopf gibt es nur mit Zuordnung, ohne auch keinen Ersatztext (#100).
         "create_href": reverse("event_create") if rights.may_create_event() else None,
         "create_label": event_texts.CREATE_TITLE,
@@ -886,10 +934,12 @@ def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpRespon
 
 
 def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> HttpResponse:
-    """Die Seite einer Veranstaltung: Name und Zeitraum, der Knopf „Bearbeiten“ und der Abschnitt „Anmeldungen“ (#101).
+    """Die Leitungsseite einer Veranstaltung (#379): Kopf, Kachel „Grunddaten“ und der Abschnitt „Anmeldungen“ (#101).
 
-    Im Abschnitt je Anmeldung die Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen,
-    die älteste zuerst (S1); ohne Anmeldungen ein Satz (S2). Auf Wunsch mit offenem Dialog.
+    Im Kopf Name und Zeitraum ohne Uhrzeit, mit Ort; die Kachel zeigt Beginn und Ende als Kalenderblätter mit
+    Uhrzeit, dazwischen die Dauer, darunter den Ort, und oben rechts den Stift. Im Abschnitt je Anmeldung die
+    Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen, die älteste zuerst (S1);
+    ohne Anmeldungen ein Satz (S2). Auf Wunsch mit offenem Dialog.
     """
     registrations = [{
         "contact": name_of(registration.contact),
@@ -898,7 +948,10 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     } for registration in request.rights.event_registrations(entry)]
     return render(request, "core/veranstaltung.html", {
         "event": entry,
-        "period": period(entry),
+        "head_line": with_location(period(entry), entry),
+        "calendar": calendar_sheets(entry),
+        "basics_title": event_texts.BASICS,
+        "basics_edit": event_texts.BASICS_EDIT,
         "edit_href": reverse("event_edit", args=[entry.key]),
         "registrations": registrations,
         "registrations_title": event_texts.REGISTRATIONS,
@@ -907,8 +960,13 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     })
 
 
-def _event_dialog(form: EventForm, action: str, close_href: str, entry=None, hidden: tuple = ()) -> dict:
-    """„Veranstaltung erstellen“ oder, mit `entry`, „… bearbeiten“: Name, Beginn und Ende, der blaue Knopf."""
+def _event_dialog(form: EventForm, action: str, close_href: str, entry=None, hidden: tuple = (),
+                  conflict: str = "") -> dict:
+    """„Veranstaltung erstellen“ oder, mit `entry`, „… bearbeiten“: Name, Beginn, Ende, Ort und der blaue Knopf.
+
+    Fragt das Formular nach der Dauer, steht unter Beginn und Ende der Schalter „Ja, die Dauer stimmt“ (#379,
+    AG4). `conflict` ist der Satz, wenn inzwischen jemand anderes gespeichert hat; er steht oben im Dialog (AG7).
+    """
     return {
         "title": event_texts.EDIT_TITLE % {"event": entry.name} if entry else event_texts.CREATE_TITLE,
         "close_href": close_href,
@@ -919,13 +977,15 @@ def _event_dialog(form: EventForm, action: str, close_href: str, entry=None, hid
         # Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (wie #117 und #296).
         "novalidate": True,
         "event_form": form,
+        "asks_duration": bool(form.duration_question),
+        "conflict": conflict,
         "hidden": list(hidden),
     }
 
 
 @checks_rights(*EVENT_ROWS)
 def events(request: HttpRequest) -> HttpResponse:
-    """Die Liste „Veranstaltungen“: die Veranstaltungen, die die Person leitet, nach Beginn (#100, V5).
+    """Die Liste „Veranstaltungen“: unter „Von mir geleitet“ die Veranstaltungen, die die Person leitet, nach Beginn (V5).
 
     Den Bereich hat, wer eine Zuordnung hat oder mindestens eine Veranstaltung leitet; sonst „kein Zugriff“.
     Ohne eigene Veranstaltung steht dort „Du leitest noch keine Veranstaltung.“
@@ -947,8 +1007,9 @@ def event_create(request: HttpRequest) -> HttpResponse:
     der Dialog offen ist (VA-05, VG9). Der Dialog bekommt beim Öffnen eine eigene Kennung (`creation_key`), damit
     ein Doppelklick die Veranstaltung nur einmal anlegt (VG8); eine in falscher Form ist „nicht gefunden“. Der
     Browser speichert den Dialog nicht, sonst legte ein zweites Anlegen nach „Zurück“ stillschweigend nichts an.
-    Danach geht es zur Seite der Veranstaltung mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog
-    mit den Eingaben und dem Fehler am Feld offen.
+    Die Uhrzeiten sind beim Öffnen mit 18:00 und 12:00 vorausgefüllt (#379, A4). Danach geht es zur
+    Leitungsseite mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog mit den Eingaben und dem
+    Fehler am Feld offen.
     """
     rights = request.rights
     rights.require_section(rights.may_create_event())
@@ -963,7 +1024,7 @@ def event_create(request: HttpRequest) -> HttpResponse:
                 messages.success(request, text)
             return redirect("event_page", event=entry.key)
     elif request.method in READING:
-        form, creation_key = EventForm(), new_key()
+        form, creation_key = EventForm.for_create(), new_key()
     else:
         raise Http404
     dialog = _event_dialog(form, action=request.path, close_href=reverse("events"),
@@ -973,7 +1034,7 @@ def event_create(request: HttpRequest) -> HttpResponse:
 
 @checks_rights(*EVENT_ROWS)
 def event_page(request: HttpRequest, event: str) -> HttpResponse:
-    """Die Seite einer Veranstaltung mit Name, Beginn und Ende, nur für ihre Veranstaltungsleitung (VA-02, VA-03).
+    """Die Leitungsseite einer Veranstaltung, nur für ihre Veranstaltungsleitung (VA-02, VA-03, #379).
 
     Eine Zuordnung braucht es zum Ansehen in P2 nicht (V4). Einen Knopf zum Löschen gibt es nicht (VA-04).
     """
@@ -985,26 +1046,38 @@ def event_page(request: HttpRequest, event: str) -> HttpResponse:
 
 @checks_rights(*EVENT_ROWS)
 def event_edit(request: HttpRequest, event: str) -> HttpResponse:
-    """Dialog „… bearbeiten“ zeigen und Name, Beginn und Ende speichern, mit denselben Regeln wie beim Anlegen (VA-02, VG6).
+    """Dialog des Stifts der Kachel „Grunddaten“ zeigen und die Grunddaten speichern, mit denselben Prüfungen (VA-02).
 
-    Nur die Veranstaltungsleitung, auch ohne Zuordnung (V4); sonst „nicht gefunden“ (VA-03). Danach geht es zur
-    Seite der Veranstaltung mit der kurzen Meldung; bei einem Fehler bleibt der Dialog mit den Eingaben offen,
-    und nichts wird gespeichert.
+    Nur die Veranstaltungsleitung, auch ohne Zuordnung (V4); sonst „nicht gefunden“ (VA-03). Der Dialog schickt
+    den Stand beim Öffnen mit (`version`); hat inzwischen jemand gespeichert, auch in einem zweiten Fenster,
+    zeigt er den neuen Stand mit dem Satz aus AG7 und überschreibt nichts (#379). Danach geht es zur
+    Leitungsseite mit der kurzen Meldung; bei einem Fehler bleibt der Dialog mit den Eingaben offen, und nichts
+    wird gespeichert.
     """
     rights = request.rights
     entry = rights.event(event)
+    conflict = ""
     if request.method == "POST":
-        form = EventForm(request.POST)
+        version = request.POST.get("version", "")
+        form = EventForm(request.POST, before=entry)
         if form.is_valid():
-            entry, text = rights.edit_event(event, form.cleaned_data)
-            messages.success(request, text)
-            return redirect("event_page", event=entry.key)
+            done, entry, text = rights.edit_event(event, form.cleaned_data, version)
+            if done:
+                messages.success(request, text)
+                return redirect("event_page", event=entry.key)
+            form, version, conflict = _event_form_of(entry), entry.version, text
     elif request.method in READING:
-        form = EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS})
+        form, version = _event_form_of(entry), entry.version
     else:
         raise Http404
-    dialog = _event_dialog(form, action=request.path, close_href=reverse("event_page", args=[entry.key]), entry=entry)
+    dialog = _event_dialog(form, action=request.path, close_href=reverse("event_page", args=[entry.key]), entry=entry,
+                           hidden=[("version", version)], conflict=conflict)
     return _event_page(request, entry, dialog)
+
+
+def _event_form_of(entry) -> EventForm:
+    """Der Dialog des Stifts mit den gespeicherten Grunddaten einer Veranstaltung."""
+    return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry)
 
 
 @checks_rights("AN-01", "AN-02", "AN-03", "AN-06")
@@ -1282,11 +1355,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "datumsfeld": {
-        "name": _("Datumsfeld"), "template": "core/_datumsfeld.html", "issues": [117],
+        "name": _("Datumsfeld"), "template": "core/_datumsfeld.html", "issues": [117, 379],
         "purpose": _("Ein Datum über das Feld des Browsers, mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und "
                      "dem Fehler rot direkt darunter, wie beim Textfeld. Der Browser zeigt das Datum in seiner "
                      "Schreibweise und bietet seinen Kalender an, am Handy die Drehräder; Tage in der Zukunft lässt "
-                     "er nicht wählen, wo das Formular es so festlegt."),
+                     "er nicht wählen, wo das Formular es so festlegt. Mit Uhrzeit (zweites Beispiel) steht rechts "
+                     "daneben eine freiwillige Uhrzeit unter derselben Beschriftung, „(Pflicht, Uhrzeit "
+                     "freiwillig)“; die Fehler beider stehen zusammen darunter."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "kurzmeldung": {
@@ -1370,7 +1445,7 @@ BUILDING_BLOCKS = {
                      "blauer Schrift, die Farben der Informationsmeldung, meist klein. Beschriftung und Symbol sind "
                      "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
                      "Er führt zum Dialog, nie gleich zur Handlung."),
-        "pages": [_("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Organisation")],
     },
     "wahlflaechen": {
         "name": _("Wahl mit großen Flächen"), "template": "core/_wahlflaechen.html", "issues": [298],
@@ -1384,7 +1459,21 @@ BUILDING_BLOCKS = {
         "purpose": _("Ein Stift oben rechts in einer Fläche, dort, wo ein Dialog sein × hat. Er öffnet den Dialog "
                      "„… bearbeiten“, in dem alle Einstellungen dieser Sache an einem Ort stehen, etwa Name und "
                      "Ring einer Organisation. Er steht nur, wo man bearbeiten darf."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
+    },
+    "veranstaltungszeile": {
+        "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379],
+        "purpose": _("Eine Veranstaltung als breite, flache Zeile mit feinem Rand: der Name fett als Link zu ihrer "
+                     "Seite, darunter grau Zeitraum, mit Uhrzeiten, wo eingetragen, und Ort. Keine Lilie, solange es "
+                     "keine Bilder gibt; rechts kommen später Zustand und Anmeldezahl dazu."),
+        "pages": [_("Veranstaltungen")],
+    },
+    "kalenderblaetter": {
+        "name": _("Kalenderblätter"), "template": "core/_kalenderblaetter.html", "issues": [379],
+        "purpose": _("Beginn und Ende einer Veranstaltung als zart blaue Kalenderblätter mit Wochentag, Tag, Monat "
+                     "und Jahr, darunter die Uhrzeit, falls eingetragen; dazwischen die Dauer in Tagen. Darunter auf "
+                     "grauer Fläche der Ort, falls eingetragen (zweites Beispiel ohne Uhrzeit und Ort)."),
+        "pages": [_("Veranstaltungen")],
     },
     "schalter": {
         "name": _("Schalter"), "template": "core/_schalter.html", "issues": [95, 98],
@@ -1394,7 +1483,7 @@ BUILDING_BLOCKS = {
                      "des Dialogs. Als Regler der Einwilligung (drittes Beispiel) steht er ohne Satz beim Öffnen "
                      "auf „aus“, Vorleseprogramme sagen ihn als Ankreuzfeld an, und fehlt die Bestätigung, steht "
                      "der Fehler rot darunter, wie beim Textfeld."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "orgakopf": {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95, 92],
@@ -1622,6 +1711,20 @@ def _organisation_examples() -> dict:
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
+def _event_examples() -> dict:
+    """Erfundene Veranstaltungen für den Bausteinkatalog (#379): Zeilen der Liste und Kalenderblätter."""
+    camp = Event(name="Pfingstlager 2028", start=date(2028, 6, 2), start_time=time(18, 0), end=date(2028, 6, 5),
+                 end_time=time(12, 0), location="Burg Ludwigstein")
+    thing = Event(name="Stammesthing Walhall", start=date(2028, 1, 14), end=date(2028, 1, 16))
+    long_name = Event(name="Sommerfahrt der Sippe Falken an die Ostsee mit Zwischenhalt am Beispielsee",
+                      start=date(2028, 7, 20), end=date(2028, 7, 30), location="Zeltplatz Musterwiese bei Musterhausen")
+    return {
+        "event_rows": [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
+                        "href": "#h-veranstaltungszeile"} for entry in (thing, camp, long_name)],
+        "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
+    }
+
+
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")
 def building_blocks(request: HttpRequest) -> HttpResponse:
     """Bausteinkatalog (#176): jeder entschiedene Baustein mit erfundenen Beispielen.
@@ -1639,6 +1742,11 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
         "scout_name_form": ScoutNameForm(initial={"scout_name": "Kiwi"}, auto_id="katalog_%s"),
         # Datumsfeld (#117) mit erfundenem Datum; der Fehler am Feld sieht aus wie beim Textfeld darüber.
         "date_form": ManagedPersonForm(initial={"birth_date": date(2015, 5, 14)}, auto_id="katalog_datum_%s"),
+        # Datumsfeld mit Uhrzeit (#379): Beginn wie beim Anlegen vorausgefüllt, mit erfundenem Tag.
+        "event_form": EventForm(initial={"start": date(2028, 6, 2), "start_time": time(18, 0)},
+                                auto_id="katalog_va_%s"),
+        # Veranstaltung in einer Liste und Kalenderblätter (#379), erfunden wie in den Szenarien; nichts aus der Datenbank.
+        **_event_examples(),
         "membership": {"label": _("Mitgliedschaft"), "org": "Sippe Falken", "way": "Pfadfinderbund Boreas › Stamm Walhall"},
         # Rollen ohne zweite Zeile (#219); die lange Organisation zeigt den Umbruch.
         "tiles": [
