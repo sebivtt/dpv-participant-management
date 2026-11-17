@@ -226,7 +226,9 @@ def _record(context: BrowserContext) -> None:
     os.close(handle)
     entry = {"context": context, "target": Path(target), "stopped": False}
     _recording.append(entry)
-    context.tracing.start(screenshots=True, snapshots=True)
+    # Ohne laufende Bildschirmfotos: Sie machten die Rauchtests lokal gut 12 % langsamer statt rund 8 %; die
+    # Seiten zeigt die Aufzeichnung trotzdem, nachgebaut aus den gespeicherten Seiteninhalten (#349).
+    context.tracing.start(snapshots=True)
     close = context.close
 
     def close_after_trace(**options) -> None:
