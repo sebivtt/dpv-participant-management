@@ -858,12 +858,19 @@ def organisation_delete_managed(request: HttpRequest, unit: str, person: str) ->
     return _with_dialog(request, found, delete_dialog(found, rights.deleting_managed(found, person), action=request.path))
 
 
-# Veranstaltungen (#100, Probe in P2; Leitungsseite seit #379). Liste, Leitungsseite je Veranstaltung und zwei
-# Dialoge mit eigener Adresse, damit sie auch ohne Skript gehen. Eine Veranstaltung kommt immer über ihre Kennung
-# aus der zentralen Rechteprüfung, fremde sind „nicht gefunden“ (VA-03); die Bereiche ohne Kennung zeigen ohne
-# Recht „kein Zugriff“ (VA-05, #64). Löschen gibt es nicht (VA-04): keine Adresse, und andere Anfragen als Lesen
-# ergeben „nicht gefunden“.
+# Veranstaltungen (#100, Probe in P2; Leitungsseite seit #379, Anlegen in Schritten seit #380). Liste, Leitungsseite
+# je Veranstaltung mit dem Dialog des Stifts und der Ablauf beim Anlegen, jede Seite und jeder Dialog mit eigener
+# Adresse, damit sie auch ohne Skript gehen. Eine Veranstaltung kommt immer über ihre Kennung aus der zentralen
+# Rechteprüfung, fremde sind „nicht gefunden“ (VA-03); die Bereiche ohne Kennung zeigen ohne Recht „kein Zugriff“
+# (VA-05, #64). Löschen gibt es nur als „Entwurf löschen“ beim Abbrechen des Anlegens (VA-06); sonst nicht (VA-04):
+# andere Anfragen als Lesen ergeben dort „nicht gefunden“.
 EVENT_ROWS = ("VA-01", "VA-02", "VA-03", "VA-04", "VA-05")
+EVENT_CREATE_ROWS = (*EVENT_ROWS, "VA-06")
+# Das Formular eines Schritts beim Anlegen; die Felder gehören über ihr Attribut „form“ dazu (#380).
+STEP_FORM = "f-schritt"
+# Die Entwürfe, die die Person in dieser Sitzung gelöscht hat: Ein zweites „Entwurf löschen“, etwa ein Doppelklick,
+# führt dann ohne Fehler zur Liste (#380, BG2); alle anderen bekommen für die Adresse weiter „nicht gefunden“.
+DELETED_DRAFTS = "geloeschte_entwuerfe"
 
 
 def period(entry) -> str:
@@ -917,8 +924,8 @@ def calendar_sheets(entry) -> dict:
     }
 
 
-def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpResponse:
-    """Die Liste „Veranstaltungen“ mit dem Abschnitt „Von mir geleitet“, auf Wunsch mit offenem Dialog (#379, A5)."""
+def _events_page(request: HttpRequest) -> HttpResponse:
+    """Die Liste „Veranstaltungen“ mit dem Abschnitt „Von mir geleitet“ (#379, A5)."""
     rights = request.rights
     rows = [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
              "href": reverse("event_page", args=[entry.key])} for entry in rights.own_events()]
@@ -929,7 +936,6 @@ def _events_page(request: HttpRequest, dialog: dict | None = None) -> HttpRespon
         "create_label": event_texts.CREATE_TITLE,
         "list_title": event_texts.LIST_TITLE,
         "none_yet": event_texts.NONE_YET,
-        "dialog": dialog,
     })
 
 
@@ -960,18 +966,19 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     })
 
 
-def _event_dialog(form: EventForm, action: str, close_href: str, entry=None, hidden: tuple = (),
+def _event_dialog(form: EventForm, action: str, close_href: str, entry, hidden: tuple = (),
                   conflict: str = "") -> dict:
-    """„Veranstaltung erstellen“ oder, mit `entry`, „… bearbeiten“: Name, Beginn, Ende, Ort und der blaue Knopf.
+    """Der Dialog des Stifts „… bearbeiten“: Name, Beginn, Ende, Ort und der blaue Knopf „Speichern“.
 
     Fragt das Formular nach der Dauer, steht unter Beginn und Ende der Schalter „Ja, die Dauer stimmt“ (#379,
     AG4). `conflict` ist der Satz, wenn inzwischen jemand anderes gespeichert hat; er steht oben im Dialog (AG7).
+    Bis #380 gab es denselben Dialog auch zum Erstellen; seitdem ist das Schritt 1 des Ablaufs.
     """
     return {
-        "title": event_texts.EDIT_TITLE % {"event": entry.name} if entry else event_texts.CREATE_TITLE,
+        "title": event_texts.EDIT_TITLE % {"event": entry.name},
         "close_href": close_href,
         "confirm_action": action,
-        "confirm_label": event_texts.SAVE_BUTTON if entry else event_texts.CREATE_BUTTON,
+        "confirm_label": event_texts.SAVE_BUTTON,
         "confirm_primary": True,
         "form_id": "f-dialog",
         # Die Meldungen am Feld kommen vom Tool, nicht als Blase des Browsers (wie #117 und #296).
@@ -996,20 +1003,20 @@ def events(request: HttpRequest) -> HttpResponse:
     return _events_page(request)
 
 
-@checks_rights(*EVENT_ROWS)
+@checks_rights(*EVENT_CREATE_ROWS)
 # Wie `never_cache`, aber ohne die Kopfzeile „Expires“ mit der Uhrzeit: Seiten ohne Kennung antworten sonst je nach
 # Sekunde anders, und der Vergleich echter mit erfundenen Kennungen in tests/test_nicht_gefunden.py schlüge fehl.
 @cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def event_create(request: HttpRequest) -> HttpResponse:
-    """Dialog „Veranstaltung erstellen“ zeigen und die Veranstaltung anlegen; wer anlegt, leitet sie (VA-01, TEAM-01).
+    """„Veranstaltung erstellen“: Schritt 1 „Grunddaten“ einer neuen Veranstaltung; „Weiter“ speichert den Entwurf.
 
-    Nur mit Zuordnung, sonst „kein Zugriff“, lesend wie beim Abschicken, auch wenn die Zuordnung endet, während
-    der Dialog offen ist (VA-05, VG9). Der Dialog bekommt beim Öffnen eine eigene Kennung (`creation_key`), damit
-    ein Doppelklick die Veranstaltung nur einmal anlegt (VG8); eine in falscher Form ist „nicht gefunden“. Der
-    Browser speichert den Dialog nicht, sonst legte ein zweites Anlegen nach „Zurück“ stillschweigend nichts an.
-    Die Uhrzeiten sind beim Öffnen mit 18:00 und 12:00 vorausgefüllt (#379, A4). Danach geht es zur
-    Leitungsseite mit der kurzen Meldung (#186); bei einem Fehler bleibt der Dialog mit den Eingaben und dem
-    Fehler am Feld offen.
+    Wer anlegt, leitet sie (VA-01, TEAM-01). Nur mit Zuordnung, sonst „kein Zugriff“, lesend wie beim Abschicken,
+    auch wenn die Zuordnung endet, während Schritt 1 offen ist (VA-05, VG9, #380 BG5). Das Formular bekommt beim
+    Öffnen eine eigene Kennung (`creation_key`), damit ein Doppelklick auf „Weiter“ nur einen Entwurf anlegt (VG8,
+    BG1); eine in falscher Form ist „nicht gefunden“. Der Browser speichert die Seite nicht, sonst legte ein
+    zweites Anlegen nach „Zurück“ im Browser stillschweigend nichts an. Die Uhrzeiten sind beim Öffnen mit 18:00
+    und 12:00 vorausgefüllt (#379, A4). Danach geht es ohne Meldung zur Zusammenfassung (#380, B1); bei einem
+    Fehler bleibt Schritt 1 mit den Eingaben und dem Fehler am Feld stehen, und nichts wird gespeichert (BG3).
     """
     rights = request.rights
     rights.require_section(rights.may_create_event())
@@ -1017,19 +1024,15 @@ def event_create(request: HttpRequest) -> HttpResponse:
         creation_key = request.POST.get("creation_key", "")
         if not is_key(creation_key):
             raise Http404
-        form = EventForm(request.POST)
+        form = EventForm(request.POST, form_id=STEP_FORM)
         if form.is_valid():
-            entry, text = rights.create_event(form.cleaned_data, creation_key)
-            if text:
-                messages.success(request, text)
-            return redirect("event_page", event=entry.key)
+            entry = rights.create_event(form.cleaned_data, creation_key)
+            return redirect("event_create_summary", event=entry.key)
     elif request.method in READING:
-        form, creation_key = EventForm.for_create(), new_key()
+        form, creation_key = EventForm.for_create(form_id=STEP_FORM), new_key()
     else:
         raise Http404
-    dialog = _event_dialog(form, action=request.path, close_href=reverse("events"),
-                           hidden=[("creation_key", creation_key)])
-    return _events_page(request, dialog)
+    return _create_page(request, 1, form=form, hidden=[("creation_key", creation_key)])
 
 
 @checks_rights(*EVENT_ROWS)
@@ -1076,32 +1079,184 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
 
 
 
-@checks_rights(*EVENT_ROWS)
+def _steps(current: int) -> list[dict]:
+    """Die Fortschrittsanzeige beim Anlegen (#380): je Schritt Nummer, Name und ob er erledigt oder der aktuelle ist.
+
+    Spätere Issues fügen ihre Schritte zwischen „Grunddaten“ und „Zusammenfassung“ ein (#356, Tabelle).
+    """
+    names = (event_texts.BASICS, event_texts.STEP_SUMMARY)
+    return [{"number": event_texts.STEP % {"number": number}, "name": name, "done": number < current,
+             "current": number == current} for number, name in enumerate(names, start=1)]
+
+
+def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | None = None, hidden: tuple = (),
+                 conflict: str = "", dialog: dict | None = None) -> HttpResponse:
+    """Ein Schritt beim Anlegen (#380): Kopf, Fortschrittsanzeige, Inhalt und unten „Abbrechen“, „Zurück“ und „Weiter“.
+
+    Schritt 1 „Grunddaten“ zeigt die Felder aus #379; ohne `entry` für eine neue Veranstaltung, sonst für den
+    gespeicherten Entwurf (Ziel von „Zurück“ und dem Stift). „Abbrechen“ führt dort ohne Rückfrage zur Liste
+    (B5). Schritt 2 „Zusammenfassung“ zeigt die Grunddaten wie die Kachel der Leitungsseite, mit dem Stift zurück
+    zu Schritt 1; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 1 (#29, Frage 4).
+    """
+    context = {
+        "title": entry.name if entry else event_texts.CREATE_TITLE,
+        "head_line": event_texts.DRAFT_HEAD if entry else "",
+        "steps": _steps(step),
+        "step": step,
+        "form_id": STEP_FORM,
+        "cancel_label": event_texts.CANCEL,
+        "back_label": event_texts.BACK,
+        "dialog": dialog,
+    }
+    if step == 1:
+        context.update({
+            "action": request.path, "event_form": form, "asks_duration": bool(form.duration_question),
+            "hidden": list(hidden), "conflict": conflict, "cancel_href": reverse("events"), "back_href": None,
+            "submit_label": event_texts.NEXT,
+        })
+    else:
+        basics = reverse("event_create_basics", args=[entry.key])
+        context.update({
+            "action": reverse("event_create_summary", args=[entry.key]), "calendar": calendar_sheets(entry),
+            "basics_title": event_texts.BASICS, "basics_change": event_texts.BASICS_CHANGE, "basics_href": basics,
+            "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": basics,
+            "submit_label": event_texts.SAVE_EVENT,
+        })
+    return render(request, "core/veranstaltung_anlegen.html", context)
+
+
+def _draft(request: HttpRequest, event: str):
+    """Der Entwurf aus der Adresse, solange die Person ihn anlegt: (Entwurf, None).
+
+    Ist das Anlegen beendet, (None, Weiterleitung zur Leitungsseite) (BV2). Ohne Leitung oder wenn eine andere
+    Person anlegt, etwa für eine Mitleitung, „nicht gefunden“ (VA-06, BV1).
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    if entry.creating_by_id is None:
+        return None, redirect("event_page", event=entry.key)
+    if not rights.is_creating(entry):
+        raise Http404
+    return entry, None
+
+
+def _cancel_dialog(entry, deletable: bool) -> dict:
+    """Der Dialog „Anlegen abbrechen?“ (#380, Zielbild Ansicht 5b) über der Zusammenfassung.
+
+    Statt „Abbrechen“ unten „Entwurf löschen“ (rot) neben „Entwurf speichern“ (dunkelblau); darf die Person nicht
+    löschen (Mitleitung, Anmeldung; BV3), nur „Entwurf speichern“. × und Esc führen zurück zur Zusammenfassung.
+    """
+    text = event_texts.CANCEL_TEXT if deletable else event_texts.CANCEL_TEXT_KEEP
+    return {
+        "title": event_texts.CANCEL_QUESTION,
+        "text": text % {"event": entry.name},
+        "close_href": reverse("event_create_summary", args=[entry.key]),
+        "confirm_action": reverse("event_create_cancel", args=[entry.key]),
+        "confirm_label": event_texts.SAVE_DRAFT,
+        "confirm_primary": True,
+        "no_cancel": True,
+        "second_action": reverse("event_create_delete", args=[entry.key]) if deletable else None,
+        "second_label": event_texts.DELETE_DRAFT,
+    }
+
+
+@checks_rights(*EVENT_CREATE_ROWS)
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
-    """Gerüst (#380): Schritt 1 „Grunddaten“ eines gespeicherten Entwurfs."""
-    raise Http404
+    """Schritt 1 „Grunddaten“ eines gespeicherten Entwurfs, Ziel von „Zurück“ und dem Stift (#380, B2).
+
+    Zeigt die gespeicherten Angaben; „Weiter“ speichert sie mit denselben Prüfungen wie der Stift der Leitungsseite
+    und führt zur Zusammenfassung. Bei einem Fehler bleibt der Schritt mit den Eingaben stehen, und der Entwurf
+    behält seine Angaben (BG4); hat inzwischen ein zweites Fenster gespeichert, zeigt er den neuen Stand mit dem
+    Satz aus AG7 (#379). Nur für die Person, die anlegt (`_draft()`).
+    """
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("version", "")
+        form = EventForm(request.POST, before=entry, form_id=STEP_FORM)
+        if form.is_valid():
+            done, entry, text = request.rights.edit_event(event, form.cleaned_data, version)
+            if done:
+                return redirect("event_create_summary", event=entry.key)
+            form, version, conflict = _event_form_of(entry, STEP_FORM), entry.version, text
+    elif request.method in READING:
+        form, version = _event_form_of(entry, STEP_FORM), entry.version
+    else:
+        raise Http404
+    return _create_page(request, 1, entry=entry, form=form, hidden=[("version", version)], conflict=conflict)
 
 
-@checks_rights(*EVENT_ROWS)
+@checks_rights(*EVENT_CREATE_ROWS)
 def event_create_summary(request: HttpRequest, event: str) -> HttpResponse:
-    """Gerüst (#380): Zusammenfassung und „Veranstaltung speichern“."""
-    raise Http404
+    """Die Zusammenfassung beim Anlegen; „Veranstaltung speichern“ beendet das Anlegen (#380, B1).
+
+    Danach geht es zur Leitungsseite mit „… ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung.“;
+    veröffentlicht wird nur dort (#359). Nur für die Person, die anlegt (`_draft()`), auch ohne Zuordnung (BG5).
+    """
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    if request.method == "POST":
+        entry, now = request.rights.finish_creating(event)
+        if now:
+            messages.success(request, event_texts.SAVED_AS_DRAFT % {"event": entry.name})
+        return redirect("event_page", event=entry.key)
+    if request.method not in READING:
+        raise Http404
+    return _create_page(request, 2, entry=entry)
 
 
-@checks_rights(*EVENT_ROWS)
+@checks_rights(*EVENT_CREATE_ROWS)
 def event_create_cancel(request: HttpRequest, event: str) -> HttpResponse:
-    """Gerüst (#380): Dialog „Anlegen abbrechen?“ und „Entwurf speichern“."""
-    raise Http404
+    """Dialog „Anlegen abbrechen?“ über der Zusammenfassung; „Entwurf speichern“ beendet das Anlegen (#380, B4).
+
+    Danach geht es zur Liste mit „… ist als Entwurf gespeichert. …“. „Entwurf löschen“ schickt an
+    `event_create_delete()`. Nur für die Person, die anlegt (`_draft()`).
+    """
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    rights = request.rights
+    if request.method == "POST":
+        entry, now = rights.finish_creating(event)
+        if now:
+            messages.success(request, event_texts.SAVED_AS_DRAFT % {"event": entry.name})
+        return redirect("events")
+    if request.method not in READING:
+        raise Http404
+    return _create_page(request, 2, entry=entry, dialog=_cancel_dialog(entry, rights.may_delete_draft(entry)))
 
 
-@checks_rights(*EVENT_ROWS)
+@checks_rights(*EVENT_CREATE_ROWS)
 def event_create_delete(request: HttpRequest, event: str) -> HttpResponse:
-    """Gerüst (#380): „Entwurf löschen“."""
-    raise Http404
+    """„Entwurf löschen“ im Dialog „Anlegen abbrechen?“: löscht den Entwurf und führt zur Liste (VA-06, #380, B3).
 
-def _event_form_of(entry) -> EventForm:
-    """Der Dialog des Stifts mit den gespeicherten Grunddaten einer Veranstaltung."""
-    return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry)
+    Nur als Formular; lesend „nicht gefunden“. Nur die Person, die anlegt, als einzige Leitung und ohne Anmeldung
+    (`Rights.delete_draft()`); sonst löscht die Anfrage nichts und führt zurück in den Dialog, der dann nur
+    „Entwurf speichern“ bietet (BV3). Ist das Anlegen beendet, führt sie zur Leitungsseite (BV2). Ein zweites
+    Abschicken nach dem Löschen, etwa ein Doppelklick, führt ohne Fehler zur Liste (BG2).
+    """
+    if request.method != "POST":
+        raise Http404
+    if event in request.session.get(DELETED_DRAFTS, []):
+        return redirect("events")
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    name = request.rights.delete_draft(event)
+    if name is None:
+        return redirect("event_create_cancel", event=entry.key)
+    messages.success(request, event_texts.DRAFT_DELETED % {"event": name})
+    # Nur die letzten Kennungen; mehr braucht ein Doppelklick nicht.
+    request.session[DELETED_DRAFTS] = [*request.session.get(DELETED_DRAFTS, [])[-9:], event]
+    return redirect("events")
+
+def _event_form_of(entry, form_id: str = "f-dialog") -> EventForm:
+    """Die Felder mit den gespeicherten Grunddaten einer Veranstaltung, im Dialog des Stifts oder in Schritt 1 (#380)."""
+    return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry, form_id=form_id)
 
 
 @checks_rights("AN-01", "AN-02", "AN-03", "AN-06")
@@ -1479,10 +1634,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "stift": {
-        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95],
+        "name": _("Bearbeiten-Symbol"), "template": "core/_stift.html", "issues": [95, 380],
         "purpose": _("Ein Stift oben rechts in einer Fläche, dort, wo ein Dialog sein × hat. Er öffnet den Dialog "
                      "„… bearbeiten“, in dem alle Einstellungen dieser Sache an einem Ort stehen, etwa Name und "
-                     "Ring einer Organisation. Er steht nur, wo man bearbeiten darf."),
+                     "Ring einer Organisation, oder auf der Zusammenfassung beim Anlegen den Schritt mit diesen "
+                     "Angaben. Er steht nur, wo man bearbeiten darf."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "veranstaltungszeile": {
@@ -1490,6 +1646,14 @@ BUILDING_BLOCKS = {
         "purpose": _("Eine Veranstaltung als breite, flache Zeile mit feinem Rand: der Name fett als Link zu ihrer "
                      "Seite, darunter grau Zeitraum, mit Uhrzeiten, wo eingetragen, und Ort. Keine Lilie, solange es "
                      "keine Bilder gibt; rechts kommen später Zustand und Anmeldezahl dazu."),
+        "pages": [_("Veranstaltungen")],
+    },
+    "fortschritt": {
+        "name": _("Fortschrittsanzeige"), "template": "core/_fortschritt.html", "issues": [380],
+        "purpose": _("Zeigt in einem Ablauf mit Schritten, etwa beim Anlegen einer Veranstaltung, alle Schritte "
+                     "nebeneinander, am Handy untereinander: je „Schritt 1“ klein und darunter der Name. Der aktuelle "
+                     "ist fett mit sonnengelbem Strich, erledigte haben einen dunkelblauen, spätere einen grauen. Die "
+                     "Schritte sind keine Links; zurück geht es mit „Zurück“ und dem Stift."),
         "pages": [_("Veranstaltungen")],
     },
     "kalenderblaetter": {
@@ -1519,7 +1683,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220, 331],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220, 331, 380],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
@@ -1532,7 +1696,9 @@ BUILDING_BLOCKS = {
                      "Nach Öffnen, Schließen und Speichern steht die Seite dahinter an derselben Stelle wie vorher; "
                      "ohne Skript springt sie zum Abschnitt mit dem Knopf, der den Dialog geöffnet hat (#220). "
                      "Jeder Text im Dialog bricht um, ein sehr langer Name notfalls mitten im Wort; der Dialog "
-                     "bleibt so breit wie sonst und rollt nie seitlich (#331)."),
+                     "bleibt so breit wie sonst und rollt nie seitlich (#331). Statt „Abbrechen“ kann ein zweiter, "
+                     "roter Knopf stehen, der etwas abschickt, etwa „Entwurf löschen“ neben „Entwurf speichern“ "
+                     "(fünftes Beispiel); geschlossen wird er dann mit × und Escape (#380)."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "auswahl": {
@@ -1742,10 +1908,17 @@ def _event_examples() -> dict:
     thing = Event(name="Stammesthing Walhall", start=date(2028, 1, 14), end=date(2028, 1, 16))
     long_name = Event(name="Sommerfahrt der Sippe Falken an die Ostsee mit Zwischenhalt am Beispielsee",
                       start=date(2028, 7, 20), end=date(2028, 7, 30), location="Zeltplatz Musterwiese bei Musterhausen")
+    # Der Dialog „Anlegen abbrechen?“ (#380) an seinem Platz im Katalog; die Knöpfe schicken nichts ab.
+    cancel = dict(_cancel_dialog(long_name, deletable=True), close_href="#h-dialog", confirm_action="#h-dialog",
+                  second_action="#h-dialog", preview_id="h-dialog-abbrechen",
+                  text=event_texts.CANCEL_TEXT % {"event": "Sommerfahrt 2028"})
     return {
         "event_rows": [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
                         "href": "#h-veranstaltungszeile"} for entry in (thing, camp, long_name)],
         "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
+        # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, wie auf der Zusammenfassung.
+        "steps": _steps(2),
+        "cancel_dialog": cancel,
     }
 
 

@@ -13,6 +13,10 @@ Seit #379 öffnet der Stift der Kachel „Grunddaten“ den Dialog statt des Kno
 und Ende steht je eine Uhrzeit; die Felder sucht der Test deshalb über ihren Namen. Ein Beginn vor heute ist
 seit #379 verboten; damit die Tage aus #100 gültig bleiben, ist „heute“ hier der 05.01.2027. Uhrzeiten, Ort,
 Kachel und Leitungsseite prüft rauchtests/test_grunddaten.py.
+
+Seit #380 ist „Veranstaltung erstellen“ kein Dialog mehr, sondern Schritt 1 eines Ablaufs: „Weiter“ führt zur
+Zusammenfassung, erst „Veranstaltung speichern“ dort zur Leitungsseite. Nachgezogen sind nur diese Wege; den
+Ablauf selbst prüft rauchtests/test_veranstaltung_anlegen.py.
 """
 
 from datetime import date
@@ -39,7 +43,11 @@ EDIT_BUTTON = 'main a.a-stift[href$="/bearbeiten/"]'
 START = 'dialog input[name="start"]'
 END = 'dialog input[name="end"]'
 SUBMIT = 'dialog button[type="submit"]'
-CREATED = "Probelager 2027 ist angelegt. Du leitest diese Veranstaltung."
+# Schritt 1 beim Anlegen (#380): die Felder im Formular des Schritts, „Weiter“ und auf der Zusammenfassung „Veranstaltung speichern“.
+STEP_START = 'form#f-schritt input[name="start"]'
+STEP_END = 'form#f-schritt input[name="end"]'
+STEP_SUBMIT = 'form#f-schritt button[type="submit"]'
+CREATED = "Probelager 2027 ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."
 
 
 @pytest.fixture(autouse=True)
@@ -78,27 +86,29 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     expect(pc.locator(CREATE_BUTTON)).to_have_text("Veranstaltung erstellen")
     pc.keyboard.press("Enter")
     pc.wait_for_url(f"{LIST}erstellen/")
-    dialog = _dialog(pc)
-    expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
-    expect(dialog.locator("h2")).to_have_text("Veranstaltung erstellen")
+    expect(pc.locator("h1")).to_have_text("Veranstaltung erstellen")
     name = pc.get_by_label("Name")
     expect(name).to_be_focused()
     assert run_axe(pc) == []
 
     pc.keyboard.type("Probelager 2027")
     pc.keyboard.press("Tab")
-    start = pc.locator(START)
+    start = pc.locator(STEP_START)
     expect(start).to_be_focused()
     assert start.get_attribute("type") == "date"
     start.fill("2027-05-15")
     stations = _stations_to_element(pc, 'input[name="end"]', steps=10)
     _all_visible(stations)
-    end = pc.locator(END)
+    end = pc.locator(STEP_END)
     assert end.get_attribute("type") == "date"
     end.fill("2027-05-17")
-    stations = _stations_to_element(pc, SUBMIT, steps=10)
+    stations = _stations_to_element(pc, STEP_SUBMIT, steps=10)
     _all_visible(stations)
+    pc.keyboard.press("Enter")
+    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    stations = _stations_to_element(pc, STEP_SUBMIT, steps=30)
+    _all_visible(stations)
+    expect(pc.locator(STEP_SUBMIT)).to_have_text("Veranstaltung speichern")
     pc.keyboard.press("Enter")
 
     pc.wait_for_url(f"{LIST}*/")
@@ -125,18 +135,19 @@ def test_am_pc_fehler_am_feld_kommen_vom_tool(pc):
     login(pc)
     _erika_in_den_falken()
     pc.goto(f"{LIST}erstellen/")
-    pc.locator(START).fill("2027-05-17")
-    pc.locator(END).fill("2027-05-15")
+    pc.locator(STEP_START).fill("2027-05-17")
+    pc.locator(STEP_END).fill("2027-05-15")
     # Der Browser hält das leere Pflichtfeld nicht selbst an; die Meldungen kommen vom Tool.
-    pc.get_by_role("button", name="Anlegen").click()
-    expect(_dialog(pc)).to_contain_text("Bitte gib den Namen ein.")
-    expect(_dialog(pc)).to_contain_text("Das Ende liegt vor dem Beginn.")
+    pc.get_by_role("button", name="Weiter").click()
+    expect(pc.locator("main")).to_contain_text("Bitte gib den Namen ein.")
+    expect(pc.locator("main")).to_contain_text("Das Ende liegt vor dem Beginn.")
     expect(pc.get_by_label("Name")).to_have_attribute("aria-invalid", "true")
-    expect(pc.locator(END)).to_have_accessible_description("Das Ende liegt vor dem Beginn.")
-    expect(pc.locator(START)).to_have_value("2027-05-17")
+    expect(pc.locator(STEP_END)).to_have_accessible_description("Das Ende liegt vor dem Beginn.")
+    expect(pc.locator(STEP_START)).to_have_value("2027-05-17")
     assert run_axe(pc) == []
 
-    pc.keyboard.press("Escape")
+    # Seit #380 führt „Abbrechen“ in Schritt 1 ohne Rückfrage zur Liste (B5).
+    pc.get_by_role("link", name="Abbrechen").click()
     pc.wait_for_url(LIST)
     expect(pc.locator("main")).to_contain_text("Du leitest noch keine Veranstaltung.")
 
@@ -153,7 +164,7 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{LIST}erstellen/")
-    expect(_dialog(handy)).to_be_visible()
+    expect(handy.locator("h1")).to_have_text("Veranstaltung erstellen")
     _no_side_scroll(handy)
     assert run_axe(handy) == []
 
@@ -161,11 +172,15 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     name = handy.get_by_label("Name")
     _type_like_a_phone(name, "Probe", "l", "lager", " 2027")
     expect(name).to_have_value("Probelager 2027")
-    handy.locator(START).fill("2027-05-15")
-    handy.locator(END).fill("2027-05-17")
+    handy.locator(STEP_START).fill("2027-05-15")
+    handy.locator(STEP_END).fill("2027-05-17")
     _no_side_scroll(handy)
 
-    stations = _stations_to_element(handy, SUBMIT, steps=10)
+    stations = _stations_to_element(handy, STEP_SUBMIT, steps=10)
+    _all_visible(stations)
+    handy.keyboard.press("Enter")
+    handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    stations = _stations_to_element(handy, STEP_SUBMIT, steps=30)
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{LIST}*/")

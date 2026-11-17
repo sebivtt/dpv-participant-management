@@ -1071,17 +1071,19 @@ class Rights:
         """Darf die Person eine Veranstaltung anlegen? Nur mit Zuordnung (BER-03, VA-01, VA-05)."""
         return self.has_assignment()
 
-    def create_event(self, values: dict, creation_key) -> tuple[Event, str]:
-        """Legt eine Veranstaltung an; die Person ist danach ihre Veranstaltungsleitung (VA-01, TEAM-01).
+    def create_event(self, values: dict, creation_key) -> Event:
+        """Legt eine Veranstaltung als Entwurf an; die Person ist danach ihre Veranstaltungsleitung (VA-01, TEAM-01).
 
-        Gibt die Veranstaltung und die kurze Meldung zurück. `values` sind die geprüften Angaben aus `EventForm`;
-        die Leitung kommt nur aus der Anmeldung, nie aus dem Formular (VV3). Ohne Zuordnung „kein Zugriff“ (VA-05).
+        Das ist „Weiter“ in Schritt 1 beim Anlegen (#380): Danach läuft das Anlegen, bis die Person es mit
+        `finish_creating()` beendet oder den Entwurf mit `delete_draft()` löscht. `values` sind die geprüften Angaben
+        aus `EventForm`; die Leitung kommt nur aus der Anmeldung, nie aus dem Formular (VV3). Ohne Zuordnung „kein
+        Zugriff“ (VA-05).
         Gesperrt ist das eigene Konto, und die Zuordnung wird darunter frisch geprüft: Endet die Mitgliedschaft,
         während das Formular offen ist oder gleichzeitig, wird nichts angelegt (VG9); das Beenden einer Rolle
         sperrt dasselbe Konto. `creation_key` ist die Kennung des Formulars: Schickt jemand dasselbe Formular zweimal
         ab, etwa mit einem Doppelklick, auch gleichzeitig, bleibt es bei einer Veranstaltung, und die zweite Antwort
-        hat keine Meldung (VG8). Gehört die Kennung zu einer Veranstaltung, die die Person nicht leitet, oder hat sie
-        die falsche Form, ist das „nicht gefunden“.
+        gibt dieselbe zurück (VG8, #380 BG1). Gehört die Kennung zu einer Veranstaltung, die die Person nicht leitet,
+        oder hat sie die falsche Form, ist das „nicht gefunden“.
         """
         self.require_section(self.may_create_event())
         if not is_key(creation_key):
@@ -1091,9 +1093,10 @@ class Rights:
             fresh = Rights(me)
             fresh.require_section(fresh.may_create_event())
             if Event.objects.filter(creation_key=creation_key).exists():
-                return fresh._created_before(creation_key), ""
+                return fresh._created_before(creation_key)
             # Was das Formular nicht kennt, bleibt wie im Datenmodell: ohne Uhrzeit und ohne Ort (#379).
-            created = Event(creation_key=creation_key, **{name: values[name] for name in EVENT_FIELDS if name in values})
+            created = Event(creation_key=creation_key, creating_by=me,
+                            **{name: values[name] for name in EVENT_FIELDS if name in values})
             try:
                 with transaction.atomic():
                     created.save()
@@ -1101,9 +1104,9 @@ class Rights:
                 # Dasselbe Formular wurde gleichzeitig ein zweites Mal abgeschickt (VG8).
                 if not Event.objects.filter(creation_key=creation_key).exists():
                     raise
-                return fresh._created_before(creation_key), ""
+                return fresh._created_before(creation_key)
             created.leads.add(me)
-        return created, str(event_texts.CREATED % {"event": created.name})
+        return created
 
     def _created_before(self, creation_key: str) -> Event:
         """Die Veranstaltung, die schon aus diesem Formular entstanden ist, wenn die Person sie leitet; sonst „nicht gefunden“."""
@@ -1111,6 +1114,66 @@ class Rights:
         if found is None:
             raise Http404
         return found
+
+    # Anlegen in Schritten (#380, VA-06)
+    #
+    # Den Ablauf eines Entwurfs (Schritt 1, Zusammenfassung, „Anlegen abbrechen?“) hat nur die Person, die ihn gerade
+    # anlegt (`Event.creating_by`), und nur, solange sie ihn leitet; alle anderen bekommen „nicht gefunden“, auch
+    # Mitleitungen und Admins im Support-Zugang (BV1). Beendet ist das Anlegen mit „Veranstaltung speichern“ oder
+    # „Entwurf speichern“; danach führen die Adressen des Ablaufs zur Leitungsseite (BV2). Eine Zuordnung braucht es
+    # dafür nicht mehr: Wer den Entwurf schon hat, leitet ihn und kann das Anlegen beenden (BG5, wie V4 aus #100).
+
+    def is_creating(self, entry: Event) -> bool:
+        """Legt die Person diese Veranstaltung gerade an, ist das Anlegen also noch nicht beendet (#380)?"""
+        return self.user is not None and entry.creating_by_id == self.user.pk
+
+    def may_delete_draft(self, entry: Event) -> bool:
+        """Darf die Person den Entwurf beim Abbrechen löschen (VA-06, #29 Frage 6)?
+
+        Nur, wer ihn gerade anlegt, als einzige Leitung und solange es keine Anmeldung gibt, ohne Frist (BV3).
+        """
+        return (self.is_creating(entry) and list(entry.leads.values_list("pk", flat=True)) == [self.user.pk]
+                and not Registration.objects.filter(event=entry).exists())
+
+    def finish_creating(self, key) -> tuple[Event, bool]:
+        """Beendet das Anlegen eines eigenen Entwurfs („Veranstaltung speichern“, „Entwurf speichern“; #380).
+
+        Gibt die Veranstaltung zurück und ob das Anlegen gerade jetzt beendet wurde; war es schon beendet, etwa nach
+        einem Doppelklick, ändert sich nichts. Gesperrt ist die Veranstaltung, damit ein gleichzeitiges „Entwurf
+        löschen“ danach frisch sieht, dass das Anlegen beendet ist. Ohne Leitung „nicht gefunden“; legt eine andere
+        Person an, ebenso (BV1).
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        with transaction.atomic():
+            entry = self.entry(self.events().select_for_update(), key)
+            if entry.creating_by_id is None:
+                return entry, False
+            if not self.is_creating(entry):
+                raise Http404
+            entry.creating_by = None
+            entry.save(update_fields=["creating_by"])
+        return entry, True
+
+    def delete_draft(self, key) -> str | None:
+        """Löscht einen Entwurf beim Abbrechen des Anlegens („Entwurf löschen“, VA-06); gibt seinen Namen zurück.
+
+        Gelöscht wird nur nach `may_delete_draft()`, frisch geprüft unter Sperre der Veranstaltung: Hat die Person
+        gleichzeitig „Entwurf speichern“ gewählt, kommt eine Mitleitung oder Anmeldung dazu, löscht sie nichts, und
+        das Ergebnis ist None. Ohne Leitung „nicht gefunden“, auch für Mitleitungen (BV1). Löschen nach dem Anlegen
+        gibt es nicht (VA-04, DSG-04 in P5).
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        with transaction.atomic():
+            entry = self.entry(self.events().select_for_update(), key)
+            if entry.creating_by_id is not None and not self.is_creating(entry):
+                raise Http404
+            if not self.may_delete_draft(entry):
+                return None
+            name = entry.name
+            entry.delete()
+        return name
 
     def edit_event(self, key, values: dict, version) -> tuple[bool, Event, str]:
         """Speichert die Grunddaten einer eigenen Veranstaltung; gibt zurück, ob es geklappt hat, sie und die Meldung (VA-02).

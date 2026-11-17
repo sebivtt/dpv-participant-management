@@ -296,12 +296,16 @@ def test_neue_veranstaltung_beginnt_oben(pc, monkeypatch):
     assert spot > 20
     create.click()
     pc.wait_for_url(f"{BASE}/veranstaltungen/erstellen/")
-    _steht_bei(pc, spot)
-    pc.get_by_label("Name").fill("Probelager 2027")
+    # Seit #380 ist „Veranstaltung erstellen“ kein Dialog mehr, sondern eine eigene Seite: Sie beginnt oben.
+    assert _y(pc) == 0
+    step = pc.locator("form#f-schritt")
+    step.get_by_label("Name").fill("Probelager 2027")
     # Seit #379 steht neben Beginn und Ende je eine Uhrzeit; die Felder sucht der Test über ihren Namen.
-    _dialog(pc).locator('input[name="start"]').fill("2027-05-15")
-    _dialog(pc).locator('input[name="end"]').fill("2027-05-17")
-    _dialog(pc).locator('button[type="submit"]').click()
+    step.locator('input[name="start"]').fill("2027-05-15")
+    step.locator('input[name="end"]').fill("2027-05-17")
+    step.locator('button[type="submit"]').click()
+    pc.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
+    pc.get_by_role("button", name="Veranstaltung speichern").click()
 
     pc.wait_for_url(f"{BASE}/veranstaltungen/*/")
     expect(pc.locator("h1")).to_have_text("Probelager 2027")

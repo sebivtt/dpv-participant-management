@@ -209,7 +209,7 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
                       "Ort"]
     # In Schritt 1 gibt es kein „Zurück“; „Abbrechen“ führt ohne Rückfrage zur Liste (B5).
     assert buttons(root) == {"Abbrechen": LIST, "Weiter": "senden"}
-    assert not _by_tag(root, "dialog")
+    assert not _by_tag(root, "dialog", aria_labelledby="h-dialog")
 
     response = weiter(org.wanda, client=client)
 
@@ -229,7 +229,8 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     assert _visible_text(_one(_by_tag(tile, "h2"))) == "Grunddaten"
     pencil = _one(_all(tile, lambda e: "a-stift" in _classes(e)))
     assert _attr(pencil, "href") == basics_address(created)
-    assert _visible_text(pencil) == "Grunddaten ändern"
+    # Vorleseprogramme hören „Grunddaten ändern“ statt des Symbols (Baustein „Bearbeiten-Symbol“, Zielbild 5).
+    assert _text(_one(_all(pencil, lambda e: "sr-nur" in _classes(e)))) == "Grunddaten ändern"
     sheets = [_visible_text(sheet) for sheet in _all(tile, lambda e: "a-kalenderblatt" in _classes(e))]
     assert sheets == ["Fr 02 Jun 2028 18:00", "Mo 05 Jun 2028 12:00"]
     assert place(root) == "Burg Ludwigstein"
@@ -327,7 +328,7 @@ def test_b6_kreuz_schliesst_den_dialog_ohne_aenderung(org, sommerfahrt):
     assert _attr(close, "href") == summary_address(sommerfahrt)
     assert _attr(dialog, "data-schliessen") == summary_address(sommerfahrt)
     root = _tree(client.get(summary_address(sommerfahrt)))
-    assert not _by_tag(root, "dialog")
+    assert not _by_tag(root, "dialog", aria_labelledby="h-dialog")
     assert progress(root)[1] == ("Schritt 2 Zusammenfassung", True)
     # Nichts hat sich geändert: Das Anlegen läuft, und „Entwurf löschen“ geht weiter.
     assert "Entwurf löschen" in dialog_buttons(open_dialog(_tree(client.get(cancel_address(sommerfahrt)))))

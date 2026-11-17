@@ -2,7 +2,7 @@
 
 Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026, für Anmeldungen aus den Szenarien zu #101 vom
 15.11.2026, für Uhrzeiten, Ort, Prüfungen und Leitungsseite aus dem Text von #379 und seinen Szenarien vom
-17.11.2026.
+17.11.2026, für das Anlegen in Schritten aus dem Text von #380 und seinen Szenarien vom 17.11.2026.
 """
 
 from django.utils.translation import gettext_lazy, ngettext_lazy
@@ -12,7 +12,6 @@ NAV = gettext_lazy("Veranstaltungen")
 LIST_TITLE = gettext_lazy("Von mir geleitet")
 NONE_YET = gettext_lazy("Du leitest noch keine Veranstaltung.")
 CREATE_TITLE = gettext_lazy("Veranstaltung erstellen")
-CREATE_BUTTON = gettext_lazy("Anlegen")
 EDIT_TITLE = gettext_lazy("%(event)s bearbeiten")
 SAVE_BUTTON = gettext_lazy("Speichern")
 # Zeitraum in Liste und Seite; ein Tag steht ohne „bis“.
@@ -53,8 +52,27 @@ LOCATION_TOO_LONG = gettext_lazy("Der Ort darf höchstens 100 Zeichen lang sein.
 START_IN_PAST = gettext_lazy("Der Beginn liegt in der Vergangenheit.")
 DURATION_QUESTION = gettext_lazy("Die Veranstaltung dauert %(count)s Tage. Stimmt das?")
 
-# Kurze Meldungen (#186)
-CREATED = gettext_lazy("%(event)s ist angelegt. Du leitest diese Veranstaltung.")
+# Anlegen in Schritten (#380): Fortschrittsanzeige, Kopf, Knöpfe und der Dialog „Anlegen abbrechen?“
+STEP = gettext_lazy("Schritt %(number)s")
+STEP_SUMMARY = gettext_lazy("Zusammenfassung")
+DRAFT_HEAD = gettext_lazy("Entwurf · Veranstaltung erstellen")
+BASICS_CHANGE = gettext_lazy("Grunddaten ändern")
+NEXT = gettext_lazy("Weiter")
+BACK = gettext_lazy("Zurück")
+CANCEL = gettext_lazy("Abbrechen")
+SAVE_EVENT = gettext_lazy("Veranstaltung speichern")
+CANCEL_QUESTION = gettext_lazy("Anlegen abbrechen?")
+CANCEL_TEXT = gettext_lazy("%(event)s ist als Entwurf gespeichert. Du kannst ihn speichern und später auf der "
+                           "Leitungsseite weitermachen oder ihn löschen.")
+# Ohne „oder ihn löschen“, wenn „Entwurf löschen“ nicht geht: mit Mitleitung oder Anmeldung (#380, BV3).
+CANCEL_TEXT_KEEP = gettext_lazy("%(event)s ist als Entwurf gespeichert. Du kannst ihn speichern und später auf der "
+                                "Leitungsseite weitermachen.")
+DELETE_DRAFT = gettext_lazy("Entwurf löschen")
+SAVE_DRAFT = gettext_lazy("Entwurf speichern")
+
+# Kurze Meldungen (#186). Nach „Veranstaltung speichern“ und „Entwurf speichern“ derselbe Satz (#380).
+SAVED_AS_DRAFT = gettext_lazy("%(event)s ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung.")
+DRAFT_DELETED = gettext_lazy("Der Entwurf %(event)s ist gelöscht.")
 SAVED = gettext_lazy("Die Angaben zu %(event)s sind gespeichert.")
 # Gleichzeitiges Speichern wie bei verwalteten Personen (#379, AG7; Muster in persons/texts.py). Ohne „von jemand
 # anderem“, weil es auch das eigene zweite Fenster sein kann.

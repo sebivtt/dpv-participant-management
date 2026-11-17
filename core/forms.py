@@ -273,7 +273,7 @@ class EventForm(forms.Form):
     Uhrzeiten freiwillig (VER-02); ohne Uhrzeit gilt der ganze Tag. Der Ort ist freiwillig, höchstens 100
     Zeichen, nur Leerzeichen gilt als leer (VER-04). Das Formular nimmt nur diese Angaben an: Wer die
     Veranstaltung leitet, kommt aus der Anmeldung (VV3). Alle Felder gehören über ihr Attribut „form“ zum
-    Formular des Knopfs im Dialog.
+    Formular des Knopfs im Dialog; in Schritt 1 beim Anlegen (#380) zum Formular des Schritts (`form_id`).
 
     Prüfungen nach VER-03 (Fragen 2 und 3 aus #29), beim Anlegen und beim Bearbeiten; `before` ist beim
     Bearbeiten die Veranstaltung, wie sie gespeichert ist:
@@ -333,16 +333,18 @@ class EventForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"form": "f-dialog"}),
     )
 
-    def __init__(self, *args, before=None, **kwargs):
+    def __init__(self, *args, before=None, form_id: str = "f-dialog", **kwargs):
         super().__init__(*args, **kwargs)
         self.before = before
+        for field in self.fields.values():
+            field.widget.attrs["form"] = form_id
         # Die Zahl der Tage, nach der das Tool gerade fragt; 0 heißt: keine Nachfrage, kein Schalter.
         self.duration_question = 0
 
     @classmethod
-    def for_create(cls) -> "EventForm":
+    def for_create(cls, **kwargs) -> "EventForm":
         """Das leere Formular „Veranstaltung erstellen“: Tage leer, Uhrzeiten 18:00 und 12:00 (VER-02, A4)."""
-        return cls(initial={"start_time": START_TIME_DEFAULT, "end_time": END_TIME_DEFAULT})
+        return cls(initial={"start_time": START_TIME_DEFAULT, "end_time": END_TIME_DEFAULT}, **kwargs)
 
     def clean_name(self) -> str:
         value = trimmed(self.cleaned_data["name"])

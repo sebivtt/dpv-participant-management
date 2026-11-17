@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{% translate "Veranstaltungen" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Liste „Veranstaltungen“ (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 1; #356, Nr. 1): der Abschnitt „Von mir geleitet“ mit den Veranstaltungen, die die Person leitet, nach Beginn, je eine Zeile aus dem Baustein „Veranstaltung in einer Liste“. „Veranstaltung erstellen“ nur mit Zuordnung (VA-01), ohne auch kein Ersatztext; das Plus ist weiß wie bei den anderen Knöpfen im Kopf einer Fläche (E1 aus #356). Zustandsmarken bringt #359, den Abschnitt „Für mich ausgeschrieben“ #362. #}
+  {# Liste „Veranstaltungen“ (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 1; #356, Nr. 1): der Abschnitt „Von mir geleitet“ mit den Veranstaltungen, die die Person leitet, nach Beginn, je eine Zeile aus dem Baustein „Veranstaltung in einer Liste“. „Veranstaltung erstellen“ (Schritt 1 beim Anlegen, #380) nur mit Zuordnung (VA-01), ohne auch kein Ersatztext; das Plus ist weiß wie bei den anderen Knöpfen im Kopf einer Fläche (E1 aus #356). Zustandsmarken bringt #359, den Abschnitt „Für mich ausgeschrieben“ #362. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{% translate "Veranstaltungen" %}</h1></div>
   <section class="a-flaeche" aria-labelledby="h-veranstaltungen">

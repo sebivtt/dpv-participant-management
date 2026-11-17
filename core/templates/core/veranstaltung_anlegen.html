@@ -1,0 +1,40 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{{ title }} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Anlegen einer Veranstaltung in Schritten (#380, Zielbild docs/zielbilder/veranstaltung.html, Ansichten 2, 5 und 5b; Abweichungen in docs/zielbilder/README.md). Oben der Kopf: „Veranstaltung erstellen“, für einen gespeicherten Entwurf sein Name mit „Entwurf · Veranstaltung erstellen“. Darunter die Fortschrittsanzeige. Schritt 1 „Grunddaten“ zeigt die Felder aus #379 (Baustein „Textfeld“ und „Datumsfeld“ mit Uhrzeit, bei der Nachfrage zur Dauer der „Schalter“); Schritt 2 „Zusammenfassung“ die Grunddaten wie die Kachel der Leitungsseite (Baustein „Kalenderblätter“, Sebastian am 17.11.2026 statt der Liste aus dem Zielbild), mit dem Stift zurück zu Schritt 1. Unten links „Abbrechen“, rechts ab dem zweiten Schritt „Zurück“ und der Hauptknopf („Weiter“, „Veranstaltung speichern“). Ohne Skript bedienbar: jeder Schritt und der Dialog „Anlegen abbrechen?“ haben eine eigene Adresse. #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <div class="a-kopf"><h1>{{ title }}</h1>{% if head_line %}<p>{{ head_line }}</p>{% endif %}</div>
+  {% include "core/_fortschritt.html" %}
+  <form method="post" action="{{ action }}" id="{{ form_id }}" novalidate>
+    {% csrf_token %}{% for name, value in hidden %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    {% if step == 1 %}
+      <section class="a-flaeche" aria-labelledby="h-schritt">
+        <h2 class="sr-nur" id="h-schritt">{{ steps.0.name }}</h2>
+        {% if conflict %}{% meldung "error" text=conflict live=True %}{% endif %}
+        {% textfeld event_form.name %}
+        <div class="a-felder-nebeneinander">{% datumsfeld event_form.start time=event_form.start_time %}{% datumsfeld event_form.end time=event_form.end_time %}</div>
+        {% if asks_duration %}{% schalter event_form.duration_ok %}{% endif %}
+        {% textfeld event_form.location %}
+      </section>
+    {% else %}
+      <div class="a-kacheln">
+        <section class="a-flaeche a-kachel" aria-labelledby="h-grunddaten">
+          {% include "core/_stift.html" with href=basics_href label=basics_change %}
+          {% include "core/_flaechenkopf.html" with symbol="kalender" title=basics_title heading_id="h-grunddaten" %}
+          {% include "core/_kalenderblaetter.html" %}
+        </section>
+      </div>
+    {% endif %}
+    <div class="a-schritt-knoepfe">
+      <a class="btn btn-zart" href="{{ cancel_href }}">{{ cancel_label }}</a>
+      <div class="a-schritt-rechts">{% if back_href %}<a class="btn btn-outline-primary" href="{{ back_href }}">{{ back_label }}</a>{% endif %}<button type="submit" class="btn btn-primary">{{ submit_label }}</button></div>
+    </div>
+  </form>
+  {% if dialog %}
+    {# Dialog „Anlegen abbrechen?“ (Zielbild Ansicht 5b): eigene Adresse, kommt offen vom Server; statt „Abbrechen“ unten „Entwurf löschen“ und „Entwurf speichern“ (Baustein „Dialog“, erweitert mit #380). #}
+    {% include "core/_dialog_auf.html" %}
+    <p>{{ dialog.text }}</p>
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+{% endblock %}
