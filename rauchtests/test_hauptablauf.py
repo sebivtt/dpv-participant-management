@@ -167,7 +167,7 @@ def _h1_fiete_legt_lena_an(page: Page, falken, keyboard: bool):
         expect(page.locator(CONSENT)).to_be_checked()
         page.locator(SUBMIT).click()
 
-    wait_for_page_below(page, page_address)
+    wait_for_page_below(page, page_address, "person-aufnehmen")
     expect(page.locator(".a-kurz")).to_contain_text("Kiwi (Lena Probe) gehört jetzt zu Sippe Falken.")
     expect(page.locator(PERSONS)).to_contain_text("Kiwi")
     return ManagedPerson.objects.get(first_name="Lena", last_name="Probe")

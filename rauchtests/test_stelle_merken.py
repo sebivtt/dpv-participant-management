@@ -398,7 +398,7 @@ def _bearbeiten_fokus_ohne_sprung(pc: Page) -> None:
     _steht_bei(pc, spot)
     _dialog(pc).get_by_role("link", name="Abbrechen").click()
 
-    wait_for_page_below(pc, address)
+    wait_for_page_below(pc, address, f"bearbeiten-{found['paul'].key}")
     expect(edit).to_be_focused()
     _steht_bei(pc, spot)
 

@@ -72,7 +72,7 @@ def test_am_pc_nur_mit_der_tastatur_beide_wege_zurueck_und_schliessen(pc):
     expect(dialog.locator("h2")).to_have_text("Person mit Konto aufnehmen")
     expect(dialog.get_by_role("link", name="Zurück")).to_be_visible()
     pc.keyboard.press("Escape")
-    wait_for_page_below(pc, page_address)
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(dialog).to_have_count(0)
     assert _focused_matches(pc, BUTTON)
 
@@ -80,7 +80,7 @@ def test_am_pc_nur_mit_der_tastatur_beide_wege_zurueck_und_schliessen(pc):
     pc.keyboard.press("Enter")
     pc.wait_for_url(choice)
     pc.keyboard.press("Escape")
-    wait_for_page_below(pc, page_address)
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     assert _focused_matches(pc, BUTTON)
 
 
@@ -97,7 +97,7 @@ def test_am_pc_mit_der_maus_aufnehmen_und_fokus_danach_auf_dem_knopf(pc):
     pc.keyboard.press("Enter")
     _dialog(pc).locator(".a-treffer-knopf button").click()
 
-    wait_for_page_below(pc, page_address)
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(pc.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Sippe Falken.")
     # PA7: auch nach dem Aufnehmen hat „Person aufnehmen“ wieder den Fokus.
     assert _focused_matches(pc, BUTTON)
@@ -131,7 +131,7 @@ def test_am_handy_einzeilig_nur_mit_der_tastatur_und_mit_antippen(handy):
     _dialog(handy).get_by_role("link", name="Zurück").tap()
     handy.wait_for_url(f"{page_address}person-aufnehmen/")
     _dialog(handy).get_by_role("link", name="Schließen").tap()
-    wait_for_page_below(handy, page_address)
+    wait_for_page_below(handy, page_address, "person-aufnehmen")
     expect(_dialog(handy)).to_have_count(0)
 
 

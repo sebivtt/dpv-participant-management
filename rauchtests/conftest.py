@@ -36,7 +36,7 @@ import urllib.request
 
 import pytest
 from django.conf import settings
-from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Error, Page, expect, sync_playwright
 
 from tests.check_ports import PORT_RELEASE_SECONDS, SMOKE_TEST_LOCK_PORT, SMOKE_TEST_PORT, fail_if_busy, tell, wait_for_turn
 from tests.nur_lokales_keycloak import require_local_keycloak
@@ -367,16 +367,18 @@ def handy_ohne_skript(browser, browser_name, tool) -> Page:
     context.close()
 
 
-def wait_for_page_below(page: Page, address: str) -> None:
+def wait_for_page_below(page: Page, address: str, button: str) -> None:
     """Wartet nach dem Schließen eines Dialogs mit Skript, bis die Seite darunter unter `address` geladen ist (#349).
 
     Der Dialog führt zu `address` mit Kennung (etwa `#person-aufnehmen`), damit der Knopf wieder den Fokus bekommt.
     Mit gemerkter Stelle nimmt das Skript die Kennung gleich nach dem Laden wieder aus der Adresse (#220). Gewartet
     wird deshalb auf die Adresse ohne Kennung: Mit Kennung fände ein Test, der erst danach fragt, sie nie (Firefox
-    auf GitHub, aus #384). Dass die Kennung ankam, zeigt der Fokus. Ohne Skript bleibt die Kennung in der Adresse;
-    dort wartet der Test weiter mit `wait_for_url` auf die Adresse mit Kennung.
+    auf GitHub, aus #384). Dass die Kennung `button` ankam, prüft danach der Fokus: Das Skript gibt ihn dem Knopf
+    nur, wenn seine Kennung in der Adresse stand. Ohne Skript bleibt die Kennung in der Adresse; dort wartet der
+    Test weiter mit `wait_for_url` auf die Adresse mit Kennung.
     """
     page.wait_for_url(address)
+    expect(page.locator(f"#{button}")).to_be_focused()
 
 
 def login(page: Page, account=ERIKA) -> None:

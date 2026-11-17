@@ -58,7 +58,7 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
     assert pc.evaluate("document.activeElement.closest('dialog') !== null")
     pc.keyboard.press("Enter")
 
-    wait_for_page_below(pc, page_address)
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(pc.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     expect(pc.locator(PERSONS)).to_contain_text("Otto Ohne")
     expect(pc.locator(PERSONS)).to_contain_text("2 Personen")
@@ -74,7 +74,7 @@ def test_am_pc_escape_fuehrt_zurueck_und_nimmt_niemanden_auf(pc):
     pc.goto(f"{page_address}aufnehmen/")
     expect(_dialog(pc)).to_be_visible()
     pc.keyboard.press("Escape")
-    wait_for_page_below(pc, page_address)
+    wait_for_page_below(pc, page_address, "person-aufnehmen")
     expect(_dialog(pc)).to_have_count(0)
     expect(pc.locator(PERSONS)).not_to_contain_text("Otto")
 
@@ -110,6 +110,6 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, ".a-treffer-knopf button", steps=10)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    wait_for_page_below(handy, page_address)
+    wait_for_page_below(handy, page_address, "person-aufnehmen")
     expect(handy.locator(".a-kurz")).to_contain_text("Otto Ohne gehört jetzt zu Stamm Walhall.")
     _no_side_scroll(handy)

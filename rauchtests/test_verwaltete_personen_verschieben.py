@@ -147,7 +147,7 @@ def test_am_pc_nicht_loeschen_fuehrt_zurueck_und_escape_schliesst(pc):
 
     pc.goto(_managed_address(units["falken"], units["lena"], "loeschen"))
     pc.keyboard.press("Escape")
-    wait_for_page_below(pc, _page_of(units["falken"]))
+    wait_for_page_below(pc, _page_of(units["falken"]), f"bearbeiten-{units['lena'].key}")
     expect(_dialog(pc)).to_have_count(0)
     assert ManagedPerson.objects.filter(pk=units["lena"].pk).exists()
 
