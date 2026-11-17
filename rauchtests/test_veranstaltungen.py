@@ -8,7 +8,17 @@ Handy mit Autokorrektur und Wortvorschlägen, die kurze Meldung, der Knopf „Be
 seitlich über, der Fokus ist zu sehen, und die Seiten bestehen die Prüfung auf Barrierefreiheit. Das Datum
 setzt der Test mit `fill`, weil jeder Browser sein Datumsfeld anders bedienen lässt; erreicht wird das
 Feld mit der Tastatur. Die Regeln selbst prüft tests/test_veranstaltungen.py. Alle Namen sind erfunden.
+
+Seit #379 öffnet der Stift der Kachel „Grunddaten“ den Dialog statt des Knopfs „Bearbeiten“, und neben Beginn
+und Ende steht je eine Uhrzeit; die Felder sucht der Test deshalb über ihren Namen. Ein Beginn vor heute ist
+seit #379 verboten; damit die Tage aus #100 gültig bleiben, ist „heute“ hier der 05.01.2027. Uhrzeiten, Ort,
+Kachel und Leitungsseite prüft rauchtests/test_grunddaten.py.
 """
+
+from datetime import date
+
+import pytest
+from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
@@ -25,9 +35,17 @@ U = Unit.Kind
 LIST = f"{BASE}/veranstaltungen/"
 NAV_LINK = '.a-sidebar .a-navlink[href="/veranstaltungen/"]'
 CREATE_BUTTON = '[aria-labelledby="h-veranstaltungen"] .a-flaeche-aktion[href="/veranstaltungen/erstellen/"]'
-EDIT_BUTTON = 'main a.btn-verschieben[href$="/bearbeiten/"]'
+EDIT_BUTTON = 'main a.a-stift[href$="/bearbeiten/"]'
+START = 'dialog input[name="start"]'
+END = 'dialog input[name="end"]'
 SUBMIT = 'dialog button[type="submit"]'
 CREATED = "Probelager 2027 ist angelegt. Du leitest diese Veranstaltung."
+
+
+@pytest.fixture(autouse=True)
+def heute(monkeypatch):
+    """„Heute“ liegt vor den Tagen der Szenarien von #100; der Server läuft im selben Prozess wie der Test."""
+    monkeypatch.setattr(timezone, "localdate", lambda *args, **kwargs: date(2027, 1, 5))
 
 
 def _erika_in_den_falken() -> None:
@@ -70,16 +88,16 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
 
     pc.keyboard.type("Probelager 2027")
     pc.keyboard.press("Tab")
-    start = pc.get_by_label("Beginn")
+    start = pc.locator(START)
     expect(start).to_be_focused()
     assert start.get_attribute("type") == "date"
     start.fill("2027-05-15")
-    stations = _stations_to_element(pc, 'input[name="end"]', steps=6)
+    stations = _stations_to_element(pc, 'input[name="end"]', steps=10)
     _all_visible(stations)
-    end = pc.get_by_label("Ende")
+    end = pc.locator(END)
     assert end.get_attribute("type") == "date"
     end.fill("2027-05-17")
-    stations = _stations_to_element(pc, SUBMIT, steps=6)
+    stations = _stations_to_element(pc, SUBMIT, steps=10)
     _all_visible(stations)
     pc.keyboard.press("Enter")
 
@@ -95,8 +113,8 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     pc.keyboard.press("Enter")
     expect(_dialog(pc).locator("h2")).to_have_text("Probelager 2027 bearbeiten")
     expect(pc.get_by_label("Name")).to_be_focused()
-    pc.get_by_label("Ende").fill("2027-05-18")
-    stations = _stations_to_element(pc, SUBMIT, steps=6)
+    pc.locator(END).fill("2027-05-18")
+    stations = _stations_to_element(pc, SUBMIT, steps=10)
     _all_visible(stations)
     pc.keyboard.press("Enter")
     expect(pc.locator(".a-kurz")).to_contain_text("Die Angaben zu Probelager 2027 sind gespeichert.")
@@ -107,15 +125,15 @@ def test_am_pc_fehler_am_feld_kommen_vom_tool(pc):
     login(pc)
     _erika_in_den_falken()
     pc.goto(f"{LIST}erstellen/")
-    pc.get_by_label("Beginn").fill("2027-05-17")
-    pc.get_by_label("Ende").fill("2027-05-15")
+    pc.locator(START).fill("2027-05-17")
+    pc.locator(END).fill("2027-05-15")
     # Der Browser hält das leere Pflichtfeld nicht selbst an; die Meldungen kommen vom Tool.
     pc.get_by_role("button", name="Anlegen").click()
     expect(_dialog(pc)).to_contain_text("Bitte gib den Namen ein.")
     expect(_dialog(pc)).to_contain_text("Das Ende liegt vor dem Beginn.")
     expect(pc.get_by_label("Name")).to_have_attribute("aria-invalid", "true")
-    expect(pc.get_by_label("Ende")).to_have_accessible_description("Das Ende liegt vor dem Beginn.")
-    expect(pc.get_by_label("Beginn")).to_have_value("2027-05-17")
+    expect(pc.locator(END)).to_have_accessible_description("Das Ende liegt vor dem Beginn.")
+    expect(pc.locator(START)).to_have_value("2027-05-17")
     assert run_axe(pc) == []
 
     pc.keyboard.press("Escape")
@@ -143,11 +161,11 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     name = handy.get_by_label("Name")
     _type_like_a_phone(name, "Probe", "l", "lager", " 2027")
     expect(name).to_have_value("Probelager 2027")
-    handy.get_by_label("Beginn").fill("2027-05-15")
-    handy.get_by_label("Ende").fill("2027-05-17")
+    handy.locator(START).fill("2027-05-15")
+    handy.locator(END).fill("2027-05-17")
     _no_side_scroll(handy)
 
-    stations = _stations_to_element(handy, SUBMIT, steps=6)
+    stations = _stations_to_element(handy, SUBMIT, steps=10)
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{LIST}*/")

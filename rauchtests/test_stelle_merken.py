@@ -283,7 +283,9 @@ def test_ablehnung_im_dialog_laesst_die_seite_stehen(pc):
 
 
 # S8: Führt die Handlung auf eine andere Seite, beginnt diese oben.
-def test_neue_veranstaltung_beginnt_oben(pc):
+def test_neue_veranstaltung_beginnt_oben(pc, monkeypatch):
+    # Seit #379 ist ein Beginn vor heute verboten; „heute“ liegt vor dem Probelager (der Server läuft im selben Prozess).
+    monkeypatch.setattr(timezone, "localdate", lambda *args, **kwargs: date(2027, 1, 5))
     login(pc)
     _lange_walhall()
     # Jede Seite bekommt unten viel Platz, damit auch die kurze Seite einer Veranstaltung rollen könnte.
@@ -296,8 +298,9 @@ def test_neue_veranstaltung_beginnt_oben(pc):
     pc.wait_for_url(f"{BASE}/veranstaltungen/erstellen/")
     _steht_bei(pc, spot)
     pc.get_by_label("Name").fill("Probelager 2027")
-    pc.get_by_label("Beginn").fill("2027-05-15")
-    pc.get_by_label("Ende").fill("2027-05-17")
+    # Seit #379 steht neben Beginn und Ende je eine Uhrzeit; die Felder sucht der Test über ihren Namen.
+    _dialog(pc).locator('input[name="start"]').fill("2027-05-15")
+    _dialog(pc).locator('input[name="end"]').fill("2027-05-17")
     _dialog(pc).locator('button[type="submit"]').click()
 
     pc.wait_for_url(f"{BASE}/veranstaltungen/*/")
