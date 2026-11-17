@@ -10,6 +10,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 | Thema | Gilt | Ersetzt |
 |---|---|---|
+| Prüfer an E1 | 17.11.2026, #375, Nr. 1 bis 4 | F3 aus der Bestandsaufnahme in #106 („Prüfer für E1“), das bisher nur dort stand |
 | Messung von Hand beim Leistungstest | 16.11.2026, #369, Nr. 1 | 14.11.2026, #145, Nr. 9 (nur der Satz „Die Messung von Hand am Ende von P2 (Server- und Browserzeit) beschreibt das `README.md` (L3, L4).“) |
 | Gesundheitsblock (Probe von FRM-04, #102) in P4 statt P2 | 16.11.2026, #368, Nr. 1 bis 5 | W2 und F1 (nur der Teil zu FRM-04) aus der Bestandsaufnahme in #106, die bisher nur dort standen; 21.10.2026, „P1 beginnt früher, Restpunkte von P0 laufen parallel“, „Begründung“ (nur der Satzteil zum Gesundheitsblock in P2) |
 | Zeitpunkt des Pull Requests | 15.11.2026, #348, Nr. 1 | 20.10.2026, „Neustart, Name, Lizenz, Umfang und Technik“, „Arbeitsweise aus dem alten Repo“ (nur der Zeitpunkt in „unabhängige Prüfung vor jedem Pull Request“) |
@@ -48,6 +49,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Knöpfe im Abschnitt „Personen“ | 15.11.2026, #298, Nr. 1 | 11.11.2026, #117, Nr. 2 (nur Knopf „Person mit Konto aufnehmen“ mit „Verwaltete Person anlegen“ daneben, N6) |
 | Satz bei leerer Liste „Personen“ | 15.11.2026, #298, Nr. 3 | 11.11.2026, #117, Nr. 2 (nur der zweite Satz „Du kannst oben …“, N7) |
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
+
+---
+
+## 2026-11-17 · Prüfer an E1 entfällt: P2 hängt nicht mehr am Prüfer (#375)
+
+**Entscheidung** (Sebastian am 17.11.2026; [Protokoll der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/375#issuecomment-6941491764), Fragen 1 bis 3; maßgeblich ist der Text von #375). Ersetzt F3 aus der [Bestandsaufnahme in #106](https://github.com/sebivtt/dpv-participant-management/issues/106#issuecomment-6342842432) („Prüfer für E1: ein Punkt in diesem Issue, ohne feste Fristen“), das bisher nur dort stand.
+
+1. „Prüfer würde weiterbauen (E1)“ ist kein Abschlusskriterium von P2 mehr und keine Bedingung von E1. An E1 gilt nur noch „P2 mit höchstens 4 Wochen Verzug fertig“; Prüffrage und Spalte „Sonst“ bleiben (Frage 3).
+2. Der Prüfer entfällt nur an E1. E3 („Prüfer-Durchsicht ohne kritischen Befund“, auch Abschlusskriterium von P6) und der Termin an E6 bleiben; die Planung rechnet mit „Prüfer zweimal 2–3 Stunden (E3, E6)“ (Frage 1).
+3. Gegen das Risiko „KI baut Fehler in Rechte oder Gesundheitsdaten“ nennt der Fahrplan „Prüfer an E3 und E6“ und dazu das externe KI-Review am Phasenende (`docs/review-leitfaden.md`) (Frage 2).
+4. Sieht sich ein Kollege das Repo freiwillig an, sind seine Tipps willkommen, aber keine Bedingung; seine Hinweise kommen als eigene Issues (Skill `issue-anlegen`).
+
+**Begründung:** Sebastian am 17.11.2026 im Chat der Steuerungssession: „Ich glaube ich würde den Prüfer gerne Skippen. Ich kann den Kollegen am Mittwoch gerne mal Fragen ob er Lust hat sich bei Gelegenheit das Repo anzusehen und mir Tipps zu geben. Aber ansonsten würde ich es gerne dabei belassen. Ich habe keine Lust, dass P2 daran hängt, dass niemand sich erbarmt drauf zu schauen.“ An E3 geht es um echte Gesundheitsdaten; dort ist ein menschlicher Blick der stärkste Schutz, und bis Juni 2028 bleibt Zeit, jemanden zu finden (Frage 1). Das externe KI-Review gibt es schon, es kostet keine neue Arbeit und trägt an E1 den Teil, den bisher der Prüfer getragen hat (Frage 2). Eine zusätzliche Bedingung „externes Review ohne offenen blockierenden Befund“ an E1 entfällt, weil P2 nach `docs/review-leitfaden.md`, Abschnitt 2, ohnehin erst mit eingeordnetem Review und behobenen blockierenden Befunden fertig ist; das Review an zwei Stellen zu nennen, könnte auseinanderlaufen (Frage 3).
+
+**Grenzen:** Rechte und Verhalten des Tools ändern sich nicht. Das externe Review bleibt unverändert; es prüfen zwei KI-Modelle, kein Mensch. Hängt es vor P6 daran, dass niemand an E3 prüft, kommt das als eigenes Issue.
+
+**Umsetzung:** `docs/fahrplan.md` (Planungsgrundlagen „Helfende“, Abschnitt 3: Phase P2, Abschnitt 4: E1 und Risikotabelle; Abschnitt 6, Nr. 55), `docs/review-leitfaden.md` (Abschnitt 1, Zeile „Prüfer“). Auf GitHub, sobald der Pull Request auf „bereit“ steht: Phasen-Issue #106 (Kriterium „Prüfer würde weiterbauen“ abgehakt mit „entfällt (#375)“).
 
 ---
 
