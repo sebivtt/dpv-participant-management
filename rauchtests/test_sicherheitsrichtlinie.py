@@ -10,6 +10,8 @@ Kopfzeilen, der Test hängt nur auf dem Weg zum Browser ein Stück an. Der fremd
 `fremd.example` ist ebenso nur im Test erfunden; jede Anfrage dorthin wird festgehalten.
 """
 
+import re
+
 import pytest
 from django.conf import settings
 from playwright.sync_api import Page, Route, expect
@@ -194,3 +196,136 @@ def test_waechter_laeuft_bei_jedem_rauchtest_und_wird_rot(request, pc):
     # Schweigt nur, wenn der Test die Verstöße ausdrücklich selbst erwartet.
     csp_violations(pc.context).append("style-src-elem blockiert inline auf einer erfundenen Seite")
     check_after_test([*request.fixturenames, "verstoesse_erwartet"])
+
+
+# Auswahlfelder in WebKit (#393): WebKit setzt an jedes Auswahlfeld selbst einen Stil und meldet das als
+# Verstoß der Art style-src-attr. Der Wächter nimmt genau das hin, nur in WebKit, nur einmal je Auswahlfeld,
+# das die Seite ausliefert. Die Kürzel verweisen auf den Kommentar „Szenarien (18.11.2026)“ in #393. Die
+# Auswahlfelder hängt der Test an die echte Login-Seite an, wie ein Adressfeld (#163) sie ausliefert.
+LOGIN_PAGE = f"{BASE}/anmelden/"
+SELECTS = (
+    '<label for="probe-bundesland">Bundesland</label><select id="probe-bundesland" name="state">'
+    '<option value="">bitte wählen</option><option value="HE">Hessen</option></select>'
+    '<label for="probe-land">Land</label><select id="probe-land" name="country">'
+    '<option value="">bitte wählen</option><option value="DE">Deutschland</option></select>'
+)
+
+
+def _wait_for_webkit_notice(page: Page, browser_name: str) -> None:
+    """Wartet in WebKit, bis es seine Meldung zu den Auswahlfeldern gemacht hat; sonst prüfte der Test nichts."""
+    if browser_name == "webkit":
+        _wait_for_violations(page, "Content Security Policy")
+    _settle(page)
+
+
+def _report(page: Page) -> str:
+    """Was der Wächter am Ende des Tests meldete, als Text; leer, wenn er grün bliebe."""
+    page.context.close()
+    try:
+        check_after_test([])
+    except AssertionError as error:
+        return str(error)
+    return ""
+
+
+# S1: Seite mit Auswahlfeld, WebKit meldet selbst style-src-attr daran: grün, sofern sonst nichts kommt.
+def test_s1_seite_mit_auswahlfeld_bleibt_gruen(pc, browser_name):
+    _inject(pc, LOGIN_PAGE, SELECTS)
+
+    pc.goto(LOGIN_PAGE)
+    _wait_for_webkit_notice(pc, browser_name)
+
+    assert _report(pc) == ""
+
+
+# S1 ohne Skript: Ohne Skript meldet WebKit nur in der Konsole, ohne das Feld zu nennen (Fehlermechanismus:
+# die Ausnahme darf nicht am Ereignis aus dem Skript hängen, das es dann nicht gibt).
+def test_s1_ohne_skript_seite_mit_auswahlfeld_bleibt_gruen(pc_ohne_skript, browser_name):
+    _inject(pc_ohne_skript, LOGIN_PAGE, SELECTS)
+
+    pc_ohne_skript.goto(LOGIN_PAGE)
+    _wait_for_webkit_notice(pc_ohne_skript, browser_name)
+
+    assert _report(pc_ohne_skript) == ""
+
+
+# S2: Mara wählt „Hessen“ und „Deutschland“: grün, die Auswahl steht im Feld. Das Speichern selbst prüft der
+# Rauchtest des Adressfelds (#163), der in WebKit erst mit dieser Ausnahme laufen kann.
+def test_s2_auswahl_hessen_und_deutschland_bleibt_gruen(pc, browser_name):
+    _inject(pc, LOGIN_PAGE, SELECTS)
+    pc.goto(LOGIN_PAGE)
+    _wait_for_webkit_notice(pc, browser_name)
+
+    pc.get_by_label("Bundesland").select_option(label="Hessen")
+    pc.get_by_label("Land", exact=True).select_option(label="Deutschland")
+    _settle(pc)
+
+    expect(pc.get_by_label("Bundesland")).to_have_value("HE")
+    expect(pc.get_by_label("Land", exact=True)).to_have_value("DE")
+    assert _report(pc) == ""
+
+
+# S3: Liefert eine Seite des Tools selbst eine Stil-Angabe aus, auch an einem Auswahlfeld: rot in jedem
+# Browser, die Meldung nennt Seite, Zeile und Element.
+def test_s3_stil_angabe_im_html_wird_rot_und_nennt_die_stelle(pc, verstoesse_erwartet):
+    _inject(pc, LOGIN_PAGE, '<select name="state" style="width: 10em"><option>Hessen</option></select>')
+
+    pc.goto(LOGIN_PAGE)
+    _settle(pc)
+
+    report = _report(pc)
+    assert "Stil-Angaben im HTML (#393)" in report
+    assert re.search(rf'{re.escape(LOGIN_PAGE)}, Zeile \d+: <select name="state" style=', report), report
+
+
+# S4: Dieselbe Meldung am Auswahlfeld in Chromium oder Firefox bleibt rot. Dort kommt sie von selbst nie;
+# der Test legt sie dem Wächter vor wie G1 oben.
+def test_s4_meldung_am_auswahlfeld_ausserhalb_von_webkit_bleibt_rot(pc, browser_name):
+    if browser_name == "webkit":
+        pytest.skip("In WebKit ist das die hingenommene Meldung (S1).")
+    _inject(pc, LOGIN_PAGE, SELECTS)
+    pc.goto(LOGIN_PAGE)
+    _settle(pc)
+    csp_violations(pc.context).append(f'style-src-attr blockiert inline an <select name="state"> auf {LOGIN_PAGE}')
+
+    assert '- style-src-attr blockiert inline an <select name="state">' in _report(pc)
+
+
+# S5: WebKit meldet style-src-attr an einem anderen Element als einem Auswahlfeld: rot, auch neben einem
+# Auswahlfeld. Die Meldung nennt das Element.
+def test_s5_meldung_an_anderem_element_bleibt_rot(pc, verstoesse_erwartet):
+    _inject(pc, LOGIN_PAGE, SELECTS + '<input name="probe" style="color: red">')
+
+    pc.goto(LOGIN_PAGE)
+    _wait_for_violations(pc, "an <input")
+    _settle(pc)
+
+    report = _report(pc)
+    assert '- style-src-attr blockiert inline an <input name="probe">' in report
+
+
+# S6: Auf einer Seite mit Auswahlfeld kommt ein anderer Verstoß dazu: rot, die Meldung nennt ihn und nur ihn.
+def test_s6_anderer_verstoss_neben_auswahlfeld_bleibt_rot(pc, browser_name, verstoesse_erwartet):
+    _inject(pc, LOGIN_PAGE, SELECTS + '<script>document.title = "eingeschmuggelt";</script>')
+
+    pc.goto(LOGIN_PAGE)
+    _wait_for_violations(pc, "script-src")
+    _settle(pc)
+
+    report = _report(pc)
+    assert "script-src" in report
+    if browser_name == "webkit":
+        assert "style-src-attr" not in report, report
+
+
+# S6 ohne Skript: Ohne Skript zählt der Wächter WebKits Meldungen in der Konsole gegen die ausgelieferten
+# Auswahlfelder (Fehlermechanismus: ein eingebetteter Stil meldet dort denselben Wortlaut wie ein Auswahlfeld).
+def test_s6_ohne_skript_eingebetteter_stil_neben_auswahlfeld_bleibt_rot(pc_ohne_skript, browser_name, verstoesse_erwartet):
+    if browser_name != "webkit":
+        pytest.skip("Die Ausnahme gilt nur in WebKit; die anderen Browser prüft S6 mit Skript.")
+    _inject(pc_ohne_skript, LOGIN_PAGE, SELECTS + "<style>main { color: red; }</style>")
+
+    pc_ohne_skript.goto(LOGIN_PAGE)
+    _settle(pc_ohne_skript)
+
+    assert "Konsole: Refused to apply a stylesheet" in _report(pc_ohne_skript)
