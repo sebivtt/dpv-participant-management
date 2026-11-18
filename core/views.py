@@ -18,16 +18,24 @@ from access.keys import is_key, new_key
 from access.rights import SUGGESTION_MIN, SUPPORT_REASONS, WILDCARDS, Rights, unit_label
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
-from core import sections
+from accounts.keycloak_abgleich import trimmed
+from core import address_search, address_texts, sections
+from core.countries import COUNTRIES
 from core.forms import (
+    PLACE_PARTS,
     AccountSearchForm,
+    AddressForm,
     EventForm,
     FederationSearchForm,
     ManagedPersonAddForm,
     ManagedPersonForm,
     PatternForm,
     UnitNameForm,
+    address_initial,
+    place_from_token,
+    place_token,
 )
+from core.models import GERMANY, STATES
 from core.sections import to_section
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
@@ -896,9 +904,32 @@ def period_with_times(entry) -> str:
     return str(event_texts.PERIOD % {"start": _day(entry.start, entry.start_time), "end": _day(entry.end, entry.end_time)})
 
 
-def with_location(shown: str, entry) -> str:
-    """Hinter dem Zeitraum „· Ort“, ohne Ort nichts (#379, A2)."""
-    return str(event_texts.WITH_LOCATION % {"period": shown, "location": entry.location}) if entry.location else shown
+def with_location(shown: str, entry, address: bool = False) -> str:
+    """Hinter dem Zeitraum „· Ort“, ohne Ort nichts (#379, A2); mit `address` der Ort mit Adresse in einer Zeile (#163)."""
+    place = place_line(entry) if address else entry.location
+    return str(event_texts.WITH_LOCATION % {"period": shown, "location": place}) if place else shown
+
+
+COUNTRY_NAMES = dict(COUNTRIES)
+STATE_NAMES = dict(STATES)
+
+
+def address_lines(entry) -> list[str]:
+    """Die Adresse des Orts Zeile für Zeile: Straße und Hausnummer, PLZ und Ort, das Land nur außerhalb Deutschlands.
+
+    Das Bundesland wird gespeichert, aber nicht angezeigt (#163, Anzeige). Ohne Adresse eine leere Liste.
+    """
+    if not entry.city:
+        return []
+    lines = [entry.street, f"{entry.postal_code} {entry.city}".strip()]
+    if entry.country != GERMANY:
+        lines.append(str(COUNTRY_NAMES.get(entry.country, entry.country)))
+    return [line for line in lines if line]
+
+
+def place_line(entry) -> str:
+    """Der Ort in einer Zeile: „Burg Ludwigstein, Burgweg 1, 99999 Musterhausen“, im Ausland mit Land (#163)."""
+    return ", ".join(filter(None, [entry.location, *address_lines(entry)]))
 
 
 def _sheet(day, at, label) -> dict:
@@ -914,12 +945,14 @@ def _sheet(day, at, label) -> dict:
 
 
 def calendar_sheets(entry) -> dict:
-    """Was der Baustein „Kalenderblätter“ für die Kachel „Grunddaten“ zeigt: Beginn, Dauer, Ende und Ort (#379)."""
+    """Was der Baustein „Kalenderblätter“ für die Kachel „Grunddaten“ zeigt: Beginn, Dauer, Ende und Ort (#379), seit
+    #163 mit der Adresse des Orts Zeile für Zeile."""
     return {
         "start": _sheet(entry.start, entry.start_time, event_texts.SHEET_START),
         "end": _sheet(entry.end, entry.end_time, event_texts.SHEET_END),
         "days": event_texts.DAYS % {"count": entry.days},
         "place": entry.location,
+        "address": address_lines(entry),
         "place_label": event_texts.LOCATION_LABEL,
     }
 
@@ -954,7 +987,7 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     } for registration in request.rights.event_registrations(entry)]
     return render(request, "core/veranstaltung.html", {
         "event": entry,
-        "head_line": with_location(period(entry), entry),
+        "head_line": with_location(period(entry), entry, address=True),
         "calendar": calendar_sheets(entry),
         "basics_title": event_texts.BASICS,
         "basics_edit": event_texts.BASICS_EDIT,
@@ -967,11 +1000,12 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
 
 
 def _event_dialog(form: EventForm, action: str, close_href: str, entry, hidden: tuple = (),
-                  conflict: str = "") -> dict:
+                  conflict: str = "", search_action: str | None = None, found: dict | None = None) -> dict:
     """Der Dialog des Stifts „… bearbeiten“: Name, Beginn, Ende, Ort und der blaue Knopf „Speichern“.
 
     Fragt das Formular nach der Dauer, steht unter Beginn und Ende der Schalter „Ja, die Dauer stimmt“ (#379,
-    AG4). `conflict` ist der Satz, wenn inzwischen jemand anderes gespeichert hat; er steht oben im Dialog (AG7).
+    AG4). `conflict` ist der Satz, wenn inzwischen jemand anderes gespeichert hat; er steht oben im Dialog (AG7). Unter
+    dem Ort steht das Adressfeld (#163), mit `search_action` mit „Adresse suchen“ und `found` dem Ergebnis der Suche.
     Bis #380 gab es denselben Dialog auch zum Erstellen; seitdem ist das Schritt 1 des Ablaufs.
     """
     return {
@@ -987,6 +1021,7 @@ def _event_dialog(form: EventForm, action: str, close_href: str, entry, hidden: 
         "asks_duration": bool(form.duration_question),
         "conflict": conflict,
         "hidden": list(hidden),
+        "address": address_field("f-dialog", search_action, found),
     }
 
 
@@ -1074,8 +1109,13 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     else:
         raise Http404
     dialog = _event_dialog(form, action=request.path, close_href=reverse("event_page", args=[entry.key]), entry=entry,
-                           hidden=[("version", version)], conflict=conflict)
+                           hidden=[("version", version)], conflict=conflict, search_action=_edit_search(rights, entry))
     return _event_page(request, entry, dialog)
+
+
+def _edit_search(rights, entry) -> str | None:
+    """Wohin „Adresse suchen“ im Dialog des Stifts schickt; ohne Zuordnung gibt es den Knopf nicht (VA-07)."""
+    return reverse("event_edit_address", args=[entry.key]) if rights.may_search_address() else None
 
 
 def _steps(current: int) -> list[dict]:
@@ -1089,13 +1129,15 @@ def _steps(current: int) -> list[dict]:
 
 
 def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | None = None, hidden: tuple = (),
-                 conflict: str = "", dialog: dict | None = None) -> HttpResponse:
+                 conflict: str = "", dialog: dict | None = None, found: dict | None = None) -> HttpResponse:
     """Ein Schritt beim Anlegen (#380): Kopf, Fortschrittsanzeige, Inhalt und unten „Abbrechen“, „Zurück“ und „Weiter“.
 
     Schritt 1 „Grunddaten“ zeigt die Felder aus #379; ohne `entry` für eine neue Veranstaltung, sonst für den
     gespeicherten Entwurf (Ziel von „Zurück“ und dem Stift). „Abbrechen“ führt dort ohne Rückfrage zur Liste
     (B5). Schritt 2 „Zusammenfassung“ zeigt die Grunddaten wie die Kachel der Leitungsseite, mit dem Stift zurück
     zu Schritt 1; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 1 (#29, Frage 4).
+    In Schritt 1 steht unter dem Ort das Adressfeld (#163); `found` ist das Ergebnis von „Adresse suchen“. Das Formular
+    geht immer an die Adresse des Schritts, auch wenn die Seite von der Suche kommt.
     """
     context = {
         "title": entry.name if entry else event_texts.CREATE_TITLE,
@@ -1108,8 +1150,14 @@ def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | 
         "dialog": dialog,
     }
     if step == 1:
+        rights = request.rights
+        action = reverse("event_create_basics", args=[entry.key]) if entry else reverse("event_create")
+        search = None
+        if rights.may_search_address():
+            search = reverse("event_create_basics_address", args=[entry.key]) if entry else reverse("event_create_address")
         context.update({
-            "action": request.path, "event_form": form, "asks_duration": bool(form.duration_question),
+            "action": action, "event_form": form, "asks_duration": bool(form.duration_question),
+            "address": address_field(STEP_FORM, search, found),
             "hidden": list(hidden), "conflict": conflict, "cancel_href": reverse("events"), "back_href": None,
             "submit_label": event_texts.NEXT,
         })
@@ -1267,31 +1315,158 @@ def _after_deleting(rights) -> str:
     return reverse("events") if rights.sees_events() else reverse("start")
 
 
-# Adresse suchen (#163, VA-07): Gerüst, kommt mit der Umsetzung.
+# Adresse suchen (#163, VA-07). Je Formular mit Adressfeld eine eigene Adresse: Sie nimmt das ganze Formular an, sucht
+# mit der Bezeichnung des Orts und den Adressfeldern oder übernimmt einen Treffer und zeigt dieselbe Seite wieder, mit
+# allen Eingaben, ohne etwas zu prüfen oder zu speichern. So geht es auch ohne Skript (A9). Erlaubt nur mit Zuordnung
+# und nur dort, wo die Person das Formular selbst öffnen darf; der Suchtext kommt nur per Formular (V4).
 ADDRESS_SEARCH_ROWS = ("VA-07",)
 
 
+def address_field(form_id: str, search_action: str | None, found: dict | None = None) -> dict:
+    """Was der Baustein „Adressfeld“ (#163) neben den Feldern zeigt: „Adresse suchen“, Treffer und Meldung.
+
+    `search_action` ist die Adresse der Suche; ohne sie fehlt der Knopf (ohne Zuordnung, VA-07). Die Stelle „#adressfeld“
+    lässt die Seite nach der Suche dort stehen, auch ohne Skript.
+    """
+    found = found or {}
+    return {
+        "form_id": form_id,
+        "search_action": f"{search_action}#adressfeld" if search_action else "",
+        "hits": found.get("hits", []),
+        "notice": found.get("notice"),
+        "focus_results": found.get("focus_results", False),
+    }
+
+
+def _search_text(values: dict) -> str:
+    """Der Suchtext aus der Bezeichnung des Orts und den Adressfeldern; leer, wenn er nicht reicht (#163, G3).
+
+    Gesucht wird mit der Bezeichnung oder mit einer Straße und dazu PLZ oder Ort; mehr geht immer (Frage 6).
+    """
+    location, street, postal_code, city = (trimmed(values.get(name, "")) for name in
+                                           ("location", "street", "postal_code", "city"))
+    if not (location or (street and (postal_code or city))):
+        return ""
+    return ", ".join(filter(None, [location, street, " ".join(filter(None, [postal_code, city]))]))
+
+
+def _hit(place) -> dict:
+    """Ein Treffer für die Trefferliste in der Form „Ort“: Bezeichnung, Adresse in einer Zeile und der Treffer zum
+    Übernehmen; dahinter das Bundesland, im Ausland das Land (Zielbild, Ansicht 2)."""
+    region = STATE_NAMES.get(place.state, "") if place.country == GERMANY else COUNTRY_NAMES.get(place.country, "")
+    line = ", ".join(filter(None, [place.street, f"{place.postal_code} {place.city}".strip(), str(region)]))
+    return {"name": place.title, "line": line, "token": place_token(vars(place))}
+
+
+def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]:
+    """„Adresse suchen“ oder „Übernehmen“ (#163): das Formular mit allen Eingaben und das Ergebnis für das Adressfeld.
+
+    Mit `treffer` übernimmt es die Adresse des Treffers in die Adressfelder und merkt sich versteckt seine
+    Koordinaten; die Bezeichnung bleibt, wie sie war (G6). Ein veränderter Treffer ändert nichts. Sonst sucht es, wenn
+    die Angaben reichen (G3), bei OpenStreetMap und zeigt bis zu 5 Treffer, „Keine Adresse gefunden …“ (G1) oder
+    „… nicht erreichbar …“ (G2). Danach liegt der Fokus bei Treffer oder Meldung, nach „Übernehmen“ auf der Straße.
+    """
+    values = {name: request.POST.get(name, "") for name in EventForm.base_fields if name != "duration_ok"}
+    found = {}
+    focus = ""
+    if "treffer" in request.POST:
+        taken = place_from_token(request.POST["treffer"])
+        if taken is not None:
+            values.update({name: taken[name] for name in PLACE_PARTS}, coordinates=request.POST["treffer"])
+            if taken["country"] not in COUNTRY_NAMES:
+                values["country"] = request.POST.get("country", GERMANY)
+            focus = "street"
+    else:
+        text = _search_text(values)
+        country = values.get("country", "")
+        if not text:
+            found["notice"] = ("warning", address_texts.TOO_LITTLE)
+        else:
+            try:
+                places = address_search.search(text, country if country in COUNTRY_NAMES and country != GERMANY else "")
+            except address_search.Unavailable:
+                found["notice"] = ("error", address_texts.UNAVAILABLE)
+            else:
+                found["hits"] = [_hit(place) for place in places]
+                if not places:
+                    found["notice"] = ("info", address_texts.NOTHING_FOUND)
+        focus = "results"
+    form = EventForm(initial=values, form_id=form_id)
+    form.fields["name"].widget.attrs.pop("autofocus", None)
+    if focus == "street":
+        form.fields["street"].widget.attrs["autofocus"] = True
+    found["focus_results"] = focus == "results"
+    return form, found
+
+
+def _version(request: HttpRequest) -> str:
+    """Der Stand, den das Formular beim Öffnen gezeigt hat, unverändert weitergereicht (#379, AG7)."""
+    version = request.POST.get("version", "")
+    return version if version.isdigit() else ""
+
+
 @checks_rights(*EVENT_CREATE_ROWS, *ADDRESS_SEARCH_ROWS)
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def event_create_address(request: HttpRequest) -> HttpResponse:
-    """„Adresse suchen“ in Schritt 1 einer neuen Veranstaltung; Gerüst."""
-    raise Http404
+    """„Adresse suchen“ in Schritt 1 einer neuen Veranstaltung (#163, VA-07); nur mit Zuordnung, sonst „kein Zugriff“.
+
+    Die Kennung des Formulars geht mit, damit „Weiter“ danach nur einen Entwurf anlegt (VG8). Lesend führt die Adresse
+    zu Schritt 1 zurück, ohne zu suchen: Der Suchtext kommt nur per Formular, nie in der Adresse (V4).
+    """
+    rights = request.rights
+    rights.require_section(rights.may_create_event())
+    rights.require_section(rights.may_search_address())
+    if request.method != "POST":
+        return redirect("event_create")
+    creation_key = request.POST.get("creation_key", "")
+    if not is_key(creation_key):
+        raise Http404
+    form, found = _searched_form(request, STEP_FORM)
+    return _create_page(request, 1, form=form, hidden=[("creation_key", creation_key)], found=found)
 
 
 @checks_rights(*EVENT_CREATE_ROWS, *ADDRESS_SEARCH_ROWS)
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def event_create_basics_address(request: HttpRequest, event: str) -> HttpResponse:
-    """„Adresse suchen“ in Schritt 1 eines Entwurfs; Gerüst."""
-    raise Http404
+    """„Adresse suchen“ in Schritt 1 eines gespeicherten Entwurfs (#163, VA-07); nur für die Person, die anlegt, mit
+    Zuordnung, sonst „nicht gefunden“ (`_draft()`, VA-06). Lesend zurück zu Schritt 1 (V4)."""
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    request.rights.require_section(request.rights.may_search_address())
+    if request.method != "POST":
+        return redirect("event_create_basics", event=entry.key)
+    form, found = _searched_form(request, STEP_FORM)
+    return _create_page(request, 1, entry=entry, form=form, hidden=[("version", _version(request))], found=found)
 
 
 @checks_rights(*EVENT_ROWS, *ADDRESS_SEARCH_ROWS)
 def event_edit_address(request: HttpRequest, event: str) -> HttpResponse:
-    """„Adresse suchen“ im Dialog des Stifts; Gerüst."""
-    raise Http404
+    """„Adresse suchen“ im Dialog des Stifts der Kachel „Grunddaten“ (#163, A7, VA-07).
+
+    Nur die Veranstaltungsleitung mit Zuordnung; sonst „nicht gefunden“ wie ohne Eintrag (VA-03, V1). Lesend zurück
+    zum Dialog (V4). Gespeichert wird erst mit „Speichern“ im Dialog, mit dem Stand beim Öffnen.
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    rights.require_section(rights.may_search_address())
+    if request.method != "POST":
+        return redirect("event_edit", event=entry.key)
+    form, found = _searched_form(request, "f-dialog")
+    dialog = _event_dialog(form, action=reverse("event_edit", args=[entry.key]),
+                           close_href=reverse("event_page", args=[entry.key]), entry=entry,
+                           hidden=[("version", _version(request))], search_action=_edit_search(rights, entry),
+                           found=found)
+    return _event_page(request, entry, dialog)
 
 
 def _event_form_of(entry, form_id: str = "f-dialog") -> EventForm:
-    """Die Felder mit den gespeicherten Grunddaten einer Veranstaltung, im Dialog des Stifts oder in Schritt 1 (#380)."""
-    return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry, form_id=form_id)
+    """Die Felder mit den gespeicherten Grunddaten einer Veranstaltung, im Dialog des Stifts oder in Schritt 1 (#380).
+
+    Seit #163 mit der Adresse; hat sie Koordinaten aus einem Treffer, gehen sie versteckt mit (`address_initial()`).
+    """
+    initial = {name: getattr(entry, name) for name in EVENT_FIELDS if name not in ("latitude", "longitude")}
+    return EventForm(initial={**initial, **address_initial(entry)}, before=entry, form_id=form_id)
 
 
 @checks_rights("AN-01", "AN-02", "AN-03", "AN-06")
@@ -1653,13 +1828,14 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "knopfverschieben": {
-        "name": _("Zart blauer Knopf"), "template": "core/_knopf_verschieben.html", "issues": [287, 117, 92],
+        "name": _("Zart blauer Knopf"), "template": "core/_knopf_verschieben.html", "issues": [287, 117, 92, 163],
         "purpose": _("Für Handlungen, die etwas umstellen oder öffnen, ohne etwas wegzunehmen, etwa „Verschieben“ bei "
                      "einer Person oder „Bearbeiten“ bei einer verwalteten Person: Knopf mit zarter blauer Fläche und "
                      "blauer Schrift, die Farben der Informationsmeldung, meist klein. Beschriftung und Symbol sind "
                      "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
-                     "Er führt zum Dialog, nie gleich zur Handlung."),
-        "pages": [_("Organisation")],
+                     "Er führt zum Dialog, nie gleich zur Handlung. Im Adressfeld schickt er als „Adresse suchen“ "
+                     "das Formular an die Suche, ohne etwas zu speichern."),
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "wahlflaechen": {
         "name": _("Wahl mit großen Flächen"), "template": "core/_wahlflaechen.html", "issues": [298],
@@ -1692,10 +1868,21 @@ BUILDING_BLOCKS = {
         "pages": [_("Veranstaltungen")],
     },
     "kalenderblaetter": {
-        "name": _("Kalenderblätter"), "template": "core/_kalenderblaetter.html", "issues": [379],
+        "name": _("Kalenderblätter"), "template": "core/_kalenderblaetter.html", "issues": [379, 163],
         "purpose": _("Beginn und Ende einer Veranstaltung als zart blaue Kalenderblätter mit Wochentag, Tag, Monat "
                      "und Jahr, darunter die Uhrzeit, falls eingetragen; dazwischen die Dauer in Tagen. Darunter auf "
-                     "grauer Fläche der Ort, falls eingetragen (zweites Beispiel ohne Uhrzeit und Ort)."),
+                     "grauer Fläche mit dem Ortssymbol der Ort, falls eingetragen: fett die Bezeichnung, darunter Zeile "
+                     "für Zeile die Adresse, im Ausland mit dem Land (zweites Beispiel ohne Uhrzeit und Ort)."),
+        "pages": [_("Veranstaltungen")],
+    },
+    "adressfeld": {
+        "name": _("Adressfeld"), "template": "core/_adressfeld.html", "issues": [163],
+        "purpose": _("Eine freiwillige Adresse unter der Überschrift „Adresse“: Straße und Hausnummer, PLZ und Ort "
+                     "nebeneinander, Bundesland und Land als Auswahl, „Deutschland“ vorgewählt; das Bundesland nur bei "
+                     "Deutschland. Sobald etwas eingetragen ist, sind PLZ und Ort Pflicht, in Deutschland mit 5 "
+                     "Ziffern; die Fehler stehen am Feld. Darunter „Adresse suchen“: sucht bei OpenStreetMap mit der "
+                     "Bezeichnung des Orts und den ausgefüllten Feldern und zeigt bis zu 5 Treffer, die „Übernehmen“ in "
+                     "die Felder schreibt. Die Suche lässt sich abschalten. Am Handy liegen alle Felder untereinander."),
         "pages": [_("Veranstaltungen")],
     },
     "schalter": {
@@ -1749,13 +1936,15 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "trefferliste": {
-        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190, 285, 99],
+        "name": _("Trefferliste"), "template": "core/_treffer.html", "issues": [190, 285, 99, 163],
         "purpose": _("Vorschläge oder Treffer einer Suche: Kreis, Fahrtenname und Name, darunter die Organisation, "
                      "rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders "
                      "Mitglied ist, eine Warnung. Im Dialog „Person aufnehmen“ ohne Organisation darunter, mit dem "
                      "Knopf „Aufnehmen“. Eine verwaltete Person hat die Marke „verwaltet“ und darunter den Satz, "
-                     "dass die Rolle nur angezeigt wird und keine Rechte gibt."),
-        "pages": [_("Organisation")],
+                     "dass die Rolle nur angezeigt wird und keine Rechte gibt. In der Form „Ort“ (Adresssuche, "
+                     "letztes Beispiel) steht das Ortssymbol statt des Kreises, die Bezeichnung und darunter die "
+                     "Adresse, rechts „Übernehmen“."),
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "profilkreis": {
         "name": _("Profilkreis"), "template": "core/_profilkreis.html", "issues": [7, 13],
@@ -1954,6 +2143,15 @@ def _event_examples() -> dict:
         # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, wie auf der Zusammenfassung.
         "steps": _steps(2),
         "cancel_dialog": cancel,
+        # Adressfeld (#163) wie nach „Übernehmen“ (Zielbild, Ansicht 3); der Knopf schickt im Katalog nichts ab.
+        "address_form": AddressForm(initial={"street": "Burgweg 1", "postal_code": "99999", "city": "Musterhausen",
+                                             "state": "HE", "country": GERMANY}, auto_id="katalog_adresse_%s"),
+        "address": {"form_id": "katalog-adresse", "search_action": "#h-adressfeld", "hits": [], "notice": None},
+        # Trefferliste in der Form „Ort“ (#163, Zielbild, Ansicht 2), erfunden wie in den Szenarien.
+        "place_hits": [_hit(place) for place in (
+            address_search.Place("Burg Ludwigstein", "Burgweg 1", "99999", "Musterhausen", "HE", GERMANY, "51.326", "9.904"),
+            address_search.Place("Zeltplatz am Exempelsee", "", "123 45", "Exempelby", "", "SE", "59.3", "18.0"),
+        )],
     }
 
 

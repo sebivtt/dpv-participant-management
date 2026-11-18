@@ -40,6 +40,13 @@
     </form>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-adressfeld">
+    {% include "core/_katalogeintrag.html" with block=blocks.adressfeld %}
+    <form class="a-flaeche a-formular" id="katalog-adresse" novalidate data-nur-ansicht>
+      {% adressfeld examples.address_form examples.address %}
+    </form>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-kurzmeldung">
     {% include "core/_katalogeintrag.html" with block=blocks.kurzmeldung %}
     {# Die Beispiele stehen als Vorlagen bereit; die Knöpfe blenden sie unten ein wie nach einer Handlung. Ohne Skript zeigen sie nichts. #}
@@ -228,6 +235,8 @@
       {% include "core/_treffer.html" with hits=examples.hits hits_title=_("Treffer") appoint_action="#h-trefferliste" notice=None preview=True %}
       {# Im Dialog „Person aufnehmen“ (#285): ohne Organisation darunter, Knopf „Aufnehmen“. #}
       {% include "core/_treffer.html" with hits=examples.admit_hits hits_title=_("Treffer") appoint_action="#h-trefferliste" action_label=_("Aufnehmen") notice=None preview=True %}
+      {# Form „Ort“ der Adresssuche (#163): Ortssymbol, Bezeichnung und Adresse, „Übernehmen“. #}
+      <form id="katalog-orte" data-nur-ansicht>{% include "core/_treffer.html" with hits=examples.place_hits hits_title=_("Treffer") places=True take_action="#h-trefferliste" form_id="katalog-orte" notice=None %}</form>
       {% include "core/_treffer.html" with hits=None empty=_("Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen.") notice=examples.no_account %}
     </div>
   </section>

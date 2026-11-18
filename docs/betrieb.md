@@ -23,6 +23,7 @@ Zeitpunkte:
 | Tool im Container nicht als Verwalter | `Dockerfile`, #58 | erledigt | vor der Testumgebung |
 | HTTPS: Sitzungs- und Formular-Cookies nur verschlüsselt | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #58 | erledigt | vor der Testumgebung |
 | HTTPS: Weiterleitung von `http` auf `https` und HSTS | `config/settings.py` (`DJANGO_BEHIND_HTTPS_PROXY`), #324 | erledigt | vor der Testumgebung |
+| Adresssuche: nur der Server fragt OpenStreetMap, nur der Suchtext, höchstens eine Anfrage pro Sekunde, Suchtext in keinem Log; der Server braucht dafür Zugang nach außen zu `nominatim.openstreetmap.org` (HTTPS) | `core/address_search.py`, `config/settings.py` (`ADDRESS_SEARCH_…`), #163; Kontaktadresse in `ADRESSSUCHE_KENNUNG`: unten | erledigt | vor der Testumgebung |
 | Sicherheitsrichtlinie für Skripte | `config/settings.py` (`SECURE_CSP`), #278 | erledigt | vor der Testumgebung |
 | Startprüfung: Tool startet nicht mit unsicheren Einstellungen | `core/server_checks.py` (läuft mit `migrate` in `docker/start.sh`), #325 | erledigt | vor der Testumgebung |
 | Abgelaufene Sitzungen löschen, beim Start und danach alle 24 Stunden | `testumgebung/docker-compose.yml` (Dienst `aufraeumen`), `docker/aufraeumen.sh`, #324 | erledigt | vor der Testumgebung |
@@ -48,6 +49,7 @@ Zeitpunkte:
 ## Beim Einrichten auf dem Server (#59)
 
 - **Hinweis auf HTTPS:** Das Programm vor dem Tool, das die verschlüsselte Verbindung annimmt, muss bei jeder Anfrage die Kopfzeile `X-Forwarded-Proto: https` selbst setzen und einen vom Browser mitgeschickten Wert ersetzen, nicht nur anhängen. Fehlt sie, hält das Tool mit `DJANGO_BEHIND_HTTPS_PROXY=1` jede Anfrage für unverschlüsselt und leitet endlos weiter. Leitet das Programm davor selbst schon auf HTTPS weiter, schadet das nicht. Nach dem Einrichten prüft Sebastian den Login auf dem Server einmal von Hand (#59).
+- **Adresssuche:** In der Umgebungsdatei `ADRESSSUCHE_KENNUNG` mit einer Kontaktadresse des Teams setzen (`testumgebung/.env.example`); das wünschen die Nutzungsregeln von OpenStreetMap. Erreicht der Server OpenStreetMap nicht, meldet das Tool „Die Adresssuche ist gerade nicht erreichbar.“, und die Adresse lässt sich von Hand eintragen (#163).
 - **Sitzungen:** Der Dienst `aufraeumen` startet mit der Testumgebung von selbst. `docker compose -f testumgebung/docker-compose.yml ps aufraeumen` zeigt ihn mit `Up`, solange er läuft; sein Log bleibt leer, außer ein Lauf scheitert (dann neuer Versuch nach einer Minute).
 
 ## Aktualisieren

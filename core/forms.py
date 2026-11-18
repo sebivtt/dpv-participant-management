@@ -1,13 +1,19 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95), die Angaben einer verwalteten Person (#117) und einer Veranstaltung (#100, #379)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95), die Angaben einer verwalteten Person (#117) und einer Veranstaltung (#100, #379), die Adresse aus dem Baustein „Adressfeld“ (#163)."""
 
+import re
 from datetime import date, time
+from decimal import Decimal, InvalidOperation
 
 from django import forms
+from django.core import signing
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.keycloak_abgleich import trimmed
 from accounts.models import SCOUT_NAME_MAX_LENGTH
+from core import address_texts
+from core.countries import COUNTRIES
+from core.models import CITY_MAX_LENGTH, GERMANY, POSTAL_CODE_MAX_LENGTH, STATES, STREET_MAX_LENGTH
 from events import texts as event_texts
 from events.models import LOCATION_MAX_LENGTH
 from events.models import NAME_MAX_LENGTH as EVENT_NAME_MAX_LENGTH
@@ -264,7 +270,116 @@ def _whole_minute(value):
     return value.replace(second=0, microsecond=0) if value else value
 
 
-class EventForm(forms.Form):
+# Ein Treffer der Adresssuche reist als signierter Text mit: im Knopf „Übernehmen“ und danach versteckt im Formular
+# („coordinates“). So kommen Koordinaten nur aus einem Treffer, den der Server gefunden hat (#163, A4).
+PLACE_SALT = "adressfeld.treffer"
+PLACE_PARTS = ("street", "postal_code", "city", "state", "country")
+GERMAN_POSTAL_CODE = re.compile(r"\d{5}")
+
+
+def place_token(values: dict) -> str:
+    """Der signierte Text zu einer Adresse mit Koordinaten: die Teile aus `PLACE_PARTS`, `latitude` und `longitude`."""
+    # Ohne Zeitstempel: Derselbe Treffer ergibt immer denselben Text, die Seite also dieselbe Antwort (#156).
+    return signing.Signer(salt=PLACE_SALT).sign_object(
+        {name: str(values.get(name) or "") for name in (*PLACE_PARTS, "latitude", "longitude")}, compress=True)
+
+
+def place_from_token(token: str) -> dict | None:
+    """Die Adresse mit Koordinaten aus einem signierten Text; verändert oder in falscher Form None."""
+    try:
+        values = signing.Signer(salt=PLACE_SALT).unsign_object(token or "")
+    except signing.BadSignature:
+        return None
+    if not isinstance(values, dict) or not all(isinstance(values.get(name), str)
+                                               for name in (*PLACE_PARTS, "latitude", "longitude")):
+        return None
+    return values
+
+
+def _coordinate(text: str, limit: int) -> Decimal | None:
+    """Eine Koordinate mit sieben Stellen nach dem Komma, oder None, wenn sie keine ist."""
+    try:
+        value = Decimal(text).quantize(Decimal("0.0000001"))
+    except (InvalidOperation, ValueError):
+        return None
+    return value if value.is_finite() and -limit <= value <= limit else None
+
+
+def _address_text(label, too_long, limit: int, counted: bool, **attrs) -> forms.CharField:
+    """Ein Textfeld des Adressfelds, freiwillig; ob es Pflicht ist, entscheidet `AddressForm.clean()`."""
+    widget_attrs = {"autocomplete": "off", "autocorrect": "off", "spellcheck": "false", **attrs}
+    if counted:
+        # Die Zahl der Zeichen beim Tippen wie beim Ort der Veranstaltung (#215); bei der kurzen PLZ nicht.
+        widget_attrs.update({"data-hoechstens": limit, "data-zu-lang": too_long})
+    return forms.CharField(label=label, required=False, strip=False, widget=forms.TextInput(attrs=widget_attrs))
+
+
+class AddressForm(forms.Form):
+    """Die Felder des Bausteins „Adressfeld“ (#163): Straße und Hausnummer, PLZ, Ort, Bundesland und Land.
+
+    Die Adresse ist freiwillig. Sobald etwas eingetragen ist (das vorgewählte Land Deutschland allein zählt nicht),
+    sind PLZ und Ort Pflicht; in Deutschland hat die PLZ 5 Ziffern (G4, G5). Leerzeichen am Rand zählen nicht. Bei
+    einem anderen Land wird kein Bundesland gespeichert (G7). Ohne Eintrag sind alle Teile leer, auch das Land.
+    Koordinaten gibt es nur aus einem übernommenen Treffer der Adresssuche, versteckt als `coordinates`; passt die
+    Adresse beim Speichern nicht mehr genau zum Treffer, fallen sie weg (A4). `cleaned_data` enthält danach alle Felder
+    aus `core.models.ADDRESS_FIELDS`. Ein Formular mit Adresse erbt von dieser Klasse.
+    """
+
+    street = _address_text(address_texts.STREET, address_texts.STREET_TOO_LONG, STREET_MAX_LENGTH, True,
+                           autocapitalize="sentences")
+    postal_code = _address_text(address_texts.POSTAL_CODE, address_texts.POSTAL_CODE_TOO_LONG, POSTAL_CODE_MAX_LENGTH,
+                                False, autocapitalize="characters")
+    city = _address_text(address_texts.CITY, address_texts.CITY_TOO_LONG, CITY_MAX_LENGTH, True,
+                         autocapitalize="words")
+    state = forms.ChoiceField(label=address_texts.STATE, required=False,
+                              choices=[("", address_texts.CHOOSE), *STATES])
+    country = forms.ChoiceField(label=address_texts.COUNTRY, required=False, choices=COUNTRIES, initial=GERMANY)
+    coordinates = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        if not all(name in cleaned for name in PLACE_PARTS):
+            # Ein Feld ist schon falsch (etwa ein Land, das es nicht gibt); der Fehler steht dort.
+            return cleaned
+        street, postal_code, city = (trimmed(cleaned[name]) for name in ("street", "postal_code", "city"))
+        country = cleaned["country"] or GERMANY
+        state = cleaned["state"] if country == GERMANY else ""
+        cleaned.update(latitude=None, longitude=None)
+        if not (street or postal_code or city or state) and country == GERMANY:
+            cleaned.update(street="", postal_code="", city="", state="", country="")
+            return cleaned
+        cleaned.update(street=street, postal_code=postal_code, city=city, state=state, country=country)
+        for name, value, limit, too_long in (
+            ("street", street, STREET_MAX_LENGTH, address_texts.STREET_TOO_LONG),
+            ("postal_code", postal_code, POSTAL_CODE_MAX_LENGTH, address_texts.POSTAL_CODE_TOO_LONG),
+            ("city", city, CITY_MAX_LENGTH, address_texts.CITY_TOO_LONG),
+        ):
+            if len(value) > limit:
+                self.add_error(name, forms.ValidationError(too_long, code="max_length"))
+        if not postal_code:
+            self.add_error("postal_code", forms.ValidationError(address_texts.POSTAL_CODE_EMPTY, code="required"))
+        elif country == GERMANY and not GERMAN_POSTAL_CODE.fullmatch(postal_code):
+            self.add_error("postal_code", forms.ValidationError(address_texts.FIVE_DIGITS, code="five_digits"))
+        if not city:
+            self.add_error("city", forms.ValidationError(address_texts.CITY_EMPTY, code="required"))
+        place = place_from_token(cleaned.get("coordinates", ""))
+        if place and all(place[name] == cleaned[name] for name in PLACE_PARTS):
+            latitude, longitude = _coordinate(place["latitude"], 90), _coordinate(place["longitude"], 180)
+            if latitude is not None and longitude is not None:
+                cleaned.update(latitude=latitude, longitude=longitude)
+        return cleaned
+
+
+def address_initial(entry) -> dict:
+    """Die Felder des Adressfelds mit der gespeicherten Adresse, ohne Adresse mit „Deutschland“ vorgewählt (#163)."""
+    values = {name: getattr(entry, name) for name in PLACE_PARTS}
+    values["country"] = values["country"] or GERMANY
+    if entry.latitude is not None:
+        values["coordinates"] = place_token({**values, "latitude": entry.latitude, "longitude": entry.longitude})
+    return values
+
+
+class EventForm(AddressForm):
     """Die Angaben in „Veranstaltung erstellen“ und im Dialog des Stifts der Kachel „Grunddaten“ (#100, #379).
 
     Der Name ist Pflicht, höchstens 100 Zeichen; Leerzeichen am Rand zählen wie bei #77 auch in unsichtbarer
@@ -274,6 +389,8 @@ class EventForm(forms.Form):
     Zeichen, nur Leerzeichen gilt als leer (VER-04). Das Formular nimmt nur diese Angaben an: Wer die
     Veranstaltung leitet, kommt aus der Anmeldung (VV3). Alle Felder gehören über ihr Attribut „form“ zum
     Formular des Knopfs im Dialog; in Schritt 1 beim Anlegen (#380) zum Formular des Schritts (`form_id`).
+
+    Dazu seit #163 die freiwillige Adresse des Orts aus dem Baustein „Adressfeld“ (`AddressForm`).
 
     Prüfungen nach VER-03 (Fragen 2 und 3 aus #29), beim Anlegen und beim Bearbeiten; `before` ist beim
     Bearbeiten die Veranstaltung, wie sie gespeichert ist:
@@ -344,7 +461,7 @@ class EventForm(forms.Form):
     @classmethod
     def for_create(cls, **kwargs) -> "EventForm":
         """Das leere Formular „Veranstaltung erstellen“: Tage leer, Uhrzeiten 18:00 und 12:00 (VER-02, A4)."""
-        return cls(initial={"start_time": START_TIME_DEFAULT, "end_time": END_TIME_DEFAULT}, **kwargs)
+        return cls(initial={"start_time": START_TIME_DEFAULT, "end_time": END_TIME_DEFAULT, "country": GERMANY}, **kwargs)
 
     def clean_name(self) -> str:
         value = trimmed(self.cleaned_data["name"])

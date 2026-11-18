@@ -50,7 +50,7 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
 .btn-outline-primary { --bs-btn-color: var(--dpv); --bs-btn-border-color: var(--dpv); --bs-btn-hover-bg: var(--dpv); --bs-btn-hover-border-color: var(--dpv); --bs-btn-active-bg: var(--dpv-tief); --bs-btn-active-border-color: var(--dpv-tief); --bs-btn-disabled-color: var(--text-leise); --bs-btn-disabled-border-color: var(--linie); }
 .btn-link { --bs-btn-color: var(--dpv); --bs-btn-hover-color: var(--dpv-tief); font-weight: 700; }
 .form-label { font-weight: 700; }
-.form-control:focus { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
+.form-control:focus, .form-select:focus { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
 
 /* ---------- Fokus: immer sichtbar (NFA-03) ----------
    DPV-Blau hat auf Weiß und auf dem Grund mehr als 8 : 1. Sonnengelb dort nur rund 2 : 1,
@@ -58,7 +58,8 @@ h1, h2, h3 { color: var(--text); font-weight: 800; }
    Rahmen sonst abschaltet und nur ein blasser Schatten bliebe (#78). */
 :focus-visible,
 .btn:focus-visible,
-.form-control:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
+.form-control:focus-visible,
+.form-select:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
 .a-sprung { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: var(--radius-klein); background: var(--dpv); color: #fff; font-weight: 700; text-decoration: none; }
 .a-sprung:focus { top: 12px; color: #fff; }
 
@@ -378,7 +379,7 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 /* Baustein Textfeld (#111): Beschriftung, Feld, Fehler am Feld; so hoch wie die Felder auf „Mein Profil“,
    weiß, damit es sich von den grauen, gesperrten Feldern abhebt (Zielbild, docs/zielbilder/mein-profil.html) */
 .a-textfeld { margin: 0 0 1rem; }
-.a-textfeld .form-control { min-height: 46px; background-color: var(--flaeche); }
+.a-textfeld .form-control, .a-textfeld .form-select { min-height: 46px; background-color: var(--flaeche); }
 /* Zahl der Zeichen bei fachlicher Grenze (#215): rechts unter der Eingabe, zu lang rot wie der Fehler am Feld */
 .a-zeichenzahl { margin: 4px 0 0; color: var(--text-leise); font-size: .85rem; text-align: right; }
 .a-zeichenzahl.ist-zu-lang { color: var(--bs-form-invalid-color); }
@@ -653,7 +654,10 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-kalender-dauer { color: var(--text-leise); font-size: .85rem; font-weight: 700; white-space: nowrap; }
 .a-kalender-ort { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0 0; padding: 12px; border-radius: var(--radius-klein); background: var(--grund); overflow-wrap: anywhere; }
 .a-kalender-ort-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
-.a-kalender-ort strong { align-self: center; min-width: 0; }
+.a-kalender-ort strong { min-width: 0; }
+/* Der Ort mit Adresse Zeile für Zeile (#163, Zielbild Adressfeld, Ansicht 7). */
+.a-ort-zeilen { align-self: center; min-width: 0; margin: 0; }
+.a-ort-zeile { display: block; }
 @media (max-width: 390px) {
   .a-kalenderblatt { flex-basis: 84px; }
   .a-kalender-mitte { min-width: 44px; gap: 4px; }
@@ -671,3 +675,25 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
    eine zweite Zeile, der Hauptknopf bleibt rechts. */
 .a-schritt-knoepfe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0 0; }
 .a-schritt-rechts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-left: auto; }
+
+/* Adressfeld (#163, Zielbild docs/zielbilder/adressfeld.html): unter einer feinen Linie „Adresse“ mit Ortssymbol, PLZ
+   und Ort nebeneinander (die PLZ so breit, dass ihre Meldung in eine Zeile passt), Bundesland und Land nebeneinander;
+   schmal alles untereinander. Das Bundesland verschwindet, sobald ein anderes Land als Deutschland gewählt ist, allein
+   über das Aussehen, also auch ohne Skript. */
+.a-adressfeld { min-width: 0; margin: 4px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid var(--linie); }
+.a-adressfeld-kopf { display: flex; align-items: center; gap: 10px; float: none; width: auto; margin: 0 0 10px; padding: 0; color: var(--text); font-size: 1rem; font-weight: 800; }
+.a-adressfeld-kopf .ic { color: var(--dpv); }
+.a-adressfeld-plz-ort { display: grid; grid-template-columns: 13rem minmax(0, 1fr); column-gap: 14px; }
+.a-adressfeld-land { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
+.a-adressfeld:not(:has(select[name="country"] option[value="DE"]:checked)) .a-bundesland { display: none; }
+.a-standardknopf { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); }
+.a-adresse-suche { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.a-adresse-satz { margin: 0; font-size: .9rem; }
+.a-adresse-ergebnis { margin-top: 14px; }
+.a-adresse-ergebnis:focus { outline: none; }
+.a-adresse-ergebnis:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; }
+.a-treffer-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: 50%; background: var(--dpv-hauch); color: var(--dpv); }
+.a-quelle { margin: 0; color: var(--text-leise); font-size: .82rem; }
+@media (max-width: 700px) {
+  .a-adressfeld-plz-ort, .a-adressfeld-land { grid-template-columns: minmax(0, 1fr); }
+}

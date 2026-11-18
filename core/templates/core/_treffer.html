@@ -1,7 +1,14 @@
-{% load i18n layout %}{# Trefferliste (#190, Zielbild docs/zielbilder/organisation.html): Vorschläge oder Treffer mit Kreis, Fahrtenname, Name und Organisation, rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders Mitglied ist, eine Warnung; `notice` ist eine Meldung unter der Liste. Ohne Treffer steht `empty`. Daten aus units/organisation.py, Hit; `appoint_action` ist die Adresse, an die der Knopf die Kennung schickt; er heißt `action_label`, ohne Angabe „Benennen“, beim Aufnehmen „Aufnehmen“ (#285). Ohne `hit.place` fehlt die Zeile mit der Organisation, wie im Dialog „Person aufnehmen“. Erweitert mit #99: Eine verwaltete Person hat hinter dem Namen die Marke „verwaltet“, darunter den Satz, dass die Rolle nur angezeigt wird, und ihr Knopf schickt zusätzlich `verwaltet=ja`. Mit preview=True schickt der Knopf im Bausteinkatalog nichts ab. #}
+{% load i18n layout %}{# Trefferliste (#190, Zielbild docs/zielbilder/organisation.html): Vorschläge oder Treffer mit Kreis, Fahrtenname, Name und Organisation, rechts „Benennen“. Bei sich selbst steht statt des Knopfs ein Satz, bei jemandem, der woanders Mitglied ist, eine Warnung; `notice` ist eine Meldung unter der Liste. Ohne Treffer steht `empty`. Daten aus units/organisation.py, Hit; `appoint_action` ist die Adresse, an die der Knopf die Kennung schickt; er heißt `action_label`, ohne Angabe „Benennen“, beim Aufnehmen „Aufnehmen“ (#285). Ohne `hit.place` fehlt die Zeile mit der Organisation, wie im Dialog „Person aufnehmen“. Erweitert mit #99: Eine verwaltete Person hat hinter dem Namen die Marke „verwaltet“, darunter den Satz, dass die Rolle nur angezeigt wird, und ihr Knopf schickt zusätzlich `verwaltet=ja`. Mit preview=True schickt der Knopf im Bausteinkatalog nichts ab. Erweitert mit #163 (Nachklärung N3: „Trefferliste erweitern“): Mit places=True ist es die Form „Ort“ für die Adresssuche: Ortssymbol statt Kreis, darüber hit.name (Bezeichnung), darunter hit.line (Adresse), rechts „Übernehmen“. Weil die Liste dort im Formular des Adressfelds steht, ist der Knopf kein eigenes Formular, sondern schickt das Formular form_id mit hit.token als „treffer“ an take_action. #}
 {% if hits %}<p class="a-treffer-titel">{{ hits_title }}</p>
 <ul class="a-trefferliste">
-  {% for hit in hits %}<li class="a-treffer">
+  {% for hit in hits %}{% if places %}<li class="a-treffer">
+    <span class="a-treffer-ic" aria-hidden="true">{% icon "ort" %}</span>
+    <div class="a-treffer-wer">
+      <p class="a-leitung-zeile"><span class="a-leitung-name">{{ hit.name }}</span></p>
+      <p class="a-leise a-treffer-ort">{{ hit.line }}</p>
+    </div>
+    <div class="a-treffer-knopf"><button type="submit" class="btn btn-zart" name="treffer" value="{{ hit.token }}" form="{{ form_id }}" formaction="{{ take_action }}" formnovalidate>{% translate "Übernehmen" %}<span class="sr-nur"> {{ hit.name }}, {{ hit.line }}</span></button></div>
+  </li>{% else %}<li class="a-treffer">
     <span class="a-avatar" aria-hidden="true">{{ hit.initial }}</span>
     <div class="a-treffer-wer">
       <p class="a-leitung-zeile"><span class="a-leitung-name">{{ hit.name }}</span>{% if hit.extra %} <span class="a-anzeigename-zusatz">({{ hit.extra }})</span>{% endif %}{% if hit.managed_mark %} {% include "core/_kennmarke.html" with mark=hit.managed_mark %}{% endif %}</p>
@@ -11,7 +18,7 @@
     </div>
     {% if not hit.note and not hit.warning %}<form class="a-treffer-knopf" method="post" action="{{ appoint_action }}"{% if preview %} data-nur-ansicht{% endif %}>{% csrf_token %}<input type="hidden" name="person" value="{{ hit.key }}">{% if hit.managed %}<input type="hidden" name="verwaltet" value="ja">{% endif %}<button type="submit" class="btn btn-zart">{% if action_label %}{{ action_label }}{% else %}{% translate "Benennen" %}{% endif %}<span class="sr-nur"> {{ hit.name }}</span></button></form>{% endif %}
     {% if hit.warning %}<div class="a-treffer-warnung">{% meldung "warning" text=hit.warning %}</div>{% endif %}
-  </li>{% endfor %}
+  </li>{% endif %}{% endfor %}
 </ul>
 {% elif empty %}<p class="a-leise a-treffer-leer">{{ empty }}</p>{% endif %}
 {% if notice %}{% meldung notice.0 text=notice.1 live=True %}{% endif %}

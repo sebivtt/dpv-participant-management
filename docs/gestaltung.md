@@ -247,6 +247,16 @@ Zielbild als `docs/zielbilder/veranstaltung.html` (aus #356; gebaut die Ansichte
 - **Schritt 1 „Grunddaten“:** dieselben Felder wie der Dialog des Stifts (#379), mit „(Pflicht)“ bei Name, Beginn und Ende; „Ort“ ohne Zusatz. Mit „Weiter“ ist die Veranstaltung als Entwurf gespeichert, bei einem Fehler bleibt der Schritt mit den Eingaben und dem Fehler am Feld stehen. „Abbrechen“ führt ohne Rückfrage zur Liste.
 - **Zusammenfassung:** die Grunddaten wie die Kachel der Leitungsseite (Kalenderblätter) mit dem Stift zurück zu Schritt 1. „Veranstaltung speichern“ führt zur Leitungsseite mit „… ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung.“ „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“ mit „Entwurf löschen“ und „Entwurf speichern“; beide führen zur Liste mit kurzer Meldung. Wer nicht löschen darf (Mitleitung, Anmeldung), sieht nur „Entwurf speichern“.
 
+### Adressfeld mit Adresssuche (#163, 18.11.2026)
+
+Zielbild als `docs/zielbilder/adressfeld.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 18.11.2026 zu #163. Jedes Formular mit Adresse bindet das Adressfeld ein (`{% adressfeld form address %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Adressfeld“), statt seine Felder selbst zu schreiben; in P3 nur der Ort einer Veranstaltung (Schritt 1 „Grunddaten“ und Dialog des Stifts). Ein Baustein neu, drei erweitert:
+
+- **Adressfeld** (neu): unter einer feinen Linie die Überschrift „Adresse“ mit dem Ortssymbol, ohne Satz darunter; darunter „Straße und Hausnummer“, PLZ und Ort nebeneinander (die PLZ so breit, dass ihre Meldung in eine Zeile passt), Bundesland und Land nebeneinander, am Handy alles untereinander. Bundesland und Land sind Auswahlfelder im Aussehen des Textfelds, „Deutschland“ vorgewählt; das Bundesland verschwindet bei einem anderen Land, auch ohne Skript. Freiwillig und ohne „(Pflicht)“; sobald etwas eingetragen ist, stehen die Fehler „Bitte gib die PLZ ein.“, „Bitte gib den Ort ein.“ und „Bitte gib 5 Ziffern ein.“ am Feld. Die Suche lässt sich abschalten; dann fehlen Knopf, Treffer und Meldungen.
+- **Adresse suchen:** der zart blaue Knopf mit Lupe unter den Feldern, daneben „Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.“ Darunter, an der Stelle der Handlung (#186), entweder die Meldung (Information „Keine Adresse gefunden. …“, Fehler „Die Adresssuche ist gerade nicht erreichbar. …“, Warnung „Für die Suche gib bitte …“) oder bis zu 5 Treffer mit „Adressdaten © OpenStreetMap-Mitwirkende“ und Link darunter. Nach der Suche steht die Seite beim Adressfeld und der Fokus bei Treffern oder Meldung, nach „Übernehmen“ auf „Straße und Hausnummer“. Ohne Skript ist beides ein gewöhnliches Formular.
+- **Zart blauer Knopf** (erweitert): kann ein Formular abschicken statt zu einem Dialog zu führen, bisher nur „Adresse suchen“, das nichts speichert.
+- **Trefferliste** (erweitert, Form „Ort“): Ortssymbol im zart blauen Kreis statt des Anfangsbuchstabens, fett die Bezeichnung, darunter die Adresse mit Bundesland (im Ausland mit Land), rechts „Übernehmen“.
+- **Kalenderblätter** (erweitert): Der Ort steht mit dem Ortssymbol statt des Gebäudes (Abweichung vom Zielbild von #356), fett die Bezeichnung, darunter Zeile für Zeile Straße und Hausnummer, PLZ und Ort und im Ausland das Land; das Bundesland wird nicht angezeigt. Im Kopf der Leitungsseite steht der Ort in einer Zeile: „Burg Ludwigstein, Burgweg 1, 99999 Musterhausen“.
+
 ### Textfelder (#111, 26.10.2026)
 
 Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% textfeld form.feld %}` in `core/templatetags/layout.py`, im Bausteinkatalog unter „Textfeld“), statt sein Feld selbst zu schreiben. Entscheidungen mit Begründung in `docs/entscheidungen.md`, Eintrag vom 26.10.2026 zu #111.
@@ -256,7 +266,7 @@ Jedes Formular bindet seine Textfelder über den gemeinsamen Baustein ein (`{% t
 - **Passende Handy-Tastatur:** Das Formular legt sie am Feld fest, z. B. bei Namen Großbuchstabe am Wortanfang, ohne Autokorrektur. Jedes neue Feld wird auch wie am Handy geprüft, mit Autokorrektur und Wortvorschlägen (Rauchtest).
 - **Weiß** auf grauem oder weißem Grund, damit es sich von gesperrten Feldern (grau, mit Schloss) abhebt.
 - **Zahl der Zeichen** (#215) nur bei fachlicher Grenze: beim Tippen rechts unter der Eingabe „12/30“, zu lang rot mit der Meldung darunter; nichts wird abgeschnitten. Gilt ebenso im Feld zum Antippen, dort nur bei offener Eingabe. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 31.10.2026 zu #215.
-- Gleiches gilt für Datumsfelder (seit #117 der Baustein „Datumsfeld“) und später das Adressfeld (#163).
+- Gleiches gilt für Datumsfelder (seit #117 der Baustein „Datumsfeld“) und das Adressfeld (seit #163, Abschnitt „Adressfeld mit Adresssuche“ oben).
 
 ### Felder zum Antippen (#180, 26.10.2026)
 

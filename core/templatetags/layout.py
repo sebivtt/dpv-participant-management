@@ -1,15 +1,17 @@
-"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Meldungen (#165), kurze Meldungen (#186), Textfelder (#111), Felder zum Antippen (#180), Fußbereich, Band der Testumgebung (#58).
+"""Bausteine der Grundgestaltung für die Vorlagen (#7): Symbole, Meldungen (#165), kurze Meldungen (#186), Textfelder (#111), Felder zum Antippen (#180), Adressfeld (#163), Fußbereich, Band der Testumgebung (#58).
 
 Alle Bausteine kommen ohne Anfrage, Sitzung und Datenbank aus, damit sie auch auf der
 Fehlerseite funktionieren (core/errors.py).
 """
 
-from django import template
+from django import forms, template
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy
+
+from core import address_texts
 
 register = template.Library()
 
@@ -94,9 +96,11 @@ def _textfeld(field, described_by: str = "") -> dict:
     error_id = f"{field.auto_id}-fehler"
     limit = field.field.widget.attrs.get("data-hoechstens")
     counter_id = f"{field.auto_id}-zahl" if limit else ""
-    attrs = {"class": "form-control"}
+    # Eine Auswahl sieht aus wie ein Textfeld, mit dem Pfeil des Browsers (#163, Bundesland und Land im Adressfeld).
+    kind = "form-select" if isinstance(field.field.widget, forms.Select) else "form-control"
+    attrs = {"class": kind}
     if field.errors:
-        attrs = {"class": "form-control is-invalid", "aria-invalid": "true"}
+        attrs = {"class": f"{kind} is-invalid", "aria-invalid": "true"}
         described_by = error_id
     described_by = " ".join(filter(None, [described_by, counter_id]))
     if described_by:
@@ -171,6 +175,25 @@ def datumsfeld(field, time=None) -> dict:
         "errors": errors,
         "error_id": error_id,
         "required": field.field.required,
+    }
+
+
+@register.inclusion_tag("core/_adressfeld.html")
+def adressfeld(form, address: dict) -> dict:
+    """Baustein „Adressfeld“ (#163): die Felder einer Adresse aus einem Formular mit `core.forms.AddressForm`.
+
+    `address` kommt von `address_field()` in core/views.py: zu welchem Formular Felder und Knöpfe gehören, wohin
+    „Adresse suchen“ schickt (leer: Fassung ohne Suche), dazu Treffer und Meldung der Suche.
+    """
+    return {
+        "form": form,
+        "address": address,
+        "title": address_texts.ADDRESS,
+        "search_label": address_texts.SEARCH,
+        "search_hint": address_texts.SEARCH_HINT,
+        "hits_title": address_texts.HITS,
+        "source": address_texts.SOURCE,
+        "source_link": address_texts.SOURCE_LINK,
     }
 
 

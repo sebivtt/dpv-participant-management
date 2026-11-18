@@ -1,0 +1,23 @@
+{% load i18n layout %}{# Adressfeld (#163, Zielbild docs/zielbilder/adressfeld.html, Abweichungen in docs/zielbilder/README.md): unter der Überschrift „Adresse“ mit Ortssymbol die Felder „Straße und Hausnummer“, PLZ und Ort nebeneinander, Bundesland (nur bei Deutschland) und Land nebeneinander; am Handy alles untereinander. Die Felder sind Textfelder aus dem Baustein „Textfeld“, Bundesland und Land Auswahlfelder im selben Aussehen. Darunter „Adresse suchen“ (zart blauer Knopf) mit einem Satz dazu, danach die Meldung der Suche oder die Treffer (Baustein „Trefferliste“, Form „Ort“) mit dem Quellenhinweis von OpenStreetMap. Ohne address.search_action fehlen Knopf und Treffer (Fassung ohne Suche, ohne Zuordnung). Das Bundesland blendet app.css aus, sobald ein anderes Land gewählt ist, auch ohne Skript. Alle Felder und Knöpfe gehören über ihr Attribut „form“ zum Formular address.form_id. Enter in einem Feld speichert weiter wie „Weiter“ oder „Speichern“, nie die Suche. Eingebunden mit {% adressfeld form address %} (core/templatetags/layout.py). #}
+<fieldset class="a-adressfeld" id="adressfeld">
+  <legend class="a-adressfeld-kopf">{% icon "ort" %}<span>{{ title }}</span></legend>
+  {# Enter in einem Feld schickt das Formular mit seinem ersten Knopf ab. Damit das weiter „Weiter“ oder „Speichern“ ist und nicht „Adresse suchen“, steht hier vorher ein unsichtbarer Knopf ohne eigene Adresse; Tastatur und Vorleseprogramme erreichen ihn nicht. #}
+  {% if address.search_action %}<button type="submit" class="a-standardknopf" form="{{ address.form_id }}" tabindex="-1" aria-hidden="true"></button>{% endif %}
+  {% textfeld form.street %}
+  <div class="a-adressfeld-plz-ort">{% textfeld form.postal_code %}{% textfeld form.city %}</div>
+  <div class="a-adressfeld-land"><div class="a-bundesland">{% textfeld form.state %}</div>{% textfeld form.country %}</div>
+  {{ form.coordinates }}
+  {% if address.search_action %}
+    <div class="a-adresse-suche">
+      {% include "core/_knopf_verschieben.html" with formaction=address.search_action form_id=address.form_id label=search_label symbol="suche" large=True extra_class="a-adresse-suchen" described_by="adresse-suchen-satz" %}
+      <p class="a-leise a-adresse-satz" id="adresse-suchen-satz">{{ search_hint }}</p>
+    </div>
+    {% if address.notice or address.hits %}<div class="a-adresse-ergebnis" tabindex="-1"{% if address.focus_results %} autofocus{% endif %}>
+      {% if address.notice %}{% meldung address.notice.0 text=address.notice.1 live=True %}{% endif %}
+      {% if address.hits %}
+        {% include "core/_treffer.html" with hits=address.hits hits_title=hits_title places=True take_action=address.search_action form_id=address.form_id notice=None %}
+        <p class="a-quelle">{{ source }} <a href="https://www.openstreetmap.org/copyright">{{ source_link }}</a></p>
+      {% endif %}
+    </div>{% endif %}
+  {% endif %}
+</fieldset>

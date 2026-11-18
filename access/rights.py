@@ -1071,6 +1071,14 @@ class Rights:
         """Darf die Person eine Veranstaltung anlegen? Nur mit Zuordnung (BER-03, VA-01, VA-05)."""
         return self.has_assignment()
 
+    def may_search_address(self) -> bool:
+        """Darf die Person die Adresssuche von OpenStreetMap nutzen? Wie beim Anlegen nur mit Zuordnung (VA-07, #163).
+
+        Ein Support-Zugang zählt nicht (`has_assignment()`); eine Veranstaltungsleitung ohne Zuordnung trägt die Adresse
+        von Hand ein.
+        """
+        return self.has_assignment()
+
     def create_event(self, values: dict, creation_key) -> Event:
         """Legt eine Veranstaltung als Entwurf an; die Person ist danach ihre Veranstaltungsleitung (VA-01, TEAM-01).
 
@@ -1193,8 +1201,10 @@ class Rights:
             entry = fresh.entry(fresh.events().select_for_update(), key)
             if str(entry.version) != str(version):
                 return False, entry, str(event_texts.CHANGED_MEANWHILE % {"event": entry.name})
+            # Was die Angaben nicht nennen, bleibt, wie es war (etwa die Adresse, #163).
             for name in EVENT_FIELDS:
-                setattr(entry, name, values[name])
+                if name in values:
+                    setattr(entry, name, values[name])
             entry.version += 1
             entry.save()
         return True, entry, str(event_texts.SAVED % {"event": entry.name})
