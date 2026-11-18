@@ -229,7 +229,8 @@ def test_die_felder_der_adresse_stehen_dicht(pc):
     pc.locator(f'{FIELD} input[name="street"]').fill("Burgweg 1")
     street = pc.locator(f'{FIELD} input[name="street"]').bounding_box()
     postal = pc.locator(f'{FIELD} input[name="postal_code"]').bounding_box()
-    counter = pc.locator(f"{FIELD} #id_street-zahl").bounding_box()
+    # Die Zahl selbst (der Text); ihr Absatz nimmt keinen Platz ein.
+    counter = pc.locator(f"{FIELD} #id_street-zahl span[aria-hidden]").bounding_box()
     label = pc.locator(f'{FIELD} label[for="id_postal_code"]').bounding_box()
 
     assert postal["y"] - (street["y"] + street["height"]) <= 48
