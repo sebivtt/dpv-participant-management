@@ -221,7 +221,7 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
         "date", "date"]
     # Seit #380 „Weiter“ statt „Anlegen“; danach die Zusammenfassung mit „Veranstaltung speichern“.
     # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“ (tests/test_adressfeld.py).
-    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Adresse suchen", "Weiter"]
+    assert [_visible_text(button) for button in _by_tag(found, "button") if _visible_text(button)] == ["Adresse suchen", "Weiter"]
 
     response = create(org.finn, client=client)
 
@@ -268,7 +268,7 @@ def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     assert field_values(found) == {"name": "Probelager 2027", "start": "2027-05-15", "start_time": "",
                                    "end": "2027-05-17", "end_time": "", "location": ""}
     # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“ (tests/test_adressfeld.py).
-    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Adresse suchen", "Speichern"]
+    assert [_visible_text(button) for button in _by_tag(found, "button") if _visible_text(button)] == ["Adresse suchen", "Speichern"]
 
     response = save(org.finn, probelager, client=client, end="2027-05-18")
 

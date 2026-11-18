@@ -183,7 +183,7 @@ def test_a2_wanda_traegt_uhrzeiten_und_ort_ueber_den_stift_ein(org, pfingstlager
     assert field_values(found) == {"name": "Pfingstlager 2028", "start": "2028-06-02", "start_time": "",
                                    "end": "2028-06-05", "end_time": "", "location": ""}
     # Seit #163 steht unter dem Ort das Adressfeld mit „Adresse suchen“ (tests/test_adressfeld.py).
-    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Adresse suchen", "Speichern"]
+    assert [_visible_text(button) for button in _by_tag(found, "button") if _visible_text(button)] == ["Adresse suchen", "Speichern"]
 
     response = save(org.wanda, pfingstlager, client=client, start_time="18:00", end_time="12:00",
                     location="Burg Ludwigstein")

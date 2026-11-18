@@ -142,6 +142,7 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
 
     # G5: Die Meldung unter der PLZ passt in eine Zeile.
     street = handy.locator('input[name="street"]')
+    street.fill("")
     _type_like_a_phone(street, "Burgweg ", "1", "1a", "")
     expect(street).to_have_value("Burgweg 1a")
     handy.locator('input[name="postal_code"]').fill("9999")
@@ -164,7 +165,7 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
 
 
 @pytest.mark.parametrize("device", ["pc", "pc_ohne_skript"])
-def test_g7_bei_schweden_verschwindet_das_bundesland(request, device):
+def test_g7_bei_schweden_verschwindet_das_bundesland(request, browser_name, device):
     page: Page = request.getfixturevalue(device)
     login(page)
     _erika_in_den_falken()

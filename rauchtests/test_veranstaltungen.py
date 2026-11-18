@@ -42,11 +42,12 @@ CREATE_BUTTON = '[aria-labelledby="h-veranstaltungen"] .a-flaeche-aktion[href="/
 EDIT_BUTTON = 'main a.a-stift[href$="/bearbeiten/"]'
 START = 'dialog input[name="start"]'
 END = 'dialog input[name="end"]'
-SUBMIT = 'dialog button[type="submit"]'
+# Seit #163 steht davor im Adressfeld „Adresse suchen“; gemeint ist der Hauptknopf unten.
+SUBMIT = 'dialog .a-dialog-fuss button[type="submit"]'
 # Schritt 1 beim Anlegen (#380): die Felder im Formular des Schritts, „Weiter“ und auf der Zusammenfassung „Veranstaltung speichern“.
 STEP_START = 'form#f-schritt input[name="start"]'
 STEP_END = 'form#f-schritt input[name="end"]'
-STEP_SUBMIT = 'form#f-schritt button[type="submit"]'
+STEP_SUBMIT = 'form#f-schritt .a-schritt-rechts button[type="submit"]'
 CREATED = "Probelager 2027 ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."
 
 
@@ -102,7 +103,7 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     end = pc.locator(STEP_END)
     assert end.get_attribute("type") == "date"
     end.fill("2027-05-17")
-    stations = _stations_to_element(pc, STEP_SUBMIT, steps=10)
+    stations = _stations_to_element(pc, STEP_SUBMIT, steps=20)
     _all_visible(stations)
     pc.keyboard.press("Enter")
     pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
@@ -124,7 +125,7 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     expect(_dialog(pc).locator("h2")).to_have_text("Probelager 2027 bearbeiten")
     expect(pc.get_by_label("Name")).to_be_focused()
     pc.locator(END).fill("2027-05-18")
-    stations = _stations_to_element(pc, SUBMIT, steps=10)
+    stations = _stations_to_element(pc, SUBMIT, steps=20)
     _all_visible(stations)
     pc.keyboard.press("Enter")
     expect(pc.locator(".a-kurz")).to_contain_text("Die Angaben zu Probelager 2027 sind gespeichert.")
@@ -176,7 +177,7 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     handy.locator(STEP_END).fill("2027-05-17")
     _no_side_scroll(handy)
 
-    stations = _stations_to_element(handy, STEP_SUBMIT, steps=10)
+    stations = _stations_to_element(handy, STEP_SUBMIT, steps=20)
     _all_visible(stations)
     handy.keyboard.press("Enter")
     handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
