@@ -51,6 +51,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Rückkehr des Fokus nach „Verwaltete Person anlegen“ | 15.11.2026, #298, „Technische Wahl“, Nr. 2 | 11.11.2026, #117, „Technische Wahl“, Nr. 5 (nur die Kennung `#verwaltete-person-anlegen`) |
 | Farbe des Plus bei „Veranstaltung erstellen“ | 17.11.2026, #379, Nr. 1 | 26.10.2026, #165, Nr. 3 (nur „Symbol von ‚Veranstaltung erstellen‘“ in der Aufzählung für Sonnengelb) |
 | Beginn einer Veranstaltung in der Vergangenheit | 17.11.2026, #379, Nr. 2 | VG5 aus den [Szenarien zu #100](https://github.com/sebivtt/dpv-participant-management/issues/100#issuecomment-6522727393) („beide dürfen in der Vergangenheit liegen“), das bisher nur dort stand |
+| Beschriftung der Bezeichnung des Orts | 18.11.2026, #163, Nr. 8 | 17.11.2026, #380, Nr. 5 (nur dass das Feld „Ort“ nur „Ort“ heißt) |
 | „Veranstaltung erstellen“ als Ablauf in Schritten | 17.11.2026, #380, Nr. 1 | 13.11.2026, #100, „Technische Wahl“, Nr. 4 (nur dass „Veranstaltung erstellen“ ein Dialog ist) |
 
 ---
@@ -66,6 +67,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 5. **Wer sucht** (Frage 7): wer Veranstaltungen anlegen darf, also mit Zuordnung; neue Zeile VA-07 der Rechtematrix.
 6. **Aussehen** (Z1 bis Z3, N1, N3): Meldungen an der PLZ kurz („Bitte gib die PLZ ein.“, „Bitte gib 5 Ziffern ein.“) und das Feld so breit, dass sie in eine Zeile passen; Anzeige der Adresse mit dem Ortssymbol statt des Gebäudes aus dem Zielbild von #356 (Abweichung davon, neues Symbol); kein Satz „Freiwillig …“ unter „Adresse“; zu wenig für die Suche ist eine gelbe Warnung; die Treffer sind eine neue Form „Ort“ der Trefferliste.
 7. **Fassung ohne Suche** (Frage 9): kommt mit ihrer ersten Seite (Profil, Anmeldung, Stamm); der Baustein lässt die Suche abschalten.
+8. **Ort als eigene Fläche** (Vorschau am 18.11.2026, Sebastian: „Dadurch, dass ich den Ort bereits suchen kann gehört er vom Ding her zur Adresssuche“; gewählt „Eigene Fläche“): In Schritt 1 steht unter Name, Beginn und Ende eine eigene Fläche „Ort“ mit Ortssymbol, darin das Feld „Bezeichnung“ und das Adressfeld; im Dialog des Stifts ebenso ein eigener Abschnitt „Ort“. Damit heißt nur noch das Feld der Adresse „Ort“. Ersetzt den Eintrag vom 17.11.2026 (#380), Nr. 5, nur den Satz, dass das Feld „Ort“ nur „Ort“ heißt; die Beschriftung bleibt ohne „(freiwillig)“. Dazu aus der Vorschau: die Felder der Adresse dichter (die Zahl der Zeichen rechts neben der Beschriftung) und ein Klick irgendwo in die Zeile eines Treffers übernimmt ihn.
 
 **Technische Wahl** (KI):
 

@@ -15,6 +15,10 @@
         {% textfeld event_form.name %}
         <div class="a-felder-nebeneinander">{% datumsfeld event_form.start time=event_form.start_time %}{% datumsfeld event_form.end time=event_form.end_time %}</div>
         {% if asks_duration %}{% schalter event_form.duration_ok %}{% endif %}
+      </section>
+      {# Der Ort als eigene Fläche (Vorschau zu #163, Sebastian, 18.11.2026): die Bezeichnung und darunter die Adresse, die die Suche zusammen liest. #}
+      <section class="a-flaeche a-ort-flaeche" aria-labelledby="h-ort">
+        {% include "core/_flaechenkopf.html" with symbol="ort" title=place_title heading_id="h-ort" %}
         {% textfeld event_form.location %}
         {% adressfeld event_form address %}
       </section>

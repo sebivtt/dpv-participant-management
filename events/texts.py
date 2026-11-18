@@ -36,7 +36,9 @@ END = gettext_lazy("Ende")
 # Die Uhrzeit steht im Baustein „Datumsfeld“ rechts neben dem Datum; Vorleseprogramme hören diese Namen (#379).
 START_TIME = gettext_lazy("Uhrzeit Beginn")
 END_TIME = gettext_lazy("Uhrzeit Ende")
-LOCATION = gettext_lazy("Ort")
+# Seit der Vorschau zu #163 (Sebastian, 18.11.2026) steht die Bezeichnung mit der Adresse in einer eigenen Fläche „Ort“.
+LOCATION = gettext_lazy("Bezeichnung")
+PLACE = gettext_lazy("Ort")
 DURATION_OK = gettext_lazy("Ja, die Dauer stimmt")
 
 # Fehler am Feld
@@ -47,7 +49,7 @@ END_EMPTY = gettext_lazy("Bitte gib das Ende ein.")
 DATE_INVALID = gettext_lazy("Bitte gib ein gültiges Datum ein.")
 END_BEFORE_START = gettext_lazy("Das Ende liegt vor dem Beginn.")
 TIME_INVALID = gettext_lazy("Bitte gib eine gültige Uhrzeit ein.")
-LOCATION_TOO_LONG = gettext_lazy("Der Ort darf höchstens 100 Zeichen lang sein.")
+LOCATION_TOO_LONG = gettext_lazy("Die Bezeichnung darf höchstens 100 Zeichen lang sein.")
 # VER-03, Fragen 2 und 3 aus #29: „vor dem heutigen Tag“; Nachfrage ab 29 Tagen, gezählt wie in der Kachel.
 START_IN_PAST = gettext_lazy("Der Beginn liegt in der Vergangenheit.")
 DURATION_QUESTION = gettext_lazy("Die Veranstaltung dauert %(count)s Tage. Stimmt das?")

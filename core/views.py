@@ -1022,6 +1022,7 @@ def _event_dialog(form: EventForm, action: str, close_href: str, entry, hidden: 
         "conflict": conflict,
         "hidden": list(hidden),
         "address": address_field("f-dialog", search_action, found),
+        "place_title": event_texts.PLACE,
     }
 
 
@@ -1157,7 +1158,7 @@ def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | 
             search = reverse("event_create_basics_address", args=[entry.key]) if entry else reverse("event_create_address")
         context.update({
             "action": action, "event_form": form, "asks_duration": bool(form.duration_question),
-            "address": address_field(STEP_FORM, search, found),
+            "address": address_field(STEP_FORM, search, found), "place_title": event_texts.PLACE,
             "hidden": list(hidden), "conflict": conflict, "cancel_href": reverse("events"), "back_href": None,
             "submit_label": event_texts.NEXT,
         })
