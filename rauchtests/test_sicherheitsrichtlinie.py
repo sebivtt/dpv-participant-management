@@ -330,3 +330,29 @@ def test_s6_ohne_skript_eingebetteter_stil_neben_auswahlfeld_bleibt_rot(pc_ohne_
     _settle(pc_ohne_skript)
 
     assert "Konsole: Refused to apply a stylesheet" in _report(pc_ohne_skript)
+
+
+# Befund B1 der unabhängigen Prüfung: Setzt das Skript einen Stil an ein ausgeliefertes Auswahlfeld, meldet
+# WebKit ein zweites Mal am selben Feld; das ist mehr als eine Meldung je Feld und bleibt rot.
+def test_s5_stil_aus_dem_skript_am_auswahlfeld_bleibt_rot(pc, browser_name, verstoesse_erwartet):
+    _inject(pc, LOGIN_PAGE, SELECTS)
+    pc.goto(LOGIN_PAGE)
+    _wait_for_webkit_notice(pc, browser_name)
+
+    pc.locator("select[name=state]").evaluate("select => select.setAttribute('style', 'color: red')")
+    _settle(pc)
+
+    assert '- style-src-attr blockiert inline an <select name="state">' in _report(pc)
+
+
+# Befund B2 der unabhängigen Prüfung: Ein Auswahlfeld in einer Vorlage (<template>) stellt WebKit nicht dar und
+# meldet es nicht; zählte der Wächter es mit, ginge ohne Skript ein eingebetteter Stil daneben durch.
+def test_s6_ohne_skript_auswahlfeld_in_vorlage_zaehlt_nicht(pc_ohne_skript, browser_name, verstoesse_erwartet):
+    if browser_name != "webkit":
+        pytest.skip("Die Ausnahme gilt nur in WebKit; die anderen Browser prüft S6 mit Skript.")
+    _inject(pc_ohne_skript, LOGIN_PAGE, '<template><select name="vorlage"><option>a</option></select></template><style>main { color: red; }</style>')
+
+    pc_ohne_skript.goto(LOGIN_PAGE)
+    _settle(pc_ohne_skript)
+
+    assert "Konsole: Refused to apply a stylesheet" in _report(pc_ohne_skript)
