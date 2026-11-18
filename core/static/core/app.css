@@ -680,8 +680,10 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
    und Ort nebeneinander (die PLZ so breit, dass ihre Meldung in eine Zeile passt), Bundesland und Land nebeneinander;
    schmal alles untereinander. Das Bundesland verschwindet, sobald ein anderes Land als Deutschland gewählt ist, allein
    über das Aussehen, also auch ohne Skript. */
-.a-adressfeld { min-width: 0; margin: 4px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid var(--linie); }
-.a-adressfeld-kopf { margin: 0 0 8px; padding: 0; color: var(--text); font-size: 1rem; font-weight: 800; }
+.a-adressfeld { min-width: 0; margin: 4px 0 0; padding: 0; border: 0; }
+/* Die Linie gehört zur Überschrift, nicht zum Rahmen der Gruppe: sonst schnitte sie durch „Adresse“ oder die Zahl der
+   Zeichen darunter rutschte neben die Überschrift. */
+.a-adressfeld-kopf { float: none; width: 100%; margin: 0 0 8px; padding: 16px 0 0; border-top: 1px solid var(--linie); color: var(--text); font-size: 1rem; font-weight: 800; }
 /* Dicht wie im Zielbild (Vorschau, Sebastian, 18.11.2026): die Zahl der Zeichen rechts neben der Beschriftung statt in
    einer eigenen Zeile unter dem Feld, kleinere Abstände zwischen den Feldern. */
 .a-adressfeld .a-textfeld { position: relative; margin-bottom: .6rem; }
