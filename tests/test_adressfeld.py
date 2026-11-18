@@ -10,6 +10,8 @@ echte OpenStreetMap. Alle Namen und Adressen sind erfunden.
 """
 
 import hashlib
+import http.client
+import time
 import logging
 import re
 import threading
@@ -661,7 +663,8 @@ def test_g2_openstreetmap_antwortet_nicht_fehler_und_speichern_geht_trotzdem(org
     assert saved_address(created())["city"] == "Musterhausen"
 
 
-@pytest.mark.parametrize("failure", [OSError("Netz weg"), ValueError("kein JSON")])
+# IncompleteRead: Befund B2 der unabhängigen Prüfung, eine abgeschnittene Antwort gab eine Fehlerseite.
+@pytest.mark.parametrize("failure", [OSError("Netz weg"), ValueError("kein JSON"), http.client.IncompleteRead(b"")])
 def test_g2_auch_andere_ausfaelle_sind_nicht_erreichbar(org, osm, failure):
     osm.failure = failure
 
@@ -722,7 +725,8 @@ def test_g4_das_vorgewaehlte_deutschland_allein_ist_keine_adresse(org):
                                         "latitude": None, "longitude": None}
 
 
-@pytest.mark.parametrize("postal_code", ["9999", "999999", "99a99", "99 999"])
+# „９９９９９“: Befund B3 der unabhängigen Prüfung, vollbreite Ziffern galten als Ziffern.
+@pytest.mark.parametrize("postal_code", ["9999", "999999", "99a99", "99 999", "９９９９９"])
 def test_g5_in_deutschland_hat_die_plz_5_ziffern(org, postal_code):
     client = client_for(org.wanda)
 
@@ -1006,3 +1010,47 @@ def test_vorschau_die_ganze_trefferzeile_uebernimmt(org, osm):
 
     for entry in _all(address_field(root), lambda e: e.name == "li" and "a-treffer" in _classes(e)):
         assert "a-treffer-ganz" in _classes(entry)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_g8_viele_gleichzeitige_suchen_warten_hoechstens_kurz(osm, settings):
+    """Befund B1 der unabhängigen Prüfung: Die Bremse ließ eine Schlange wachsen, weil jede Suche ihre Wartezeit unter
+    der Sperre absaß; die letzte von 8 wartete gut 7 Sekunden. Jetzt sieht jede Suche ihren Platz sofort, und wer mehr
+    als 5 Sekunden warten müsste, bekommt „nicht erreichbar“."""
+    settings.ADDRESS_SEARCH_INTERVAL_SECONDS = 1.0
+    results: list[tuple[float, str]] = []
+    start = threading.Barrier(8)
+
+    def one(number: int) -> None:
+        try:
+            start.wait()
+            began = time.monotonic()
+            try:
+                address_search.search(f"Zeltplatz {number}")
+                outcome = "Treffer"
+            except address_search.Unavailable:
+                outcome = "nicht erreichbar"
+            results.append((time.monotonic() - began, outcome))
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=one, args=(number,)) for number in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(results) == 8
+    assert max(duration for duration, _outcome in results) < 6.5
+    assert any(outcome == "nicht erreichbar" for _duration, outcome in results)
+
+
+def test_b4_adresse_suchen_behaelt_die_bestaetigte_dauer(org, osm):
+    """Befund B4 der unabhängigen Prüfung: „Ja, die Dauer stimmt“ ging bei „Adresse suchen“ verloren (A9)."""
+    client = client_for(org.wanda)
+    response = client.post(CREATE_SEARCH, {**open_step_one(client), **PFINGSTLAGER, **EMPTY_ADDRESS,
+                                           "end": "2028-07-01", "duration_ok": "30"})
+    switch = _one(_by_tag(_tree(response), "input", name="duration_ok"))
+
+    assert _attr(switch, "value") == "30"
+    assert _attr(switch, "checked") is not None
