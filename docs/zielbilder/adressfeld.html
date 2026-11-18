@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grober Entwurf 3: Adressfeld mit Adresssuche (#163)</title>
+<style>
+:root {
+  --dpv: #1a4b7e; --dpv-tief: #12385f; --dpv-hauch: #e9eff6; --akzent: #f0ad2c;
+  --grund: #f4f6f9; --flaeche: #ffffff; --linie: #dbe2ea; --text: #1b2532; --text-leise: #566375;
+  --ok-text: #245c3d; --ok-grund: #e1f0e6; --warte-text: #74500c; --warte-grund: #fbefd5;
+  --ab-text: #8a2c2c; --ab-grund: #f7e2e2; --ab-rand: #c0392b;
+  --radius: 14px; --radius-klein: 9px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #d9dee5; color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; }
+.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hinweis { max-width: 1100px; margin: 24px auto; padding: 16px 20px; background: var(--flaeche); border-radius: var(--radius); }
+.hinweis h1 { margin: 0 0 8px; font-size: 1.3rem; }
+.hinweis p, .hinweis li { margin: 4px 0; color: var(--text-leise); }
+.hinweis a { color: var(--dpv); font-weight: 700; }
+.ansicht-titel { max-width: 1100px; margin: 40px auto 8px; padding: 0 4px; font-size: 1rem; color: var(--text-leise); font-weight: 700; }
+.bildschirm { max-width: 1100px; margin: 0 auto; display: flex; background: var(--grund); border-radius: var(--radius); overflow: hidden; border: 1px solid #c4ccd6; position: relative; }
+.leiste { width: 220px; flex: none; background: var(--flaeche); border-right: 1px solid var(--linie); padding: 20px 14px; }
+.marke { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--dpv); margin-bottom: 22px; }
+.lilie { width: 32px; height: 32px; border-radius: 50%; background: var(--dpv); color: #fff; display: grid; place-items: center; font-size: .75rem; }
+.leiste ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.leiste li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-klein); font-weight: 600; }
+.leiste li.aktiv { background: var(--dpv-hauch); color: var(--dpv); font-weight: 800; }
+.leiste li.aktiv::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--akzent); }
+.inhalt { flex: 1; min-width: 0; padding: 32px 36px; display: grid; gap: 20px; align-content: start; grid-template-columns: minmax(0, 1fr); }
+.kopf h2 { margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -.01em; }
+.kopf p { margin: 4px 0 0; color: var(--text-leise); font-size: 1.05rem; }
+.flaeche { position: relative; background: var(--flaeche); border-radius: var(--radius); padding: 20px 24px; }
+.flaeche > h3 { margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .55rem 1.1rem; border-radius: var(--radius-klein); border: 1px solid var(--dpv); background: var(--dpv); color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: default; white-space: nowrap; }
+.btn.zart { background: var(--flaeche); color: var(--text); border-color: var(--linie); }
+.btn.blau { background: var(--dpv-hauch); color: var(--dpv); border-color: var(--dpv-hauch); }
+.btn.klein { padding: .3rem .7rem; font-size: .88rem; }
+.schritte { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.schritte li { flex: 1 1 140px; padding: 10px 12px; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--text-leise); font-weight: 600; border-bottom: 4px solid var(--linie); }
+.schritte li.jetzt { color: var(--text); font-weight: 800; border-bottom-color: var(--akzent); }
+.schritte b { display: block; font-size: .8rem; color: var(--text-leise); font-weight: 700; }
+.satz { margin: 0; color: var(--text-leise); font-size: .95rem; }
+.knoepfe { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.knoepfe .rechts { display: flex; gap: 10px; flex-wrap: wrap; }
+.anderes { border: 2px dashed #8fa3bb; border-radius: var(--radius-klein); background: #f7f9fc; padding: 12px 16px; color: var(--text-leise); }
+.anderes strong { color: var(--text); }
+
+/* Felder wie der Baustein „Textfeld“ */
+.feld { display: grid; gap: 6px; margin-bottom: 14px; min-width: 0; }
+.feld label { font-weight: 700; }
+.pflicht { color: var(--text-leise); font-weight: 400; }
+.eingabe { min-height: 42px; padding: 9px 12px; border: 1px solid #b8c3d0; border-radius: var(--radius-klein); background: #fff; color: var(--text); }
+.eingabe.leer { color: #8a95a3; }
+.eingabe.auswahl { display: flex; justify-content: space-between; align-items: center; }
+.eingabe.auswahl::after { content: "▾"; color: var(--text-leise); }
+.eingabe.fehler { border-color: var(--ab-rand); }
+.fehlertext { color: var(--ab-text); font-size: .92rem; }
+.datum-zeit { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.nebeneinander { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+
+/* Adressfeld (#163) */
+.adresse { border-top: 1px solid var(--linie); padding-top: 16px; margin-top: 4px; }
+.adresse-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.adresse-kopf h4 { margin: 0; font-size: 1rem; font-weight: 800; flex: 1; }
+.adresse .satz { margin-bottom: 14px; }
+.plz-ort { display: grid; grid-template-columns: 12rem 1fr; gap: 0 16px; }
+.land-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.suche-zeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 0; }
+.suche-zeile .satz { margin: 0; font-size: .9rem; }
+.markiert { background: #fffbe6; border-color: #e3c97a; }
+
+/* Treffer wie der Baustein „Trefferliste“ */
+.treffer-titel { margin: 16px 0 6px; font-weight: 700; }
+.trefferliste { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.treffer { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: var(--radius-klein); background: var(--grund); flex-wrap: wrap; }
+.treffer-ic { width: 38px; height: 38px; border-radius: 50%; background: var(--dpv-hauch); color: var(--dpv); display: grid; place-items: center; flex: none; }
+.treffer-wer { flex: 1 1 14rem; min-width: 0; }
+.treffer-wer p { margin: 0; }
+.treffer-name { font-weight: 800; }
+.leise { color: var(--text-leise); font-size: .88rem; }
+.quelle { margin: 8px 0 0; font-size: .82rem; color: var(--text-leise); }
+.quelle a { color: var(--dpv); }
+
+/* Meldungen wie der Baustein „Meldungen“ */
+.meldung { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: var(--radius-klein); margin-top: 14px; }
+.meldung p { margin: 0; color: var(--text); }
+.meldung.info { background: var(--dpv-hauch); color: var(--dpv); }
+.meldung.fehler { background: var(--ab-grund); color: var(--ab-text); }
+
+/* Anzeige wie in der Kachel „Grunddaten“ (#356) */
+.ort { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: var(--radius-klein); background: var(--grund); }
+.ort-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
+.raster { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+@media (max-width: 760px) {
+  .bildschirm { flex-direction: column; border-radius: 0; }
+  .leiste { width: auto; border-right: 0; border-bottom: 1px solid var(--linie); padding: 12px 16px; }
+  .leiste ul { display: none; }
+  .marke { margin: 0; }
+  .inhalt { padding: 20px 16px; }
+  .nebeneinander, .land-reihe, .raster { grid-template-columns: 1fr; }
+  .plz-ort { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-kalender" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-suche" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+  <symbol id="i-warnung" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol>
+  <symbol id="i-stift" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></symbol>
+</svg>
+
+<div class="hinweis">
+  <h1>Grober Entwurf 3: Adressfeld mit Adresssuche (#163)</h1>
+  <p>Stand 17.11.2026, nach Sebastians Anmerkungen zu Entwurf 1 (Meldungen an der PLZ kürzer, Feld PLZ breiter) und zu Entwurf 2 (Ortssymbol statt Gebäude in der Anzeige, ohne den Satz „Freiwillig …“ unter „Adresse“). Grundlage: die Kommentare „Stand der Klärung (17.11.2026)“ und „Szenarien (17.11.2026)“ (A1 bis G9) in #163, das Zielbild von #356 (Schritt 1 und Kachel „Grunddaten“), der Bausteinkatalog (Textfeld, Trefferliste, Meldungen) und <code>docs/gestaltung.md</code>. Alle Personen, Orte und Adressen sind erfunden.</p>
+  <p>Gezeigt wird nur das Adressfeld. Was drumherum blau gestrichelt ist (Name, Zeitraum, Bezeichnung des Orts, Schritte), baut #29 und steht hier nur zur Orientierung.</p>
+  <p>Ansichten: <a href="#a1">1 Leer</a> · <a href="#a2">2 Treffer</a> · <a href="#a3">3 Nach der Wahl</a> · <a href="#a4">4 Meldungen der Suche</a> · <a href="#a5">5 Fehler beim Speichern</a> · <a href="#a6">6 Ausland</a> · <a href="#a7">7 Anzeige</a></p>
+</div>
+
+<!-- 1 Leer -->
+<p class="ansicht-titel" id="a1">Ansicht 1: Schritt 1 „Grunddaten“, Wanda hat die Bezeichnung „Burg Ludwigstein“ eingetragen; die Adresse ist noch leer</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg>Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg>Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg>Veranstaltungen</li></ul></aside>
+  <main class="inhalt">
+    <div class="kopf"><h2>Veranstaltung erstellen</h2></div>
+    <ol class="schritte"><li class="jetzt"><b>Schritt 1</b>Grunddaten</li><li><b>Schritt 2</b>Einladungstext</li><li><b>Schritt 3</b>Anmeldung</li><li><b>Schritt 4</b>Zusammenfassung</li></ol>
+    <section class="flaeche">
+      <div class="anderes"><strong>Name, Beginn und Ende (#29)</strong> · Pfingstlager 2028 · 02.06.2028, 18:00 bis 05.06.2028, 12:00</div>
+      <div style="height:16px"></div>
+      <div class="feld"><label>Bezeichnung des Orts <span class="leise">(#29)</span></label><div class="eingabe">Burg Ludwigstein</div></div>
+
+      <div class="adresse">
+        <div class="adresse-kopf"><svg class="ic"><use href="#i-map"/></svg><h4>Adresse</h4></div>
+        <div class="feld"><label>Straße und Hausnummer</label><div class="eingabe leer">&nbsp;</div></div>
+        <div class="plz-ort">
+          <div class="feld"><label>PLZ</label><div class="eingabe leer">&nbsp;</div></div>
+          <div class="feld"><label>Ort</label><div class="eingabe leer">&nbsp;</div></div>
+        </div>
+        <div class="land-reihe">
+          <div class="feld"><label>Bundesland</label><div class="eingabe auswahl leer">Bitte wählen</div></div>
+          <div class="feld"><label>Land</label><div class="eingabe">Deutschland</div></div>
+        </div>
+        <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span><p class="satz">Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.</p></div>
+      </div>
+    </section>
+    <div class="knoepfe"><span class="btn zart">Abbrechen</span><div class="rechts"><span class="btn">Weiter</span></div></div>
+  </main>
+</div>
+
+<!-- 2 Treffer -->
+<p class="ansicht-titel" id="a2">Ansicht 2: nach „Adresse suchen“, bis zu 5 Treffer mit Quellenhinweis (Szenario A1)</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg>Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg>Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg>Veranstaltungen</li></ul></aside>
+  <main class="inhalt">
+    <section class="flaeche">
+      <div class="feld"><label>Bezeichnung des Orts <span class="leise">(#29)</span></label><div class="eingabe">Burg Ludwigstein</div></div>
+      <div class="adresse">
+        <div class="adresse-kopf"><svg class="ic"><use href="#i-map"/></svg><h4>Adresse</h4></div>
+        <div class="feld"><label>Straße und Hausnummer</label><div class="eingabe leer">&nbsp;</div></div>
+        <div class="plz-ort">
+          <div class="feld"><label>PLZ</label><div class="eingabe leer">&nbsp;</div></div>
+          <div class="feld"><label>Ort</label><div class="eingabe leer">&nbsp;</div></div>
+        </div>
+        <div class="land-reihe">
+          <div class="feld"><label>Bundesland</label><div class="eingabe auswahl leer">Bitte wählen</div></div>
+          <div class="feld"><label>Land</label><div class="eingabe">Deutschland</div></div>
+        </div>
+        <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span><p class="satz">Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.</p></div>
+
+        <p class="treffer-titel">Treffer</p>
+        <ul class="trefferliste">
+          <li class="treffer"><span class="treffer-ic"><svg class="ic"><use href="#i-map"/></svg></span><div class="treffer-wer"><p class="treffer-name">Burg Ludwigstein</p><p class="leise">Burgweg 1, 99999 Musterhausen, Hessen</p></div><span class="btn zart klein">Übernehmen</span></li>
+          <li class="treffer"><span class="treffer-ic"><svg class="ic"><use href="#i-map"/></svg></span><div class="treffer-wer"><p class="treffer-name">Jugendburg Ludwigstein, Parkplatz</p><p class="leise">Burgweg, 99999 Musterhausen, Hessen</p></div><span class="btn zart klein">Übernehmen</span></li>
+          <li class="treffer"><span class="treffer-ic"><svg class="ic"><use href="#i-map"/></svg></span><div class="treffer-wer"><p class="treffer-name">Ludwigsteinstraße</p><p class="leise">Ludwigsteinstraße, 99990 Beispielheim, Niedersachsen</p></div><span class="btn zart klein">Übernehmen</span></li>
+        </ul>
+        <p class="quelle">Adressdaten © <a href="#a2">OpenStreetMap-Mitwirkende</a></p>
+      </div>
+    </section>
+    <p class="satz">„Übernehmen“ füllt Straße und Hausnummer, PLZ, Ort, Bundesland und Land. Die Bezeichnung bleibt, wie Wanda sie geschrieben hat (G6). Ohne Skript kommt die Seite mit dieser Liste und allen Eingaben zurück (A9).</p>
+  </main>
+</div>
+
+<!-- 3 Nach der Wahl -->
+<p class="ansicht-titel" id="a3">Ansicht 3: nach „Übernehmen“; alles bleibt von Hand änderbar (A1, A4)</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg>Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg>Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg>Veranstaltungen</li></ul></aside>
+  <main class="inhalt">
+    <section class="flaeche">
+      <div class="feld"><label>Bezeichnung des Orts <span class="leise">(#29)</span></label><div class="eingabe">Burg Ludwigstein</div></div>
+      <div class="adresse">
+        <div class="adresse-kopf"><svg class="ic"><use href="#i-map"/></svg><h4>Adresse</h4></div>
+        <div class="feld"><label>Straße und Hausnummer</label><div class="eingabe">Burgweg 1</div></div>
+        <div class="plz-ort">
+          <div class="feld"><label>PLZ</label><div class="eingabe">99999</div></div>
+          <div class="feld"><label>Ort</label><div class="eingabe">Musterhausen</div></div>
+        </div>
+        <div class="land-reihe">
+          <div class="feld"><label>Bundesland</label><div class="eingabe auswahl">Hessen</div></div>
+          <div class="feld"><label>Land</label><div class="eingabe">Deutschland</div></div>
+        </div>
+        <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span><p class="satz">Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.</p></div>
+      </div>
+    </section>
+    <div class="knoepfe"><span class="btn zart">Abbrechen</span><div class="rechts"><span class="btn">Weiter</span></div></div>
+    <p class="satz">Nach „Weiter“ ist alles gespeichert. Die Koordinaten des Treffers speichert das Tool unsichtbar mit; ändert Wanda danach etwas an der Adresse, fallen sie weg (A4).</p>
+  </main>
+</div>
+
+<!-- 4 Meldungen der Suche -->
+<p class="ansicht-titel" id="a4">Ansicht 4: Meldungen der Suche, je unter „Adresse suchen“ (G1, G2, G3); die Felder bleiben, wie sie waren</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div></aside>
+  <main class="inhalt">
+    <section class="flaeche">
+      <h3>Nichts gefunden (G1)</h3>
+      <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span></div>
+      <div class="meldung info"><svg class="ic"><use href="#i-info"/></svg><p>Keine Adresse gefunden. Du kannst sie unten selbst eintragen.</p></div>
+    </section>
+    <section class="flaeche">
+      <h3>Suche nicht erreichbar (G2)</h3>
+      <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span></div>
+      <div class="meldung fehler"><svg class="ic"><use href="#i-warnung"/></svg><p>Die Adresssuche ist gerade nicht erreichbar. Du kannst die Adresse unten selbst eintragen.</p></div>
+    </section>
+    <section class="flaeche">
+      <h3>Zu wenig für die Suche (G3): nur „Burgweg“, ohne PLZ, Ort und Bezeichnung</h3>
+      <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span></div>
+      <div class="meldung fehler"><svg class="ic"><use href="#i-warnung"/></svg><p>Für die Suche gib bitte die Bezeichnung oder eine Straße mit PLZ oder Ort ein.</p></div>
+    </section>
+    <p class="satz">Welche Farbe die Meldungen bekommen (Hinweis blau oder Fehler rot), entscheidet das Zielbild; der Wortlaut ist geklärt. Die Meldungen stehen direkt unter dem Knopf, an der Stelle der Handlung (#186).</p>
+  </main>
+</div>
+
+<!-- 5 Fehler beim Speichern -->
+<p class="ansicht-titel" id="a5">Ansicht 5: „Weiter“ mit unvollständiger Adresse; Fehler rot am Feld, Eingaben bleiben (G4, G5)</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div></aside>
+  <main class="inhalt">
+    <section class="flaeche">
+      <div class="adresse" style="border-top:0;padding-top:0">
+        <div class="adresse-kopf"><svg class="ic"><use href="#i-map"/></svg><h4>Adresse</h4></div>
+        <div class="feld"><label>Straße und Hausnummer</label><div class="eingabe">Waldweg 3</div></div>
+        <div class="plz-ort">
+          <div class="feld"><label>PLZ</label><div class="eingabe fehler">9999</div><span class="fehlertext">Bitte gib 5 Ziffern ein.</span></div>
+          <div class="feld"><label>Ort</label><div class="eingabe fehler leer">&nbsp;</div><span class="fehlertext">Bitte gib den Ort ein.</span></div>
+        </div>
+        <div class="land-reihe">
+          <div class="feld"><label>Bundesland</label><div class="eingabe auswahl leer">Bitte wählen</div></div>
+          <div class="feld"><label>Land</label><div class="eingabe">Deutschland</div></div>
+        </div>
+      </div>
+    </section>
+    <p class="satz">Ohne PLZ hieße es „Bitte gib die PLZ ein.“ Steht nur das vorausgefüllte „Deutschland“ da, ist das keine Adresse, und „Weiter“ geht ohne Meldung (G4).</p>
+  </main>
+</div>
+
+<!-- 6 Ausland -->
+<p class="ansicht-titel" id="a6">Ansicht 6: Ort im Ausland; ohne Bundesland, PLZ ohne Prüfung auf 5 Ziffern (A6, G7)</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div></aside>
+  <main class="inhalt">
+    <section class="flaeche">
+      <div class="feld"><label>Bezeichnung des Orts <span class="leise">(#29)</span></label><div class="eingabe">Zeltplatz am Exempelsee</div></div>
+      <div class="adresse">
+        <div class="adresse-kopf"><svg class="ic"><use href="#i-map"/></svg><h4>Adresse</h4></div>
+        <div class="feld"><label>Straße und Hausnummer</label><div class="eingabe leer">&nbsp;</div></div>
+        <div class="plz-ort">
+          <div class="feld"><label>PLZ</label><div class="eingabe">123 45</div></div>
+          <div class="feld"><label>Ort</label><div class="eingabe">Exempelby</div></div>
+        </div>
+        <div class="land-reihe">
+          <div class="feld"><label>Land</label><div class="eingabe">Schweden</div></div>
+        </div>
+        <div class="suche-zeile"><span class="btn blau"><svg class="ic"><use href="#i-suche"/></svg>Adresse suchen</span><p class="satz">Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.</p></div>
+      </div>
+    </section>
+    <p class="satz">Ist das Land nicht Deutschland, verschwindet das Bundesland (G7). Ohne Skript bleibt das Feld Bundesland stehen und wird beim Speichern nicht übernommen. Ob „Land“ ein Textfeld oder eine Auswahl ist, entscheidet das Zielbild.</p>
+  </main>
+</div>
+
+<!-- 7 Anzeige -->
+<p class="ansicht-titel" id="a7">Ansicht 7: Anzeige in der Kachel „Grunddaten“ der Leitungsseite (wie im Zielbild von #356); bearbeitet wird über den Stift mit demselben Adressfeld (A7, A8)</p>
+<div class="bildschirm">
+  <aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div></aside>
+  <main class="inhalt">
+    <div class="raster">
+      <section class="flaeche">
+        <h3>In Deutschland</h3>
+        <div class="ort"><span class="ort-ic"><svg class="ic"><use href="#i-map"/></svg></span><div><strong>Burg Ludwigstein</strong><br>Burgweg 1<br>99999 Musterhausen</div></div>
+      </section>
+      <section class="flaeche">
+        <h3>Im Ausland</h3>
+        <div class="ort"><span class="ort-ic"><svg class="ic"><use href="#i-map"/></svg></span><div><strong>Zeltplatz am Exempelsee</strong><br>123 45 Exempelby<br>Schweden</div></div>
+      </section>
+      <section class="flaeche">
+        <h3>Nur von Hand, ohne Straße (A5)</h3>
+        <div class="ort"><span class="ort-ic"><svg class="ic"><use href="#i-map"/></svg></span><div><strong>Zeltplatz am Waldsee</strong><br>99997 Waldhausen</div></div>
+      </section>
+      <section class="flaeche">
+        <h3>Ohne Adresse (A8, G9)</h3>
+        <div class="ort"><span class="ort-ic"><svg class="ic"><use href="#i-map"/></svg></span><div><strong>Burg Ludwigstein</strong></div></div>
+      </section>
+    </div>
+    <p class="satz">In einer Zeile (Zusammenfassung, Kopf der Leitungsseite, Einladung): „Burg Ludwigstein, Burgweg 1, 99999 Musterhausen“; das Land nur, wenn es nicht Deutschland ist. Das Bundesland wird gespeichert, aber nicht angezeigt.</p>
+  </main>
+</div>
+
+<p class="ansicht-titel" style="margin-bottom:40px">Ende des dritten Entwurfs. Am Handy (schmales Fenster) liegen alle Felder untereinander, auch PLZ und Ort, damit die Meldung unter der PLZ nicht umbricht; „Adresse suchen“ steht über dem Satz.</p>
+</body>
+</html>

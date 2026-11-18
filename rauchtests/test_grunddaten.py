@@ -26,7 +26,8 @@ from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
 LIST = f"{BASE}/veranstaltungen/"
 ROW_LINK = '[aria-labelledby="h-veranstaltungen"] .a-va-zeile a'
 PENCIL = '[aria-labelledby="h-grunddaten"] a.a-stift'
-SUBMIT = 'dialog.a-dialog button[type="submit"]'
+# Seit #163 steht davor im Adressfeld „Adresse suchen“; gemeint ist „Speichern“ unten im Dialog.
+SUBMIT = 'dialog.a-dialog .a-dialog-fuss button[type="submit"]'
 TILE = '[aria-labelledby="h-grunddaten"]'
 
 
@@ -108,7 +109,7 @@ def test_am_pc_nur_mit_der_tastatur_grunddaten_bearbeiten(pc):
     stations = _stations_to_element(pc, 'dialog input[name="location"]', steps=10)
     _all_visible(stations)
     pc.keyboard.type("Burg Ludwigstein")
-    stations = _stations_to_element(pc, SUBMIT, steps=6)
+    stations = _stations_to_element(pc, SUBMIT, steps=14)
     _all_visible(stations)
     pc.keyboard.press("Enter")
 
@@ -137,7 +138,7 @@ def test_am_pc_nur_mit_der_tastatur_die_nachfrage_zur_dauer(pc):
     _all_visible(stations)
     pc.keyboard.press("Space")
     expect(switch).to_be_checked()
-    stations = _stations_to_element(pc, SUBMIT, steps=6)
+    stations = _stations_to_element(pc, SUBMIT, steps=14)
     _all_visible(stations)
     pc.keyboard.press("Enter")
 
@@ -156,11 +157,12 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     handy.locator('dialog input[name="start_time"]').fill("18:00")
     handy.locator('dialog input[name="end_time"]').fill("12:00")
     # Wie am Handy: ein Wort als Zusammensetzung, ersetzt per Wortvorschlag; nichts verschwindet.
-    location = handy.get_by_label("Ort")
+    # Seit #163 heißt auch das Feld „Ort“ im Adressfeld so; gemeint ist der Ort der Veranstaltung.
+    location = handy.locator('dialog input[name="location"]')
     _type_like_a_phone(location, "Burg ", "Lud", "Ludwig", "stein")
     expect(location).to_have_value("Burg Ludwigstein")
     _no_side_scroll(handy)
-    stations = _stations_to_element(handy, SUBMIT, steps=6)
+    stations = _stations_to_element(handy, SUBMIT, steps=14)
     _all_visible(stations)
     handy.keyboard.press("Enter")
 

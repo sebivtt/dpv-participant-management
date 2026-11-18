@@ -303,7 +303,8 @@ def test_neue_veranstaltung_beginnt_oben(pc, monkeypatch):
     # Seit #379 steht neben Beginn und Ende je eine Uhrzeit; die Felder sucht der Test über ihren Namen.
     step.locator('input[name="start"]').fill("2027-05-15")
     step.locator('input[name="end"]').fill("2027-05-17")
-    step.locator('button[type="submit"]').click()
+    # Seit #163 steht davor im Adressfeld „Adresse suchen“; gemeint ist „Weiter“.
+    step.locator('.a-schritt-rechts button[type="submit"]').click()
     pc.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
     pc.get_by_role("button", name="Veranstaltung speichern").click()
 

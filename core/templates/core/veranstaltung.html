@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Zustandsmarke, Schalter „Veröffentlicht“, „Einladung ansehen“ und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
+  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Zustandsmarke, Schalter „Veröffentlicht“, „Einladung ansehen“ und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ head_line }}</p></div>
   <div class="a-kacheln">
@@ -24,13 +24,18 @@
     {% endif %}
   </section>
   {% if dialog %}
-    {# Dialog des Stifts „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen. Hat inzwischen jemand gespeichert, steht der Satz dazu oben (AG7). #}
+    {# Dialog des Stifts „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen, seit #163 mit dem „Adressfeld“. Hat inzwischen jemand gespeichert, steht der Satz dazu oben (AG7). #}
     {% include "core/_dialog_auf.html" %}
     {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
     {% textfeld dialog.event_form.name %}
     <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start time=dialog.event_form.start_time %}{% datumsfeld dialog.event_form.end time=dialog.event_form.end_time %}</div>
     {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% endif %}
-    {% textfeld dialog.event_form.location %}
+    {# Der Ort als eigener Abschnitt (Vorschau zu #163): die Bezeichnung und darunter die Adresse. #}
+    <section class="a-dialog-ort" aria-labelledby="h-dialog-ort">
+      {% include "core/_flaechenkopf.html" with symbol="ort" title=dialog.place_title heading_id="h-dialog-ort" level=3 %}
+      {% textfeld dialog.event_form.location %}
+      {% adressfeld dialog.event_form dialog.address %}
+    </section>
     {% include "core/_dialog_zu.html" %}
   {% endif %}
 {% endblock %}

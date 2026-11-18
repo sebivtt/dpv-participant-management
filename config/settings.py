@@ -210,6 +210,16 @@ KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
 # Browser bekommt weiter KEYCLOAK_REALM_URL.
 KEYCLOAK_REALM_URL_INTERN = os.environ.get("KEYCLOAK_REALM_URL_INTERN", "").rstrip("/") or KEYCLOAK_REALM_URL
 
+# Adresssuche (#163): der öffentliche Suchdienst von OpenStreetMap (Nominatim). Nur der Server fragt ihn, nie der
+# Browser (#278). Seine Nutzungsregeln verlangen eine Kennung der Anwendung und höchstens eine Anfrage pro Sekunde,
+# für alle zusammen (docs/entscheidungen.md, 18.11.2026). Im Betrieb ergänzt die Umgebungsdatei die Kennung um eine
+# Kontaktadresse des Teams, das das Tool betreibt (testumgebung/.env.example).
+ADDRESS_SEARCH_URL = os.environ.get("ADRESSSUCHE_URL", "https://nominatim.openstreetmap.org/search")
+ADDRESS_SEARCH_AGENT = os.environ.get("ADRESSSUCHE_KENNUNG", "") or "DPV-Anmeldetool"
+ADDRESS_SEARCH_INTERVAL_SECONDS = 1.0
+# Wie lange eine Antwort höchstens dauern darf, bevor die Suche als „nicht erreichbar“ gilt (G2).
+ADDRESS_SEARCH_TIMEOUT_SECONDS = 5.0
+
 # Sicherheitsrichtlinie für Skripte (Content-Security-Policy, #278): Hat eine Seite einmal eine
 # Lücke, führt der Browser eingeschmuggelten Code trotzdem nicht aus. Alles kommt nur vom eigenen
 # Server; eingebetteter Code in den Seiten ist verboten (docs/entscheidungen.md, 14.11.2026).

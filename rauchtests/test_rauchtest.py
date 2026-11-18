@@ -193,7 +193,8 @@ def test_eingaben_wie_am_handy_bleiben_stehen(handy):
         }"""
     )
     field.press_sequentially(" 2027")
-    handy.get_by_label("Ort", exact=True).focus()
+    # Seit #163 steht im Katalog auch das Adressfeld mit einem Feld „Ort“; gemeint ist das des Textfelds.
+    handy.get_by_label("Ort", exact=True).first.focus()
 
     expect(field).to_have_value("Pfingstlager Sommer 2027")
 

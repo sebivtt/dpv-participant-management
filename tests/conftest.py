@@ -4,8 +4,9 @@
 # Prüfeinstellungen tatsächlich auswirken, nicht nur, wie sie eingetragen sind.
 # tests.keycloak_fake stellt den nachgestellten Keycloak für die Login-Tests bereit (#5),
 # tests.log_capture die abgefangene Ausgabe des Logs (aus tests/test_fehlerprotokoll.py verschoben),
-# tests.katalogtests das Kennzeichen der Tests zum Bausteinkatalog für den schnellen Lauf (#304).
-pytest_plugins = ["pytester", "tests.keycloak_fake", "tests.log_capture", "tests.katalogtests"]
+# tests.katalogtests das Kennzeichen der Tests zum Bausteinkatalog für den schnellen Lauf (#304),
+# tests.adresssuche_fake den nachgestellten Suchdienst von OpenStreetMap; kein Test fragt den echten (#163).
+pytest_plugins = ["pytester", "tests.keycloak_fake", "tests.log_capture", "tests.katalogtests", "tests.adresssuche_fake"]
 
 import pytest
 
