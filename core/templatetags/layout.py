@@ -96,7 +96,7 @@ def _textfeld(field, described_by: str = "") -> dict:
     error_id = f"{field.auto_id}-fehler"
     limit = field.field.widget.attrs.get("data-hoechstens")
     counter_id = f"{field.auto_id}-zahl" if limit else ""
-    # Eine Auswahl sieht aus wie ein Textfeld, mit dem Pfeil des Browsers (#163, Bundesland und Land im Adressfeld).
+    # Eine Auswahl sieht aus wie ein Textfeld, mit dem Pfeil von Bootstrap (#163, Bundesland und Land im Adressfeld).
     kind = "form-select" if isinstance(field.field.widget, forms.Select) else "form-control"
     attrs = {"class": kind}
     if field.errors:

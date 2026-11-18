@@ -1325,13 +1325,14 @@ ADDRESS_SEARCH_ROWS = ("VA-07",)
 def address_field(form_id: str, search_action: str | None, found: dict | None = None) -> dict:
     """Was der Baustein „Adressfeld“ (#163) neben den Feldern zeigt: „Adresse suchen“, Treffer und Meldung.
 
-    `search_action` ist die Adresse der Suche; ohne sie fehlt der Knopf (ohne Zuordnung, VA-07). Die Stelle „#adressfeld“
-    lässt die Seite nach der Suche dort stehen, auch ohne Skript.
+    `search_action` ist die Adresse der Suche; ohne sie fehlt der Knopf (ohne Zuordnung, VA-07). Nach der Suche bringt
+    der Fokus auf Treffern oder Meldung die Seite dorthin (`autofocus`); eine Stelle „#…“ in der Adresse ginge nicht,
+    weil der Browser dann keinen Fokus setzt.
     """
     found = found or {}
     return {
         "form_id": form_id,
-        "search_action": f"{search_action}#adressfeld" if search_action else "",
+        "search_action": search_action or "",
         "hits": found.get("hits", []),
         "notice": found.get("notice"),
         "focus_results": found.get("focus_results", False),
