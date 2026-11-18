@@ -24,7 +24,8 @@ from rauchtests.test_veranstaltungen import CREATE_BUTTON, _dialog, _erika_in_de
 
 LIST = f"{BASE}/veranstaltungen/"
 STEP = "form#f-schritt"
-SUBMIT = f'{STEP} button[type="submit"]'
+# Seit #163 steht davor im Adressfeld „Adresse suchen“; gemeint ist der Hauptknopf rechts unten.
+SUBMIT = f'{STEP} .a-schritt-rechts button[type="submit"]'
 # Einfaches CSS, weil der Fokus mit `matches()` des Browsers geprüft wird: „Zurück“ ist der Link rechts, „Abbrechen“ links.
 BACK = f"{STEP} .a-schritt-rechts > a"
 CANCEL = f"{STEP} .a-schritt-knoepfe > a.btn-zart"
@@ -87,7 +88,7 @@ def test_am_pc_nur_mit_der_tastatur_durch_den_ganzen_ablauf(pc):
     _erika_in_den_falken()
     _schritt_1(pc, steps=25)
     _ausfuellen(pc, phone=False)
-    _zu(pc, SUBMIT, steps=15)
+    _zu(pc, SUBMIT, steps=22)
     _zusammenfassung(pc)
 
     # B2: „Zurück“ führt zu Schritt 1 mit allen Eingaben; ein geänderter Ort kommt in der Zusammenfassung an.
@@ -96,7 +97,7 @@ def test_am_pc_nur_mit_der_tastatur_durch_den_ganzen_ablauf(pc):
     expect(pc.get_by_label("Name")).to_have_value("Pfingstlager 2028")
     expect(pc.locator(f'{STEP} input[name="location"]')).to_have_value("Burg Ludwigstein")
     pc.locator(f'{STEP} input[name="location"]').fill("Zeltplatz Moor")
-    _zu(pc, SUBMIT, steps=15)
+    _zu(pc, SUBMIT, steps=22)
     _zusammenfassung(pc)
     expect(pc.locator('[aria-labelledby="h-grunddaten"] .a-kalender-ort')).to_contain_text("Zeltplatz Moor")
 
@@ -127,7 +128,7 @@ def test_am_handy_nur_mit_der_tastatur_abbrechen_und_entwurf_loeschen(handy):
     _erika_in_den_falken()
     _schritt_1(handy, steps=30)
     _ausfuellen(handy, phone=True)
-    _zu(handy, SUBMIT, steps=15)
+    _zu(handy, SUBMIT, steps=22)
     _zusammenfassung(handy)
     # Schmal rutschen die Knöpfe nicht seitlich hinaus; der Hauptknopf bleibt sichtbar.
     expect(handy.locator(SUBMIT)).to_be_visible()

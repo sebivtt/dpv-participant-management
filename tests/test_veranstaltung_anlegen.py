@@ -205,8 +205,9 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     assert head(root) == ("Veranstaltung erstellen", "")
     assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Zusammenfassung", False)]
     labels = [_visible_text(label) for label in _by_tag(step_form(root), "label") if "sr-nur" not in _classes(label)]
+    # Seit #163 folgt unter dem Ort das Adressfeld (tests/test_adressfeld.py).
     assert labels == ["Name (Pflicht)", "Beginn (Pflicht, Uhrzeit freiwillig)", "Ende (Pflicht, Uhrzeit freiwillig)",
-                      "Ort"]
+                      "Ort", "Straße und Hausnummer", "PLZ", "Ort", "Bundesland", "Land"]
     # In Schritt 1 gibt es kein „Zurück“; „Abbrechen“ führt ohne Rückfrage zur Liste (B5).
     assert buttons(root) == {"Abbrechen": LIST, "Weiter": "senden"}
     assert not _by_tag(root, "dialog", aria_labelledby="h-dialog")

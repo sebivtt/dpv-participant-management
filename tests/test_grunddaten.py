@@ -182,7 +182,8 @@ def test_a2_wanda_traegt_uhrzeiten_und_ort_ueber_den_stift_ein(org, pfingstlager
     assert _text(_one(_by_tag(found, "h2"))) == "Pfingstlager 2028 bearbeiten"
     assert field_values(found) == {"name": "Pfingstlager 2028", "start": "2028-06-02", "start_time": "",
                                    "end": "2028-06-05", "end_time": "", "location": ""}
-    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Speichern"]
+    # Seit #163 steht unter dem Ort das Adressfeld mit „Adresse suchen“ (tests/test_adressfeld.py).
+    assert [_visible_text(button) for button in _by_tag(found, "button")] == ["Adresse suchen", "Speichern"]
 
     response = save(org.wanda, pfingstlager, client=client, start_time="18:00", end_time="12:00",
                     location="Burg Ludwigstein")
@@ -228,9 +229,11 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
     assert _text(_one(_by_tag(page_tree(org.wanda, CREATE), "h1"))) == CREATE_LABEL
     assert field_values(found) == {"name": "", "start": "", "start_time": "18:00", "end": "", "end_time": "12:00",
                                    "location": ""}
+    # Seit #163 folgt unter dem Ort das Adressfeld (tests/test_adressfeld.py).
     labels = [_visible_text(label) for label in _by_tag(found, "label") if "sr-nur" not in _classes(label)]
-    assert labels == ["Name (Pflicht)", "Beginn (Pflicht, Uhrzeit freiwillig)", "Ende (Pflicht, Uhrzeit freiwillig)",
-                      "Ort"]
+    assert labels[:4] == ["Name (Pflicht)", "Beginn (Pflicht, Uhrzeit freiwillig)",
+                          "Ende (Pflicht, Uhrzeit freiwillig)", "Ort"]
+    assert labels[4:] == ["Straße und Hausnummer", "PLZ", "Ort", "Bundesland", "Land"]
 
     response = create(org.wanda, client=client)
 

@@ -9,10 +9,13 @@ ohne Zuordnung), Max (nur Admin). Der Suchdienst ist nachgestellt (`tests/adress
 echte OpenStreetMap. Alle Namen und Adressen sind erfunden.
 """
 
+import hashlib
 import logging
+import re
 import threading
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -870,7 +873,7 @@ def test_g9_veranstaltungen_ohne_adresse_zeigen_nur_die_bezeichnung_und_speicher
     response = client.post(edit_address(pfingstlager), {"name": "Pfingstlager 2028", "start": "2028-06-02",
                                                         "end": "2028-06-05", "version": str(pfingstlager.version)})
     assert response.status_code == 302, response.status_code
-    assert short_notices(client.get(response["Location"])) == ["Erfolg: Die Angaben zu Pfingstlager 2028 sind gespeichert."]
+    assert short_notices(client.get(response["Location"])) == ["Die Angaben zu Pfingstlager 2028 sind gespeichert."]
 
 
 # ---------- Datenmodell ----------
@@ -915,3 +918,51 @@ def test_beispiele_sind_erfunden():
     for entries in ANSWERS.values():
         for entry in entries:
             assert entry["address"]["postcode"] >= "99990"
+
+
+# ---------- Zielbild ----------
+
+ROOT = Path(__file__).resolve().parent.parent
+TARGET = ROOT / "docs" / "zielbilder" / "adressfeld.html"
+CHECKSUM = "f1810ea5cc05037c140a6cab3919be45ff43c5c82617f2367c1bf4f23a5ce9fb"
+
+
+def test_zielbild_liegt_unveraendert_mit_eintrag_im_repo():
+    readme = (ROOT / "docs" / "zielbilder" / "README.md").read_text()
+
+    assert hashlib.sha256(TARGET.read_bytes()).hexdigest() == CHECKSUM
+    section = readme.split("## Adressfeld", 1)
+    assert len(section) == 2
+    for must in (CHECKSUM, "17.11.2026", "Orientierung, keine Anforderung", "Abweichungen", "#163"):
+        assert must in section[1].split("\n## ", 1)[0], must
+
+
+def test_zielbild_laedt_nichts_von_fremden_servern():
+    content = TARGET.read_text()
+
+    assert not re.findall(r"""(?:src|href)\s*=\s*["']?(?:https?:)?//""", content, flags=re.I)
+    assert not re.findall(r"""(?:url\(|@import)\s*["']?(?:https?:)?//""", content, flags=re.I)
+
+
+def default_button(root, form_id: str):
+    """Der Knopf, den Enter in einem Feld auslöst: der erste Knopf zum Abschicken, der zum Formular gehört."""
+    form = _one(_by_tag(root, "form", id=form_id))
+    inside = {id(element) for element in _by_tag(form, "button")}
+    return [button for button in _all(root, lambda e: e.name == "button")
+            if _attr(button, "type") in (None, "submit") and (_attr(button, "form") == form_id or id(button) in inside)][0]
+
+
+@pytest.mark.parametrize("dialog", [False, True])
+def test_a10_enter_in_einem_feld_speichert_und_sucht_nicht(org, pfingstlager, dialog):
+    """Vorschau-Rauchtest, 18.11.2026: Enter im Namen löste „Adresse suchen“ aus, weil das der erste Knopf war."""
+    if dialog:
+        root, form_id = _tree(client_for(org.wanda).get(edit_address(pfingstlager))), "f-dialog"
+    else:
+        root, form_id = _tree(client_for(org.wanda).get(CREATE)), "f-schritt"
+
+    button = default_button(root, form_id)
+
+    assert _attr(button, "formaction") is None
+    assert _attr(button, "name") is None
+    assert _attr(button, "tabindex") == "-1"
+    assert _attr(button, "aria-hidden") == "true"

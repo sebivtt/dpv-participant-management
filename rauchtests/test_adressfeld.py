@@ -154,8 +154,9 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
     _no_side_scroll(handy)
     assert run_axe(handy) == []
 
+    # Enter in einem Feld speichert wie „Weiter“, nicht „Adresse suchen“.
     handy.locator('input[name="postal_code"]').fill("99999")
-    _zu(handy, NEXT, steps=15)
+    handy.locator('input[name="postal_code"]').press("Enter")
     handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
     expect(handy.locator(f"{TILE} .a-kalender-ort .a-ort-zeile")).to_have_text(
         ["Burg Ludwigstein", "Burgweg 1a", "99999 Musterhausen"])
