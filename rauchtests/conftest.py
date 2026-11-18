@@ -30,6 +30,7 @@ import re
 import shutil
 import sys
 import tempfile
+from html.parser import HTMLParser
 from pathlib import Path
 
 import urllib.request
@@ -125,13 +126,53 @@ def _playwright():
 
 
 # Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278) meldet der Browser auf zwei Wegen: als
-# Ereignis in der Seite (geht nur mit Skript) und als Zeile in der Konsole (auch ohne Skript; Firefox
-# meldet sie vielleicht nicht dorthin). Beide zählen, aber nur auf Seiten des Tools selbst, nicht
-# bei Keycloak oder auf einer fremden Seite im Test.
-_CSP_EVENT = """document.addEventListener('securitypolicyviolation', (event) =>
-    window.__cspVerstoss(`${event.effectiveDirective} blockiert ${event.blockedURI || '?'} auf ${event.documentURI}`));"""
+# Ereignis in der Seite (geht nur mit Skript; es nennt das Element) und als Zeile in der Konsole (auch ohne
+# Skript; Firefox meldet sie vielleicht nicht dorthin). Beide zählen, aber nur auf Seiten des Tools selbst,
+# nicht bei Keycloak oder auf einer fremden Seite im Test.
+_CSP_EVENT = """document.addEventListener('securitypolicyviolation', (event) => {
+    const element = event.target instanceof Element ? event.target : null;
+    const name = element && element.getAttribute('name') ? ` name="${element.getAttribute('name')}"` : '';
+    const where = element ? ` an <${element.localName}${name}>` : '';
+    window.__cspVerstoss(`${event.effectiveDirective} blockiert ${event.blockedURI || '?'}${where} auf ${event.documentURI}`);
+});"""
 _CSP_CONSOLE = re.compile(r"Content.Security.Policy", re.IGNORECASE)
 _csp_violations: dict[BrowserContext, list[str]] = {}
+
+# Auswahlfelder in WebKit (#393, grenzt #278, Punkt 3 ein): WebKit setzt an jedes Auswahlfeld selbst einen
+# Stil und meldet das als Verstoß, einmal als Ereignis am Feld und einmal in der Konsole, dort ohne das Feld
+# zu nennen. Der Wächter nimmt in WebKit je Auswahlfeld, das eine Seite des Tools ausliefert, genau eine
+# solche Meldung auf jedem der beiden Wege hin, sonst nichts. Einen Stil, den das Tool selbst setzt, kann
+# er davon nicht unterscheiden; darum prüft er zusätzlich in jedem Browser, dass das HTML des Tools keine
+# Stil-Angaben enthält.
+_WEBKIT_SELECT_EVENT = re.compile(r"style-src-attr blockiert inline an <select[ >]")
+_WEBKIT_STYLE_CONSOLE = (
+    "Konsole: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in "
+    "the style-src directive of the Content Security Policy."
+)
+_delivered: dict[BrowserContext, "_DeliveredHtml"] = {}
+
+
+class _DeliveredHtml(HTMLParser):
+    """Liest das HTML, das das Tool ausliefert: zählt die Auswahlfelder und hält jede Stil-Angabe fest."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.selects = 0
+        self.styles: list[str] = []
+        self.address = ""
+
+    def read(self, address: str, html: str) -> None:
+        self.address = address
+        self.reset()
+        self.feed(html)
+        self.close()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "select":
+            self.selects += 1
+        if any(name == "style" for name, _ in attrs):
+            line = self.get_starttag_text().splitlines()[0][:120]
+            self.styles.append(f"{self.address}, Zeile {self.getpos()[0]}: {line}")
 
 
 def _from_tool(message) -> bool:
@@ -144,12 +185,23 @@ def _from_tool(message) -> bool:
 
 
 def _watch_csp(context: BrowserContext) -> None:
-    """Sammelt jeden Verstoß gegen die Sicherheitsrichtlinie, den der Browser in diesem Kontext meldet."""
+    """Sammelt jeden Verstoß gegen die Sicherheitsrichtlinie, den der Browser in diesem Kontext meldet,
+    und liest jede Seite des Tools, die er bekommt (#393)."""
     seen = _csp_violations.setdefault(context, [])
+    delivered = _delivered.setdefault(context, _DeliveredHtml())
 
     def from_page(source, text: str) -> None:
         if text.split(" auf ", 1)[-1].startswith(BASE):
             seen.append(text)
+
+    def read_page(response) -> None:
+        is_tool_page = response.request.resource_type == "document" and response.url.startswith(BASE)
+        if not is_tool_page or "text/html" not in response.headers.get("content-type", ""):
+            return
+        # Ist die Seite schon weg, bevor ihr Inhalt da ist, fehlt hier ihr Auswahlfeld; dann wird der Test
+        # in WebKit eher rot als zu Unrecht grün.
+        with contextlib.suppress(Error):
+            delivered.read(response.url, response.text())
 
     context.expose_binding("__cspVerstoss", from_page)
     context.add_init_script(_CSP_EVENT)
@@ -159,6 +211,20 @@ def _watch_csp(context: BrowserContext) -> None:
         if _CSP_CONSOLE.search(message.text) and _from_tool(message)
         else None,
     )
+    context.on("response", read_page)
+
+
+def _without_webkit_selects(found: list[str], selects: int) -> list[str]:
+    """Lässt je ausgeliefertes Auswahlfeld eine Meldung von WebKit weg, als Ereignis und in der Konsole (#393)."""
+    allowed = {"Ereignis": selects, "Konsole": selects}
+    remaining = []
+    for text in found:
+        way = "Ereignis" if _WEBKIT_SELECT_EVENT.match(text) else "Konsole" if text == _WEBKIT_STYLE_CONSOLE else None
+        if way and allowed[way] > 0:
+            allowed[way] -= 1
+        else:
+            remaining.append(text)
+    return remaining
 
 
 def csp_violations(context: BrowserContext) -> list[str]:
@@ -170,11 +236,13 @@ def csp_violations(context: BrowserContext) -> list[str]:
     return _csp_violations.setdefault(context, [])
 
 
+def _listed(heading: str, items: list[str]) -> str:
+    return heading + "\n" + "\n".join(f"  - {item}" for item in items)
+
+
 def assert_no_csp_violations(found: list[str]) -> None:
     """Rot mit Nennung jedes Verstoßes, sobald der Browser einen gemeldet hat (#278, G1)."""
-    assert not found, "Der Browser meldet Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278):\n" + "\n".join(
-        f"  - {text}" for text in found
-    )
+    assert not found, _listed("Der Browser meldet Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278):", found)
 
 
 @pytest.fixture
@@ -187,21 +255,37 @@ def verstoesse_erwartet():
 
 @pytest.fixture(autouse=True)
 def _keine_verstoesse_gegen_die_sicherheitsrichtlinie(request):
-    """Jeder Rauchtest wird rot, wenn der Browser einen Verstoß gegen die Richtlinie meldet (#278).
+    """Jeder Rauchtest wird rot, wenn der Browser einen Verstoß gegen die Richtlinie meldet (#278), außer
+    der Meldung von WebKit an einem Auswahlfeld, oder eine Seite des Tools Stil-Angaben ausliefert (#393).
 
     Geprüft wird nach dem Test, wenn alle Seiten geschlossen sind; der Bericht nennt jeden Verstoß.
     """
     _csp_violations.clear()
+    _delivered.clear()
     yield
     check_after_test(request.fixturenames)
 
 
 def check_after_test(fixturenames: list[str]) -> None:
-    """Prüfung des Wächters nach einem Test: rot bei jedem Verstoß, außer der Test erwartet ihn selbst."""
-    found = [text for seen in _csp_violations.values() for text in seen]
+    """Prüfung des Wächters nach einem Test: rot bei jedem Verstoß und jeder Stil-Angabe im HTML des Tools,
+    außer der Test erwartet sie selbst. In WebKit zählt die Meldung an einem Auswahlfeld nicht (#393)."""
+    found: list[str] = []
+    styles: list[str] = []
+    for context in {*_csp_violations, *_delivered}:
+        seen = _csp_violations.get(context, [])
+        delivered = _delivered.get(context, _DeliveredHtml())
+        is_webkit = context.browser is not None and context.browser.browser_type.name == "webkit"
+        found += _without_webkit_selects(seen, delivered.selects) if is_webkit else seen
+        styles += delivered.styles
     _csp_violations.clear()
+    _delivered.clear()
     if "verstoesse_erwartet" not in fixturenames:
-        assert_no_csp_violations(found)
+        report = []
+        if found:
+            report.append(_listed("Der Browser meldet Verstöße gegen die Sicherheitsrichtlinie für Skripte (#278):", found))
+        if styles:
+            report.append(_listed("Seiten des Tools liefern Stil-Angaben im HTML (#393), WebKit meldet sie wie ein Auswahlfeld:", styles))
+        assert not report, "\n".join(report)
 
 
 # Belege bei Rot (#349): Mit RAUCHTEST_SPUREN (auf GitHub gesetzt, .github/workflows/ci.yml) zeichnet jeder

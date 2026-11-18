@@ -52,6 +52,25 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Farbe des Plus bei „Veranstaltung erstellen“ | 17.11.2026, #379, Nr. 1 | 26.10.2026, #165, Nr. 3 (nur „Symbol von ‚Veranstaltung erstellen‘“ in der Aufzählung für Sonnengelb) |
 | Beginn einer Veranstaltung in der Vergangenheit | 17.11.2026, #379, Nr. 2 | VG5 aus den [Szenarien zu #100](https://github.com/sebivtt/dpv-participant-management/issues/100#issuecomment-6522727393) („beide dürfen in der Vergangenheit liegen“), das bisher nur dort stand |
 | „Veranstaltung erstellen“ als Ablauf in Schritten | 17.11.2026, #380, Nr. 1 | 13.11.2026, #100, „Technische Wahl“, Nr. 4 (nur dass „Veranstaltung erstellen“ ein Dialog ist) |
+| Prüfung der Sicherheitsrichtlinie im Rauchtest | 18.11.2026, #393, Nr. 1 und 2 | 14.11.2026, #278, Nr. 3 (nur für die Meldung, die WebKit selbst an einem Auswahlfeld auslöst) |
+
+---
+
+## 2026-11-18 · Auswahlfelder in WebKit: enge Ausnahme im Wächter des Rauchtests, kein Stil im HTML (#393)
+
+**Entscheidung** (Sebastian in der Klärung von #393 am 18.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/393#issuecomment-6974369550), Fragen 1 und 2; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/393#issuecomment-6974364630) mit „Alle passen“; maßgeblich sind Text und Szenarien von #393). Grenzt den Eintrag vom 14.11.2026 (#278), Nr. 3 ein, nur für die Meldung, die WebKit selbst an einem Auswahlfeld auslöst; alles andere dort gilt weiter.
+
+1. **Enge Ausnahme:** Der Wächter des Rauchtests nimmt nur in WebKit, nur Verstöße der Art `style-src-attr` und nur an Auswahlfeldern (`<select>`) hin. Jeder andere Verstoß bleibt in jedem Browser rot. Die Sicherheitsrichtlinie (`SECURE_CSP`) bleibt unverändert, das Adressfeld behält seine Auswahlfelder (#163, N2).
+2. **Kein Stil im HTML:** Weil der Wächter diese Meldung nicht von einem Stil unterscheiden kann, den das Tool selbst an ein Auswahlfeld schreibt, wird jeder Rauchtest in jedem Browser rot, sobald eine Seite des Tools eine Stil-Angabe (`style="…"`) im HTML ausliefert, und nennt Seite, Zeile und Element.
+3. **Am iPhone:** Sebastian prüft einmal in der Testumgebung, ob sich Bundesland und Land auswählen lassen, sobald #163 dort läuft.
+
+**Technische Wahl** (KI): Das Ereignis aus der Seite nennt jetzt das Element (`an <select name="state">`). Ohne Skript meldet WebKit nur in der Konsole und ohne das Element; darum liest der Wächter jede Seite des Tools, die der Browser bekommt, zählt ihre Auswahlfelder und nimmt in WebKit je Auswahlfeld genau eine Meldung als Ereignis und eine in der Konsole hin, mit genau dem Wortlaut, den WebKit dafür schreibt. Was darüber hinausgeht, bleibt rot, etwa ein eingebetteter Stil auf derselben Seite. Dasselbe Lesen findet die Stil-Angaben (Nr. 2). Gelesen wird die Antwort so, wie sie beim Browser ankommt.
+
+**Begründung:** WebKit setzt an jedes Auswahlfeld selbst einen Stil, auch auf einer leeren Probeseite ohne das Tool; das Feld sieht mit und ohne Richtlinie gleich aus (Belege im Pull Request zu #393). Die Meldung sagt also nichts über das Tool. Die Ausnahme im Wächter lässt die Schutzschicht für Nutzende unverändert, statt sie für alle Seiten zu lockern.
+
+**Grenzen:** Ein Auswahlfeld, das erst das Skript in die Seite setzt, zählt der Wächter nicht mit; seine Meldung bliebe in WebKit rot. Ist eine Seite schon wieder weg, bevor der Wächter ihr HTML lesen konnte, fehlen ihre Auswahlfelder in der Zählung; der Test wird dann eher rot als zu Unrecht grün.
+
+**Umsetzung:** `rauchtests/conftest.py`; Tests in `rauchtests/test_sicherheitsrichtlinie.py` (S1 bis S6).
 
 ---
 

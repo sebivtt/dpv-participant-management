@@ -3,7 +3,8 @@
 Die Kürzel verweisen auf den Kommentar „Szenarien (14.11.2026)“ in #278. Dass jede Antwort die
 Richtlinie trägt (E4), prüft tests/test_sicherheitsrichtlinie.py, die Testumgebung (E5) die
 Container-Prüfung. Dass die übrigen Seiten wie immer gehen und kein Browser einen Verstoß meldet
-(E2, E3), prüfen alle Rauchtests: Jeder wird rot, sobald der Browser einen meldet (conftest.py).
+(E2, E3), prüfen alle Rauchtests: Jeder wird rot, sobald der Browser einen meldet (conftest.py),
+außer der Meldung, die WebKit selbst an einem Auswahlfeld auslöst (#393, unten).
 
 Eingeschmuggelt wird hier nichts ins Tool: Der Browser bekommt die echte Seite mit ihren echten
 Kopfzeilen, der Test hängt nur auf dem Weg zum Browser ein Stück an. Der fremde Server
