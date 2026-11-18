@@ -220,11 +220,22 @@ def test_ein_klick_auf_die_adresszeile_uebernimmt_den_treffer(pc, osm):
 
 
 def test_die_felder_der_adresse_stehen_dicht(pc):
-    """Vorschau (Sebastian, 18.11.2026): die Felder näher zusammen, auch mit Zahl der Zeichen darunter."""
+    """Vorschau (Sebastian, 18.11.2026): die Felder näher zusammen, auch mit Zahl der Zeichen darunter. Runde 2: Die
+    Zahl steht unter ihrem Feld, in derselben Zeile wie die Beschriftung des Felds darunter; zwischen Bezeichnung und
+    Adresse keine Linie und keine sichtbare Überschrift „Adresse“."""
     login(pc)
     _erika_in_den_falken()
     pc.goto(CREATE)
+    pc.locator(f'{FIELD} input[name="street"]').fill("Burgweg 1")
     street = pc.locator(f'{FIELD} input[name="street"]').bounding_box()
     postal = pc.locator(f'{FIELD} input[name="postal_code"]').bounding_box()
+    counter = pc.locator(f"{FIELD} #id_street-zahl").bounding_box()
+    label = pc.locator(f'{FIELD} label[for="id_postal_code"]').bounding_box()
 
     assert postal["y"] - (street["y"] + street["height"]) <= 48
+    assert counter["y"] >= street["y"] + street["height"]
+    assert abs((counter["y"] + counter["height"] / 2) - (label["y"] + label["height"] / 2)) <= 8
+    location = pc.locator('input[name="location"]').bounding_box()
+    assert street["y"] - (location["y"] + location["height"]) <= 48
+    assert pc.locator(f"{FIELD} legend").evaluate("e => e.getBoundingClientRect().height") <= 1
+    assert pc.locator(f"{FIELD} legend").evaluate("e => getComputedStyle(e).borderTopStyle") == "none"

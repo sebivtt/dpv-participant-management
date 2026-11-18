@@ -409,7 +409,10 @@ def test_a6_felder_beschriftungen_und_keine_pflicht_unter_der_ueberschrift(org):
     field = address_field(_tree(client_for(org.wanda).get(CREATE)))
     labels = [_visible_text(label) for label in _by_tag(field, "label")]
 
-    assert _visible_text(_one(_by_tag(field, "legend"))) == "Adresse"
+    # Seit der Vorschau, Runde 2 (Sebastian, 18.11.2026: „Trennstrich raus“) hören „Adresse“ nur Vorleseprogramme.
+    legend = _one(_by_tag(field, "legend"))
+    assert _text(legend) == "Adresse"
+    assert "sr-nur" in _classes(legend)
     assert labels == ["Straße und Hausnummer", "PLZ", "Ort", "Bundesland", "Land"]
     assert "Freiwillig" not in _visible_text(field)
     assert "Pflicht" not in _visible_text(field)
