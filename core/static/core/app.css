@@ -680,15 +680,13 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
    und Ort nebeneinander (die PLZ so breit, dass ihre Meldung in eine Zeile passt), Bundesland und Land nebeneinander;
    schmal alles untereinander. Das Bundesland verschwindet, sobald ein anderes Land als Deutschland gewählt ist, allein
    über das Aussehen, also auch ohne Skript. */
-.a-adressfeld { min-width: 0; margin: 4px 0 0; padding: 0; border: 0; }
-/* Die Linie gehört zur Überschrift, nicht zum Rahmen der Gruppe: sonst schnitte sie durch „Adresse“ oder die Zahl der
-   Zeichen darunter rutschte neben die Überschrift. */
-.a-adressfeld-kopf { float: none; width: 100%; margin: 0 0 8px; padding: 16px 0 0; border-top: 1px solid var(--linie); color: var(--text); font-size: 1rem; font-weight: 800; }
-/* Dicht wie im Zielbild (Vorschau, Sebastian, 18.11.2026): die Zahl der Zeichen rechts neben der Beschriftung statt in
-   einer eigenen Zeile unter dem Feld, kleinere Abstände zwischen den Feldern. */
-.a-adressfeld .a-textfeld { position: relative; margin-bottom: .6rem; }
-.a-adressfeld .a-textfeld .form-label { margin-bottom: 4px; }
-.a-adressfeld .a-zeichenzahl { position: absolute; top: 0; right: 0; margin: 0; line-height: 1.5; }
+.a-adressfeld { min-width: 0; margin: 0; padding: 0; border: 0; }
+/* Dicht (Vorschau, Sebastian, 18.11.2026, Runde 2): keine Linie und keine sichtbare Überschrift über der Adresse; die
+   Zahl der Zeichen steht unter ihrem Feld, nimmt aber keinen Platz ein und teilt sich so die Zeile mit der Beschriftung
+   des Felds darunter. */
+:is(.a-adressfeld, .a-ort-flaeche, .a-dialog-ort) .a-textfeld { margin-bottom: .35rem; }
+:is(.a-adressfeld, .a-ort-flaeche, .a-dialog-ort) .a-textfeld .form-label { margin-bottom: 4px; }
+:is(.a-adressfeld, .a-ort-flaeche, .a-dialog-ort) .a-zeichenzahl { height: 0; margin: .35rem 0 0; overflow: visible; line-height: 24px; }
 .a-adressfeld-plz-ort { display: grid; grid-template-columns: 13rem minmax(0, 1fr); column-gap: 14px; }
 .a-adressfeld-land { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
 .a-adressfeld:not(:has(select[name="country"] option[value="DE"]:checked)) .a-bundesland { display: none; }
@@ -704,7 +702,6 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-treffer-ganz .a-treffer-knopf .btn { position: static; }
 .a-treffer-ganz .a-treffer-knopf .btn::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }
 .a-ort-flaeche { margin-top: 20px; }
-.a-ort-flaeche > .a-adressfeld { margin-top: 0; }
 .a-dialog-ort { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--linie); }
 .a-dialog-ort-kopf { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 1.05rem; }
 .a-dialog-ort-kopf .ic { color: var(--dpv); }
