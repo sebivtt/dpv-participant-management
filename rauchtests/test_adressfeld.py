@@ -208,7 +208,13 @@ def test_ein_klick_auf_die_adresszeile_uebernimmt_den_treffer(pc, osm):
     _schritt_1(pc)
     pc.locator(f'{STEP} input[name="location"]').fill("Burg Ludwigstein")
     pc.locator(SEARCH).click()
-    pc.locator(f"{FIELD} .a-treffer .a-treffer-ort").first.click()
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    # Mit der Maus mitten auf die Adresszeile, wie eine Person; `click()` auf den Text verweigert Playwright, weil die
+    # Fläche des Knopfs darüber liegt, und genau das ist gewollt.
+    first = pc.locator(f"{FIELD} .a-treffer .a-treffer-ort").first
+    first.scroll_into_view_if_needed()
+    line = first.bounding_box()
+    pc.mouse.click(line["x"] + line["width"] / 2, line["y"] + line["height"] / 2)
 
     _uebernommen(pc)
 
