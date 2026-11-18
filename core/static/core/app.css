@@ -690,7 +690,9 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-adressfeld-plz-ort { display: grid; grid-template-columns: 13rem minmax(0, 1fr); column-gap: 14px; }
 .a-adressfeld-land { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
 .a-adressfeld:not(:has(select[name="country"] option[value="DE"]:checked)) .a-bundesland { display: none; }
-.a-standardknopf { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); }
+/* Weit links außerhalb der Seite: Läge er unsichtbar vor „Straße und Hausnummer“, zählte die Prüfung auf Barrierefreiheit
+   ihn als Bedienelement zu dicht am Feld (axe, „target-size“). */
+.a-standardknopf { position: absolute; left: -10000px; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); }
 .a-adresse-suche { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .a-adresse-satz { margin: 0; font-size: .9rem; }
 .a-adresse-ergebnis { margin-top: 14px; }
