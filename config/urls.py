@@ -11,11 +11,14 @@ from accounts import views as accounts_views
 from core.views import (
     building_blocks,
     event_create,
+    event_create_address,
     event_create_basics,
+    event_create_basics_address,
     event_create_cancel,
     event_create_delete,
     event_create_summary,
     event_edit,
+    event_edit_address,
     event_page,
     events,
     federation_appoint,
@@ -115,9 +118,15 @@ urlpatterns = [
     path("veranstaltungen/erstellen/", event_create, name="event_create"),
     path("veranstaltungen/<key:event>/", event_page, name="event_page"),
     path("veranstaltungen/<key:event>/bearbeiten/", event_edit, name="event_edit"),
+    # Adresse suchen (#163, VA-07): je Formular mit Adressfeld eine eigene Adresse; sie nimmt das ganze Formular an und
+    # zeigt dieselbe Seite mit den Treffern, damit es auch ohne Skript geht. Der Suchtext steht nie in der Adresse.
+    path("veranstaltungen/erstellen/adresse-suchen/", event_create_address, name="event_create_address"),
+    path("veranstaltungen/<key:event>/bearbeiten/adresse-suchen/", event_edit_address, name="event_edit_address"),
     # Anlegen in Schritten (#380): Schritt 1 eines gespeicherten Entwurfs, Zusammenfassung, „Anlegen abbrechen?“ und
     # „Entwurf löschen“. Schritt 1 einer neuen Veranstaltung ist „veranstaltungen/erstellen/“.
     path("veranstaltungen/<key:event>/anlegen/", event_create_basics, name="event_create_basics"),
+    path("veranstaltungen/<key:event>/anlegen/adresse-suchen/", event_create_basics_address,
+         name="event_create_basics_address"),
     path("veranstaltungen/<key:event>/anlegen/zusammenfassung/", event_create_summary, name="event_create_summary"),
     path("veranstaltungen/<key:event>/anlegen/abbrechen/", event_create_cancel, name="event_create_cancel"),
     path("veranstaltungen/<key:event>/anlegen/loeschen/", event_create_delete, name="event_create_delete"),

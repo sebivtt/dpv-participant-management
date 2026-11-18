@@ -1,4 +1,4 @@
-"""Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379) und Anmeldungen (#101, ANM-01, ANM-02)."""
+"""Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379, Adresse des Orts seit #163) und Anmeldungen (#101, ANM-01, ANM-02)."""
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from access.keys import KEY_LENGTH, key_field, new_key
 from accounts.models import SCOUT_NAME_MAX_LENGTH, display_name
+from core.models import PostalAddress, address_constraints
 from events import texts
 from persons.models import ManagedPerson
 from roles.models import LEADS_IN_UNITS, Role, RoleKind
@@ -25,7 +26,7 @@ EDITABLE_FIELDS = ("name", "start", "start_time", "end", "end_time", "location")
 PERSON_NAME_MAX_LENGTH = 150
 
 
-class Event(models.Model):
+class Event(PostalAddress):
     """Eine Veranstaltung mit Name, Beginn und Ende, Ort und ihrer Veranstaltungsleitung (TEAM-01).
 
     Wer sie anlegt, ist ihre Veranstaltungsleitung; die Leitung kommt immer aus der Anmeldung, nie aus
@@ -33,7 +34,8 @@ class Event(models.Model):
     TEAM-01 in P3, deshalb kann die Datenbank schon mehrere halten. Beginn und Ende sind Tage, je mit
     freiwilliger Uhrzeit; ohne Uhrzeit gilt der ganze Tag (#379, VER-02). Das Ende liegt nicht vor dem
     Beginn, am selben Tag auch nicht mit früherer Uhrzeit; das prüft auch die Datenbank. Der Ort ist eine
-    freiwillige Bezeichnung (VER-04, die Adresse kommt mit #163). Gelesen und geändert wird eine
+    freiwillige Bezeichnung (VER-04), dazu die freiwillige Adresse des Orts aus dem Baustein „Adressfeld“ (#163,
+    `core.models.PostalAddress`). Gelesen und geändert wird eine
     Veranstaltung nur über die zentrale Rechteprüfung (`access/rights.py`).
     """
 
@@ -71,6 +73,7 @@ class Event(models.Model):
                 | Q(end_time__gte=F("start_time")),
                 name="event_end_time_not_before_start_time"),
             models.CheckConstraint(condition=Q(location=Trim("location")), name="event_location_trimmed"),
+            *address_constraints("event"),
         ]
 
     def __str__(self) -> str:

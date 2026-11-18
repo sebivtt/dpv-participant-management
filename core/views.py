@@ -1267,6 +1267,28 @@ def _after_deleting(rights) -> str:
     return reverse("events") if rights.sees_events() else reverse("start")
 
 
+# Adresse suchen (#163, VA-07): Gerüst, kommt mit der Umsetzung.
+ADDRESS_SEARCH_ROWS = ("VA-07",)
+
+
+@checks_rights(*EVENT_CREATE_ROWS, *ADDRESS_SEARCH_ROWS)
+def event_create_address(request: HttpRequest) -> HttpResponse:
+    """„Adresse suchen“ in Schritt 1 einer neuen Veranstaltung; Gerüst."""
+    raise Http404
+
+
+@checks_rights(*EVENT_CREATE_ROWS, *ADDRESS_SEARCH_ROWS)
+def event_create_basics_address(request: HttpRequest, event: str) -> HttpResponse:
+    """„Adresse suchen“ in Schritt 1 eines Entwurfs; Gerüst."""
+    raise Http404
+
+
+@checks_rights(*EVENT_ROWS, *ADDRESS_SEARCH_ROWS)
+def event_edit_address(request: HttpRequest, event: str) -> HttpResponse:
+    """„Adresse suchen“ im Dialog des Stifts; Gerüst."""
+    raise Http404
+
+
 def _event_form_of(entry, form_id: str = "f-dialog") -> EventForm:
     """Die Felder mit den gespeicherten Grunddaten einer Veranstaltung, im Dialog des Stifts oder in Schritt 1 (#380)."""
     return EventForm(initial={name: getattr(entry, name) for name in EVENT_FIELDS}, before=entry, form_id=form_id)
