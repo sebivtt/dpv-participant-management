@@ -231,8 +231,9 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
                                    "location": ""}
     # Seit #163 folgt unter dem Ort das Adressfeld (tests/test_adressfeld.py).
     labels = [_visible_text(label) for label in _by_tag(found, "label") if "sr-nur" not in _classes(label)]
+    # Seit der Vorschau zu #163 (Sebastian, 18.11.2026: eigene Fläche „Ort“) heißt das Feld „Bezeichnung“.
     assert labels[:4] == ["Name (Pflicht)", "Beginn (Pflicht, Uhrzeit freiwillig)",
-                          "Ende (Pflicht, Uhrzeit freiwillig)", "Ort"]
+                          "Ende (Pflicht, Uhrzeit freiwillig)", "Bezeichnung"]
     assert labels[4:] == ["Straße und Hausnummer", "PLZ", "Ort", "Bundesland", "Land"]
 
     response = create(org.wanda, client=client)
@@ -457,11 +458,11 @@ def test_ag5_ort_mit_101_zeichen_und_ort_nur_aus_leerzeichen(org, pfingstlager):
 
     assert response.status_code == 200
     root = _tree(response)
-    assert field_errors(root) == {"location": "Der Ort darf höchstens 100 Zeichen lang sein."}
+    assert field_errors(root) == {"location": "Die Bezeichnung darf höchstens 100 Zeichen lang sein."}
     # Nichts wird abgeschnitten.
     assert field_values(step_form(root))["location"] == "x" * 101
     response = save(org.wanda, pfingstlager, location="x" * 101)
-    assert field_errors(_tree(response)) == {"location": "Der Ort darf höchstens 100 Zeichen lang sein."}
+    assert field_errors(_tree(response)) == {"location": "Die Bezeichnung darf höchstens 100 Zeichen lang sein."}
     assert not Event.objects.exclude(pk=pfingstlager.pk).exists()
 
     assert create(org.wanda, location="   ").status_code == 302

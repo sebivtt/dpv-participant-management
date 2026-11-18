@@ -199,3 +199,26 @@ def test_ohne_skript_suchen_und_uebernehmen(pc_ohne_skript, osm):
     page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
     assert get_user_model().objects.filter(username="erika.testfrau").exists()
     assert Event.objects.get().city == "Musterhausen"
+
+
+def test_ein_klick_auf_die_adresszeile_uebernimmt_den_treffer(pc, osm):
+    """Vorschau (Sebastian, 18.11.2026): nicht nur „Übernehmen“, auch die Zeile selbst übernimmt."""
+    login(pc)
+    _erika_in_den_falken()
+    _schritt_1(pc)
+    pc.locator(f'{STEP} input[name="location"]').fill("Burg Ludwigstein")
+    pc.locator(SEARCH).click()
+    pc.locator(f"{FIELD} .a-treffer .a-treffer-ort").first.click()
+
+    _uebernommen(pc)
+
+
+def test_die_felder_der_adresse_stehen_dicht(pc):
+    """Vorschau (Sebastian, 18.11.2026): die Felder näher zusammen, auch mit Zahl der Zeichen darunter."""
+    login(pc)
+    _erika_in_den_falken()
+    pc.goto(CREATE)
+    street = pc.locator(f'{FIELD} input[name="street"]').bounding_box()
+    postal = pc.locator(f'{FIELD} input[name="postal_code"]').bounding_box()
+
+    assert postal["y"] - (street["y"] + street["height"]) <= 48

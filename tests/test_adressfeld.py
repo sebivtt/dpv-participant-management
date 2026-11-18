@@ -966,3 +966,40 @@ def test_a10_enter_in_einem_feld_speichert_und_sucht_nicht(org, pfingstlager, di
     assert _attr(button, "name") is None
     assert _attr(button, "tabindex") == "-1"
     assert _attr(button, "aria-hidden") == "true"
+
+
+# ---------- Vorschau (18.11.2026): eigene Fläche „Ort“ ----------
+
+
+def place_section(root):
+    """Die Fläche „Ort“ in Schritt 1 oder der Abschnitt „Ort“ im Dialog des Stifts."""
+    return _one(_all(root, lambda e: e.name == "section" and _attr(e, "aria-labelledby") in ("h-ort", "h-dialog-ort")))
+
+
+@pytest.mark.parametrize("dialog", [False, True])
+def test_vorschau_bezeichnung_und_adresse_stehen_zusammen_unter_ort(org, pfingstlager, dialog):
+    """Sebastian zur Vorschau: Was die Suche liest, gehört zusammen; eigene Fläche „Ort“, das Feld heißt „Bezeichnung“."""
+    if dialog:
+        root = dialog_of(_tree(client_for(org.wanda).get(edit_address(pfingstlager))))
+    else:
+        root = _tree(client_for(org.wanda).get(CREATE))
+    section = place_section(root)
+    heading = _one(_all(section, lambda e: e.name in ("h2", "h3")))
+
+    assert _visible_text(heading) == "Ort"
+    labels = [_visible_text(label) for label in _by_tag(section, "label")]
+    assert labels == ["Bezeichnung", "Straße und Hausnummer", "PLZ", "Ort", "Bundesland", "Land"]
+    assert _by_tag(section, "input", name="location")
+    assert _all(section, lambda e: "a-adressfeld" in _classes(e))
+    if not dialog:
+        basics = _one(_by_tag(root, "section", aria_labelledby="h-schritt"))
+        assert not _by_tag(basics, "input", name="location")
+
+
+def test_vorschau_die_ganze_trefferzeile_uebernimmt(org, osm):
+    """Sebastian zur Vorschau: ein Klick auf die Adresszeile übernimmt. Der Knopf deckt die ganze Zeile ab
+    (`a-treffer-ganz`); Tastatur und Vorleseprogramme nutzen weiter „Übernehmen“."""
+    root = _tree(search_in_step_one(client_for(org.wanda)))
+
+    for entry in _all(address_field(root), lambda e: e.name == "li" and "a-treffer" in _classes(e)):
+        assert "a-treffer-ganz" in _classes(entry)
