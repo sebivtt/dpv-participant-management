@@ -160,19 +160,32 @@ class _DeliveredHtml(HTMLParser):
         self.selects = 0
         self.styles: list[str] = []
         self.address = ""
+        # Was in <template> oder <noscript> steht, stellt WebKit (mit Skript) nicht dar und meldet es nicht.
+        self.not_shown = 0
 
     def read(self, address: str, html: str) -> None:
         self.address = address
+        self.not_shown = 0
         self.reset()
         self.feed(html)
         self.close()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "select":
+        if tag in ("template", "noscript"):
+            self.not_shown += 1
+        if tag == "select" and not self.not_shown:
             self.selects += 1
         if any(name == "style" for name, _ in attrs):
             line = self.get_starttag_text().splitlines()[0][:120]
             self.styles.append(f"{self.address}, Zeile {self.getpos()[0]}: {line}")
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag not in ("template", "noscript"):
+            self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("template", "noscript") and self.not_shown:
+            self.not_shown -= 1
 
 
 def _from_tool(message) -> bool:
