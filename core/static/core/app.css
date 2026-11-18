@@ -676,12 +676,12 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-schritt-knoepfe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0 0; }
 .a-schritt-rechts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-left: auto; }
 
-/* Adressfeld (#163, Zielbild docs/zielbilder/adressfeld.html): unter einer feinen Linie „Adresse“ mit Ortssymbol, PLZ
+/* Adressfeld (#163, Zielbild docs/zielbilder/adressfeld.html): Straße und Hausnummer, darunter PLZ
    und Ort nebeneinander (die PLZ so breit, dass ihre Meldung in eine Zeile passt), Bundesland und Land nebeneinander;
    schmal alles untereinander. Das Bundesland verschwindet, sobald ein anderes Land als Deutschland gewählt ist, allein
    über das Aussehen, also auch ohne Skript. */
 .a-adressfeld { min-width: 0; margin: 0; padding: 0; border: 0; }
-/* Dicht (Vorschau, Sebastian, 18.11.2026, Runde 2): keine Linie und keine sichtbare Überschrift über der Adresse; die
+/* Dicht (Vorschau, Sebastian, 18.11.2026, Runden 2 und 3): keine Linie und keine sichtbare Überschrift über der Adresse; die
    Zahl der Zeichen steht unter ihrem Feld, nimmt aber keinen Platz ein und teilt sich so die Zeile mit der Beschriftung
    des Felds darunter. */
 :is(.a-adressfeld, .a-ort-flaeche, .a-dialog-ort) .a-textfeld { margin-bottom: .35rem; }
@@ -703,8 +703,6 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 .a-treffer-ganz .a-treffer-knopf .btn::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }
 .a-ort-flaeche { margin-top: 20px; }
 .a-dialog-ort { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--linie); }
-.a-dialog-ort-kopf { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 1.05rem; }
-.a-dialog-ort-kopf .ic { color: var(--dpv); }
 .a-treffer-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: 50%; background: var(--dpv-hauch); color: var(--dpv); }
 .a-quelle { margin: 0; color: var(--text-leise); font-size: .82rem; }
 @media (max-width: 700px) {

@@ -32,7 +32,7 @@
     {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% endif %}
     {# Der Ort als eigener Abschnitt (Vorschau zu #163): die Bezeichnung und darunter die Adresse. #}
     <section class="a-dialog-ort" aria-labelledby="h-dialog-ort">
-      <h3 class="a-dialog-ort-kopf" id="h-dialog-ort">{% icon "ort" %}{{ dialog.place_title }}</h3>
+      {% include "core/_flaechenkopf.html" with symbol="ort" title=dialog.place_title heading_id="h-dialog-ort" level=3 %}
       {% textfeld dialog.event_form.location %}
       {% adressfeld dialog.event_form dialog.address %}
     </section>

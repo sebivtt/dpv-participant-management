@@ -11,6 +11,7 @@ import hashlib
 import json
 import logging
 import time
+from http.client import HTTPException
 from dataclasses import dataclass
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -57,7 +58,8 @@ class Place:
 
 
 def _request(params: dict) -> list:
-    """Fragt den Suchdienst und gibt seine Antwort zurück; wirft bei Ausfall `OSError` oder `ValueError`.
+    """Fragt den Suchdienst und gibt seine Antwort zurück; wirft bei Ausfall `OSError`, `ValueError` oder
+    `HTTPException` (etwa eine abgeschnittene Antwort).
 
     Die Anfrage trägt nur die Kennung der Anwendung, sonst keine Angaben: kein Cookie, keine Internetadresse der Person.
     """
@@ -73,8 +75,9 @@ def _request(params: dict) -> list:
 def _wait_for_turn() -> None:
     """Wartet, bis die vorige Anfrage des Tools eine Sekunde her ist, und trägt die eigene ein (G8).
 
-    Gesperrt wird die eine Zeile der Uhr in der Datenbank, damit die Bremse auch über mehrere Prozesse gilt. Läge der
-    eigene Platz mehr als `LONGEST_WAIT_SECONDS` in der Zukunft, wartet die Suche nicht, sondern ist nicht erreichbar.
+    Gesperrt wird kurz die eine Zeile der Uhr in der Datenbank, damit die Bremse auch über mehrere Prozesse gilt: Jede
+    Suche reserviert dort ihren Platz und wartet danach ohne Sperre. Läge der eigene Platz mehr als
+    `LONGEST_WAIT_SECONDS` in der Zukunft, wartet die Suche nicht, sondern ist nicht erreichbar.
     """
     interval = timedelta(seconds=settings.ADDRESS_SEARCH_INTERVAL_SECONDS)
     for _attempt in range(2):
@@ -86,15 +89,18 @@ def _wait_for_turn() -> None:
                 wait = (turn - timezone.now()).total_seconds()
                 if wait > LONGEST_WAIT_SECONDS:
                     raise Unavailable
-                if wait > 0:
-                    time.sleep(wait)
                 clock.last_request = turn
                 clock.save(update_fields=["last_request"])
-                return
+            break
         except IntegrityError:
             # Zwei Suchen haben die Zeile gleichzeitig zum ersten Mal angelegt; die zweite versucht es noch einmal.
             continue
-    raise Unavailable
+    else:
+        raise Unavailable
+    # Erst nach der Sperre warten: Der Platz ist reserviert, und jede weitere Suche sieht sofort, wie weit ihrer entfernt
+    # ist (Befund B1 der unabhängigen Prüfung).
+    if wait > 0:
+        time.sleep(wait)
 
 
 def _text(value) -> str:
@@ -140,7 +146,7 @@ def search(text: str, country: str = "") -> list[Place]:
         if not isinstance(answer, list):
             raise ValueError
         places = [_place(entry) for entry in answer[:MOST_HITS] if isinstance(entry, dict)]
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, HTTPException) as error:
         # Nur die Art des Fehlers, nie seine Meldung: Sie kann den Suchtext oder die Adresse der Anfrage enthalten.
         logger.warning("Adresssuche nicht erreichbar: %s", type(error).__name__)
         raise Unavailable from None

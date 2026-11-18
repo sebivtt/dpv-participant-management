@@ -1394,6 +1394,13 @@ def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]
                     found["notice"] = ("info", address_texts.NOTHING_FOUND)
         focus = "results"
     form = EventForm(initial=values, form_id=form_id)
+    # Eine schon bestätigte Dauer bleibt bestätigt (A9, Befund B4 der unabhängigen Prüfung); geprüft wird sie erst beim
+    # Speichern, mit derselben Regel wie sonst.
+    confirmed = request.POST.get("duration_ok", "")
+    if confirmed.isdigit():
+        form.duration_question = int(confirmed)
+        form.fields["duration_ok"].widget.attrs["value"] = confirmed
+        form.initial["duration_ok"] = True
     form.fields["name"].widget.attrs.pop("autofocus", None)
     if focus == "street":
         form.fields["street"].widget.attrs["autofocus"] = True
@@ -1879,7 +1886,8 @@ BUILDING_BLOCKS = {
     },
     "adressfeld": {
         "name": _("Adressfeld"), "template": "core/_adressfeld.html", "issues": [163],
-        "purpose": _("Eine freiwillige Adresse unter der Überschrift „Adresse“: Straße und Hausnummer, PLZ und Ort "
+        "purpose": _("Eine freiwillige Adresse ohne eigene Überschrift (Vorleseprogramme hören „Adresse“): Straße und "
+                     "Hausnummer, PLZ und Ort "
                      "nebeneinander, Bundesland und Land als Auswahl, „Deutschland“ vorgewählt; das Bundesland nur bei "
                      "Deutschland. Sobald etwas eingetragen ist, sind PLZ und Ort Pflicht, in Deutschland mit 5 "
                      "Ziffern; die Fehler stehen am Feld. Darunter „Adresse suchen“: sucht bei OpenStreetMap mit der "

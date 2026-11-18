@@ -60,11 +60,6 @@ class PostalAddress(models.Model):
     class Meta:
         abstract = True
 
-    @property
-    def has_address(self) -> bool:
-        """Ist eine Adresse eingetragen? Dann gibt es immer einen Ort (#163, Pflicht)."""
-        return bool(self.city)
-
 
 def address_constraints(prefix: str) -> list[models.CheckConstraint]:
     """Die Prüfungen der Datenbank für eine Adresse (#163); `prefix` macht ihre Namen je Tabelle eindeutig."""

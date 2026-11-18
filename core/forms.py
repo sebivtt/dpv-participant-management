@@ -274,7 +274,8 @@ def _whole_minute(value):
 # („coordinates“). So kommen Koordinaten nur aus einem Treffer, den der Server gefunden hat (#163, A4).
 PLACE_SALT = "adressfeld.treffer"
 PLACE_PARTS = ("street", "postal_code", "city", "state", "country")
-GERMAN_POSTAL_CODE = re.compile(r"\d{5}")
+# Nur die Ziffern 0 bis 9; `\d` nähme auch andere Schriften an, etwa „９９９９９“ (Befund B3 der unabhängigen Prüfung).
+GERMAN_POSTAL_CODE = re.compile(r"[0-9]{5}")
 
 
 def place_token(values: dict) -> str:
