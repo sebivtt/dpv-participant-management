@@ -19,7 +19,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, focus_visible, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
@@ -162,6 +162,85 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
     expect(handy.locator(f"{TILE} .a-kalender-ort .a-ort-zeile")).to_have_text(
         ["Burg Ludwigstein", "Burgweg 1a", "99999 Musterhausen"])
     assert Event.objects.get().latitude is None
+
+
+# #400: Am Handy klebt die Kopfleiste oben. Nach „Adresse suchen“ rollte der Browser die Seite zu den Treffern, und wo
+# „Straße und Hausnummer“ danach stand, war Zufall, manchmal halb unter der Kopfleiste; axe meldete dann „target-size“.
+# Die Tests prüfen die Lage selbst, nicht nur das Ergebnis von axe, damit sie ohne die Behebung zuverlässig rot sind.
+_LAGE = """() => {
+    const box = e => e.getBoundingClientRect();
+    const result = document.querySelector('.a-adressfeld .a-adresse-ergebnis');
+    const start = result && (result.querySelector('.a-treffer') || result.firstElementChild);
+    return {
+        leiste: box(document.querySelector('.a-topbar')).bottom,
+        hoehe: window.innerHeight,
+        beschriftung: box(document.querySelector('label[for="id_street"]')).top,
+        feld: box(document.getElementById('id_street')),
+        anfang: start ? box(start) : null,
+        fokus: document.activeElement === result ? 'ergebnis' : document.activeElement.id,
+    };
+}"""
+
+
+def _bis_zur_suche(page: Page, location: str) -> None:
+    login(page)
+    _erika_in_den_falken()
+    page.goto(CREATE)
+    page.locator(f'{STEP} input[name="location"]').fill(location)
+    page.locator(f'{STEP} input[name="location"]').focus()
+    _zu(page, SEARCH, steps=10)
+    page.wait_for_url(f"{CREATE}adresse-suchen/*")
+    expect(page.locator(f"{FIELD} .a-adresse-ergebnis")).to_be_focused()
+
+
+@pytest.mark.parametrize(("location", "start"), [
+    ("Burg Ludwigstein", "Burg Ludwigstein"),
+    ("Zeltplatz im Nirgendwo", "Keine Adresse gefunden."),
+], ids=["s1-treffer", "s2-keine-treffer"])
+def test_s1_s2_am_handy_steht_das_adressfeld_nach_der_suche_unter_der_kopfleiste(handy, osm, location, start):
+    """#400, S1 und S2: „Straße und Hausnummer“ beginnt direkt unter der Kopfleiste, nichts davon verdeckt; darunter
+    stehen Treffer oder Meldung im Bild, und der Fokus liegt bei ihnen."""
+    _bis_zur_suche(handy, location)
+    expect(handy.locator(f"{FIELD} .a-adresse-ergebnis")).to_contain_text(start)
+    lage = handy.evaluate(_LAGE)
+
+    assert lage["leiste"] <= lage["beschriftung"] <= lage["leiste"] + 16, lage
+    assert lage["feld"]["top"] >= lage["leiste"] and lage["feld"]["bottom"] <= lage["hoehe"], lage
+    assert lage["anfang"]["top"] >= lage["leiste"] and lage["anfang"]["bottom"] <= lage["hoehe"], lage
+    assert lage["fokus"] == "ergebnis"
+    _no_side_scroll(handy)
+    assert run_axe(handy) == []
+
+
+def test_s3_am_handy_quer_rollt_die_seite_nur_bis_zum_anfang_der_treffer(handy, osm):
+    """#400, S3: Passen Adressfeld und Treffer nicht zusammen ins Bild, steht der Anfang der Treffer unten im Bild,
+    nicht weiter gerollt; der Fokus ist zu sehen (WCAG 2.4.11)."""
+    handy.set_viewport_size({"width": 844, "height": 390})
+    _bis_zur_suche(handy, "Burg Ludwigstein")
+    lage = handy.evaluate(_LAGE)
+
+    # Die Lage aus S1 ginge hier nicht: Der Anfang der Treffer läge unter dem Bild.
+    assert lage["anfang"]["top"] >= lage["leiste"], lage
+    assert lage["hoehe"] - 32 <= lage["anfang"]["bottom"] <= lage["hoehe"], lage
+    assert lage["fokus"] == "ergebnis"
+    assert focus_visible(handy)["sichtbar"]
+    _no_side_scroll(handy)
+    assert run_axe(handy) == []
+
+
+def test_s4_am_handy_ist_die_strasse_nach_uebernehmen_ganz_zu_sehen(handy, osm):
+    """#400, S4: Nach „Übernehmen“ liegt der Fokus wie bisher auf „Straße und Hausnummer“, und das Feld steht ganz im
+    Bild, nicht unter der Kopfleiste."""
+    _bis_zur_suche(handy, "Burg Ludwigstein")
+    _zu(handy, TAKE, steps=5)
+    _uebernommen(handy)
+    expect(handy.locator('input[name="street"]')).to_be_focused()
+    lage = handy.evaluate(_LAGE)
+
+    assert lage["feld"]["top"] >= lage["leiste"] and lage["feld"]["bottom"] <= lage["hoehe"], lage
+    assert lage["beschriftung"] >= lage["leiste"], lage
+    _no_side_scroll(handy)
+    assert run_axe(handy) == []
 
 
 @pytest.mark.parametrize("device", ["pc", "pc_ohne_skript"])
