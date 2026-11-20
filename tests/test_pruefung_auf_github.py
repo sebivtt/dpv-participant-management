@@ -25,8 +25,8 @@ Protokoll von Keycloak zum Herunterladen (Belege für die seltenen Hänger beim 
 läuft auf GitHub, im Leistungstest und lokal in derselben festen Fassung wie in der Testumgebung.
 
 Issue #396 (20.11.2026): Auch die Systembibliotheken, die jeder Browser unter Linux braucht, kommen in den
-Zwischenspeicher, zusammen mit dem Browser in einem Eintrag je Browser, Playwright-Fassung und Fassung des
-GitHub-Rechners. Ist der Eintrag gefüllt, fragt der Teil den Ubuntu-Paketserver gar nicht an; ist er leer,
+Zwischenspeicher, zusammen mit dem Browser in einem Eintrag je Browser, Playwright-Fassung und Stand der
+installierten Systempakete des GitHub-Rechners. Ist der Eintrag gefüllt, fragt der Teil den Ubuntu-Paketserver gar nicht an; ist er leer,
 installiert er wie bisher und füllt danach den Eintrag. Ob das auf GitHub ohne Paketserver und unter
 1 Minute geht, belegt ein Lauf im Pull Request.
 
@@ -172,8 +172,8 @@ def _version_step() -> dict:
     return next(step for step in _steps() if "playwright" in str(step.get("id", "")) and "run" in step)
 
 
-def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_playwright_und_abbild():
-    """#396, Nr. 1 und 2: ein Eintrag je Browser, Playwright-Fassung aus uv.lock und Fassung des GitHub-Rechners."""
+def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_playwright_und_paketstand():
+    """#396, Nr. 1 und 2: ein Eintrag je Browser, Playwright-Fassung aus uv.lock und Paketstand des GitHub-Rechners."""
     restore = _restore()
     version_step = _version_step()
 
@@ -185,9 +185,14 @@ def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_pla
     assert "--locked" in version_step["run"]
     assert "version('playwright')" in version_step["run"]
     assert f"steps.{version_step['id']}.outputs.version" in restore["with"]["key"]
-    # Und die genaue Fassung des GitHub-Rechners, damit nach dessen Update keine veralteten Pakete
-    # auf einen neueren Rechner kommen (#396, Klärung, „Technische Wahl“).
-    assert "$ImageOS" in version_step["run"] and "${ImageVersion:-" in version_step["run"]
+    # Und der Stand der installierten Systempakete, damit nach einem Update des Rechners keine veralteten
+    # Pakete auf einen neueren kommen; gleich bestückte Rechner mit verschiedener Fassungsnummer teilen
+    # sich den Eintrag (#396, Nr. 1, Nachklärung vom 20.11.2026).
+    assert "$ImageOS" in version_step["run"]
+    assert "ImageVersion" not in version_step["run"]
+    fingerabdruck = [zeile for zeile in _befehle(version_step["run"]) if "dpkg-query" in zeile]
+    assert len(fingerabdruck) == 1, version_step["run"]
+    assert "${Version}" in fingerabdruck[0] and "sha256sum" in fingerabdruck[0]
     assert f"steps.{version_step['id']}.outputs.abbild" in restore["with"]["key"]
     # Je Browser ein eigener Eintrag, weil jeder Teil nur seinen Browser installiert (#307).
     assert "${{ matrix.browser }}" in restore["with"]["key"]
@@ -207,8 +212,12 @@ def test_mit_gefuelltem_zwischenspeicher_fragt_der_teil_den_paketserver_nicht_an
     assert len(installieren) == 1, befehle
     assert "--no-download" in installieren[0]
     assert '"$HOME/systempakete"/*.deb' in installieren[0]
-    for verboten in ("--with-deps", "install-deps", "apt-get update", "apt update", "apt-get download"):
+    for verboten in ("--with-deps", "install-deps", "apt-get download"):
         assert not [zeile for zeile in befehle if verboten in zeile], (verboten, befehle)
+    # Auch keine Paketlisten, in keiner Schreibweise (Befund B2 der unabhängigen Prüfung).
+    assert not [zeile for zeile in befehle if re.search(r"\bapt(-get)?\b.*\bupdate\b", zeile)], befehle
+    # Scheitert die Installation aus dem Zwischenspeicher, ist der Teil rot, statt still weiterzumachen.
+    assert not [zeile for zeile in befehle if "||" in zeile], befehle
     # Der Browser in genau der Fassung zu Playwright aus uv.lock (#396, Nr. 2); ist er schon da, lädt das nichts.
     assert "uv run --locked playwright install ${{ matrix.browser }}" in befehle
 
@@ -224,6 +233,9 @@ def test_mit_leerem_zwischenspeicher_installiert_der_teil_wie_bisher_und_behaelt
     assert len(einstellung) == 1 and einstellung[0] < installieren, befehle
     assert "Keep-Downloaded-Packages" in befehle[einstellung[0]]
     assert len(kopieren) == 1 and installieren < kopieren[0], befehle
+    # Ein gescheitertes Kopieren macht den Schritt rot, statt einen unvollständigen Eintrag zu speichern
+    # (Befund V1 der unabhängigen Prüfung): „-exec … +“ gibt den Fehler weiter, „-exec … \;“ nicht.
+    assert befehle[kopieren[0]].endswith("+"), befehle[kopieren[0]]
 
 
 def test_der_eintrag_wird_gleich_nach_erfolgreicher_installation_gefuellt():
