@@ -523,6 +523,30 @@
     window.scrollTo({ top: spot, behavior: "instant" });
   }
 
+  // Adressfeld am Handy (#400): Dort klebt die Kopfleiste oben. Nach „Adresse suchen“ rollte der Browser zum Fokus
+  // auf Treffern oder Meldung (`autofocus`), und wo „Straße und Hausnummer“ dann stand, war Zufall, manchmal halb
+  // unter der Leiste. Deshalb setzt das Skript den Fokus selbst, ohne zu rollen, und stellt die Seite so, dass die
+  // Straße direkt unter der Leiste beginnt; passt so der Anfang der Treffer oder der Meldung nicht ins Bild, rollt es
+  // nur so weit, dass er unten im Bild steht, denn der Fokus liegt nie außerhalb (WCAG 2.4.11). Nach „Übernehmen“
+  // liegt der Fokus auf der Straße, und das Skript rollt sie ebenso nach oben. Am Ende der Seite hält der Browser
+  // früher an; die Straße steht dann tiefer, aber ganz im Bild. Am PC (dort klebt keine Leiste) und im Dialog bleibt es
+  // beim Browser, ebenso ohne Skript.
+  var topbar = document.querySelector(".a-topbar");
+  var addressFocus = document.querySelector(".a-adressfeld [autofocus]");
+  var streetInput = addressFocus && addressFocus.closest(".a-adressfeld").querySelector("[name='street']");
+  var street = streetInput && streetInput.closest(".a-textfeld");
+  if (topbar && street && !addressFocus.closest("dialog") && window.getComputedStyle(topbar).position === "sticky") {
+    var GAP = 8;
+    addressFocus.focus({ preventScroll: true });
+    var below = topbar.getBoundingClientRect().bottom + GAP;
+    var target = window.scrollY + street.getBoundingClientRect().top - below;
+    if (addressFocus.matches(".a-adresse-ergebnis")) {
+      var resultStart = addressFocus.querySelector(".a-treffer") || addressFocus.firstElementChild || addressFocus;
+      target = Math.max(target, window.scrollY + resultStart.getBoundingClientRect().bottom + GAP - window.innerHeight);
+    }
+    window.scrollTo({ top: target, behavior: "instant" });
+  }
+
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
   // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
   // ältere Antwort, die erst nach einer neueren ankommt, wird verworfen. „Suchen“ und Enter schicken

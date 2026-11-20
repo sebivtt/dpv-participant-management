@@ -1328,7 +1328,7 @@ def address_field(form_id: str, search_action: str | None, found: dict | None = 
 
     `search_action` ist die Adresse der Suche; ohne sie fehlt der Knopf (ohne Zuordnung, VA-07). Nach der Suche bringt
     der Fokus auf Treffern oder Meldung die Seite dorthin (`autofocus`); eine Stelle „#…“ in der Adresse ginge nicht,
-    weil der Browser dann keinen Fokus setzt.
+    weil der Browser dann keinen Fokus setzt. Am Handy stellt app.js die Seite genauer (#400, „Adressfeld am Handy“).
     """
     found = found or {}
     return {
