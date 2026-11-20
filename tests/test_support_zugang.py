@@ -266,6 +266,35 @@ def test_s3_im_zugang_sieht_max_walhall_wie_wanda_mit_protokoll_je_seite(org):
     ]
 
 
+
+@pytest.mark.rechtematrix("SZ-03")
+def test_dk4_doppelklick_im_zugang_ergibt_genau_einen_eintrag_aendern(org):
+    """DK4 aus den Szenarien zu #391 vom 17.11.2026 (Doppelklick auf „Speichern“)."""
+    client = client_for(org.max)
+    start(org.max, org.walhall, client=client)
+    _dialog, version = open_edit(org.max, org.falken, org.lena, client=client)
+
+    first = save(org.max, org.falken, org.lena, version, client=client, scout_name="Kiwine")
+    second = save(org.max, org.falken, org.lena, version, client=client, scout_name="Kiwine")
+
+    assert (first.status_code, second.status_code) == (302, 302)
+    assert short_notices(client.get(second.url)) == ["Die Angaben zu Kiwine (Lena Probe) sind gespeichert."]
+    assert ManagedPerson.objects.get(pk=org.lena.pk).scout_name == "Kiwine"
+    assert [entry[0] for entry in log()].count(A.CHANGED) == 1
+
+
+@pytest.mark.rechtematrix("SZ-06")
+def test_dkv1_max_ohne_zugang_schickt_lenas_gespeicherte_angaben_und_bekommt_nicht_gefunden(org):
+    """DKV1 aus den Szenarien zu #391 vom 17.11.2026: ohne Zugang nie eine Erfolgsmeldung."""
+    client = client_for(org.max)
+
+    for version in (str(org.lena.version), str(org.lena.version), "0"):
+        response = save(org.max, org.falken, org.lena, version, client=client)
+        assert response.status_code == 404
+        assert "gespeichert" not in response.content.decode()
+    assert ManagedPerson.objects.get(pk=org.lena.pk).version == 1
+    assert AdminAccess.objects.count() == 0
+
 @pytest.mark.rechtematrix("SZ-03", "SZ-05", "PK-13")
 def test_s4_max_findet_otto_und_nimmt_ihn_auf(org):
     client = client_for(org.max)

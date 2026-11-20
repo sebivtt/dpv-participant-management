@@ -536,6 +536,73 @@ def test_ag7_gleichzeitig_gespeichert_gelingt_genau_eine_aenderung():
     assert (lager.name, lager.location, lager.version) == ("Pfingstlager 2028", "Burg Ludwigstein", 2)
 
 
+
+# ---------- Doppelklick auf „Speichern“ (#391) ----------
+#
+# DK2, DK3, DKV2 und DKG2 verweisen auf die Szenarien vom 17.11.2026
+# (https://github.com/sebivtt/dpv-participant-management/issues/391#issuecomment-6959292910). Ein Doppelklick ist
+# hier dasselbe Formular, zweimal abgeschickt; im Browser entstehen zwei Anfragen nicht verlässlich.
+
+SAVED = "Die Angaben zu Pfingstlager 2028 sind gespeichert."
+
+
+@pytest.mark.rechtematrix("VA-02")
+def test_dk2_doppelklick_auf_speichern_im_stift_zeigt_einmal_gespeichert(org, pfingstlager):
+    client = client_for(org.wanda)
+    client.get(edit_address(pfingstlager))
+    form = {**shown(pfingstlager), "location": "Burg Ludwigstein"}
+
+    first = client.post(edit_address(pfingstlager), form)
+    second = client.post(edit_address(pfingstlager), form)
+
+    assert (first.status_code, second.status_code) == (302, 302)
+    assert second.url == event_address(pfingstlager)
+    page = client.get(second.url)
+    assert short_notices(page) == [SAVED]
+    assert "wurde inzwischen geändert" not in page.content.decode()
+    pfingstlager.refresh_from_db()
+    assert (pfingstlager.location, pfingstlager.version) == ("Burg Ludwigstein", 2)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dk3_gleichzeitig_zweimal_dieselben_grunddaten_gelingt_beides_und_speichert_einmal():
+    o = build_people()
+    lager = event_of(o.wanda, "Pfingstlager 2028", date(2028, 6, 2), date(2028, 6, 5))
+    values = {"name": "Pfingstlager 2028", "start": date(2028, 6, 2), "start_time": None, "end": date(2028, 6, 5),
+              "end_time": None, "location": "Burg Ludwigstein"}
+
+    results = _one_after_the_other(lambda: Rights(o.wanda).edit_event(lager.key, values, "1"),
+                                   lambda: Rights(o.wanda).edit_event(lager.key, values, "1"))
+
+    assert [(done, text) for done, _entry, text in results] == [(True, SAVED), (True, SAVED)]
+    lager.refresh_from_db()
+    assert (lager.location, lager.version) == ("Burg Ludwigstein", 2)
+
+
+@pytest.mark.rechtematrix("VA-03")
+def test_dkv2_fiete_schickt_die_gespeicherten_grunddaten_und_bekommt_nicht_gefunden(org, pfingstlager):
+    client = client_for(org.fiete)
+
+    for version in (str(pfingstlager.version), str(pfingstlager.version), "0"):
+        response = client.post(edit_address(pfingstlager), {**shown(pfingstlager), "version": version})
+        assert response.status_code == 404
+        assert "gespeichert" not in response.content.decode()
+    pfingstlager.refresh_from_db()
+    assert pfingstlager.version == 1
+
+
+def test_dkg2_doppelklick_ueberspringt_die_nachfrage_zur_dauer_nicht(org):
+    lager = event_of(org.wanda, "Bundeslager 2028", date(2028, 7, 20), date(2028, 7, 22))
+    client = client_for(org.wanda)
+    form = {**shown(lager), "end": "2028-08-29"}
+
+    for _click in range(2):
+        response = client.post(edit_address(lager), form)
+        assert response.status_code == 200
+        assert field_errors(_tree(response)) == {"end": "Die Veranstaltung dauert 41 Tage. Stimmt das?"}
+    lager.refresh_from_db()
+    assert (lager.end, lager.version) == (date(2028, 7, 22), 1)
+
 def test_ag2_eine_uhrzeit_mit_sekunden_blockiert_spaeter_nicht_den_namen(org, monkeypatch):
     """Unabhängige Prüfung, V1: Am Browser vorbei mit Sekunden gespeichert, zeigt der Dialog nur Stunde und Minute.
 

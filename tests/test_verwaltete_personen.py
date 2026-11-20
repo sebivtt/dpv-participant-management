@@ -790,6 +790,78 @@ def test_mg7_gleichzeitig_abgeschickt_entsteht_lena_nur_einmal():
     assert ManagedPerson.objects.filter(first_name="Lena").count() == 1
 
 
+
+# ---------- Doppelklick auf „Speichern“ (#391) ----------
+#
+# DK1, DK3, DKV1 und DKG1 verweisen auf die Szenarien vom 17.11.2026
+# (https://github.com/sebivtt/dpv-participant-management/issues/391#issuecomment-6959292910); DK4 und Max in DKV1
+# prüft `tests/test_support_zugang.py`, die Grunddaten einer Veranstaltung `tests/test_grunddaten.py`. Ein
+# Doppelklick ist hier dasselbe Formular, zweimal abgeschickt; im Browser entstehen zwei Anfragen nicht verlässlich.
+
+SAVED = "Die Angaben zu Kiwi (Lena Probe) sind gespeichert."
+
+
+@pytest.mark.rechtematrix("VP-02")
+def test_dk1_doppelklick_auf_speichern_zeigt_einmal_gespeichert(org, lena):
+    client = client_for(org.falken_leitung)
+    _found, version = open_edit(org.falken_leitung, org.falken, lena, client=client)
+
+    first = save(org.falken_leitung, org.falken, lena, version, client=client, birth_date="2015-05-15")
+    second = save(org.falken_leitung, org.falken, lena, version, client=client, birth_date="2015-05-15")
+
+    assert (first.status_code, second.status_code) == (302, 302)
+    assert second.url == back_from_edit(org.falken, lena)
+    page = client.get(second.url)
+    assert short_notices(page) == [SAVED]
+    assert CHANGED_MEANWHILE not in page.content.decode()
+    lena.refresh_from_db()
+    # Gespeichert genau einmal: Der Stand zählt nur einmal hoch.
+    assert (lena.birth_date, lena.version) == (date(2015, 5, 15), 2)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dk3_gleichzeitig_zweimal_dasselbe_gespeichert_gelingt_beides_und_speichert_einmal():
+    o = build_org()
+    fiete = person("fiete.falke", "Fiete", "Falke")
+    give(fiete, R.GROUP_LEAD, o.falken)
+    lena = managed("Lena", "Probe", o.falken, scout_name="Kiwi", born=date(2015, 5, 14))
+    values = {"first_name": "Lena", "last_name": "Probe", "birth_date": date(2015, 5, 15), "scout_name": "Kiwi"}
+
+    results = _one_after_the_other(lambda: Rights(fiete).edit_managed(o.falken, lena.key, values, "1"),
+                                   lambda: Rights(fiete).edit_managed(o.falken, lena.key, values, "1"))
+
+    assert [(done, text) for done, _entry, text in results] == [(True, SAVED), (True, SAVED)]
+    lena.refresh_from_db()
+    assert (lena.birth_date, lena.version) == (date(2015, 5, 15), 2)
+
+
+@pytest.mark.rechtematrix("VP-03")
+def test_dkv1_zora_schickt_lenas_gespeicherte_angaben_und_bekommt_nicht_gefunden(org, lena):
+    client = client_for(org.zugvoegel_leitung)
+
+    for _click in range(2):
+        response = save(org.zugvoegel_leitung, org.falken, lena, str(lena.version), client=client)
+        assert response.status_code == 404
+        assert "gespeichert" not in response.content.decode()
+    # Auch mit einem älteren Stand verrät die Antwort nicht, ob die Angaben stimmen.
+    assert save(org.zugvoegel_leitung, org.falken, lena, "0", client=client).status_code == 404
+    lena.refresh_from_db()
+    assert lena.version == 1
+
+
+def test_dkg1_wanda_speichert_dasselbe_zuerst_und_fiete_sieht_gespeichert(org, lena):
+    fiete = client_for(org.falken_leitung)
+    _found, fiete_version = open_edit(org.falken_leitung, org.falken, lena, client=fiete)
+    _found, wanda_version = open_edit(org.walhall_leitung, org.falken, lena)
+    assert save(org.walhall_leitung, org.falken, lena, wanda_version, birth_date="2015-05-15").status_code == 302
+
+    response = save(org.falken_leitung, org.falken, lena, fiete_version, client=fiete, birth_date="2015-05-15")
+
+    assert response.status_code == 302
+    assert short_notices(fiete.get(response.url)) == [SAVED]
+    lena.refresh_from_db()
+    assert (lena.birth_date, lena.version) == (date(2015, 5, 15), 2)
+
 def test_mg8_die_falken_lassen_sich_mit_lena_nicht_loeschen(org, lena):
     with pytest.raises(ProtectedError):
         org.falken.delete()
