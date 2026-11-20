@@ -105,44 +105,77 @@ jobs:
       - name: Python und Pakete aus uv.lock installieren
         run: uv sync --locked
       # Browser für den Rauchtest (#7) in der Fassung, die zu Playwright aus uv.lock gehört,
-      # samt den Systembibliotheken, die sie unter Linux brauchen. Die Systembibliotheken kommen
-      # vom Ubuntu-Paketserver; ist der langsam, hing der Schritt früher bis zum Zeitlimit des
-      # ganzen Laufs (#133). Deshalb: ein Versuch mit 5 Minuten, und die Browser selbst kommen aus
-      # dem Zwischenspeicher von GitHub, solange die Fassung gleich ist. Die Systembibliotheken holt
-      # jeder Lauf weiter vom Paketserver; der Zwischenspeicher allein verhindert den Hänger also
-      # nicht. Ein zweiter Versuch im selben Lauf half 3 von 7 Mal, ein Neustart des Laufs auf einem
-      # neuen Rechner fast immer (#276). Klappt die Installation, dauert sie meist unter 1,2 Minuten,
-      # bisher höchstens 4,2. Seit #307 installiert jeder Teil mit Rauchtest nur seinen Browser, die
-      # anderen Teile keinen.
+      # samt den Systembibliotheken, die sie unter Linux brauchen. Beides kommt aus dem
+      # Zwischenspeicher von GitHub, in einem Eintrag je Browser (#307), Playwright-Fassung und
+      # genauer Fassung des GitHub-Rechners (#396). Ist der Eintrag gefüllt, fragt der Teil den
+      # Ubuntu-Paketserver gar nicht an, auch nicht für die Paketlisten: Früher holte jeder Lauf die
+      # Systembibliotheken dort, und war der Server langsam, scheiterte die Installation (#133, #276,
+      # #396). Ist der Eintrag leer (erster Lauf nach einem Update des GitHub-Rechners oder von
+      # Playwright), installiert der Teil wie bisher vom Paketserver und füllt danach den Eintrag.
+      # Dafür bleibt: ein Versuch mit 5 Minuten, denn ein zweiter im selben Lauf half nur 3 von 7 Mal,
+      # ein Neustart auf einem neuen Rechner fast immer (#276). Klappte die Installation vom
+      # Paketserver, dauerte sie meist unter 1,2 Minuten, bisher höchstens 4,2.
       - name: Playwright-Fassung aus uv.lock ermitteln
         id: playwright
         if: matrix.browser
         run: |
           version="$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "ubuntu=$ImageOS" >> "$GITHUB_OUTPUT"
-      - name: Browser aus dem Zwischenspeicher holen
+          # ImageOS (etwa „ubuntu24“) und ImageVersion (etwa „20261116.1.0“) setzt GitHub auf jedem
+          # Rechner. Mit der genauen Fassung im Schlüssel kommen nach einem Update keine Pakete von
+          # gestern auf den neuen Rechner, und nach einem Wechsel der Ubuntu-Fassung keine alten
+          # Browser (#192). Fehlt sie, gilt der Eintrag nur für diesen Lauf.
+          echo "abbild=$ImageOS-${ImageVersion:-unbekannt-$GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+      - name: Browser und Systempakete aus dem Zwischenspeicher holen
+        id: zwischenspeicher
         if: matrix.browser
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/ms-playwright
-          # Mit der Ubuntu-Fassung (ImageOS des Rechners, etwa „ubuntu24“) im Schlüssel, weil Playwright
-          # je Fassung eigene Browser lädt; sonst kämen nach einem Wechsel die alten aus dem
-          # Zwischenspeicher (#192). Je Browser ein eigener Eintrag, weil jeder Teil nur seinen
-          # Browser installiert (#307).
-          key: playwright-browser-${{ steps.playwright.outputs.ubuntu }}-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
+          path: |
+            ~/.cache/ms-playwright
+            ~/systempakete
+          key: playwright-${{ steps.playwright.outputs.abbild }}-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
       - name: Browser für den Rauchtest installieren
         id: browser
         if: matrix.browser
         timeout-minutes: 5
         # Scheitert oder hängt die Installation, meldet das der nächste Schritt und beendet den Teil.
         continue-on-error: true
-        run: uv run --locked playwright install --with-deps ${{ matrix.browser }}
+        run: |
+          if [ "${{ steps.zwischenspeicher.outputs.cache-hit }}" = true ]; then
+            # Gefüllt: Die Systempakete installiert apt aus dem Ordner, ohne etwas herunterzuladen.
+            # Den Ordner muss apt auch als seine Ablage kennen, sonst findet es die Dateien nicht.
+            if ls "$HOME/systempakete"/*.deb > /dev/null 2>&1; then
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --no-download -o Dir::Cache::Archives="$HOME/systempakete/" "$HOME/systempakete"/*.deb
+            fi
+            # Der Browser liegt schon da; das prüft nur seine Fassung.
+            uv run --locked playwright install ${{ matrix.browser }}
+          else
+            # Leer: wie bisher vom Paketserver. apt behält dabei die geladenen Pakete in einem eigenen
+            # Ordner; die kommen danach in den Zwischenspeicher.
+            archiv="$RUNNER_TEMP/apt-archiv"
+            sudo mkdir -p "$archiv/partial"
+            printf 'Dir::Cache::Archives "%s/"; Binary::apt-get::APT::Keep-Downloaded-Packages "true";\n' "$archiv" | sudo tee /etc/apt/apt.conf.d/99-systempakete-behalten > /dev/null
+            uv run --locked playwright install --with-deps ${{ matrix.browser }}
+            mkdir -p "$HOME/systempakete"
+            find "$archiv" -maxdepth 1 -name '*.deb' -exec cp {} "$HOME/systempakete/" \;
+          fi
       - name: Browser-Installation gescheitert
         if: steps.browser.outcome == 'failure'
         run: |
           echo "::error title=Browser-Installation gescheitert::Der Test-Browser ließ sich nicht in 5 Minuten installieren, meist weil der Ubuntu-Paketserver gerade langsam ist. Kein Test ist gelaufen (betroffen ist nur dieser Teil); am Code liegt es nicht. Ein Neustart nur der gescheiterten Teile (Re-run failed jobs) hilft meist (#133, #276, #307)."
           exit 1
+      # Gleich nach der Installation und nicht erst am Ende des Teils, damit auch ein roter Test den
+      # Eintrag gefüllt zurücklässt (#396). Das Hochladen dauert Sekunden; misslingt es, meldet GitHub
+      # nur eine Warnung, und der nächste Lauf installiert wieder vom Paketserver.
+      - name: Browser und Systempakete im Zwischenspeicher ablegen
+        if: matrix.browser && steps.browser.outcome == 'success' && steps.zwischenspeicher.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/systempakete
+          key: ${{ steps.zwischenspeicher.outputs.cache-primary-key }}
       - name: Warten, bis Keycloak bereit ist
         run: |
           for attempt in $(seq 1 90); do

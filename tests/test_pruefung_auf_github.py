@@ -187,7 +187,7 @@ def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_pla
     assert f"steps.{version_step['id']}.outputs.version" in restore["with"]["key"]
     # Und die genaue Fassung des GitHub-Rechners, damit nach dessen Update keine veralteten Pakete
     # auf einen neueren Rechner kommen (#396, Klärung, „Technische Wahl“).
-    assert "$ImageOS" in version_step["run"] and "$ImageVersion" in version_step["run"]
+    assert "$ImageOS" in version_step["run"] and "${ImageVersion:-" in version_step["run"]
     assert f"steps.{version_step['id']}.outputs.abbild" in restore["with"]["key"]
     # Je Browser ein eigener Eintrag, weil jeder Teil nur seinen Browser installiert (#307).
     assert "${{ matrix.browser }}" in restore["with"]["key"]
