@@ -641,6 +641,19 @@ STRUCTURE_ROWS = ("EH-10", "EH-11", "EH-12", "EH-13", "EH-14", "EH-15", "EH-16",
                   "EH-20", "EH-21", "EH-23", "EH-24", "EH-25", "EH-26", "EH-27")
 
 
+def _saved_once(request: HttpRequest, text: str) -> None:
+    """Die Erfolgsmeldung nach dem Speichern, nur wenn dieselbe nicht schon auf ihre Anzeige wartet (#391).
+
+    Bei einem Doppelklick sind beide Anfragen „gespeichert“; angezeigt wird die Meldung trotzdem genau einmal.
+    Nachsehen zählt hier nicht als Anzeigen: Die wartenden Meldungen bleiben für die nächste Seite.
+    """
+    waiting = messages.get_messages(request)
+    already = any(entry.message == text for entry in waiting)
+    waiting.used = False
+    if not already:
+        messages.success(request, text)
+
+
 def _with_dialog(request: HttpRequest, found: Unit, dialog: dict) -> HttpResponse:
     """Die Seite der Organisation mit offenem Dialog, der kommt offen vom Server."""
     shown = Organisation(request.rights, request.user)
@@ -769,7 +782,8 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
     Organisation oder darf die Person sie nicht sehen, ist das „nicht gefunden“ (VP-03, MV4, MV5), auch
     für eine gerade entfernte Leitung im schon offenen Dialog (MW1). Der Dialog schickt den Stand beim
     Öffnen mit (`version`); hat inzwischen jemand anderes gespeichert, zeigt er dessen Stand mit dem Satz
-    aus MG6 und überschreibt nichts. Danach geht es zurück zur Seite, zum Knopf „Bearbeiten“. Seit #118
+    aus MG6 und überschreibt nichts; bringt er genau die gespeicherten Angaben mit, etwa beim Doppelklick, gilt das
+    als gespeichert (#391). Danach geht es zurück zur Seite, zum Knopf „Bearbeiten“. Seit #118
     steht links unten „Verwaltete Person löschen“, nur für wer löschen darf (VP-09, VP-10).
     """
     rights = request.rights
@@ -782,7 +796,7 @@ def organisation_edit_managed(request: HttpRequest, unit: str, person: str) -> H
         if form.is_valid():
             done, entry, text = rights.edit_managed(found, person, form.cleaned_data, version)
             if done:
-                messages.success(request, text)
+                _saved_once(request, text)
                 return redirect(f"{reverse('organisation_unit', args=[found.key])}#{edit_anchor(entry)}")
             form, version, conflict = ManagedPersonForm(initial=_managed_values(entry)), entry.version, text
     elif request.method in READING:
@@ -1089,7 +1103,8 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
 
     Nur die Veranstaltungsleitung, auch ohne Zuordnung (V4); sonst „nicht gefunden“ (VA-03). Der Dialog schickt
     den Stand beim Öffnen mit (`version`); hat inzwischen jemand gespeichert, auch in einem zweiten Fenster,
-    zeigt er den neuen Stand mit dem Satz aus AG7 und überschreibt nichts (#379). Danach geht es zur
+    zeigt er den neuen Stand mit dem Satz aus AG7 und überschreibt nichts (#379); mit genau den gespeicherten
+    Angaben, etwa beim Doppelklick, gilt das als gespeichert (#391). Danach geht es zur
     Leitungsseite mit der kurzen Meldung; bei einem Fehler bleibt der Dialog mit den Eingaben offen, und nichts
     wird gespeichert.
     """
@@ -1102,7 +1117,7 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
         if form.is_valid():
             done, entry, text = rights.edit_event(event, form.cleaned_data, version)
             if done:
-                messages.success(request, text)
+                _saved_once(request, text)
                 return redirect("event_page", event=entry.key)
             form, version, conflict = _event_form_of(entry), entry.version, text
     elif request.method in READING:
@@ -1216,7 +1231,7 @@ def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
     Zeigt die gespeicherten Angaben; „Weiter“ speichert sie mit denselben Prüfungen wie der Stift der Leitungsseite
     und führt zur Zusammenfassung. Bei einem Fehler bleibt der Schritt mit den Eingaben stehen, und der Entwurf
     behält seine Angaben (BG4); hat inzwischen ein zweites Fenster gespeichert, zeigt er den neuen Stand mit dem
-    Satz aus AG7 (#379). Nur für die Person, die anlegt (`_draft()`).
+    Satz aus AG7 (#379), außer mit genau den gespeicherten Angaben (#391). Nur für die Person, die anlegt (`_draft()`).
     """
     entry, finished = _draft(request, event)
     if finished:

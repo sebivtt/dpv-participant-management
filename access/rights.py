@@ -1009,7 +1009,9 @@ class Rights:
 
         `version` ist der Stand, den der Dialog beim Öffnen gezeigt hat. Hat inzwischen jemand anderes
         gespeichert, wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Person, wie sie
-        jetzt ist, und dem Satz „… wurde inzwischen von jemand anderem geändert. …“ (MG6). Ohne Recht, mit
+        jetzt ist, und dem Satz „… wurde inzwischen von jemand anderem geändert. …“ (MG6). Stimmen die Angaben
+        genau mit dem Gespeicherten überein (Doppelklick, oder jemand anderes hat dasselbe gespeichert), ist das
+        „geklappt“, ohne erneut zu speichern und ohne Eintrag „ändern“ im Protokoll (#391). Ohne Recht, mit
         einer fremden Kennung oder einer Person einer anderen Organisation „nicht gefunden“ (VP-03, MV4,
         MV5). Gesperrt sind das eigene Konto, der Bund und die Person, und das Recht wird darunter frisch
         geprüft: Wer gerade als Leitung entfernt wurde, speichert nichts mehr, auch im schon offenen Dialog
@@ -1024,6 +1026,9 @@ class Rights:
             fresh = Rights(me)
             entry = fresh.entry(fresh._managed_entries().filter(unit_id=unit.pk).select_for_update(), person_key)
             if str(entry.version) != str(version):
+                if _same_as_stored(entry, values, EDITABLE_FIELDS):
+                    # Doppelklick oder dieselben Angaben von jemand anderem: schon gespeichert (#391).
+                    return True, entry, str(person_texts.SAVED % {"person": entry.display_name})
                 return False, entry, str(person_texts.CHANGED_MEANWHILE % {"person": entry.display_name})
             for name in EDITABLE_FIELDS:
                 setattr(entry, name, values[name])
@@ -1191,7 +1196,8 @@ class Rights:
         nicht mehr leitet (VA-03). Gesperrt sind das eigene Konto und die Veranstaltung. `version` ist der Stand,
         den der Dialog beim Öffnen gezeigt hat; hat inzwischen jemand gespeichert, auch in einem zweiten Fenster,
         wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Veranstaltung, wie sie jetzt ist,
-        und dem Satz „… wurde inzwischen geändert. …“ (#379, AG7, wie bei verwalteten Personen).
+        und dem Satz „… wurde inzwischen geändert. …“ (#379, AG7, wie bei verwalteten Personen). Stimmen die Angaben
+        genau mit dem Gespeicherten überein, ist das „geklappt“, ohne erneut zu speichern (#391).
         """
         if self.user is None or not is_key(key):
             raise Http404
@@ -1200,6 +1206,9 @@ class Rights:
             fresh = Rights(me)
             entry = fresh.entry(fresh.events().select_for_update(), key)
             if str(entry.version) != str(version):
+                if _same_as_stored(entry, values, EVENT_FIELDS):
+                    # Doppelklick oder dieselben Angaben von jemand anderem: schon gespeichert (#391).
+                    return True, entry, str(event_texts.SAVED % {"event": entry.name})
                 return False, entry, str(event_texts.CHANGED_MEANWHILE % {"event": entry.name})
             # Was die Angaben nicht nennen, bleibt, wie es war (etwa die Adresse, #163).
             for name in EVENT_FIELDS:
@@ -2173,6 +2182,16 @@ class Support:
 
     unit: Unit
     ends_at: object
+
+
+def _same_as_stored(entry: Model, values: dict, names) -> bool:
+    """Stimmen die abgeschickten Angaben genau mit dem Gespeicherten überein? Was `values` nicht nennen, zählt nicht.
+
+    Regel aus #391 (`docs/entscheidungen.md`, 20.11.2026): Bringt ein Bearbeiten-Dialog einen älteren Stand mit,
+    aber genau diese Angaben, gelten sie als gespeichert. Aufgerufen erst nach der Rechteprüfung und unter der
+    Sperre des Eintrags, damit die Antwort nie verrät, was gespeichert ist.
+    """
+    return all(getattr(entry, name) == values[name] for name in names if name in values)
 
 
 def _end(by, running: AdminAccess, detail: str) -> None:

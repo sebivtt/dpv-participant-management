@@ -55,6 +55,23 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | „Veranstaltung erstellen“ als Ablauf in Schritten | 17.11.2026, #380, Nr. 1 | 13.11.2026, #100, „Technische Wahl“, Nr. 4 (nur dass „Veranstaltung erstellen“ ein Dialog ist) |
 | Prüfung der Sicherheitsrichtlinie im Rauchtest | 18.11.2026, #393, Nr. 1 | 14.11.2026, #278, Nr. 3 (nur für die Meldung, die WebKit selbst an einem Auswahlfeld auslöst) |
 | Systempakete der Browser auf GitHub | 20.11.2026, #396, Nr. 1 | 25.10.2026, #133, Nr. 1 (nur der Satz, dass die Systempakete weiter bei jedem Lauf vom Ubuntu-Paketserver kommen) |
+| Gleiche Angaben bei älterem Stand | 20.11.2026, #391, Nr. 1 bis 3 | 11.11.2026, #117, „Technische Wahl“, Nr. 3, und 17.11.2026, #379, „Technische Wahl“, Nr. 3 (je nur für den Fall, dass die abgeschickten Angaben genau dem Gespeicherten entsprechen: dann keine Meldung „… inzwischen geändert“) |
+
+---
+
+## 2026-11-20 · Gleiche Angaben bei älterem Stand gelten als gespeichert (#391)
+
+**Entscheidung** (Sebastian in der Klärung von #391 am 17.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/391#issuecomment-6959292542), Fragen 2 und 3; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/391#issuecomment-6959292910) mit „Alle passen“; maßgeblich sind Text und Szenarien von #391). Ersetzt den Eintrag vom 11.11.2026 (#117), „Technische Wahl“, Nr. 3, und den vom 17.11.2026 (#379), „Technische Wahl“, Nr. 3, teilweise: nur für den Fall gleicher Angaben; alles andere dort gilt weiter.
+
+1. **Regel für jeden Bearbeiten-Dialog mit Stand:** Bringt eine Anfrage einen älteren Stand (`version`) mit, stimmen die abgeschickten Angaben aber genau mit dem Gespeicherten überein, gilt das als gespeichert: Erfolgsmeldung, nichts wird ein zweites Mal gespeichert, der Stand zählt nicht hoch. Das gilt auch, wenn inzwischen jemand anderes genau dieselben Angaben gespeichert hat (Frage 3). Weichen die Angaben ab, bleibt es bei der Meldung „… wurde inzwischen geändert“. Künftige Bearbeiten-Dialoge mit Stand (etwa aus #358, #359) übernehmen die Regel.
+2. **Rechte zuerst:** Verglichen wird erst nach der Rechteprüfung, unter derselben Sperre wie das Speichern. Wer nicht bearbeiten darf, bekommt „nicht gefunden“, auch mit genau den gespeicherten Angaben; die Antwort verrät nie, was gespeichert ist. Nachfragen und Fehler am Feld (etwa „Ja, die Dauer stimmt“) kommen wie bisher vor dem Vergleich.
+3. **Kein Eintrag „ändern“:** Weil nichts gespeichert wird, schreibt der Support-Zugang dafür keinen Eintrag „ändern“ ins Protokoll der Admin-Zugriffe; ein Doppelklick ergibt dort genau einen.
+
+**Technische Wahl** (KI): Der Server erkennt es, nicht das Skript im Browser (Frage 2): Es wirkt auch ohne Skript und bei jedem Grund für doppeltes Abschicken, und am Aussehen ändert sich nichts. Verglichen werden die Felder, die der Dialog speichert, mit den bereinigten Angaben des Formulars (`_same_as_stored()` in `access/rights.py`). Die Erfolgsmeldung kommt nur dazu, wenn dieselbe nicht schon auf ihre Anzeige wartet (`_saved_once()` in `core/views.py`); sonst stünde sie nach einem Doppelklick zweimal auf der Seite.
+
+**Begründung:** Ein Doppelklick verliert keine Daten, die Meldung „… wurde inzwischen geändert“ war also falsch und verunsichert. Wer dasselbe gespeichert hat wie jemand anderes, verliert ebenfalls nichts; die einfachste Regel ist darum „gleiche Angaben gelten als gespeichert“.
+
+**Umsetzung:** `access/rights.py` (`edit_managed()`, `edit_event()`), `core/views.py`; Tests DK1 bis DK4, DKV1, DKV2, DKG1 und DKG2 in `tests/test_verwaltete_personen.py`, `tests/test_grunddaten.py` und `tests/test_support_zugang.py`. Weil Schritt 1 „Grunddaten“ eines Entwurfs über dieselbe Funktion speichert wie der Stift (17.11.2026, #380, „Technische Wahl“, Nr. 4), gilt die Regel dort ebenso; das prüft ein Test in `tests/test_veranstaltung_anlegen.py`.
 
 ---
 
