@@ -107,7 +107,7 @@ jobs:
       # Browser für den Rauchtest (#7) in der Fassung, die zu Playwright aus uv.lock gehört,
       # samt den Systembibliotheken, die sie unter Linux brauchen. Beides kommt aus dem
       # Zwischenspeicher von GitHub, in einem Eintrag je Browser (#307), Playwright-Fassung und
-      # genauer Fassung des GitHub-Rechners (#396). Ist der Eintrag gefüllt, fragt der Teil den
+      # Stand der installierten Systempakete des GitHub-Rechners (#396). Ist der Eintrag gefüllt, fragt der Teil den
       # Ubuntu-Paketserver gar nicht an, auch nicht für die Paketlisten: Früher holte jeder Lauf die
       # Systembibliotheken dort, und war der Server langsam, scheiterte die Installation (#133, #276,
       # #396). Ist der Eintrag leer (erster Lauf nach einem Update des GitHub-Rechners oder von
@@ -121,11 +121,14 @@ jobs:
         run: |
           version="$(uv run --locked python -c "import importlib.metadata as m; print(m.version('playwright'))")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          # ImageOS (etwa „ubuntu24“) und ImageVersion (etwa „20261116.1.0“) setzt GitHub auf jedem
-          # Rechner. Mit der genauen Fassung im Schlüssel kommen nach einem Update keine Pakete von
-          # gestern auf den neuen Rechner, und nach einem Wechsel der Ubuntu-Fassung keine alten
-          # Browser (#192). Fehlt sie, gilt der Eintrag nur für diesen Lauf.
-          echo "abbild=$ImageOS-${ImageVersion:-unbekannt-$GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          # Ubuntu-Fassung (ImageOS, etwa „ubuntu24“) und ein Fingerabdruck aller installierten Pakete
+          # mit ihren Fassungen: Nach einem Update des Rechners kommen so keine Pakete von vorher auf
+          # den neuen Rechner, und nach einem Wechsel der Ubuntu-Fassung keine alten Browser (#192).
+          # Nicht die Fassungsnummer des Rechners (ImageVersion): GitHub verteilt die Teile eines Laufs
+          # auf Rechner mit verschiedenen Nummern; sind sie gleich bestückt, teilen sie sich so den
+          # Eintrag (#396, Nachklärung vom 20.11.2026).
+          pakete="$(dpkg-query -W -f='${binary:Package}=${Version}\n' | sort | sha256sum | cut -c1-16)"
+          echo "abbild=$ImageOS-$pakete" >> "$GITHUB_OUTPUT"
       - name: Browser und Systempakete aus dem Zwischenspeicher holen
         id: zwischenspeicher
         if: matrix.browser
@@ -155,10 +158,11 @@ jobs:
             # Ordner; die kommen danach in den Zwischenspeicher.
             archiv="$RUNNER_TEMP/apt-archiv"
             sudo mkdir -p "$archiv/partial"
+            sudo chown _apt "$archiv/partial"
             printf 'Dir::Cache::Archives "%s/"; Binary::apt-get::APT::Keep-Downloaded-Packages "true";\n' "$archiv" | sudo tee /etc/apt/apt.conf.d/99-systempakete-behalten > /dev/null
             uv run --locked playwright install --with-deps ${{ matrix.browser }}
             mkdir -p "$HOME/systempakete"
-            find "$archiv" -maxdepth 1 -name '*.deb' -exec cp {} "$HOME/systempakete/" \;
+            find "$archiv" -maxdepth 1 -name '*.deb' -exec cp -t "$HOME/systempakete/" {} +
           fi
       - name: Browser-Installation gescheitert
         if: steps.browser.outcome == 'failure'

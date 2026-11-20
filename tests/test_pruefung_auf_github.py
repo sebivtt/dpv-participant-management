@@ -189,7 +189,7 @@ def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_pla
     # Pakete auf einen neueren kommen; gleich bestückte Rechner mit verschiedener Fassungsnummer teilen
     # sich den Eintrag (#396, Nr. 1, Nachklärung vom 20.11.2026).
     assert "$ImageOS" in version_step["run"]
-    assert "ImageVersion" not in version_step["run"]
+    assert not [zeile for zeile in _befehle(version_step["run"]) if "ImageVersion" in zeile]
     fingerabdruck = [zeile for zeile in _befehle(version_step["run"]) if "dpkg-query" in zeile]
     assert len(fingerabdruck) == 1, version_step["run"]
     assert "${Version}" in fingerabdruck[0] and "sha256sum" in fingerabdruck[0]
