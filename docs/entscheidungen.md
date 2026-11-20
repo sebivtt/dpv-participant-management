@@ -54,6 +54,25 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Beschriftung der Bezeichnung des Orts | 18.11.2026, #163, Nr. 8 | 17.11.2026, #380, Nr. 5 (nur dass das Feld „Ort“ nur „Ort“ heißt) |
 | „Veranstaltung erstellen“ als Ablauf in Schritten | 17.11.2026, #380, Nr. 1 | 13.11.2026, #100, „Technische Wahl“, Nr. 4 (nur dass „Veranstaltung erstellen“ ein Dialog ist) |
 | Prüfung der Sicherheitsrichtlinie im Rauchtest | 18.11.2026, #393, Nr. 1 | 14.11.2026, #278, Nr. 3 (nur für die Meldung, die WebKit selbst an einem Auswahlfeld auslöst) |
+| Systempakete der Browser auf GitHub | 20.11.2026, #396, Nr. 1 | 25.10.2026, #133, Nr. 1 (nur der Satz, dass die Systempakete weiter bei jedem Lauf vom Ubuntu-Paketserver kommen) |
+
+---
+
+## 2026-11-20 · Systempakete der Browser auf GitHub aus dem Zwischenspeicher (#396)
+
+**Entscheidung** (Sebastian in der Klärung von #396 am 18.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/396#issuecomment-6980569199), Fragen 1, 2 und 4, und in der [Nachklärung vom 20.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/396#issuecomment-7038971447); maßgeblich ist der Text von #396):
+
+1. **Systempakete im Zwischenspeicher:** Die Systembibliotheken, die jeder Browser für den Rauchtest unter Linux braucht, kommen wie die Browser aus dem Zwischenspeicher von GitHub, in einem Eintrag je Browser, Playwright-Fassung aus `uv.lock` und Stand der auf dem GitHub-Rechner installierten Systempakete. Rechner mit gleichem Paketstand teilen sich den Eintrag, auch wenn ihre Fassungsnummer verschieden ist (Nachklärung: GitHub verteilt die Teile eines Laufs gleichzeitig auf Rechner mit mehreren Fassungsnummern). Ist der Eintrag gefüllt, fragt der Teil den Ubuntu-Paketserver gar nicht an, auch nicht für die Paketlisten. Ersetzt den Eintrag vom 25.10.2026 (#133), Nr. 1, nur im Satz, dass die Systempakete weiter bei jedem Lauf vom Ubuntu-Paketserver kommen; alles andere dort gilt weiter, auch die Ablehnung des fertigen Playwright-Abbilds von Microsoft.
+2. **Leerer Zwischenspeicher wie bisher:** Ist der Eintrag leer, etwa im ersten Lauf nach einem Update des GitHub-Rechners oder von Playwright, holt der Teil die Pakete wie bisher vom Paketserver und füllt danach den Eintrag. Dafür bleibt alles Bisherige: ein Versuch mit 5 Minuten (#276, Nr. 1), dieselbe Meldung, der Neustart nur der gescheiterten Teile (#307, Nr. 3) und der Vermerk in #243.
+3. **Nachweis nur im Pull Request:** ein Lauf mit gefülltem Zwischenspeicher ohne Anfrage an den Paketserver und mit Installation unter 1 Minute; keine Beobachtung der Läufe auf `main` danach.
+
+**Technische Wahl** (KI): Bei leerem Eintrag bleibt der Aufruf `playwright install --with-deps`; vorher bekommt apt einen eigenen Ordner als Ablage für die geladenen Pakete und behält sie dort. Danach kommen sie zusammen mit dem Browser in den Eintrag, gleich nach der Installation und nicht erst am Ende des Teils, damit auch ein roter Test ihn gefüllt zurücklässt (`actions/cache/restore` und `actions/cache/save` aus demselben `actions/cache`, auf denselben Commit festgelegt). Bei gefülltem Eintrag installiert apt die Pakete aus diesem Ordner mit `--no-download`; scheitert das, ist der Teil rot wie bei einer gescheiterten Installation, statt still den Paketserver anzufragen. Mit `dpkg` allein geht es nicht, weil dann die Reihenfolge der Pakete nicht stimmt (lokal in Ubuntu 24.04 ausprobiert; mit apt liefen 182 Pakete ohne Netz in 11 Sekunden durch). Im Schlüssel stehen die Ubuntu-Fassung (`ImageOS`) und ein Fingerabdruck aller installierten Pakete mit ihren Fassungen (`dpkg-query`), damit nach einem Update des Rechners keine Pakete von vorher auf einen neueren kommen; einen ähnlichen Eintrag mit anderem Paketstand nimmt der Teil nie.
+
+**Begründung:** Am 18.11.2026 scheiterte die Installation in zwei Läufen für alle drei Browser und im Neustart erneut für zwei, weil der Paketserver nur rund 237 kB/s lieferte; die Browser selbst kamen schon aus dem Zwischenspeicher. Jeder Neustart kostet über 10 Minuten und nach dem ersten eine Rückfrage an Sebastian. Der Zwischenspeicher ist der kleinste Umbau: kein neuer fremder Server, kein neuer fremder Baustein, dieselbe Browser-Fassung.
+
+**Grenzen:** Ein Teil hängt weiter am Paketserver, wenn es für seinen Paketstand noch keinen Eintrag gibt: nach einem Update des GitHub-Rechners oder von Playwright und auf jedem anders bestückten Rechner. Wie viele Paketstände GitHub gleichzeitig verwendet, ist nicht gemessen. Einträge aus einem Pull Request sieht nur dieser Pull Request selbst; andere sehen nur die Einträge, die Läufe auf `main` angelegt haben. Scheitert die Installation aus dem Zwischenspeicher, nennt die Meldung trotzdem den Paketserver als häufigsten Grund. Ob die Installation auf GitHub ohne Paketserver und unter 1 Minute geht, zeigt nur ein Lauf dort; `tests/test_pruefung_auf_github.py` prüft, was in `ci.yml` steht.
+
+**Umsetzung:** `.github/workflows/ci.yml`, `tests/test_pruefung_auf_github.py`.
 
 ---
 

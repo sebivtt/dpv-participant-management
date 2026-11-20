@@ -24,6 +24,12 @@ Issue #349 (17.11.2026): Ist ein Rauchtest rot, liegen am Lauf die Aufzeichnung 
 Protokoll von Keycloak zum Herunterladen (Belege für die seltenen Hänger beim Anmelden). Die Datenbank
 läuft auf GitHub, im Leistungstest und lokal in derselben festen Fassung wie in der Testumgebung.
 
+Issue #396 (20.11.2026): Auch die Systembibliotheken, die jeder Browser unter Linux braucht, kommen in den
+Zwischenspeicher, zusammen mit dem Browser in einem Eintrag je Browser, Playwright-Fassung und Stand der
+installierten Systempakete des GitHub-Rechners. Ist der Eintrag gefüllt, fragt der Teil den Ubuntu-Paketserver gar nicht an; ist er leer,
+installiert er wie bisher und füllt danach den Eintrag. Ob das auf GitHub ohne Paketserver und unter
+1 Minute geht, belegt ein Lauf im Pull Request.
+
 Diese Tests sorgen dafür, dass das nicht still aus ci.yml verschwindet. Ob GitHub es
 tatsächlich so ausführt, zeigt erst ein Lauf dort.
 """
@@ -94,12 +100,43 @@ def _condition(step: dict) -> str:
     return " ".join(str(step.get("if", "")).split())
 
 
+def _restore() -> dict:
+    restores = [step for step in _steps() if str(step.get("uses", "")).startswith("actions/cache/restore@")]
+    assert len(restores) == 1, [step.get("name") for step in restores]
+    return restores[0]
+
+
+def _save() -> dict:
+    saves = [step for step in _steps() if str(step.get("uses", "")).startswith("actions/cache/save@")]
+    assert len(saves) == 1, [step.get("name") for step in saves]
+    return saves[0]
+
+
+def _zweige() -> tuple[str, str]:
+    """Die beiden Zweige der Installation: Eintrag im Zwischenspeicher gefüllt und leer (#396)."""
+    run = _install()["run"]
+    kopf = f'if [ "${{{{ steps.{_restore()["id"]}.outputs.cache-hit }}}}" = true ]; then'
+    assert run.startswith(kopf + "\n"), run.splitlines()[0]
+    gefuellt, rest = run.removeprefix(kopf).split("\nelse\n")
+    leer, ende = rest.rsplit("\nfi", 1)
+    assert ende.strip() == ""
+    return gefuellt, leer
+
+
+def _befehle(skript: str) -> list[str]:
+    """Die Zeilen eines Skripts ohne Kommentare."""
+    return [zeile.strip() for zeile in skript.splitlines() if zeile.strip() and not zeile.strip().startswith("#")]
+
+
 def test_browser_werden_in_genau_einem_schritt_ohne_weitere_versuche_installiert():
     install = _install()
 
     assert install["name"] == INSTALL_NAME
     # Auch keine Wiederholung innerhalb des Schritts und kein zweiter Aufruf an anderer Stelle.
-    assert install["run"].strip() == INSTALL_COMMAND
+    befehle = _befehle(install["run"])
+    assert not [zeile for zeile in befehle if re.match(r"(for|while|until)\b", zeile)], befehle
+    # Bei leerem Zwischenspeicher genau der Aufruf wie bisher, und nur dort (#396).
+    assert [zeile for zeile in befehle if "--with-deps" in zeile] == [INSTALL_COMMAND]
     assert "uses" not in install
     # Einzige Bedingung: Der Teil hat einen Browser (#307); sonst gibt es nichts zu installieren.
     assert _condition(install) == BROWSER_CONDITION
@@ -131,24 +168,90 @@ def test_scheitert_die_installation_ist_der_lauf_rot_mit_klarer_meldung():
     assert _index(install) + 1 == _index(step) < _index(_tests())
 
 
-def test_browser_kommen_aus_dem_zwischenspeicher_passend_zur_playwright_fassung():
-    caches = [step for step in _steps() if str(step.get("uses", "")).startswith("actions/cache@")]
+def _version_step() -> dict:
+    return next(step for step in _steps() if "playwright" in str(step.get("id", "")) and "run" in step)
 
-    assert len(caches) == 1
-    cache = caches[0]
-    # Wie die anderen fremden Bausteine auf eine feste Fassung (Commit) festgelegt.
-    assert re.fullmatch(r"actions/cache@[0-9a-f]{40}", cache["uses"])
-    assert cache["with"]["path"] == "~/.cache/ms-playwright"
+
+def test_browser_und_systempakete_kommen_aus_dem_zwischenspeicher_je_browser_playwright_und_paketstand():
+    """#396, Nr. 1 und 2: ein Eintrag je Browser, Playwright-Fassung aus uv.lock und Paketstand des GitHub-Rechners."""
+    restore = _restore()
+    version_step = _version_step()
+
+    # Wie die anderen fremden Bausteine auf eine feste Fassung (Commit) festgelegt; nur actions/cache.
+    assert re.fullmatch(r"actions/cache/restore@[0-9a-f]{40}", restore["uses"])
+    assert not [step for step in _steps() if str(step.get("uses", "")).startswith("actions/cache@")]
+    assert restore["with"]["path"].split() == ["~/.cache/ms-playwright", "~/systempakete"]
     # Der Schlüssel enthält die Playwright-Fassung, die uv aus uv.lock installiert hat.
-    version_step = next(step for step in _steps() if "playwright" in str(step.get("id", "")) and "run" in step)
     assert "--locked" in version_step["run"]
     assert "version('playwright')" in version_step["run"]
-    assert f"steps.{version_step['id']}.outputs.version" in cache["with"]["key"]
+    assert f"steps.{version_step['id']}.outputs.version" in restore["with"]["key"]
+    # Und der Stand der installierten Systempakete, damit nach einem Update des Rechners keine veralteten
+    # Pakete auf einen neueren kommen; gleich bestückte Rechner mit verschiedener Fassungsnummer teilen
+    # sich den Eintrag (#396, Nr. 1, Nachklärung vom 20.11.2026).
+    assert "$ImageOS" in version_step["run"]
+    assert not [zeile for zeile in _befehle(version_step["run"]) if "ImageVersion" in zeile]
+    fingerabdruck = [zeile for zeile in _befehle(version_step["run"]) if "dpkg-query" in zeile]
+    assert len(fingerabdruck) == 1, version_step["run"]
+    assert "${Version}" in fingerabdruck[0] and "sha256sum" in fingerabdruck[0]
+    assert f"steps.{version_step['id']}.outputs.abbild" in restore["with"]["key"]
     # Je Browser ein eigener Eintrag, weil jeder Teil nur seinen Browser installiert (#307).
-    assert "${{ matrix.browser }}" in cache["with"]["key"]
-    assert _condition(cache) == _condition(version_step) == BROWSER_CONDITION
+    assert "${{ matrix.browser }}" in restore["with"]["key"]
+    # Nur der genau passende Eintrag, nie ein ähnlicher mit anderer Fassung.
+    assert "restore-keys" not in restore["with"]
+    assert _condition(restore) == _condition(version_step) == BROWSER_CONDITION
     sync = next(step for step in _steps() if step.get("run") == "uv sync --locked")
-    assert _index(sync) < _index(version_step) < _index(cache) < _index(_install())
+    assert _index(sync) < _index(version_step) < _index(restore) < _index(_install())
+
+
+def test_mit_gefuelltem_zwischenspeicher_fragt_der_teil_den_paketserver_nicht_an():
+    """#396, Nr. 1: kein Aufruf, der den Ubuntu-Paketserver anfragt, auch nicht für die Paketlisten."""
+    gefuellt, _ = _zweige()
+    befehle = _befehle(gefuellt)
+    installieren = [zeile for zeile in befehle if "apt-get install" in zeile]
+
+    assert len(installieren) == 1, befehle
+    assert "--no-download" in installieren[0]
+    assert '"$HOME/systempakete"/*.deb' in installieren[0]
+    for verboten in ("--with-deps", "install-deps", "apt-get download"):
+        assert not [zeile for zeile in befehle if verboten in zeile], (verboten, befehle)
+    # Auch keine Paketlisten, in keiner Schreibweise (Befund B2 der unabhängigen Prüfung).
+    assert not [zeile for zeile in befehle if re.search(r"\bapt(-get)?\b.*\bupdate\b", zeile)], befehle
+    # Scheitert die Installation aus dem Zwischenspeicher, ist der Teil rot, statt still weiterzumachen.
+    assert not [zeile for zeile in befehle if "||" in zeile], befehle
+    # Der Browser in genau der Fassung zu Playwright aus uv.lock (#396, Nr. 2); ist er schon da, lädt das nichts.
+    assert "uv run --locked playwright install ${{ matrix.browser }}" in befehle
+
+
+def test_mit_leerem_zwischenspeicher_installiert_der_teil_wie_bisher_und_behaelt_die_pakete():
+    """#396, Nr. 3: wie heute vom Paketserver; apt legt die geladenen Pakete für den Zwischenspeicher ab."""
+    _, leer = _zweige()
+    befehle = _befehle(leer)
+    installieren = befehle.index(INSTALL_COMMAND)
+    einstellung = [i for i, zeile in enumerate(befehle) if "Dir::Cache::Archives" in zeile]
+    kopieren = [i for i, zeile in enumerate(befehle) if "$HOME/systempakete" in zeile and ".deb" in zeile]
+
+    assert len(einstellung) == 1 and einstellung[0] < installieren, befehle
+    assert "Keep-Downloaded-Packages" in befehle[einstellung[0]]
+    assert len(kopieren) == 1 and installieren < kopieren[0], befehle
+    # Ein gescheitertes Kopieren macht den Schritt rot, statt einen unvollständigen Eintrag zu speichern
+    # (Befund V1 der unabhängigen Prüfung): „-exec … +“ gibt den Fehler weiter, „-exec … \;“ nicht.
+    assert befehle[kopieren[0]].endswith("+"), befehle[kopieren[0]]
+
+
+def test_der_eintrag_wird_gleich_nach_erfolgreicher_installation_gefuellt():
+    """#396, Nr. 3: Ist der Eintrag leer, füllt ihn der Teil, sobald die Installation geklappt hat."""
+    restore, save, install = _restore(), _save(), _install()
+
+    assert save["uses"].split("@")[1] == restore["uses"].split("@")[1]
+    assert save["with"]["path"] == restore["with"]["path"]
+    assert save["with"]["key"] == f"${{{{ steps.{restore['id']}.outputs.cache-primary-key }}}}"
+    assert _condition(save) == (
+        f"{BROWSER_CONDITION} && steps.{install['id']}.outcome == 'success' "
+        f"&& steps.{restore['id']}.outputs.cache-hit != 'true'"
+    )
+    # Direkt nach der Meldung zur gescheiterten Installation, vor den Prüfungen: Auch ein roter Test
+    # lässt den Eintrag gefüllt zurück.
+    assert _index(install) + 2 == _index(save) < _index(_tests())
 
 
 # Fester Rest je Teil außer Installation und Prüfungen (#276): Vorlauf bis zur Installation bis
