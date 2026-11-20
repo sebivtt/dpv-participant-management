@@ -536,7 +536,6 @@ def test_ag7_gleichzeitig_gespeichert_gelingt_genau_eine_aenderung():
     assert (lager.name, lager.location, lager.version) == ("Pfingstlager 2028", "Burg Ludwigstein", 2)
 
 
-
 # ---------- Doppelklick auf „Speichern“ (#391) ----------
 #
 # DK2, DK3, DKV2 und DKG2 verweisen auf die Szenarien vom 17.11.2026
@@ -602,6 +601,7 @@ def test_dkg2_doppelklick_ueberspringt_die_nachfrage_zur_dauer_nicht(org):
         assert field_errors(_tree(response)) == {"end": "Die Veranstaltung dauert 41 Tage. Stimmt das?"}
     lager.refresh_from_db()
     assert (lager.end, lager.version) == (date(2028, 7, 22), 1)
+
 
 def test_ag2_eine_uhrzeit_mit_sekunden_blockiert_spaeter_nicht_den_namen(org, monkeypatch):
     """Unabhängige Prüfung, V1: Am Browser vorbei mit Sekunden gespeichert, zeigt der Dialog nur Stunde und Minute.

@@ -481,9 +481,10 @@ def test_bg1_doppelklick_auf_weiter_ergibt_nur_einen_entwurf(org):
     assert first.url == second.url == summary_address(Event.objects.get())
 
 
-
 def test_doppelklick_auf_weiter_nach_zurueck_fuehrt_zur_zusammenfassung(org, entwurf):
-    """Risikovariante zu #391: Schritt 1 eines Entwurfs speichert über dieselbe Funktion wie der Stift (#380, Nr. 4).
+    """Risikovariante zu #391: Schritt 1 eines Entwurfs speichert über dieselbe Funktion wie der Stift.
+
+    Grundlage ist der Eintrag zu #380 in `docs/entscheidungen.md`, „Technische Wahl“, Nr. 4.
 
     Die Regel „gleiche Angaben bei älterem Stand gelten als gespeichert“ (#391, DK2) gilt darum auch hier: Der
     zweite Klick auf „Weiter“ führt zur Zusammenfassung statt zu „… wurde inzwischen geändert“.
@@ -498,6 +499,7 @@ def test_doppelklick_auf_weiter_nach_zurueck_fuehrt_zur_zusammenfassung(org, ent
     assert first.url == second.url == summary_address(entwurf)
     entwurf.refresh_from_db()
     assert (entwurf.location, entwurf.version) == ("Zeltplatz Moor", 2)
+
 
 @pytest.mark.rechtematrix("VA-06")
 def test_bg2_doppelklick_auf_entwurf_loeschen_fuehrt_ohne_fehler_zur_liste(org, sommerfahrt):

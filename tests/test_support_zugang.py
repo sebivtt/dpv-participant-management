@@ -266,7 +266,6 @@ def test_s3_im_zugang_sieht_max_walhall_wie_wanda_mit_protokoll_je_seite(org):
     ]
 
 
-
 @pytest.mark.rechtematrix("SZ-03")
 def test_dk4_doppelklick_im_zugang_ergibt_genau_einen_eintrag_aendern(org):
     """DK4 aus den Szenarien zu #391 vom 17.11.2026 (Doppelklick auf „Speichern“)."""
@@ -294,6 +293,7 @@ def test_dkv1_max_ohne_zugang_schickt_lenas_gespeicherte_angaben_und_bekommt_nic
         assert "gespeichert" not in response.content.decode()
     assert ManagedPerson.objects.get(pk=org.lena.pk).version == 1
     assert AdminAccess.objects.count() == 0
+
 
 @pytest.mark.rechtematrix("SZ-03", "SZ-05", "PK-13")
 def test_s4_max_findet_otto_und_nimmt_ihn_auf(org):

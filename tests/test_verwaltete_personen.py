@@ -790,7 +790,6 @@ def test_mg7_gleichzeitig_abgeschickt_entsteht_lena_nur_einmal():
     assert ManagedPerson.objects.filter(first_name="Lena").count() == 1
 
 
-
 # ---------- Doppelklick auf „Speichern“ (#391) ----------
 #
 # DK1, DK3, DKV1 und DKG1 verweisen auf die Szenarien vom 17.11.2026
@@ -861,6 +860,7 @@ def test_dkg1_wanda_speichert_dasselbe_zuerst_und_fiete_sieht_gespeichert(org, l
     assert short_notices(fiete.get(response.url)) == [SAVED]
     lena.refresh_from_db()
     assert (lena.birth_date, lena.version) == (date(2015, 5, 15), 2)
+
 
 def test_mg8_die_falken_lassen_sich_mit_lena_nicht_loeschen(org, lena):
     with pytest.raises(ProtectedError):
