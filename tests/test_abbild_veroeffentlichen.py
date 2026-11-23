@@ -112,7 +112,7 @@ def test_jeder_stand_bekommt_eine_eigene_kennung_und_latest_zeigt_auf_den_neuest
     """Der Server startet immer eine feste Version, nie „latest“; „latest“ zeigt ihm nur, welche die neueste ist."""
     version = next(step for step in _steps() if step.get("id") == "version")
     meta = _schritt("docker/metadata-action")
-    tags = meta["with"]["tags"].split()
+    tags = [zeile.strip() for zeile in meta["with"]["tags"].splitlines() if zeile.strip()]
 
     # Datum und Laufnummer dieses Ablaufs: eindeutig und aufsteigend.
     assert "date -u +%Y.%m.%d" in version["run"]
