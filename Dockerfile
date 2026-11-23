@@ -1,5 +1,6 @@
 # Bauvorlage des Container-Abbilds (#58): das Tool mit einem Webserver für den Betrieb.
-# Gebaut wird es aus dem Repo, lokal und auf dem Server (testumgebung/docker-compose.yml).
+# Gebaut wird es aus dem Repo, lokal (testumgebung/docker-compose.yml) und auf GitHub für den
+# Server (.github/workflows/abbild-veroeffentlichen.yml); der Server holt das fertige Abbild.
 # Das Abbild enthält keine Zugangsdaten; die kommen beim Start aus der Umgebungsdatei.
 
 # Grundabbilder mit fester Fassung und Prüfsumme, damit jeder Bau dieselbe Grundlage hat (#324);
