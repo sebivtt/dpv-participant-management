@@ -37,6 +37,7 @@ jobs:
     # Dazu nur, wenn der geprüfte Stand noch der neueste von main ist (bei diesem Auslöser ist github.sha
     # der neueste Stand): Wird „Prüfungen“ für einen älteren Stand neu gestartet und grün, würde „latest“
     # sonst auf ihn zurückspringen, und der Server liefe mit altem Code auf einer neueren Datenbank.
+    # Kommt ein neuer Stand, bevor GitHub das Ende der Prüfungen meldet, wird erst er veröffentlicht.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -56,6 +57,16 @@ jobs:
           # Genau der Stand, dessen Prüfungen grün waren.
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
+      # Wird dieser Ablauf selbst neu gestartet, bleibt github.sha der damalige Stand von main, und die
+      # Bedingung oben hilft nicht. Deshalb hier, vor dem Hochladen, der Stand von main jetzt; ohne Zugang,
+      # weil das Repo öffentlich ist (ist es das nicht, bricht der Lauf ab und veröffentlicht nichts).
+      - name: Nur der neueste Stand von main
+        run: |
+          neuester="$(git ls-remote "https://github.com/${{ github.repository }}.git" refs/heads/main | cut -f1)"
+          if [ "$neuester" != "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "::error::Nicht veröffentlicht: main steht inzwischen auf ${neuester:-unbekannt}, geprüft war ${{ github.event.workflow_run.head_sha }}. Diesen Lauf nicht neu starten; der neueste Stand bekommt seinen eigenen."
+            exit 1
+          fi
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
@@ -70,16 +81,18 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.ABBILD }}
-          # <Version>: das, was der Server startet; wird nie überschrieben.
-          # sha-<Commit>: zum Nachsehen, welcher Stand in welcher Version steckt.
+          # <Version>: das, was der Server startet; nie mit einem anderen Stand überschrieben.
+          # sha-<Commit>: zum Nachsehen, welcher Stand in welcher Version steckt. Aus dem geprüften Stand,
+          # nicht aus github.sha, das bei diesem Auslöser der neueste Stand von main ist.
           # latest: nur ein Zeiger auf die neueste Version, den der Server abfragt.
           tags: |
             type=raw,value=${{ steps.version.outputs.version }}
-            type=sha,format=long
+            type=raw,value=sha-${{ github.event.workflow_run.head_sha }}
             type=raw,value=latest
           # Die Version steht im Abbild selbst; daran erkennt der Server, welche Version „latest“ ist.
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
       # Ohne Zwischenspeicher bei GitHub: Der ist je Repo begrenzt, und ein Bau-Zwischenspeicher würde
       # die Browser der Prüfungen (#396) verdrängen. Ein Bau dauert ohne ihn nur etwas länger.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
