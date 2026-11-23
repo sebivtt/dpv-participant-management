@@ -213,7 +213,7 @@ Spätere Verweise auf einen Schritt mit Zahl in dieser Datei meinen die Liste un
 
 ## Testumgebung im Container (Mac)
 
-So läuft das Tool auf deinem Mac genauso wie später in der Testumgebung auf dem Server des DPV (#58): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
+So läuft das Tool auf deinem Mac mit demselben Abbild wie in der Testumgebung auf dem Server des DPV (#58; dort mit der Datenbank des Servers, Abschnitt „Testumgebung auf dem Server“): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
 
 **Einmalig einrichten**
 
@@ -249,6 +249,105 @@ T6. Nur bei Bedarf: neu anfangen. Das löscht alle Daten der Testumgebung, nicht
    docker compose -f testumgebung/docker-compose.yml --profile lokal down --volumes
    ```
    Danach: je Container eine Zeile `Removed`, dazu `Volume dpv-test_daten Removed`.
+
+## Testumgebung auf dem Server
+
+Die Testumgebung läuft auf dem Server des DPV unter https://anmeldetool.scout-tools.de/, mit HTTPS und offen erreichbar, wie später das echte Tool (#59). Erkennbar ist sie am gelben Band „Testumgebung“ auf jeder Seite; hinein gehören nur erfundene Daten. Angemeldet wird über den Test-Realm `dpv-test` (Abschnitt „Test-Realm im Keycloak des DPV“).
+
+**Wie ein neuer Stand ankommt:** Nach jedem grünen Stand von `main` legt GitHub das Abbild des Tools als neue Version in der GitHub Container Registry ab, unter `ghcr.io/sebivtt/dpv-participant-management` (`.github/workflows/abbild-veroeffentlichen.yml`, #302). Eine Version heißt nach Datum und Nummer des Laufs „Abbild veröffentlichen“, etwa `2026.11.24-7`. Der Server fragt regelmäßig nach einer neuen Version, sichert vorher die Datenbank, startet die neue Version und startet wieder die vorige, wenn die neue nicht hochkommt. Nach einem Neustart des Servers und nach dem wöchentlichen Ausrollen des DPV startet die Testumgebung von selbst wieder. Das alles richtet der DPV-Admin ein; wie, steht im Repo des DPV-Servers, Abschnitt [„Anmeldetool: Image-Pipeline“](https://github.com/dpvonline/azure-docker#anmeldetool-image-pipeline). GitHub hat keinen Zugang zum Server, die KI auch nicht.
+
+Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Für die Arbeit auf dem Server gilt:
+
+- Arbeite nur mit der Testumgebung, also nur mit Diensten, deren Name mit `anmeldetool` beginnt. Dein Zugang erlaubt mehr; er lässt sich nicht auf die Testumgebung beschränken.
+- Im Ordner auf dem Server liegen alle Dienste des DPV, auch Keycloak. Ein Befehl ohne Dienstnamen wirkt auf alle. Darum nie `docker compose down`, nie `up`, `stop` oder `restart` ohne `anmeldetool` dahinter und nie `--volumes`.
+- Benutzername, Adresse des Servers und die Schlüsseldatei stehen nur in deinem Passwortmanager, nie im Repo, in Issues oder Chats. In den Befehlen hier steht dafür `BENUTZER`, `SERVER` und `SCHLUESSEL`.
+- Auszüge aus Logs gehören nicht in KI-Werkzeuge.
+
+**Was der Admin einrichtet** (einmalig, im Repo des DPV-Servers)
+
+Die Compose-Datei mit dem Tool und dem Dienst zum Aufräumen der Sitzungen, den Eintrag in der `Caddyfile`, den DNS-Eintrag, die Datenbank `anmeldetool` mit eigenem Benutzer im gemeinsamen PostgreSQL, die geheimen Werte im Key Vault mit eigener Datei für das Tool und den regelmäßigen Abruf. Was er dafür aus diesem Repo braucht: welche Einstellungen das Tool kennt und was jede bedeutet, steht in `testumgebung/.env.example`; was auf dem Server dazu gilt, auch zum Log der Datenbank, in `docs/betrieb.md`, Abschnitt „Beim Einrichten auf dem Server“. Das Client-Secret liest er selbst aus Keycloak (K5).
+
+**Einmalig in Keycloak** (Sebastian, ohne Terminal)
+
+S1. Im Abschnitt „Test-Realm im Keycloak des DPV“ die Schritte K4 und K6 bis K8: Testdomain im Client eintragen und die Passwörter der vier Konten setzen.
+S2. Das Konto für den ersten Admin wie in K9 anlegen: bei „Username“ `admin.test`, bei „Email“ `admin.test@example.org`, bei „First name“ `Ada`, bei „Last name“ `Test`; Passwort wie in K6 und K7, nur im Passwortmanager.
+   Danach: Unter „Users“ stehen fünf Konten.
+
+**Am Server anmelden** (im Terminal des Mac)
+
+S3. Nur einmal: die Schlüsseldatei, die du vom Admin bekommen hast, nur für dich lesbar machen; ohne das lehnt `ssh` sie ab. `SCHLUESSEL` durch ihren Namen ersetzen, sie liegt im Ordner `.ssh` in deinem Benutzerordner.
+   ```bash
+   chmod 600 ~/.ssh/SCHLUESSEL.pem
+   ```
+   Danach: keine Ausgabe.
+S4. Am Server anmelden; `BENUTZER` und `SERVER` aus dem Passwortmanager einsetzen.
+   ```bash
+   ssh -i ~/.ssh/SCHLUESSEL.pem BENUTZER@SERVER
+   ```
+   Danach: eine Begrüßung von Ubuntu und eine Eingabezeile mit dem Namen des Servers. Beim ersten Mal fragt `ssh`, ob du dem Server vertraust; mit `yes` bestätigen. Steht dort nach einer Weile `Connection timed out`, ist dein Internetanschluss für den Server nicht freigegeben; das trägt der Admin ein.
+S5. In den Ordner mit den Diensten des DPV wechseln (laut Repo des DPV-Servers `/opt/dpv/compose`). Alle Befehle unten laufen hier.
+   ```bash
+   cd /opt/dpv/compose
+   ```
+   Danach: keine Ausgabe.
+
+Fragt `sudo` nach einem Passwort, ist es das deines Zugangs zum Server aus dem Passwortmanager. Abmelden vom Server mit `exit`.
+
+**Welcher Stand läuft** (nach S4 und S5)
+
+S6. Die Dienste der Testumgebung anzeigen.
+   ```bash
+   sudo docker compose ps anmeldetool anmeldetool-aufraeumen
+   ```
+   Danach: zwei Zeilen. In der Spalte „IMAGE“ steht `ghcr.io/sebivtt/dpv-participant-management:` und die Version, die läuft, etwa `2026.11.24-7`; in der Spalte „STATUS“ beim Tool `Up …` mit `(healthy)`. Welcher Commit in einer Version steckt, steht auf GitHub: im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen; bei jeder Version steht dort zusätzlich `sha-` und die Kennung des Commits. Zeigt der Befehl keine Zeile oder `no such service`, hat der Admin das Tool noch nicht gestartet.
+S7. Nur bei Bedarf: die letzten Zeilen des Logs des Tools ansehen.
+   ```bash
+   sudo docker compose logs --tail 50 anmeldetool
+   ```
+   Danach: u. a. `Applying ... OK` oder `No migrations to apply.` und `Booting worker`. Startet das Tool nicht, weil eine Einstellung unsicher ist, steht dort je Problem eine Zeile `Unsichere Einstellung für den Server: …` (`docs/betrieb.md`, Startprüfung); das behebt der Admin.
+
+**Einmalig: Login prüfen, erster Admin und Testdaten** (sobald S6 das Tool mit `(healthy)` zeigt)
+
+S8. Im Browser https://anmeldetool.scout-tools.de/ öffnen.
+   Danach: die Login-Seite mit dem gelben Band „Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.“ und dem Link „Noch kein Konto? Registrieren“. Als `erika.testfrau` anmelden; danach „Hallo Erika!“ mit Band. Das ist die Prüfung des Logins von Hand (`docs/betrieb.md`, „Hinweis auf HTTPS“). Wenn nicht:
+   - Der Browser meldet zu viele Weiterleitungen: Die `Caddyfile` setzt `X-Forwarded-Proto` nicht (Admin).
+   - Eine Fehlerseite mit „502“: Caddy erreicht das Tool nicht; S6 zeigt, ob es läuft.
+   - Keycloak meldet `Invalid parameter: redirect_uri`: K4 prüfen.
+   - Ein Fehler nach der Rückkehr von Keycloak: Das Client-Secret im Key Vault stimmt nicht (Admin).
+S9. Nacheinander mit allen fünf Konten aus S1 und S2 einmal anmelden und wieder abmelden: `erika.testfrau`, `max.testmann`, `ohne.nachname`, `ohne.name`, `admin.test`.
+   Danach: jeweils „Hallo …“ mit Band; bei `ohne.name` nur „Hallo!“.
+S10. Auf dem Server (S4, S5) die Testdaten anlegen (Abschnitt „Testdaten anlegen“; jeder Lauf löscht vorher alles außer den Konten).
+   ```bash
+   sudo docker compose exec anmeldetool python manage.py testdata
+   ```
+   Danach: `Testdaten angelegt: 11 Organisationen, …` wie in D5, ohne die Zeile `Ohne Rolle, weil noch nie im Tool angemeldet: …`. Steht sie da, fehlt ein Konto aus S9.
+S11. `admin.test` zum Admin ernennen (Abschnitt „Admins ernennen und entfernen“).
+   ```bash
+   sudo docker compose exec anmeldetool python manage.py admin grant admin.test
+   ```
+   Danach: `admin.test ist jetzt Admin.` Jeder spätere Lauf von S10 behält ihn als Admin.
+
+Jeder andere Befehl aus diesem README, der lokal mit `uv run --env-file .env python manage.py` beginnt, heißt auf dem Server (nach S4 und S5) `sudo docker compose exec anmeldetool python manage.py`, z. B. `sudo docker compose exec anmeldetool python manage.py association list`.
+
+**Nach einem übernommenen Pull Request** (der neue Stand kommt von selbst)
+
+S12. Auf GitHub im Repo oben „Actions“ öffnen. Erst wird „Prüfungen“ für `main` grün, danach „Abbild veröffentlichen“.
+   Danach: Nach einigen Minuten ist der neueste Lauf „Abbild veröffentlichen“ grün. Seine Nummer (etwa `#7`) ist der zweite Teil der neuen Version. Ist er rot, wird nichts veröffentlicht, und der Server bleibt beim vorigen Stand.
+S13. Einige Minuten später S6 wiederholen.
+   Danach: In der Spalte „IMAGE“ steht die neue Version. Steht dort nach einer halben Stunde noch die alte, ist die neue nicht hochgekommen, und der Server ist beim vorigen Stand geblieben; den Grund zeigt S7, das Protokoll des Abrufs hat der Admin. Behoben wird es mit einem neuen Pull Request.
+
+**Früheren Stand wieder einspielen** (nur bei Bedarf; nicht ausprobiert)
+
+Kommt eine neue Version nicht hoch, startet der Server von selbst wieder die vorige. Diese Schritte sind für den Fall, dass sie hochkommt, aber etwas Wichtiges nicht mehr geht.
+
+S14. Die vorige Version heraussuchen: auf GitHub im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen und die Version vor der, die S6 zeigt, notieren, etwa `2026.11.24-6`.
+S15. Auf dem Server (S4, S5) diese Version starten; die Version aus S14 einsetzen.
+   ```bash
+   sudo ANMELDETOOL_VERSION=2026.11.24-6 docker compose up -d anmeldetool anmeldetool-aufraeumen
+   ```
+   Danach: Zeilen mit `anmeldetool` und `Started` oder `Running`; S6 zeigt danach diese Version. Meldet `sudo`, dass du diese Angabe nicht setzen darfst (`not allowed to set the following environment variables`), führt der Admin den Befehl aus.
+
+Das hält, bis eine neuere Version kommt, der Server neu startet oder der DPV wöchentlich ausrollt; danach läuft wieder die zuletzt von selbst gestartete Version. Dauerhaft behoben ist es erst mit einem neuen Pull Request. Hat die neuere Version die Datenbank verändert (in ihrem Pull Request unter „Datenmodell oder Rechte“ genannt), startet die vorige womöglich nicht oder zeigt Fehler; dann spielt der Admin die Sicherung von vor dem Ausrollen zurück (Repo des DPV-Servers).
 
 ## Testdaten anlegen
 
@@ -309,15 +408,15 @@ L2. Den Leistungstest starten.
 
 Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen, dazu die Veranstaltung „Probe-Bundeslager 2028“ mit 40 Anmeldungen, je Probestamm eine mit allen Personen des Stamms und seiner Gruppen.` Anmelden kann sich mit diesen Konten niemand; die Veranstaltung sieht `ohne.nachname` als ihre Leitung. Ein Lauf ohne Zusatz entfernt die Massendaten wieder, auch Veranstaltung und Anmeldungen, bis auf die Konten, die dann ohne Rolle bleiben.
 
-Nur einmal, am Ende von P3: Messung von Hand in der Testumgebung auf dem Server (#145; am Ende von P2 entfallen, weil es noch keinen Server gab, `docs/entscheidungen.md`, 16.11.2026, #369). Wie die Befehle dort genau heißen, legt #59 fest; bis dahin gelten sie nur für die Testumgebung im Container auf dem Mac (D5) und werden mit #59 nachgeprüft.
+Nur einmal, am Ende von P3: Messung von Hand in der Testumgebung auf dem Server (#145; am Ende von P2 entfallen, weil es noch keinen Server gab, `docs/entscheidungen.md`, 16.11.2026, #369). Der Befehl in L4 läuft auf dem Server nach S4 und S5 im Abschnitt „Testumgebung auf dem Server“.
 
 L3. In der Testumgebung im Browser einmal als `ohne.nachname` anmelden, damit Boreas dort eine Bundesleitung hat, mit dem Konto aus dem Test-Realm dort (Abschnitt „Test-Realm im Keycloak des DPV“).
    Danach: „Hallo“ mit dem gelben Band der Testumgebung.
-L4. Die Testdaten mit den Massendaten anlegen (wie D5, mit Zusatz).
+L4. Die Testdaten mit den Massendaten anlegen (wie S10, mit Zusatz).
    ```bash
-   docker compose -f testumgebung/docker-compose.yml exec tool python manage.py testdata --mass-data
+   sudo docker compose exec anmeldetool python manage.py testdata --mass-data
    ```
-   Danach: wie in D5, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
+   Danach: wie in S10, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
 L5. In Safari zuerst unter „Safari“ → „Einstellungen“ → „Erweitert“ die Funktionen für Webentwickler einschalten. Dann als `ohne.nachname` anmelden, im Menü „Entwickler“ „Webinformationen einblenden“ wählen und dort „Netzwerk“. Nacheinander „Organisation“, die Seite „Probestamm 01“ und auf der Seite „Pfadfinderbund Boreas“ den Dialog „Person mit Konto aufnehmen“ mit einer Suche nach einer Mail öffnen.
    Danach: Je Seite steht in der Liste in der Zeile der Seite selbst unter „Zeit“ die Zeit bis zur Antwort des Servers, und unten die Zeit, bis der Browser die Seite fertig geladen hat. Beide Zahlen je Seite notieren und der KI für `docs/leistungstest.md`, Abschnitt P3, geben. Heißen die Spalten in Safari anders, das der KI sagen.
 
@@ -424,10 +523,10 @@ K2. In der Verwaltung von Keycloak links „Manage realms“ öffnen, dann „Cr
 K3. Unter „Resource file“ auf „Browse...“ klicken, die Datei aus K1 auswählen und „Create“ klicken.
    Danach: Unter „Manage realms“ steht `dpv-test`. Darin stehen unter „Users“ genau vier Konten: `erika.testfrau`, `max.testmann`, `ohne.name` und `ohne.nachname`.
 
-**Einmalig, sobald die Testdomain feststeht** (#59)
+**Einmalig für die Testumgebung auf dem Server** (Abschnitt „Testumgebung auf dem Server“)
 
-K4. Im Realm `dpv-test` links „Clients“ öffnen, dann `dpv-anmeldetool`. Im Reiter „Settings“ steht bei „Valid redirect URIs“ und „Valid post logout redirect URIs“ der Platzhalter `https://testdomain-eintragen.invalid`. In beiden Feldern nur diesen Teil durch die Testdomain ersetzen, z. B. `https://anmeldetool-test.example.org`; der Rest (`/anmelden/keycloak/zurueck/` bzw. `/anmelden/`) bleibt. Dann unten „Save“.
-K5. Im selben Client den Reiter „Credentials“ öffnen. Neben „Client Secret“ auf „Copy to clipboard“ klicken und den Wert direkt in die Umgebungsdatei der Testumgebung auf dem Server eintragen (`KEYCLOAK_CLIENT_SECRET`, Anleitung in #59), nirgendwo sonst. Dort gehören außerdem `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL` mit der Adresse des Keycloak des DPV und `/realms/dpv-test` am Ende hinein; was jede Zeile bedeutet und welche dort wegfällt, steht in `testumgebung/.env.example`.
+K4. Im Realm `dpv-test` links „Clients“ öffnen, dann `dpv-anmeldetool`. Im Reiter „Settings“ steht bei „Valid redirect URIs“ und „Valid post logout redirect URIs“ der Platzhalter `https://testdomain-eintragen.invalid`. In beiden Feldern nur diesen Teil durch die Testdomain `https://anmeldetool.scout-tools.de` ersetzen; der Rest (`/anmelden/keycloak/zurueck/` bzw. `/anmelden/`) bleibt. Dann unten „Save“.
+K5. Das Client-Secret aus dem Reiter „Credentials“ dieses Clients liest der Admin selbst aus und legt es im Key Vault ab, zusammen mit den übrigen geheimen Werten des Tools (Repo des DPV-Servers, Abschnitt [„Anmeldetool: Image-Pipeline“](https://github.com/dpvonline/azure-docker#anmeldetool-image-pipeline)). Es geht nicht durch Sebastians Hände. In die Datei des Tools auf dem Server gehören dazu `KEYCLOAK_CLIENT_ID=dpv-anmeldetool` und `KEYCLOAK_REALM_URL=https://auth.dpvonline.de/realms/dpv-test`; was jede Zeile bedeutet und welche dort wegfällt, steht in `testumgebung/.env.example`.
 
 **Einmalig: Passwörter setzen** (Sebastian)
 
