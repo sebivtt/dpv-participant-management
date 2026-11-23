@@ -1,0 +1,20 @@
+# Gerüst (#302): Der Ablauf, der nach grünen „Prüfungen“ auf main das Abbild veröffentlicht.
+# Noch ohne Inhalt; er tut nichts.
+name: Abbild veröffentlichen
+
+on:
+  workflow_run:
+    workflows: ["Prüfungen"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  bauen:
+    name: Abbild bauen und veröffentlichen
+    if: false
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Gerüst (#302)"
