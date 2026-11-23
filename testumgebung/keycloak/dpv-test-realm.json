@@ -1,5 +1,6 @@
 {
   "realm": "dpv-test",
+  "displayName": "Anmeldetool Test",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,

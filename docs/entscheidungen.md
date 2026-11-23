@@ -60,8 +60,22 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Netz der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 2 | 21.10.2026, „Antwort des DPV-Admins …“, „Hinweise der KI“, zweiter Punkt (nur „eigenes Netz“) |
 | Aktualisieren der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 3 | 22.10.2026, „Testumgebung im Container …“ (#37), Nr. 5; 21.10.2026, „Antwort des DPV-Admins …“, „Folge daraus“ (nur dass Sebastian oder der Admin nach Anleitung aktualisieren) |
 | Log der Datenbank auf dem Server | 23.11.2026, #59, „Technische Wahl“, Nr. 1 | 15.11.2026, #324, „Technische Wahl“, Nr. 3 (nur der Satz zum Log des Datenbankservers, für den Server: dort nur für die Datenbank des Tools) |
+| Anzeigename des Test-Realms | 23.11.2026, #63, Nr. 1 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 5 |
+| Keycloak-Fassung des DPV | 23.11.2026, #63, Nr. 2 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 7 (nur dass jede Abweichung von 26.7.5 eine Angleichung braucht) |
 
 ---
+
+## 2026-11-23 · Test-Realm im Keycloak des DPV: Anzeigename, Keycloak-Fassung, Verwaltungskonto (#63)
+
+**Entscheidung** (Sebastian, Klärung von #63 am 15.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/63#issuecomment-6901555534), Frage 6, und am 23.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/63#issuecomment-7108315873), Fragen 4 und 5; maßgeblich ist der Text von #63):
+
+1. **Anzeigename:** Der Test-Realm `dpv-test` behält den Anzeigenamen „Anmeldetool Test“, mit dem Sebastian ihn beim DPV eingerichtet hat (#222, Nachtrag 2); die Importdatei bekommt denselben (Frage 5: „Bleibt (Empfohlen)“). Die Login-Seite von Keycloak zeigt ihn. Ersetzt den Eintrag vom 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 5.
+2. **Keycloak-Fassung:** Maßgeblich ist die Hauptfassung (heute 26.7). Weicht sie beim DPV von der Hauptfassung der lokalen Testumgebung und der Prüfung auf GitHub ab (etwa 26.8 oder 27), werden diese in einem eigenen Issue angeglichen, vorher oder zusammen mit dem Nachweis. Andere Unterfassungen (26.7.x) brauchen keine Angleichung, weil der DPV sie jede Woche automatisch einspielt (#222, Befunde vom 12.11.2026). Die genaue Fassung trägt Sebastian beim Nachweis mit Datum in #38 ein; zeigt die Verwaltung sie ihm mit Rechten nur im Realm `dpv-test` nicht, nennt sie der Admin (Frage 6 vom 15.11.2026: „Hauptfassung 26.7 zählt“). Ersetzt den Eintrag vom 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 7, teilweise: nur dass jede Abweichung von 26.7.5 eine Angleichung braucht.
+3. **Verwaltungskonto:** Sebastians Verwaltungskonto liegt im Realm `dpv-test` selbst. Es bleibt dort; im README steht nur die Regel, sich in der Testumgebung nie damit anzumelden (Frage 4: „Nur Regel im README“). Die Empfehlung der KI war, es vom Admin in den Realm `master` verlegen zu lassen, damit ein Login damit gar nicht erst möglich ist.
+
+**Begründung:** Zu 1: Der Realm ist so eingerichtet; ein Anzeigename macht die Login-Seite des Test-Realms erkennbar. Zu 2: Unterfassungen wechseln jede Woche, eine Angleichung jeder einzelnen wäre nie fertig. Zu 3: Protokoll in #63.
+
+**Umsetzung:** `testumgebung/keycloak/dpv-test-realm.json`, `README.md` (Abschnitt „Testumgebung auf dem Server“, „Nachweis: Login über den Test-Realm“), Tests in `tests/test_testrealm_datei.py`, `tests/test_testrealm_echt.py` und `tests/test_nachweis_login_server.py`.
 
 ## 2026-11-23 · Testumgebung auf dem Server: gemeinsames PostgreSQL, Netz `dpv`, Abbild von GitHub, Abruf durch den Server (#59)
 
