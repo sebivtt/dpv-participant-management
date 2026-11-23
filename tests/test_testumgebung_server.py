@@ -62,13 +62,15 @@ def test_benutzername_und_adresse_des_servers_stehen_nicht_im_repo():
 
 def test_auf_dem_server_nie_den_ganzen_stapel_des_dpv_anhalten():
     """Im Ordner des DPV-Servers wirkt ein Befehl ohne Dienstnamen auf alle Dienste des DPV."""
-    befehle = re.findall(r"^\s*(sudo .*docker compose .*)$", _anleitung(), re.MULTILINE)
+    befehle = re.findall(r"^\s*((?:sudo \S+ )?(?:sudo )?docker compose .*)$", _anleitung(), re.MULTILINE)
 
     assert befehle
     for befehl in befehle:
         assert " down" not in befehl and "--volumes" not in befehl, befehl
-        if re.search(r"\b(up|stop|restart|pull)\b", befehl):
-            assert "anmeldetool" in befehl, befehl
+        teile = befehl.split()
+        if verb := next((teil for teil in teile if teil in ("up", "stop", "restart", "pull", "start")), None):
+            dienste = [teil for teil in teile[teile.index(verb) + 1 :] if not teil.startswith("-")]
+            assert dienste and all(dienst.startswith("anmeldetool") for dienst in dienste), befehl
 
 
 def test_kein_verweis_mehr_auf_spaeter_in_59():
@@ -107,5 +109,7 @@ def test_neuer_eintrag_in_den_entscheidungen_nennt_was_er_ersetzt():
     for ersetzt in ("22.10.2026, „Testumgebung im Container", "21.10.2026, „Antwort des DPV-Admins"):
         assert ersetzt in eintrag.group(1), ersetzt
         assert any(ersetzt in zeile for zeile in zeilen_59), ersetzt
-    for nummer in ("Nr. 3", "Nr. 5", "„Folge daraus“"):
+    for nummer in ("Nr. 3", "Nr. 5", "„Folge daraus“", "„Hinweise der KI“"):
         assert nummer in eintrag.group(1), nummer
+    # Ersetzt wird auch der Hinweis zum eigenen Netz (Akzeptanzkriterium von #59).
+    assert any("eigenes Netz" in zeile for zeile in zeilen_59)

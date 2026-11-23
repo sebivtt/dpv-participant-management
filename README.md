@@ -213,7 +213,7 @@ Spätere Verweise auf einen Schritt mit Zahl in dieser Datei meinen die Liste un
 
 ## Testumgebung im Container (Mac)
 
-So läuft das Tool auf deinem Mac mit demselben Abbild wie in der Testumgebung auf dem Server des DPV (#58; dort mit der Datenbank des Servers, Abschnitt „Testumgebung auf dem Server“): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
+So läuft das Tool auf deinem Mac aus demselben Dockerfile wie das Abbild der Testumgebung auf dem Server des DPV (#58; dort mit der Datenbank des Servers, Abschnitt „Testumgebung auf dem Server“): als **Container**, also als abgeschlossenes Paket aus dem Tool und allem, was es braucht, mit einem Webserver für den Betrieb und einer eigenen Datenbank. Auf jeder Seite steht oben ein gelbes Band „Testumgebung“. Mails gehen nicht raus, nur ein Hinweis darauf steht im Log. Diese Anleitung funktioniert ohne KI; je Schritt genau ein Befehl. Voraussetzungen: Schritte 1 bis 3 und die App „Docker“ läuft (Schritt 6). Das Tool aus Schritt 9 vorher beenden, es braucht dieselbe Adresse.
 
 **Einmalig einrichten**
 
@@ -275,17 +275,27 @@ S2. Das Konto für den ersten Admin wie in K9 anlegen: bei „Username“ `admin
 
 **Am Server anmelden** (im Terminal des Mac)
 
-S3. Nur einmal: die Schlüsseldatei, die du vom Admin bekommen hast, nur für dich lesbar machen; ohne das lehnt `ssh` sie ab. `SCHLUESSEL` durch ihren Namen ersetzen, sie liegt im Ordner `.ssh` in deinem Benutzerordner.
+S3. Nur einmal: den Ordner für Schlüssel anlegen, falls es ihn noch nicht gibt.
+   ```bash
+   mkdir -p ~/.ssh
+   ```
+   Danach: keine Ausgabe.
+S4. Nur einmal: die Schlüsseldatei, die du vom Admin bekommen hast, dorthin verschieben. `SCHLUESSEL` durch ihren Namen ohne `.pem` ersetzen; liegt sie nicht unter „Downloads“, den Ordner anpassen.
+   ```bash
+   mv ~/Downloads/SCHLUESSEL.pem ~/.ssh/
+   ```
+   Danach: keine Ausgabe.
+S5. Nur einmal: die Schlüsseldatei nur für dich lesbar machen; ohne das lehnt `ssh` sie ab.
    ```bash
    chmod 600 ~/.ssh/SCHLUESSEL.pem
    ```
    Danach: keine Ausgabe.
-S4. Am Server anmelden; `BENUTZER` und `SERVER` aus dem Passwortmanager einsetzen.
+S6. Am Server anmelden; `BENUTZER` und `SERVER` aus dem Passwortmanager einsetzen.
    ```bash
    ssh -i ~/.ssh/SCHLUESSEL.pem BENUTZER@SERVER
    ```
-   Danach: eine Begrüßung von Ubuntu und eine Eingabezeile mit dem Namen des Servers. Beim ersten Mal fragt `ssh`, ob du dem Server vertraust; mit `yes` bestätigen. Steht dort nach einer Weile `Connection timed out`, ist dein Internetanschluss für den Server nicht freigegeben; das trägt der Admin ein.
-S5. In den Ordner mit den Diensten des DPV wechseln (laut Repo des DPV-Servers `/opt/dpv/compose`). Alle Befehle unten laufen hier.
+   Danach: eine Begrüßung von Ubuntu und eine Eingabezeile mit dem Namen des Servers. Beim ersten Mal fragt `ssh`, ob du dem Server vertraust; mit `yes` bestätigen. Steht dort nach einer Weile `timed out`, ist dein Internetanschluss für den Server nicht freigegeben; das trägt der Admin ein.
+S7. In den Ordner mit den Diensten des DPV wechseln (laut Repo des DPV-Servers `/opt/dpv/compose`). Alle Befehle unten laufen hier.
    ```bash
    cd /opt/dpv/compose
    ```
@@ -293,59 +303,64 @@ S5. In den Ordner mit den Diensten des DPV wechseln (laut Repo des DPV-Servers `
 
 Fragt `sudo` nach einem Passwort, ist es das deines Zugangs zum Server aus dem Passwortmanager. Abmelden vom Server mit `exit`.
 
-**Welcher Stand läuft** (nach S4 und S5)
+**Welcher Stand läuft** (nach S6 und S7)
 
-S6. Die Dienste der Testumgebung anzeigen.
+S8. Die Dienste der Testumgebung anzeigen.
    ```bash
    sudo docker compose ps anmeldetool anmeldetool-aufraeumen
    ```
-   Danach: zwei Zeilen. In der Spalte „IMAGE“ steht `ghcr.io/sebivtt/dpv-participant-management:` und die Version, die läuft, etwa `2026.11.24-7`; in der Spalte „STATUS“ beim Tool `Up …` mit `(healthy)`. Welcher Commit in einer Version steckt, steht auf GitHub: im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen; bei jeder Version steht dort zusätzlich `sha-` und die Kennung des Commits. Zeigt der Befehl keine Zeile oder `no such service`, hat der Admin das Tool noch nicht gestartet.
-S7. Nur bei Bedarf: die letzten Zeilen des Logs des Tools ansehen.
+   Danach: zwei Zeilen. In der Spalte „IMAGE“ steht `ghcr.io/sebivtt/dpv-participant-management:` und die Version, die läuft, etwa `2026.11.24-7`; in der Spalte „STATUS“ beim Tool `Up …` mit `(healthy)`. Welcher Commit in einer Version steckt, steht auf GitHub: im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen; bei jeder Version steht dort zusätzlich `sha-` und die Kennung des Commits. Zeigt der Befehl keine Zeile oder `no such service`, hat der Admin das Tool noch nicht gestartet, oder sein erster Start ist gescheitert; dann sieht der Admin nach.
+S9. Nur bei Bedarf: die letzten Zeilen des Logs des Tools ansehen.
    ```bash
    sudo docker compose logs --tail 50 anmeldetool
    ```
    Danach: u. a. `Applying ... OK` oder `No migrations to apply.` und `Booting worker`. Startet das Tool nicht, weil eine Einstellung unsicher ist, steht dort je Problem eine Zeile `Unsichere Einstellung für den Server: …` (`docs/betrieb.md`, Startprüfung); das behebt der Admin.
 
-**Einmalig: Login prüfen, erster Admin und Testdaten** (sobald S6 das Tool mit `(healthy)` zeigt)
+**Einmalig: Login prüfen, erster Admin und Testdaten** (sobald S8 das Tool mit `(healthy)` zeigt)
 
-S8. Im Browser https://anmeldetool.scout-tools.de/ öffnen.
+S10. Im Browser https://anmeldetool.scout-tools.de/ öffnen.
    Danach: die Login-Seite mit dem gelben Band „Testumgebung: Hier gibt es nur erfundene Daten. Bitte gib keine echten Angaben ein.“ und dem Link „Noch kein Konto? Registrieren“. Als `erika.testfrau` anmelden; danach „Hallo Erika!“ mit Band. Das ist die Prüfung des Logins von Hand (`docs/betrieb.md`, „Hinweis auf HTTPS“). Wenn nicht:
    - Der Browser meldet zu viele Weiterleitungen: Die `Caddyfile` setzt `X-Forwarded-Proto` nicht (Admin).
-   - Eine Fehlerseite mit „502“: Caddy erreicht das Tool nicht; S6 zeigt, ob es läuft.
+   - Eine Fehlerseite mit „502“: Caddy erreicht das Tool nicht; S8 zeigt, ob es läuft.
    - Keycloak meldet `Invalid parameter: redirect_uri`: K4 prüfen.
    - Ein Fehler nach der Rückkehr von Keycloak: Das Client-Secret im Key Vault stimmt nicht (Admin).
-S9. Nacheinander mit allen fünf Konten aus S1 und S2 einmal anmelden und wieder abmelden: `erika.testfrau`, `max.testmann`, `ohne.nachname`, `ohne.name`, `admin.test`.
+S11. Nacheinander mit allen fünf Konten aus S1 und S2 einmal anmelden und wieder abmelden: `erika.testfrau`, `max.testmann`, `ohne.nachname`, `ohne.name`, `admin.test`.
    Danach: jeweils „Hallo …“ mit Band; bei `ohne.name` nur „Hallo!“.
-S10. Auf dem Server (S4, S5) die Testdaten anlegen (Abschnitt „Testdaten anlegen“; jeder Lauf löscht vorher alles außer den Konten).
+S12. Auf dem Server (S6, S7) die Testdaten anlegen (Abschnitt „Testdaten anlegen“; jeder Lauf löscht vorher alles außer den Konten).
    ```bash
    sudo docker compose exec anmeldetool python manage.py testdata
    ```
-   Danach: `Testdaten angelegt: 11 Organisationen, …` wie in D5, ohne die Zeile `Ohne Rolle, weil noch nie im Tool angemeldet: …`. Steht sie da, fehlt ein Konto aus S9.
-S11. `admin.test` zum Admin ernennen (Abschnitt „Admins ernennen und entfernen“).
+   Danach: `Testdaten angelegt: 11 Organisationen, …` wie in D5, ohne die Zeile `Ohne Rolle, weil noch nie im Tool angemeldet: …`. Steht sie da, fehlt ein Konto aus S11.
+S13. `admin.test` zum Admin ernennen (Abschnitt „Admins ernennen und entfernen“).
    ```bash
    sudo docker compose exec anmeldetool python manage.py admin grant admin.test
    ```
-   Danach: `admin.test ist jetzt Admin.` Jeder spätere Lauf von S10 behält ihn als Admin.
+   Danach: `admin.test ist jetzt Admin.` Jeder spätere Lauf von S12 behält ihn als Admin.
 
-Jeder andere Befehl aus diesem README, der lokal mit `uv run --env-file .env python manage.py` beginnt, heißt auf dem Server (nach S4 und S5) `sudo docker compose exec anmeldetool python manage.py`, z. B. `sudo docker compose exec anmeldetool python manage.py association list`.
+Jeder andere Befehl aus diesem README, der lokal mit `uv run --env-file .env python manage.py` beginnt, heißt auf dem Server (nach S6 und S7) `sudo docker compose exec anmeldetool python manage.py`, z. B. `sudo docker compose exec anmeldetool python manage.py association list`.
 
 **Nach einem übernommenen Pull Request** (der neue Stand kommt von selbst)
 
-S12. Auf GitHub im Repo oben „Actions“ öffnen. Erst wird „Prüfungen“ für `main` grün, danach „Abbild veröffentlichen“.
+S14. Auf GitHub im Repo oben „Actions“ öffnen. Erst wird „Prüfungen“ für `main` grün, danach „Abbild veröffentlichen“.
    Danach: Nach einigen Minuten ist der neueste Lauf „Abbild veröffentlichen“ grün. Seine Nummer (etwa `#7`) ist der zweite Teil der neuen Version. Ist er rot, wird nichts veröffentlicht, und der Server bleibt beim vorigen Stand.
-S13. Einige Minuten später S6 wiederholen.
-   Danach: In der Spalte „IMAGE“ steht die neue Version. Steht dort nach einer halben Stunde noch die alte, ist die neue nicht hochgekommen, und der Server ist beim vorigen Stand geblieben; den Grund zeigt S7, das Protokoll des Abrufs hat der Admin. Behoben wird es mit einem neuen Pull Request.
+S15. Einige Minuten später S8 wiederholen.
+   Danach: In der Spalte „IMAGE“ steht die neue Version. Steht dort nach einer halben Stunde noch die alte, ist die neue nicht hochgekommen, und der Server ist beim vorigen Stand geblieben; den Grund zeigt S16. Behoben wird es mit einem neuen Pull Request.
+S16. Nur bei Bedarf: das Log des Tools der letzten Stunde aus dem Journal des Servers ansehen. Nach einem Rückfall auf den vorigen Stand zeigt S9 nur noch den Container, der jetzt läuft; der Fehlversuch steht nur hier.
+   ```bash
+   sudo journalctl -t dpv-core-anmeldetool-1 --since "1 hour ago" -o cat
+   ```
+   Danach: die Zeilen des Tools wie in S9, auch die des Fehlversuchs, etwa `Unsichere Einstellung für den Server: …`. Mit `q` beenden. Erlaubt dein Zugang `journalctl` nicht, sieht der Admin nach; er hat auch das Protokoll des Abrufs.
 
 **Früheren Stand wieder einspielen** (nur bei Bedarf; nicht ausprobiert)
 
 Kommt eine neue Version nicht hoch, startet der Server von selbst wieder die vorige. Diese Schritte sind für den Fall, dass sie hochkommt, aber etwas Wichtiges nicht mehr geht.
 
-S14. Die vorige Version heraussuchen: auf GitHub im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen und die Version vor der, die S6 zeigt, notieren, etwa `2026.11.24-6`.
-S15. Auf dem Server (S4, S5) diese Version starten; die Version aus S14 einsetzen.
+S17. Die vorige Version heraussuchen: auf GitHub im Repo rechts unter „Packages“ das Paket `dpv-participant-management` öffnen und die Version vor der, die S8 zeigt, notieren, etwa `2026.11.24-6`.
+S18. Auf dem Server (S6, S7) diese Version starten; die Version aus S17 einsetzen.
    ```bash
    sudo ANMELDETOOL_VERSION=2026.11.24-6 docker compose up -d anmeldetool anmeldetool-aufraeumen
    ```
-   Danach: Zeilen mit `anmeldetool` und `Started` oder `Running`; S6 zeigt danach diese Version. Meldet `sudo`, dass du diese Angabe nicht setzen darfst (`not allowed to set the following environment variables`), führt der Admin den Befehl aus.
+   Danach: Zeilen mit `anmeldetool` und `Started` oder `Running`; S8 zeigt danach diese Version; nach etwa 10 Minuten S8 noch einmal: Steht dort wieder die neuere Version, hat der Abruf des Servers sie gerade wieder gestartet, dann S18 wiederholen oder den Admin bitten. Meldet `sudo`, dass du diese Angabe nicht setzen darfst (`not allowed to set the following environment variables`), führt der Admin den Befehl aus.
 
 Das hält, bis eine neuere Version kommt, der Server neu startet oder der DPV wöchentlich ausrollt; danach läuft wieder die zuletzt von selbst gestartete Version. Dauerhaft behoben ist es erst mit einem neuen Pull Request. Hat die neuere Version die Datenbank verändert (in ihrem Pull Request unter „Datenmodell oder Rechte“ genannt), startet die vorige womöglich nicht oder zeigt Fehler; dann spielt der Admin die Sicherung von vor dem Ausrollen zurück (Repo des DPV-Servers).
 
@@ -408,15 +423,15 @@ L2. Den Leistungstest starten.
 
 Die Massendaten zum Ausprobieren im eigenen Tool legt `uv run --env-file .env python manage.py testdata --mass-data` an. Dann steht nach der Zeile aus D4 noch `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: 240 Probe-Organisationen, 2000 erfundene Konten ohne Login und 3000 verwaltete Personen, dazu die Veranstaltung „Probe-Bundeslager 2028“ mit 40 Anmeldungen, je Probestamm eine mit allen Personen des Stamms und seiner Gruppen.` Anmelden kann sich mit diesen Konten niemand; die Veranstaltung sieht `ohne.nachname` als ihre Leitung. Ein Lauf ohne Zusatz entfernt die Massendaten wieder, auch Veranstaltung und Anmeldungen, bis auf die Konten, die dann ohne Rolle bleiben.
 
-Nur einmal, am Ende von P3: Messung von Hand in der Testumgebung auf dem Server (#145; am Ende von P2 entfallen, weil es noch keinen Server gab, `docs/entscheidungen.md`, 16.11.2026, #369). Der Befehl in L4 läuft auf dem Server nach S4 und S5 im Abschnitt „Testumgebung auf dem Server“.
+Nur einmal, am Ende von P3: Messung von Hand in der Testumgebung auf dem Server (#145; am Ende von P2 entfallen, weil es noch keinen Server gab, `docs/entscheidungen.md`, 16.11.2026, #369). Der Befehl in L4 läuft auf dem Server nach S6 und S7 im Abschnitt „Testumgebung auf dem Server“.
 
 L3. In der Testumgebung im Browser einmal als `ohne.nachname` anmelden, damit Boreas dort eine Bundesleitung hat, mit dem Konto aus dem Test-Realm dort (Abschnitt „Test-Realm im Keycloak des DPV“).
    Danach: „Hallo“ mit dem gelben Band der Testumgebung.
-L4. Die Testdaten mit den Massendaten anlegen (wie S10, mit Zusatz).
+L4. Die Testdaten mit den Massendaten anlegen (wie S12, mit Zusatz).
    ```bash
    sudo docker compose exec anmeldetool python manage.py testdata --mass-data
    ```
-   Danach: wie in S10, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
+   Danach: wie in S12, dazu die Zeile `Dazu Massendaten für den Leistungstest im Pfadfinderbund Boreas: …`.
 L5. In Safari zuerst unter „Safari“ → „Einstellungen“ → „Erweitert“ die Funktionen für Webentwickler einschalten. Dann als `ohne.nachname` anmelden, im Menü „Entwickler“ „Webinformationen einblenden“ wählen und dort „Netzwerk“. Nacheinander „Organisation“, die Seite „Probestamm 01“ und auf der Seite „Pfadfinderbund Boreas“ den Dialog „Person mit Konto aufnehmen“ mit einer Suche nach einer Mail öffnen.
    Danach: Je Seite steht in der Liste in der Zeile der Seite selbst unter „Zeit“ die Zeit bis zur Antwort des Servers, und unten die Zeit, bis der Browser die Seite fertig geladen hat. Beide Zahlen je Seite notieren und der KI für `docs/leistungstest.md`, Abschnitt P3, geben. Heißen die Spalten in Safari anders, das der KI sagen.
 
