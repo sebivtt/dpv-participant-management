@@ -73,7 +73,7 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 4. **Testdomain:** `anmeldetool.scout-tools.de`, wie vom Admin vorbereitet, ohne „test“ im Namen; erkennbar ist die Testumgebung am Band (Frage 2).
 5. **Geheime Werte:** Schlüssel des Tools, Datenbank-Passwort und Client-Secret liegen nur im Key Vault und in einer eigenen Datei des Tools auf dem Server, nicht in der gemeinsamen Datei des DPV (#222, 1f). Das Client-Secret liest der Admin selbst aus Keycloak.
 6. **Zugang:** Sebastian hat einen eigenen Zugang zum Server (SSH, `docker` mit `sudo`), der sich nicht auf die Testumgebung beschränken lässt; er arbeitet nur mit der Testumgebung (#222, 1b, „Volle Rechte passt“). Benutzername und Adresse des Servers stehen nicht im öffentlichen Repo.
-7. **Nachweis:** Sebastian geht die Anleitung einmal durch, ohne einen früheren Stand zurückzuspielen; das Zurückspielen steht nur in der Anleitung (Frage 7).
+7. **Nachweis:** Sebastian geht die Anleitung einmal durch, ohne einen früheren Stand zurückzuspielen; das Zurückspielen steht nur in der Anleitung (Frage 7). Der Durchgang gehört zu #63 und geschieht vor dem Übernehmen von dessen Pull Request ([Nachklärung vom 23.11.2026](https://github.com/sebivtt/dpv-participant-management/issues/59#issuecomment-7109793799), Frage 2).
 
 **Technische Wahl** (KI; Nr. 1 bis 3 in der Klärung genannt und von Sebastian mit „Ja, so“ bestätigt, Nr. 4 bis 6 erst beim Umsetzen dazugekommen und nicht von ihm bestätigt):
 
