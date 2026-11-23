@@ -77,13 +77,14 @@ def test_pruefung_auf_passwoerter_findet_ein_eingeschleustes_passwort():
     }
 
 
-def test_realm_heisst_dpv_test_ohne_anzeigenamen():
+def test_realm_heisst_dpv_test_mit_anzeigenamen_anmeldetool_test():
     realm = load_realm()
 
     assert realm["realm"] == "dpv-test"
     assert realm["enabled"] is True
-    # Keine Kennzeichnung (Entscheidung in #38); ohne Anzeigenamen zeigt Keycloak „dpv-test“.
-    assert "displayName" not in realm
+    # Derselbe Anzeigename wie im eingerichteten Realm beim DPV (#63; ersetzt Nr. 5 der Entscheidung
+    # vom 22.10.2026, #38, „kein Anzeigename“). Nur als Text, ohne eigenes HTML.
+    assert realm["displayName"] == "Anmeldetool Test"
     assert "displayNameHtml" not in realm
     # HTTPS ist Pflicht, außer bei Aufrufen vom eigenen Rechner.
     assert realm["sslRequired"] == "external"
