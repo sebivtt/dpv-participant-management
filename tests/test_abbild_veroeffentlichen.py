@@ -86,6 +86,24 @@ def test_ein_neu_gestarteter_lauf_fuer_einen_aelteren_stand_veroeffentlicht_nich
     assert "github.event.workflow_run.head_sha == github.sha" in teile
 
 
+def test_ein_neu_gestarteter_alter_veroeffentlichungslauf_veroeffentlicht_nichts():
+    """Startet jemand diesen Ablauf selbst neu, bleibt `github.sha` der damalige Stand von main (unabhängige
+    Prüfung, M1). Deshalb fragt ein Schritt vor der Anmeldung bei der Registry den Stand von main zur Laufzeit
+    ab und bricht ab, wenn der geprüfte Stand nicht mehr der neueste ist."""
+    login = _steps().index(_schritt("docker/login-action"))
+    pruefung = [
+        step
+        for step in _steps()[:login]
+        if "git ls-remote" in str(step.get("run", "")) and "refs/heads/main" in str(step.get("run", ""))
+    ]
+
+    assert len(pruefung) == 1, [step.get("name") for step in _steps()]
+    run = pruefung[0]["run"]
+    assert "${{ github.event.workflow_run.head_sha }}" in run
+    assert "::error" in run and "exit 1" in run
+    assert "continue-on-error" not in pruefung[0]
+
+
 def test_gebaut_wird_genau_der_gepruefte_commit():
     checkout = _schritt("actions/checkout")
 
@@ -118,8 +136,10 @@ def test_jeder_stand_bekommt_eine_eigene_kennung_und_latest_zeigt_auf_den_neuest
     assert "date -u +%Y.%m.%d" in version["run"]
     assert "${{ github.run_number }}" in version["run"]
     assert "type=raw,value=${{ steps.version.outputs.version }}" in tags
-    # Dazu der Commit, damit sich nachsehen lässt, welcher Stand in welcher Version steckt.
-    assert "type=sha,format=long" in tags
+    # Dazu der geprüfte Commit, damit sich nachsehen lässt, welcher Stand in welcher Version steckt; aus
+    # workflow_run.head_sha, nicht aus github.sha (dem neuesten Stand von main; unabhängige Prüfung, G2).
+    assert "type=raw,value=sha-${{ github.event.workflow_run.head_sha }}" in tags
+    assert "org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}" in meta["with"]["labels"]
     assert "type=raw,value=latest" in tags
     assert len(tags) == 3, tags
     # Die Version steht im Abbild selbst; daran liest der Server ab, welche Version „latest“ ist.
@@ -158,7 +178,10 @@ def test_nur_dieser_ablauf_darf_ins_paketverzeichnis_schreiben():
         if pfad == ABLAUF:
             continue
         workflow = _yaml(pfad)
-        rechte = [workflow.get("permissions", {}), *(job.get("permissions", {}) for job in workflow["jobs"].values())]
+        # Oben immer eine Liste einzelner Rechte; „write-all“ oder gar keine Angabe gäbe auch Pakete frei.
+        assert isinstance(workflow.get("permissions"), dict), pfad.name
+        rechte = [workflow["permissions"], *(job.get("permissions", {}) for job in workflow["jobs"].values())]
+        assert all(isinstance(r, dict) for r in rechte), pfad.name
         assert not [r for r in rechte if "packages" in r], pfad.name
 
 
