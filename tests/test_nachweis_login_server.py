@@ -48,6 +48,9 @@ def test_die_checkliste_laeuft_ohne_ki_und_nennt_die_anzeige_von_keycloak():
     # Die Login-Seite des Test-Realms, mit dem Link „Registrieren“ auf der Seite des Tools (#63).
     assert "„Anmeldetool Test“" in checkliste
     assert "„Noch kein Konto? Registrieren“" in checkliste
+    # Der Link führt im Test-Realm zur Fehlerseite von Keycloak, nicht zur Login-Seite (#63, Antwort
+    # Sebastian vom 23.11.2026: „A) Link bleibt (Empfohlen)“).
+    assert "„Registrierung nicht erlaubt.“" in checkliste
 
 
 def test_nur_mit_erfundenen_testkonten_nie_mit_dem_verwaltungskonto():
