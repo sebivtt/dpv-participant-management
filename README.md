@@ -347,12 +347,12 @@ N1. Im Browser https://anmeldetool.scout-tools.de/ öffnen und auf „Noch kein 
    Danach: die Login-Seite von Keycloak mit „Anmeldetool Test“, ohne Möglichkeit, sich zu registrieren. Mit „Zurück“ im Browser wieder zur Login-Seite des Tools.
 N2. „Mit DPV-Konto anmelden“ klicken und als `erika.testfrau` anmelden.
    Danach: „Hallo Erika!“ mit dem gelben Band.
-N3. Oben „Abmelden“ klicken.
+N3. Links unten in der Seitenleiste „Abmelden“ klicken (am Handy im „Menü“).
    Danach: die Login-Seite des Tools.
 N4. Wieder „Mit DPV-Konto anmelden“ klicken.
    Danach: Keycloak verlangt Benutzername und Passwort; ohne sie geht es nicht weiter. Wieder als `erika.testfrau` anmelden. Meldet Keycloak dich ohne Passwort an, hat das Abmelden in N3 nicht auch bei Keycloak abgemeldet.
-N5. Die Kontosuche beim Benennen prüfen: Als `erika.testfrau` (Stammesleitung Walhall aus S12) links in der Gliederung den Stamm Walhall öffnen, bei „Leitungen“ auf „Stammesleitung benennen“ klicken, ins Suchfeld `max.testmann@example.org` eintragen und „Suchen“ klicken.
-   Danach: Unter den Treffern steht Max Testmann. Nicht „Benennen“ klicken, sondern „Abbrechen“. Steht dort „Kein Konto gefunden“, schickt der Keycloak des DPV „Mail bestätigt“ nicht mit, und die Kontosuche über die Mail geht dort nicht (#251); `max.testmann` muss sich aber vorher in S11 einmal angemeldet haben.
+N5. Die Kontosuche beim Benennen prüfen: Als `erika.testfrau` (Stammesleitung Walhall aus S12) in der Seitenleiste „Organisation“ öffnen, dann links in der Gliederung den Stamm Walhall, bei „Leitungen“ auf „Stammesleitung benennen“ klicken, ins Suchfeld `max.testmann@example.org` eintragen und „Suchen“ klicken.
+   Danach: Unter den Treffern steht Max Testmann mit „schon woanders Mitglied“ und dem Hinweis, dass er hier keine Leitung werden kann. Das ist richtig, weil er nach S12 Stammesleitung von Zugvögel ist; wichtig ist nur, dass er gefunden wird. Dann „Abbrechen“. Steht dort „Kein Konto gefunden“, schickt der Keycloak des DPV „Mail bestätigt“ nicht mit, und die Kontosuche über die Mail geht dort nicht (#251); `max.testmann` muss sich aber vorher in S11 einmal angemeldet haben.
 N6. Abmelden, dann als `ohne.name` anmelden.
    Danach: nur „Hallo!“, ohne Namen. Danach wieder abmelden.
 N7. Die genaue Fassung von Keycloak nachsehen, in der Verwaltung von Keycloak über das Fragezeichen oben rechts. Zeigt die Verwaltung sie dir mit den Rechten nur für `dpv-test` nicht, nennt sie der Admin.
