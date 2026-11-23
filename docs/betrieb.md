@@ -30,7 +30,7 @@ Zeitpunkte:
 | Log des Datenbankservers ohne Befehle und ohne Werte aus Fehlern | `testumgebung/docker-compose.yml` (Dienst `datenbank`, `command`), #324; für den Server nur für die Datenbank des Tools: Hinweis unten (#59) | erledigt | vor der Testumgebung |
 | Fehlerprotokoll des Tools ohne Personendaten | `core/errors.py`, `config/settings.py` (`LOGGING`), #6 | erledigt | vor der Testumgebung |
 | Webserver ohne Zugriffsprotokoll mit echten Adressen | `docker/gunicorn.conf.py`, #58 | erledigt | vor der Testumgebung |
-| Auf dem Server: Zugriffsprotokoll des Programms davor (Caddy) ohne Adressen mit Parametern | `Caddyfile` im Repo des DPV-Servers (`import access_log` für die Testdomain); eigenes Issue in Vorbereitung (Befund der unabhängigen Prüfung zu #59) | offen | vor dem echten Betrieb |
+| Auf dem Server: Zugriffsprotokoll des Programms davor (Caddy) ohne Adressen mit Parametern | `Caddyfile` im Repo des DPV-Servers (`import access_log` für die Testdomain); #11 | offen | vor dem echten Betrieb |
 | Webserver-Log: auch Fehlerzeilen mit Ablauf ohne Meldungstext | #79 | offen | vor dem echten Betrieb |
 | Grundabbilder mit fester Fassung und Prüfsumme | `Dockerfile`, `testumgebung/docker-compose.yml` (Dienst `datenbank`), #324; Aktualisieren: unten | erledigt | vor der Testumgebung |
 | Schwachstellenprüfung der Pakete | `pruefen.sh` (`pip-audit`), `CONTRIBUTING.md`, Abschnitt 6 | erledigt | vor der Testumgebung |
