@@ -54,5 +54,5 @@ Zeitpunkte:
 
 ## Aktualisieren
 
-- **Grundabbilder:** Fassung und Prüfsumme ändern sich nur per Pull Request, mit dem vollen Prüflauf auf GitHub. Danach baut der Server das Abbild beim Aktualisieren neu (#59). Die Datenbank steht in derselben Fassung auch in `.github/workflows/ci.yml`, `.github/workflows/leistungstest.yml` und `dev/docker-compose.yml`; alle Stellen ändern sich zusammen, sonst ist `tests/test_pruefung_auf_github.py` rot (#349).
+- **Grundabbilder:** Fassung und Prüfsumme ändern sich nur per Pull Request, mit dem vollen Prüflauf auf GitHub. Nach dem Übernehmen baut GitHub das Abbild neu (`.github/workflows/abbild-veroeffentlichen.yml`) und legt es unter einer neuen Version in der GitHub Container Registry ab; der Server holt es von dort und baut nicht selbst (#302, Anleitung: #59). Die Datenbank steht in derselben Fassung auch in `.github/workflows/ci.yml`, `.github/workflows/leistungstest.yml` und `dev/docker-compose.yml`; alle Stellen ändern sich zusammen, sonst ist `tests/test_pruefung_auf_github.py` rot (#349).
 - **Bootstrap:** Beim Aktualisieren von Bootstrap (`core/static/core/bootstrap/`) dessen Sicherheitshinweise nachsehen und im Pull Request nennen.

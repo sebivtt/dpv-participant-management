@@ -1,5 +1,15 @@
-# Gerüst (#302): Der Ablauf, der nach grünen „Prüfungen“ auf main das Abbild veröffentlicht.
-# Noch ohne Inhalt; er tut nichts.
+# Baut nach jedem grünen Lauf von „Prüfungen“ auf main das Container-Abbild (Dockerfile) und legt es
+# in der GitHub Container Registry ab: ghcr.io/sebivtt/dpv-participant-management (#302).
+# Grundlage ist der Vorschlag des DPV-Admins (Pull Request #404).
+#
+# Der Server des DPV fragt „latest“ ab, liest daraus die Version (Label org.opencontainers.image.version),
+# holt genau diese Version und startet sie; das richtet der Admin auf seiner Seite ein. Der Server läuft
+# immer auf einer festen Version, nie auf „latest“; „latest“ zeigt nur auf die neueste. GitHub bekommt
+# keinen Zugang zum Server: Der Ablauf legt das Abbild nur ab.
+#
+# Warum workflow_run statt „on: push“: So wird nur ein Stand veröffentlicht, dessen Prüfungen (ci.yml)
+# grün sind, und es wird genau der geprüfte Commit gebaut. Ein Merge mit roter Prüfung erreicht den
+# Server nie. tests/test_abbild_veroeffentlichen.py hält die Zusagen fest.
 name: Abbild veröffentlichen
 
 on:
@@ -11,10 +21,74 @@ on:
 permissions:
   contents: read
 
+# Nie abbrechen: Ein halb hochgeladenes Abbild wäre schlimmer als ein wartender Lauf. Zwei Merges
+# kurz hintereinander laufen nacheinander, der spätere gewinnt bei „latest“.
+concurrency:
+  group: abbild-veroeffentlichen
+  cancel-in-progress: false
+
+env:
+  ABBILD: ghcr.io/${{ github.repository }}
+
 jobs:
   bauen:
-    name: Abbild bauen und veröffentlichen
-    if: false
-    runs-on: ubuntu-24.04
+    name: Abbild bauen und nach GHCR hochladen
+    # Nur nach einem grünen Push-Lauf auf main, nie nach einem Pull Request (auch nicht aus einem Fork).
+    # Dazu nur, wenn der geprüfte Stand noch der neueste von main ist (bei diesem Auslöser ist github.sha
+    # der neueste Stand): Wird „Prüfungen“ für einen älteren Stand neu gestartet und grün, würde „latest“
+    # sonst auf ihn zurückspringen, und der Server liefe mit altem Code auf einer neueren Datenbank.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_sha == github.sha
+    # Der Server ist ARM64 (#222). Der ARM-Rechner von GitHub baut das direkt, ohne Nachbilden;
+    # für öffentliche Repos kostenlos.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Nur hier darf ein Lauf ins Paketverzeichnis schreiben; alle anderen Abläufe bleiben bei „read“.
+      packages: write
     steps:
-      - run: echo "Gerüst (#302)"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Genau der Stand, dessen Prüfungen grün waren.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Version je Stand: Datum (UTC) und Laufnummer dieses Ablaufs, z. B. 2026.11.18-42. Die
+      # Laufnummer steigt mit jedem Lauf, die Versionen sind also eindeutig und aufsteigend.
+      - id: version
+        run: echo "version=$(date -u +%Y.%m.%d)-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.ABBILD }}
+          # <Version>: das, was der Server startet; wird nie überschrieben.
+          # sha-<Commit>: zum Nachsehen, welcher Stand in welcher Version steckt.
+          # latest: nur ein Zeiger auf die neueste Version, den der Server abfragt.
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,format=long
+            type=raw,value=latest
+          # Die Version steht im Abbild selbst; daran erkennt der Server, welche Version „latest“ ist.
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+      # Ohne Zwischenspeicher bei GitHub: Der ist je Repo begrenzt, und ein Bau-Zwischenspeicher würde
+      # die Browser der Prüfungen (#396) verdrängen. Ein Bau dauert ohne ihn nur etwas länger.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Ein einfaches Abbild ohne zusätzlichen Beglaubigungs-Eintrag, damit „docker pull“ auf
+          # dem Server ein einziges Manifest sieht.
+          provenance: false
