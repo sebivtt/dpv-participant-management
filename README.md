@@ -344,7 +344,7 @@ Jeder andere Befehl aus diesem README, der lokal mit `uv run --env-file .env pyt
 Diese Checkliste belegt, dass der Login auch mit dem Keycloak des DPV funktioniert, nicht nur mit der Keycloak-Testumgebung auf dem eigenen Rechner; sie funktioniert ohne KI. Melde dich in der Testumgebung nur mit den erfundenen Testkonten aus S1 und S2 an, nie mit deinem eigenen Verwaltungskonto des Test-Realms: Es liegt im Realm `dpv-test` selbst, und das Tool übernähme beim Login deinen echten Namen und deine echte Mail.
 
 N1. Im Browser https://anmeldetool.scout-tools.de/ öffnen und auf „Noch kein Konto? Registrieren“ klicken.
-   Danach: die Login-Seite von Keycloak mit „Anmeldetool Test“, ohne Möglichkeit, sich zu registrieren. Mit „Zurück“ im Browser wieder zur Login-Seite des Tools.
+   Danach: eine Seite von Keycloak mit „Anmeldetool Test“ und „Es ist ein Fehler aufgetreten.“ mit „Registrierung nicht erlaubt.“ Das ist richtig: Im Test-Realm kann sich niemand selbst registrieren; im echten Betrieb führt der Link zur Registrierung (#63). Mit „Zurück“ im Browser wieder zur Login-Seite des Tools.
 N2. „Mit DPV-Konto anmelden“ klicken und als `erika.testfrau` anmelden.
    Danach: „Hallo Erika!“ mit dem gelben Band.
 N3. Links unten in der Seitenleiste „Abmelden“ klicken (am Handy im „Menü“).
