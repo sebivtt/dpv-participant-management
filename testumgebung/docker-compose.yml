@@ -1,5 +1,6 @@
-# Testumgebung im Container (#58): das Tool mit eigener Datenbank, so wie es später auf dem
-# Produktivserver des DPV läuft (#59). Nur erfundene Daten.
+# Testumgebung im Container (#58): das Tool mit eigener Datenbank, aus demselben Dockerfile wie das
+# Abbild der Testumgebung auf dem Server des DPV. Dort startet es die Compose-Datei des DPV-Servers,
+# mit dem gemeinsamen PostgreSQL (README.md, „Testumgebung auf dem Server“). Nur erfundene Daten.
 # Starten auf dem eigenen Rechner: README.md, „Testumgebung im Container“.
 #
 # Getrennt von allem anderen: Die Datenbank liegt allein mit dem Tool in einem Netz ohne
