@@ -61,6 +61,27 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Aktualisieren der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 3 | 22.10.2026, „Testumgebung im Container …“ (#37), Nr. 5; 21.10.2026, „Antwort des DPV-Admins …“, „Folge daraus“ (nur dass Sebastian oder der Admin nach Anleitung aktualisieren) |
 | Log der Datenbank auf dem Server | 23.11.2026, #59, „Technische Wahl“, Nr. 1 | 15.11.2026, #324, „Technische Wahl“, Nr. 3 (nur der Satz zum Log des Datenbankservers, für den Server: dort nur für die Datenbank des Tools) |
 | Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
+| Prüfung der Datumsfelder im Browser | 24.11.2026, #411, Nr. 1 bis 4 | 17.11.2026, #379, „Technische Wahl“, Nr. 2 (nur der Satz „der Browser prüft die Felder nicht selbst“, für die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds) |
+
+---
+
+## 2026-11-24 · Datumsprüfungen schon beim Verlassen des Felds (#411)
+
+**Entscheidung** (Sebastian; Klärung in #398 am 24.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/398#issuecomment-7124224923), Fragen 3, 4, 8, 9 und 10; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/411#issuecomment-7124250592) von #411). Ersetzt den Eintrag vom 17.11.2026 (#379), „Technische Wahl“, Nr. 2, nur den Satz „der Browser prüft die Felder nicht selbst“, soweit es die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds betrifft; `novalidate` bleibt, die Blasen des Browsers kommen weiter nicht.
+
+1. **Beim Verlassen:** Verlässt man in Schritt 1 von „Veranstaltung erstellen“ oder im Dialog des Stifts ein Datums- oder Uhrzeitfeld von Beginn oder Ende, prüft die Seite dieselben Regeln wie der Server (#379, Nr. 2) und zeigt die Meldungen am Feld im bekannten Wortlaut: „Das Ende liegt vor dem Beginn.“, „Der Beginn liegt in der Vergangenheit.“ und ab 29 Tagen die Nachfrage zur Dauer mit dem Schalter „Ja, die Dauer stimmt“, auf aus. Liegt der Beginn in der Vergangenheit, kommt die Nachfrage noch nicht.
+2. **Weg beim Korrigieren:** Eine Meldung verschwindet, sobald die Angaben stimmen, schon beim Tippen. Ändert sich die Dauer, kommt die Frage mit der neuen Zahl und dem Schalter auf aus.
+3. **Nur Geändertes, nichts zu Leerem:** Beim Bearbeiten zählt wie beim Speichern nur, was anders ist als gespeichert. Leere oder unvollständige Felder meldet die Seite nicht; das bleibt bei #299.
+4. **Server bleibt maßgeblich:** Beim Speichern prüft der Server unverändert; ohne Skript kommen die Meldungen erst dann.
+
+**Technische Wahl** (KI):
+
+1. **Heute vom Server:** Die Seite bringt den heutigen Tag des Servers mit (`data-heute` am Beginn), damit eine falsche Uhr am Rechner nichts verfälscht (CG3). Bleibt die Seite über Mitternacht offen, entscheidet beim Speichern der Server.
+2. **Alles aus dem Formular:** Wortlaute, die Grenze von 29 Tagen, die Verbindung von Datum und Uhrzeit und beim Bearbeiten die gespeicherten Angaben (`data-gespeichert`) setzt `EventForm` an die Felder; so stehen sie an einem Ort für beide Seiten. Auch nach „Adresse suchen“ kennt das Formular die gespeicherte Veranstaltung, sonst sähe das Skript einen laufenden Beginn als neu eingegeben.
+3. **Schalter aus einer Vorlage:** Fragt der Server nicht schon nach der Dauer, steht der Baustein „Schalter“ in einem `<template>`; das Skript setzt ihn darunter ein, ohne seinen Aufbau nachzubauen. Ohne Skript zeigt eine Vorlage nichts und schickt nichts.
+4. **Verfahren für #299:** `checkOnLeave()` in `core/static/core/app.js` zeigt die Meldungen einer Prüfung beim Verlassen im Fehler des Bausteins, mit den Eingaben verknüpft und angesagt (`role="alert"`), ohne den Fokus zu bewegen; beim Tippen nimmt es nur weg. Andere Meldungen vom Server am selben Feld bleiben stehen. Eine weitere Prüfung, etwa die leeren Pflichtfelder aus #299, übergibt ihm nur ihre Regeln und Wortlaute.
+
+**Umsetzung:** `core/forms.py` (`EventForm`), `core/views.py` (`_searched_form()`), `core/templates/core/veranstaltung_anlegen.html`, `veranstaltung.html`, `core/static/core/app.js` (Abschnitte „Prüfung beim Verlassen“ und „Datumsprüfungen beim Verlassen“), `docs/gestaltung.md`. Tests in `tests/test_datumspruefung.py` und `rauchtests/test_datumspruefung.py`.
 
 ---
 

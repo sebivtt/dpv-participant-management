@@ -733,6 +733,218 @@
     });
   });
 
+  // Prüfung beim Verlassen (#411; so gebaut, dass #299 sie für leere Pflichtfelder nutzen kann). `inputs` sind die
+  // Eingaben, bei deren Verlassen geprüft wird. `check()` gibt je Baustein „Textfeld“ oder „Datumsfeld“ (als dessen
+  // erste Eingabe) die Meldungen zurück, die jetzt gelten; `known` sind Muster aller Meldungen dieser Prüfung, damit
+  // sie von denen des Servers zu unterscheiden sind. Eine Meldung steht im Fehler des Bausteins („…-fehler“), mit
+  // allen seinen Eingaben verknüpft, und wird angesagt; der Fokus bleibt, wo er ist. Beim Verlassen zeigt sie, was
+  // gilt; beim Tippen nimmt sie nur weg, was nicht mehr gilt, damit nichts aufblinkt, solange man noch tippt. Andere
+  // Meldungen vom Server am selben Feld (etwa „Bitte gib den Beginn ein.“) bleiben, bis das Formular abgeschickt ist.
+  // `after(leaving)` läuft nach jeder Prüfung, etwa für einen Schalter, der zu einer Meldung gehört.
+  var pointerDown = false;
+  document.addEventListener("pointerdown", function () { pointerDown = true; }, true);
+  document.addEventListener("pointerup", function () { pointerDown = false; }, true);
+  document.addEventListener("pointercancel", function () { pointerDown = false; }, true);
+
+  function checkOnLeave(inputs, owners, known, check, after) {
+    var state = new Map();
+    owners.forEach(function (owner) {
+      var box = document.getElementById(owner.id + "-fehler");
+      var text = box ? box.textContent : "";
+      var shown = [];
+      known.forEach(function (pattern) {
+        text = text.replace(pattern, function (found) {
+          shown.push(found);
+          return "";
+        });
+      });
+      var block = owner.closest(".a-textfeld");
+      state.set(owner, {
+        others: text.replace(/\s+/g, " ").trim(),
+        shown: shown,
+        inputs: Array.from(block.querySelectorAll("input")),
+        // Was der Server rot umrandet hat, bleibt es, solange seine übrigen Meldungen dastehen.
+        invalid: Array.from(block.querySelectorAll("input.is-invalid")),
+      });
+    });
+
+    function show(owner, messages) {
+      var entry = state.get(owner);
+      var errorId = owner.id + "-fehler";
+      var box = document.getElementById(errorId);
+      var text = [entry.others].concat(messages).filter(Boolean).join(" ");
+      var added = messages.some(function (message) { return entry.shown.indexOf(message) < 0; });
+      entry.shown = messages;
+      if (!text) {
+        if (box) {
+          box.remove();
+        }
+      } else {
+        if (!box) {
+          box = document.createElement("div");
+          box.className = "invalid-feedback";
+          box.id = errorId;
+          owner.closest(".a-textfeld").append(box);
+        }
+        // Angesagt wird nur, wenn eine Meldung dazukommt; wegfallende sagt niemand an.
+        if (added) {
+          box.setAttribute("role", "alert");
+        }
+        if (box.textContent !== text) {
+          box.textContent = text;
+        }
+      }
+      entry.inputs.forEach(function (input) {
+        var invalid = (input === owner && messages.length > 0) || (!!entry.others && entry.invalid.indexOf(input) >= 0);
+        input.classList.toggle("is-invalid", invalid);
+        if (invalid) {
+          input.setAttribute("aria-invalid", "true");
+        } else {
+          input.removeAttribute("aria-invalid");
+        }
+        describedBy(input, errorId, !!text);
+      });
+    }
+
+    function update(leaving) {
+      var now = check();
+      owners.forEach(function (owner) {
+        var valid = now.get(owner) || [];
+        var entry = state.get(owner);
+        var next = leaving ? valid : entry.shown.filter(function (message) { return valid.indexOf(message) >= 0; });
+        if (next.join("\n") !== entry.shown.join("\n")) {
+          show(owner, next);
+        }
+      });
+      after(leaving);
+    }
+
+    inputs.forEach(function (input) {
+      input.addEventListener("focusout", function () {
+        // Verlässt man das Feld mit einem Klick, etwa auf „Weiter“, erscheint die Meldung erst nach dem Klick: Sonst
+        // rutschte der Knopf unter der Maus weg, und der Klick ginge ins Leere (gefunden im Rauchtest).
+        if (pointerDown) {
+          document.addEventListener("pointerup", function () {
+            window.setTimeout(function () { update(true); }, 0);
+          }, { once: true });
+          return;
+        }
+        update(true);
+      });
+      input.addEventListener("input", function () {
+        update(false);
+      });
+    });
+  }
+
+  function exactly(text) {
+    return new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  }
+
+  // Datumsprüfungen beim Verlassen (#411, Teil C von #398): Beginn, Ende und ihre Uhrzeiten in „Veranstaltung
+  // erstellen“ und im Dialog des Stifts prüft die Seite schon beim Verlassen eines dieser Felder, mit denselben Regeln
+  // und Wortlauten wie der Server (`EventForm.clean()` in core/forms.py; docs/entscheidungen.md, 17.11.2026, #379,
+  // Nr. 2): Ende vor Beginn, auch am selben Tag mit früherer Uhrzeit; Beginn vor dem heutigen Tag, und zwar dem des
+  // Servers („data-heute“), nicht dem der Uhr am Rechner; ab „data-dauer-ab“ Tagen die Nachfrage zur Dauer mit dem
+  // Schalter „Ja, die Dauer stimmt“, aber erst, wenn der Beginn stimmt. Beim Bearbeiten zählt wie dort nur, was
+  // anders ist als gespeichert („data-gespeichert“). Leere oder unvollständige Felder meldet es nicht (#299); das
+  // Feld des Browsers gibt dann keinen Wert. Den Schalter holt es aus der Vorlage „data-dauerfrage“; ändert sich die
+  // Zahl der Tage, steht er wieder auf aus. Der Server prüft beim Speichern weiter; ohne Skript kommen die Meldungen
+  // erst dann.
+  document.querySelectorAll("input[data-dauer-frage]").forEach(function (end) {
+    var start = document.getElementById(end.getAttribute("data-beginn"));
+    var startTime = start && document.getElementById(start.getAttribute("data-uhrzeit"));
+    var endTime = document.getElementById(end.getAttribute("data-uhrzeit"));
+    var pair = end.closest(".a-felder-nebeneinander");
+    if (!start || !startTime || !endTime || !pair) {
+      return;
+    }
+    var today = start.getAttribute("data-heute");
+    var past = start.getAttribute("data-vergangen");
+    var beforeStart = end.getAttribute("data-vor-beginn");
+    var question = end.getAttribute("data-dauer-frage");
+    var limit = parseInt(end.getAttribute("data-dauer-ab"), 10);
+    var template = pair.parentElement.querySelector("template[data-dauerfrage]");
+    var existing = pair.parentElement.querySelector("input[name='duration_ok']");
+    var row = existing ? existing.closest(".a-schalter-zeile") : null;
+    var asked = 0;
+
+    // Uhrzeiten ohne Sekunden, wie der Server sie vergleicht (`_whole_minute()`).
+    function value(input) {
+      return input.type === "time" ? input.value.slice(0, 5) : input.value;
+    }
+
+    function changed() {
+      return Array.prototype.some.call(arguments, function (input) {
+        var stored = input.getAttribute("data-gespeichert");
+        return stored === null || stored !== value(input);
+      });
+    }
+
+    function dayNumber(day) {
+      var parts = day.split("-");
+      return Date.UTC(+parts[0], +parts[1] - 1, +parts[2]) / 86400000;
+    }
+
+    function asking(days) {
+      return question.replace("{anzahl}", days);
+    }
+
+    function check() {
+      var found = new Map([[start, []], [end, []]]);
+      var from = value(start), to = value(end), fromTime = value(startTime), toTime = value(endTime);
+      asked = 0;
+      if (from && from < today && changed(start, startTime)) {
+        found.get(start).push(past);
+      }
+      if (!from || !to) {
+        return found;
+      }
+      if (to < from || (to === from && fromTime && toTime && toTime < fromTime)) {
+        found.get(end).push(beforeStart);
+        return found;
+      }
+      var days = dayNumber(to) - dayNumber(from) + 1;
+      if (!found.get(start).length && days >= limit && changed(start, startTime, end, endTime)) {
+        asked = days;
+        found.get(end).push(asking(days));
+      }
+      return found;
+    }
+
+    // Der Schalter steht da, solange die Nachfrage gilt; für eine andere Zahl an Tagen wieder auf aus. Beim Tippen
+    // fällt er nur weg, wenn die Nachfrage nicht mehr gilt. Er hängt an der Prüfung, nicht an der Meldung: Nach
+    // „Adresse suchen“ steht ein schon eingeschalteter Schalter ohne Meldung da (#163, A9) und bleibt so.
+    function toggleSwitch(leaving) {
+      var current = row && row.isConnected ? row.querySelector("input").value : "";
+      if (!leaving || !asked) {
+        if (current && current !== String(asked)) {
+          row.querySelector("input").checked = false;
+          row.remove();
+        }
+        return;
+      }
+      if (!row && template) {
+        row = template.content.querySelector(".a-schalter-zeile").cloneNode(true);
+      }
+      if (!row) {
+        return;
+      }
+      var box = row.querySelector("input");
+      if (box.value !== String(asked)) {
+        box.value = String(asked);
+        box.checked = false;
+      }
+      if (!row.isConnected) {
+        pair.after(row);
+      }
+    }
+
+    checkOnLeave([start, startTime, end, endTime], [start, end],
+                 [exactly(past), exactly(beforeStart), new RegExp(exactly(question).source.replace("\\{anzahl\\}", "\\d+"))],
+                 check, toggleSwitch);
+  });
+
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
   document.querySelectorAll("form[data-nur-ansicht]").forEach(function (form) {
     form.addEventListener("submit", function (event) {

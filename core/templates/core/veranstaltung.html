@@ -29,7 +29,7 @@
     {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
     {% textfeld dialog.event_form.name %}
     <div class="a-felder-nebeneinander">{% datumsfeld dialog.event_form.start time=dialog.event_form.start_time %}{% datumsfeld dialog.event_form.end time=dialog.event_form.end_time %}</div>
-    {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% endif %}
+    {% if dialog.asks_duration %}{% schalter dialog.event_form.duration_ok %}{% else %}{# Den Schalter setzt das Skript ein, wenn es schon beim Verlassen nach der Dauer fragt (#411); ohne Skript zeigt die Vorlage nichts. #}<template data-dauerfrage>{% schalter dialog.event_form.duration_ok %}</template>{% endif %}
     {# Der Ort als eigener Abschnitt (Vorschau zu #163): die Bezeichnung und darunter die Adresse. #}
     <section class="a-dialog-ort" aria-labelledby="h-dialog-ort">
       {% include "core/_flaechenkopf.html" with symbol="ort" title=dialog.place_title heading_id="h-dialog-ort" level=3 %}

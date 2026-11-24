@@ -49,9 +49,9 @@ def _field(page: Page, name: str, scope: str = STEP):
     return page.locator(f'{scope} input[name="{name}"]')
 
 
-def _leave_to(page: Page, name: str, scope: str = STEP) -> None:
+def _leave_to(page: Page, name: str, scope: str = STEP, steps: int = 15) -> None:
     """Verlässt das Feld mit Tab bis zum Feld `name`; jede Station hat einen sichtbaren Fokus."""
-    _all_visible(_stations_to_element(page, f'{scope} input[name="{name}"]', steps=15))
+    _all_visible(_stations_to_element(page, f'{scope} input[name="{name}"]', steps=steps))
 
 
 def _error(page: Page, name: str, scope: str = STEP):
@@ -174,7 +174,8 @@ def test_ca6_bearbeiten_nur_geaendertes_und_ohne_aenderung_nichts(pc):
     expect_modal(dialog)
 
     # Ohne Änderung mit Tab durch alle Felder: keine Meldung.
-    _leave_to(pc, "location", scope="dialog")
+    # Vom Namen über Datum und Uhrzeit von Beginn und Ende, je mit ihren Teilen.
+    _leave_to(pc, "location", scope="dialog", steps=30)
     expect(dialog.locator(".a-datumsfeld .invalid-feedback")).to_have_count(0)
 
     # Nur das Ende geändert: keine Meldung zum Beginn, der in der Vergangenheit liegt.

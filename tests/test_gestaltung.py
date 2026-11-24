@@ -39,12 +39,18 @@ def _classes(element: Element) -> list[str]:
 
 
 def _all(root, predicate) -> list[Element]:
+    """Alle Elemente unter `root`, auf die `predicate` passt.
+
+    Den Inhalt einer Vorlage (`<template>`) zählt der Browser nicht zur Seite; erst ein Skript setzt ihn ein (#186,
+    #411). Deshalb sucht die Hilfe nur darin, wenn die Vorlage selbst `root` ist.
+    """
     found = []
     for child in getattr(root, "children", []):
         if isinstance(child, Element):
             if predicate(child):
                 found.append(child)
-            found.extend(_all(child, predicate))
+            if child.name != "template":
+                found.extend(_all(child, predicate))
     return found
 
 
