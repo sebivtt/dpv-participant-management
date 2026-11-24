@@ -43,7 +43,7 @@ Jede Anfrage läuft durch die Bausteine in `MIDDLEWARE` (`config/settings.py`). 
 
 1. **Login-Pflicht:** Jede Adresse verlangt einen Login. Ausnahmen sind nur die Login-Seiten in `accounts/views.py`, markiert mit `@login_not_required`; der Rundumtest `tests/test_rundumtest.py` kennt jede Ausnahme. Wessen Login zu lange her ist, gilt vorher schon als abgemeldet (`accounts/session.py`).
 2. **Rechte:** Jede Anfrage bekommt ihre eigenen, frisch berechneten Rechte als `request.rights` (`access/rights.py`). Daten anderer Personen holt eine Seite nur darüber (`CONTRIBUTING.md`, Abschnitt 4).
-3. **Seite:** `config/urls.py` ordnet die Adresse einer Seite zu. Jede Seite trägt eine Kennzeichnung aus `access/addresses.py`: welche Zeilen der Rechtematrix sie prüft oder warum sie keine Personendaten enthält. Fehlt sie, wird der Rundumtest rot.
+3. **Seite:** `config/urls.py` ordnet die Adresse einer Seite zu. Jede Seite trägt eine Kennzeichnung aus `access/addresses.py`: welche Kennungen der Rechtematrix sie prüft oder warum sie keine Personendaten enthält. Fehlt sie, wird der Rundumtest rot.
 4. **Antwort:** Die Seite bereitet ihre Daten mit der Schicht „Aufbereitung“ auf und gibt sie an eine Vorlage. Die Fehlerseiten sind Vorlagen in `core/templates/`; das Fehlerprotokoll und die Seite bei einem Fehler im Tool kommen aus `core/errors.py`.
 
 ## Wo was liegt

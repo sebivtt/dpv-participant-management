@@ -5,7 +5,7 @@ Grundlage sind BER-01 (geschlossene Liste der Gründe, Personendaten zu sehen), 
 Seite liest Personen- oder Anmeldedaten selbst aus der Datenbank (`CONTRIBUTING.md`,
 Abschnitt 4; der Rundumtest meldet Verstöße).
 
-Was gebaut ist, zeigt die Spalte „Stand“ in `docs/rechtematrix.md`. Weitere Gründe und Aktionen
+Was gebaut ist, zeigt die Spalte „Stand“ der Einträge je Kennung in `docs/rechtematrix.md`. Weitere Gründe und Aktionen
 kommen mit ihren Seiten an diese Stelle (Protokoll der Nachklärung von #90 vom 25.10.2026).
 
 Rollen und Einheiten werden beim ersten Bedarf einer Anfrage einmal geladen und mit der Anfrage

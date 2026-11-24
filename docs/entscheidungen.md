@@ -62,6 +62,28 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Log der Datenbank auf dem Server | 23.11.2026, #59, „Technische Wahl“, Nr. 1 | 15.11.2026, #324, „Technische Wahl“, Nr. 3 (nur der Satz zum Log des Datenbankservers, für den Server: dort nur für die Datenbank des Tools) |
 | Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
 | Prüfung der Datumsfelder im Browser | 24.11.2026, #411, Nr. 1 bis 4 | 17.11.2026, #379, „Technische Wahl“, Nr. 2 (nur der Satz „der Browser prüft die Felder nicht selbst“, für die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds) |
+| Form der Rechtematrix | 24.11.2026, #139, Nr. 1 bis 5 | 23.10.2026, #87, Nr. 1 (nur die Form der Zeilen: Kennung, wer, Daten, Aktion, erlaubt oder verboten, Quelle und Stand je Zeile) |
+
+---
+
+## 2026-11-24 · Rechtematrix als Raster: Rollen als Spalten (#139)
+
+**Entscheidung** (Sebastian; Klärung von #139 am 17. und 18.11.2026, [Vorschlag der KI](https://github.com/sebivtt/dpv-participant-management/issues/139#issuecomment-6959283627) und Protokoll in den Kommentaren des Issues; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 23.10.2026 (#87), Nr. 1, nur in der Form der Zeilen; Inhaltsverzeichnis, ein Abschnitt je Art von Daten, das dauerhafte Fortschreiben und alle Kennungen bleiben.
+
+1. **Raster:** Jeder Abschnitt mit Rechten beginnt mit einem Raster: je Recht eine Zeile, je Rolle eine Spalte, dazu eine Spalte mit den Kennungen. Immer dieselben neun Rollenspalten in fester Folge, bei Veranstaltungen und Gesundheitsangaben zwei mehr, nie zusammengelegt (Protokoll, Frage 2 neu: „Immer alle neun“).
+2. **Zellen:** Jede Zelle beginnt mit einem Wort aus einer festen Liste, die die Lesehilfe erklärt; danach darf eine kurze Grenze folgen (Frage 3: „Wort plus kurze Grenze“).
+3. **Zwei Arten von Verboten:** „–“ heißt „diese Rolle gibt das nicht“; Verbote für jede Person stehen je Abschnitt im Block „Was niemand darf“, mit ihrer Geltung (Wunsch vom 24.10.2026 in #139).
+4. **Einspringen und Support-Zugang:** Über jedem Raster steht derselbe Satz zur einspringenden Leitung (EH-18) und zum Admin im Support-Zugang (SZ-03, SZ-05); die genaue Regel steht einmal in der Lesehilfe (Frage 4).
+5. **Einträge:** Unter dem Raster steht je Kennung genau ein Eintrag mit „Was genau“, Quelle und Stand; die Tests je Kennung stehen aufklappbar am Ende des Abschnitts.
+
+**Technische Wahl** (KI):
+
+1. **Einleser:** `tests/rechtematrix.py` erkennt die Teile am Kopf ihrer Tabellen („Recht“, „Kennung | Was genau | Quelle | Stand“, „Kennung | Tests“) und am Block „**Was niemand darf:**“ mit Punkten der Form `- VP-13 (im Tool): …`. Jede andere Tabelle in einem Abschnitt mit Rechten macht die Prüfung rot, ebenso eine Kennung ohne Raster und ohne Block, eine Zelle ohne Wort der Liste und ein Raster ohne den Satz zum Einspringen.
+2. **Wörter über die Mindestliste hinaus:** „eigener Bund“, „alle Bünde“, „Verbandsebene“, „eigene Veranstaltung“ und „eigene Anmeldung“, weil die Rechte der Einheiten, der Verbandsleitung und der Veranstaltungen sonst nur mit langen Grenzen gingen.
+3. **Wörtlich übernommen:** Quellen und Tests je Kennung stehen wörtlich wie vorher; „Was genau“ fasst Wer, Daten, Aktion und Ergebnis der alten Zeile zusammen, in den meisten Abschnitten wörtlich. Ein einmaliger Abgleich im Pull Request belegt das.
+4. **Support-Zugang:** Die Spalte „Admin“ meint den Admin ohne Support-Zugang; im Abschnitt „Support-Zugang der Admins“ zeigt eine Zeile mit Hinweis, was er nach dem Start eines Zugangs darf.
+
+**Umsetzung:** `docs/rechtematrix.md`, `tests/rechtematrix.py`, `tests/test_rechtematrix.py`; nachgezogen: `README.md`, `CONTRIBUTING.md` (Abschnitt 4), `CLAUDE.md` (Musterdateien), `docs/aufbau.md`, `.github/pull_request_template.md`, Kopfkommentar in `access/rights.py`.
 
 ---
 
