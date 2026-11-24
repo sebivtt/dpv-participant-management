@@ -2,7 +2,7 @@
 
 Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmeldungen einzeln und gesammelt annehmen, Teilnehmendenlisten führen. Login über den Keycloak des DPV. Ehrenamtlich entwickelt, gepflegt und betrieben.
 
-**Stand:** Laufende Phase P2 „Durchstich“ (`docs/fahrplan.md`). Was in dieser Phase fertig ist und was als Nächstes kommt, steht im Phasen-Issue [#106](https://github.com/sebivtt/dpv-participant-management/issues/106). Welche Rechte schon gebaut sind, zeigt die Spalte „Stand“ in `docs/rechtematrix.md`.
+**Stand:** Laufende Phase P2 „Durchstich“ (`docs/fahrplan.md`). Was in dieser Phase fertig ist und was als Nächstes kommt, steht im Phasen-Issue [#106](https://github.com/sebivtt/dpv-participant-management/issues/106). Welche Rechte schon gebaut sind, zeigt die Spalte „Stand“ der Einträge je Kennung in `docs/rechtematrix.md`.
 
 ## Wo was steht
 
