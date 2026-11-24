@@ -1375,7 +1375,7 @@ def _hit(place) -> dict:
     return {"name": place.title, "line": line, "token": place_token(vars(place))}
 
 
-def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]:
+def _searched_form(request: HttpRequest, form_id: str, before=None) -> tuple[EventForm, dict]:
     """„Adresse suchen“, „Übernehmen“ (#163) oder „Adresse leeren“ (#410): das Formular mit allen Eingaben und das
     Ergebnis für das Adressfeld.
 
@@ -1384,7 +1384,8 @@ def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]
     die Angaben reichen (G3), bei OpenStreetMap und zeigt bis zu 5 Treffer, „Keine Adresse gefunden …“ (G1) oder
     „… nicht erreichbar …“ (G2). Danach liegt der Fokus bei Treffer oder Meldung, nach „Übernehmen“ auf der Straße.
     Mit `leeren` leert es die Adresse (ohne Skript; mit Skript leert app.js sie im Browser) und setzt den Fokus auf
-    die Straße.
+    die Straße. `before` ist beim Bearbeiten die gespeicherte Veranstaltung: Mit ihr prüft das Skript beim Verlassen
+    der Datumsfelder wie der Server nur Geändertes (#411, CA6).
     """
     values = {name: request.POST.get(name, "") for name in EventForm.base_fields if name != "duration_ok"}
     found = {}
@@ -1416,7 +1417,7 @@ def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]
                 if not places:
                     found["notice"] = ("info", address_texts.NOTHING_FOUND)
         focus = "results"
-    form = EventForm(initial=values, form_id=form_id)
+    form = EventForm(initial=values, before=before, form_id=form_id)
     # Eine schon bestätigte Dauer bleibt bestätigt (A9, Befund B4 der unabhängigen Prüfung); geprüft wird sie erst beim
     # Speichern, mit derselben Regel wie sonst.
     confirmed = request.POST.get("duration_ok", "")
@@ -1468,7 +1469,7 @@ def event_create_basics_address(request: HttpRequest, event: str) -> HttpRespons
     request.rights.require_section(request.rights.may_search_address())
     if request.method != "POST":
         return redirect("event_create_basics", event=entry.key)
-    form, found = _searched_form(request, STEP_FORM)
+    form, found = _searched_form(request, STEP_FORM, before=entry)
     return _create_page(request, 1, entry=entry, form=form, hidden=[("version", _version(request))], found=found)
 
 
@@ -1484,7 +1485,7 @@ def event_edit_address(request: HttpRequest, event: str) -> HttpResponse:
     rights.require_section(rights.may_search_address())
     if request.method != "POST":
         return redirect("event_edit", event=entry.key)
-    form, found = _searched_form(request, "f-dialog")
+    form, found = _searched_form(request, "f-dialog", before=entry)
     dialog = _event_dialog(form, action=reverse("event_edit", args=[entry.key]),
                            close_href=reverse("event_page", args=[entry.key]), entry=entry,
                            hidden=[("version", _version(request))], search_action=_edit_search(rights, entry),
