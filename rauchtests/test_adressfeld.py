@@ -695,3 +695,42 @@ def test_ba9_am_handy_sucht_die_eingabetaste_und_leeren_geht_mit_der_tastatur(ha
     # Gesucht wird mit Bezeichnung und Adresse; die erfundenen Antworten kennen diese Verbindung nicht.
     expect(handy.locator(f"{FIELD} .a-adresse-ergebnis")).to_be_visible()
     assert osm.calls[calls]["q"] == "Burg Ludwigstein, Burgweg 1, Musterhausen"
+
+
+# Befund M1 der unabhängigen Prüfung (#410): Nach „Übernehmen“ stellte das Skript nur das Feld unter die Kopfleiste; seine
+# Beschriftung „Straße und Hausnummer“ lag dann verdeckt darunter, wenn die Straße vorher schon unter der Leiste stand.
+# „Adresse leeren“ nutzt dieselbe Stelle im Skript; nach „Übernehmen“ ist die Seite aber zu kurz, um die Straße dafür
+# unter die Leiste zu rollen, deshalb prüft der Test nur „Übernehmen“.
+def test_m1_am_handy_ist_auch_die_beschriftung_der_strasse_zu_sehen(handy, osm):
+    _wanda_in_schritt_1(handy)
+    handy.locator(SEARCH).click()
+    handy.wait_for_url(f"{CREATE}adresse-suchen/")
+    # Die Straße liegt jetzt halb unter der Kopfleiste, ihre Beschriftung ganz.
+    handy.evaluate("""() => window.scrollTo({top: window.scrollY + document.getElementById('id_street')
+        .getBoundingClientRect().top - document.querySelector('.a-topbar').getBoundingClientRect().bottom + 10,
+        behavior: 'instant'})""")
+
+    # Ohne dass Playwright vorher selbst rollt, wie ein Tippen auf den Knopf an seiner Stelle.
+    handy.locator(TAKE).first.evaluate("e => e.click()")
+    _uebernommen(handy)
+    lage = handy.evaluate(_LAGE)
+
+    assert lage["fokus"] == "id_street"
+    assert lage["beschriftung"] >= lage["leiste"], lage
+    assert lage["feld"]["bottom"] <= lage["hoehe"], lage
+
+
+def test_g3_am_pc_adresse_leeren_nur_mit_der_tastatur(pc, osm):
+    """Befund G3 der unabhängigen Prüfung (#410): „Adresse leeren“ auch am PC nur mit der Tastatur, mit sichtbarem
+    Fokus auf jeder Station; danach liegt der Fokus auf der Straße."""
+    _wanda_in_schritt_1(pc)
+    pc.locator(f'{STEP} input[name="location"]').press("Enter")
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    _zu(pc, TAKE, steps=5)
+    _uebernommen(pc)
+
+    _zu(pc, CLEAR, steps=15)
+
+    _leer(pc)
+    expect(pc.locator('input[name="street"]')).to_be_focused()
+    assert focus_visible(pc)["sichtbar"]

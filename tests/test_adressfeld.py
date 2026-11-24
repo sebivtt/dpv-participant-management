@@ -1269,3 +1269,13 @@ def test_ba4_ba8_uebernehmen_fuehrt_ohne_skript_zum_adressfeld_zurueck(org, osm)
     assert _attr(clear_button(root), "formaction") == f"{CREATE_SEARCH}#adressfeld"
     assert _attr(search_button(root), "formaction") == CREATE_SEARCH
     assert _attr(address_field(root), "id") == "adressfeld"
+
+
+def test_g1_der_katalog_nennt_adresse_leeren_beim_zart_blauen_knopf():
+    """Befund G1 der unabhängigen Prüfung (#410): Der Eintrag „Zart blauer Knopf“ im Bausteinkatalog nennt die
+    Erweiterung um „Adresse leeren“."""
+    from core.views import BUILDING_BLOCKS
+
+    block = BUILDING_BLOCKS["knopfverschieben"]
+    assert 410 in block["issues"]
+    assert "Adresse leeren" in str(block["purpose"])
