@@ -1054,3 +1054,218 @@ def test_b4_adresse_suchen_behaelt_die_bestaetigte_dauer(org, osm):
 
     assert _attr(switch, "value") == "30"
     assert _attr(switch, "checked") is not None
+
+
+# ---------- Teil B von #398 (#410): Enter sucht, Seite bleibt stehen, „Adresse leeren“ ----------
+#
+# Die Kennungen BA1 bis BA9, BV1 bis BV3 und BG1 bis BG5 verweisen auf die Szenarien vom 24.11.2026
+# (https://github.com/sebivtt/dpv-participant-management/issues/410#issuecomment-7124249280). Enter (BA1 bis BA3, BG1,
+# BG2), die Lage der Seite (BA4) und „Adresse leeren“ mit Skript prüft der Rauchtest `rauchtests/test_adressfeld.py`;
+# hier steht, was der Server tut: „Adresse leeren“ ohne Skript, wann es den Knopf gibt, und wer ihn nicht nutzen darf.
+
+CLEAR_LABEL = "Adresse leeren"
+BURGWEG = {"street": "Burgweg 1", "postal_code": "99999", "city": "Musterhausen", "state": "HE", "country": "DE"}
+
+
+def clear_button(root):
+    """Der zart blaue Knopf „Adresse leeren“ neben „Adresse suchen“."""
+    return _one([button for button in _by_tag(address_field(root), "button") if _visible_text(button) == CLEAR_LABEL])
+
+
+def clear(client, root, form_id: str = "f-schritt", **changes):
+    """Tippt ohne Skript auf „Adresse leeren“, mit allen Eingaben der Seite; gibt die Antwort zurück."""
+    button = clear_button(root)
+    response = client.post(_attr(button, "formaction").split("#")[0],
+                           {**form_values(root, form_id), **changes, _attr(button, "name"): _attr(button, "value")})
+    assert response.status_code == 200, response.status_code
+    return response
+
+
+def autofocused(root) -> list[str]:
+    """Was im Adressfeld den Fokus beim Laden bekommt."""
+    return [_attr(element, "name") or " ".join(_classes(element)) for element in
+            _all(address_field(root), lambda e: _attr(e, "autofocus") is not None)]
+
+
+@pytest.mark.rechtematrix("VA-07")
+def test_ba5_ba8_ohne_skript_leert_der_knopf_die_adresse_und_die_bezeichnung_bleibt(org, osm):
+    """BA5 und BA8: Nach „Übernehmen“ leert „Adresse leeren“ Straße, PLZ, Ort und Bundesland, das Land steht auf
+    Deutschland, Treffer und Koordinaten sind weg; die Bezeichnung und alles andere bleibt, gespeichert ist nichts, und
+    der Fokus liegt auf der Straße. An OpenStreetMap geht dafür nichts (BV3)."""
+    client = client_for(org.wanda)
+    root = _tree(take(client, _tree(search_in_step_one(client))))
+    assert form_values(root, "f-schritt")["coordinates"]
+    calls = len(osm.calls)
+
+    root = _tree(clear(client, root))
+    shown = form_values(root, "f-schritt")
+
+    assert shown_address(root) == EMPTY_ADDRESS
+    assert shown["coordinates"] == ""
+    assert {name: shown[name] for name in PFINGSTLAGER} == PFINGSTLAGER
+    assert hits(root) == [] and notices(root) == []
+    assert autofocused(root) == ["street"]
+    assert len(osm.calls) == calls
+    assert Event.objects.count() == 0
+
+
+def test_ba5_der_knopf_schickt_das_formular_an_die_adresse_der_suche(org, osm):
+    """BA8: „Adresse leeren“ ist ein gewöhnlicher Knopf des Formulars, wie „Adresse suchen“, ohne Prüfung im Browser;
+    er steht direkt neben „Adresse suchen“ und hat dieselbe Form (zart blau)."""
+    client = client_for(org.wanda)
+    root = _tree(client.post(CREATE_SEARCH, {**open_step_one(client), **PFINGSTLAGER, **BURGWEG}))
+    button = clear_button(root)
+
+    assert _attr(button, "type") == "submit"
+    assert _attr(button, "form") == "f-schritt"
+    assert _attr(button, "formaction") == f"{CREATE_SEARCH}#adressfeld"
+    assert _attr(button, "formnovalidate") is not None
+    assert "btn-verschieben" in _classes(button)
+    row = _one(_all(address_field(root), lambda e: "a-adresse-suche" in _classes(e)))
+    assert [_visible_text(each) for each in _by_tag(row, "button")] == [SEARCH_LABEL, CLEAR_LABEL]
+
+
+@pytest.mark.parametrize("values", [
+    {"street": "Burgweg 1"}, {"postal_code": "99999"}, {"city": "Musterhausen"}, {"state": "HE"}, {"country": "SE"},
+], ids=["strasse", "plz", "ort", "bundesland", "land"])
+def test_ba7_den_knopf_gibt_es_sobald_etwas_in_der_adresse_steht(org, osm, values):
+    client = client_for(org.wanda)
+    root = _tree(client.post(CREATE_SEARCH, {**open_step_one(client), **PFINGSTLAGER, **EMPTY_ADDRESS, **values}))
+
+    assert _attr(clear_button(root), "hidden") is None
+
+
+@pytest.mark.parametrize("values", [{"location": "Burg Ludwigstein"}, {"location": ""}], ids=["bezeichnung", "nichts"])
+def test_ba7_mit_nur_der_bezeichnung_oder_nichts_gibt_es_den_knopf_nicht(org, osm, values):
+    client = client_for(org.wanda)
+    root = _tree(client.post(CREATE_SEARCH, {**open_step_one(client), **PFINGSTLAGER, **EMPTY_ADDRESS, **values}))
+
+    assert _attr(clear_button(root), "hidden") is not None
+    assert _attr(clear_button(_tree(client.get(CREATE))), "hidden") is not None
+
+
+@pytest.mark.rechtematrix("VA-02")
+def test_ba6_leeren_beim_bearbeiten_und_abbrechen_die_gespeicherte_adresse_bleibt(org, mit_adresse):
+    """BA6: Im Dialog des Stifts steht der Knopf bei einer gespeicherten Adresse schon beim Öffnen. Leeren ändert noch
+    nichts; erst „Speichern“ speichert den Ort nur mit der Bezeichnung (wie A8 aus #163)."""
+    client = client_for(org.wanda)
+    root = _tree(client.get(edit_address(mit_adresse)))
+    dialog = dialog_of(root)
+    assert _attr(clear_button(dialog), "hidden") is None
+    assert _attr(clear_button(dialog), "formaction") == f"{edit_search_address(mit_adresse)}#adressfeld"
+
+    root = _tree(clear(client, root, form_id="f-dialog"))
+
+    assert shown_address(root, "f-dialog") == EMPTY_ADDRESS
+    assert form_values(root, "f-dialog")["location"] == "Burg Ludwigstein"
+    assert saved_address(mit_adresse)["city"] == "Musterhausen", "Leeren allein speichert nichts (Abbrechen)"
+
+    form = _one(_by_tag(root, "form", id="f-dialog"))
+    response = client.post(_attr(form, "action"), form_values(root, "f-dialog"))
+
+    assert response.status_code == 302, response.status_code
+    assert saved_address(mit_adresse) == {"street": "", "postal_code": "", "city": "", "state": "", "country": "",
+                                          "latitude": None, "longitude": None}
+    assert place_lines(_tree(client.get(event_address(mit_adresse)))) == ["Burg Ludwigstein"]
+
+
+def test_ba6_leeren_im_entwurf_ueber_die_adresse_der_suche_des_entwurfs(org, osm):
+    client = client_for(org.wanda)
+    client.post(CREATE, {**open_step_one(client), **PFINGSTLAGER, **BURGWEG})
+    entry = created()
+    root = _tree(client.get(f"{event_address(entry)}anlegen/"))
+    assert _attr(clear_button(root), "formaction") == f"{basics_search_address(entry)}#adressfeld"
+
+    root = _tree(clear(client, root))
+
+    assert shown_address(root) == EMPTY_ADDRESS
+    assert saved_address(entry)["city"] == "Musterhausen"
+
+
+@pytest.mark.rechtematrix("VA-07")
+def test_bv1_otto_schickt_adresse_leeren_direkt_an_die_adresse_der_suche(org, osm):
+    client = Client()
+    client.force_login(org.otto)
+
+    assert_no_access(client.post(CREATE_SEARCH, {**PFINGSTLAGER, **BURGWEG, "leeren": "ja"}))
+    assert osm.calls == []
+
+
+@pytest.mark.rechtematrix("VA-07")
+def test_bv1_otto_als_leitung_ohne_zuordnung_hat_keinen_knopf_und_leeren_ist_nicht_gefunden(org, osm):
+    entry = event_of(org.otto, "Ottos Fahrt", date(2028, 6, 2), date(2028, 6, 5))
+    dialog = dialog_of(_tree(client_for(org.otto).get(edit_address(entry))))
+
+    assert [button for button in _by_tag(dialog, "button") if _visible_text(button) == CLEAR_LABEL] == []
+    assert_like_missing(org.otto, edit_search_address(entry))
+
+
+@pytest.mark.rechtematrix("VA-03")
+def test_bv2_finn_schickt_ein_veraendertes_formular_fuer_wandas_pfingstlager(org, osm, mit_adresse):
+    form = {**PFINGSTLAGER, **EMPTY_ADDRESS, "leeren": "ja", "version": str(mit_adresse.version)}
+    client = client_for(org.finn)
+
+    for address in (edit_address(mit_adresse), edit_search_address(mit_adresse)):
+        assert client.post(address, form).status_code == 404
+
+    assert saved_address(mit_adresse)["city"] == "Musterhausen"
+    assert osm.calls == []
+
+
+def test_bg3_leeren_entfernt_die_fehler_an_der_adresse(org):
+    client = client_for(org.wanda)
+    response = client.post(CREATE, {**open_step_one(client), **PFINGSTLAGER, **EMPTY_ADDRESS, "street": "Burgweg 1",
+                                    "postal_code": "9999"})
+    root = _tree(response)
+    assert field_errors(root) == {"postal_code": FIVE_DIGITS, "city": CITY_EMPTY}
+    assert _attr(clear_button(root), "hidden") is None
+
+    root = _tree(clear(client, root))
+
+    assert field_errors(root) == {}
+    assert shown_address(root) == EMPTY_ADDRESS
+
+
+def test_bg4_nach_leeren_wird_dieselbe_adresse_von_hand_ohne_koordinaten_gespeichert(org, osm):
+    client = client_for(org.wanda)
+    root = _tree(take(client, _tree(search_in_step_one(client))))
+
+    root = _tree(clear(client, root))
+    response = weiter(client, root, **BURGWEG)
+
+    assert response.status_code == 302, response.status_code
+    assert saved_address(created()) == {**BURGWEG, "latitude": None, "longitude": None}
+
+
+def test_bg5_leeren_geht_auch_wenn_openstreetmap_nicht_erreichbar_ist(org, osm):
+    osm.failure = TimeoutError()
+    client = client_for(org.wanda)
+    root = _tree(client.post(CREATE_SEARCH, {**open_step_one(client), **PFINGSTLAGER, **BURGWEG}))
+    assert notices(root) == [("ist-fehler", UNAVAILABLE)]
+
+    root = _tree(clear(client, root))
+
+    assert shown_address(root) == EMPTY_ADDRESS
+    assert notices(root) == []
+
+
+def test_ba1_die_felder_der_suche_sind_fuer_enter_markiert(org, pfingstlager):
+    """BA1 bis BA3: Welche Felder mit Enter suchen, liest das Skript am Adressfeld ab: Bezeichnung, Straße, PLZ und Ort
+    gehören zur Suche; Name, Beginn, Ende und Uhrzeiten nicht. Ohne Skript bleibt Enter überall „Weiter“ bzw.
+    „Speichern“ (der unsichtbare erste Knopf, BA8)."""
+    for root, form_id in ((_tree(client_for(org.wanda).get(CREATE)), "f-schritt"),
+                          (_tree(client_for(org.wanda).get(edit_address(pfingstlager))), "f-dialog")):
+        assert _attr(address_field(root), "data-enter-sucht") == "location street postal_code city"
+        assert _attr(default_button(root, form_id), "formaction") is None
+
+
+def test_ba4_ba8_uebernehmen_fuehrt_ohne_skript_zum_adressfeld_zurueck(org, osm):
+    """BA4 und BA8: Ohne Skript stand die Seite nach „Übernehmen“ wieder oben, weil der Browser nicht zur Straße rollt,
+    wenn sie schon im Bild ist. „Übernehmen“ und „Adresse leeren“ schicken das Formular deshalb an die Stelle
+    „#adressfeld“; „Adresse suchen“ nicht, weil danach der Fokus die Seite zu Treffern oder Meldung bringt."""
+    root = _tree(search_in_step_one(client_for(org.wanda)))
+
+    assert {_attr(button, "formaction") for button in take_buttons(root)} == {f"{CREATE_SEARCH}#adressfeld"}
+    assert _attr(clear_button(root), "formaction") == f"{CREATE_SEARCH}#adressfeld"
+    assert _attr(search_button(root), "formaction") == CREATE_SEARCH
+    assert _attr(address_field(root), "id") == "adressfeld"

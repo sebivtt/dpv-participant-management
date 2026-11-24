@@ -155,9 +155,9 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
     _no_side_scroll(handy)
     assert run_axe(handy) == []
 
-    # Enter in einem Feld speichert wie „Weiter“, nicht „Adresse suchen“.
+    # Enter im Namen speichert wie „Weiter“; in PLZ und den übrigen Feldern der Suche sucht Enter seit #410 (BA3).
     handy.locator('input[name="postal_code"]').fill("99999")
-    handy.locator('input[name="postal_code"]').press("Enter")
+    handy.get_by_label("Name").press("Enter")
     handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
     expect(handy.locator(f"{TILE} .a-kalender-ort .a-ort-zeile")).to_have_text(
         ["Burg Ludwigstein", "Burgweg 1a", "99999 Musterhausen"])
@@ -319,3 +319,379 @@ def test_die_felder_der_adresse_stehen_dicht(pc):
     assert street["y"] - (location["y"] + location["height"]) <= 48
     assert pc.locator(f"{FIELD} legend").evaluate("e => e.getBoundingClientRect().height") <= 1
     assert pc.locator(f"{FIELD} legend").evaluate("e => getComputedStyle(e).borderTopStyle") == "none"
+
+
+# ---------- Teil B von #398 (#410): Enter sucht, Seite bleibt stehen, „Adresse leeren“ ----------
+#
+# BA1 bis BA9, BV3, BG1 bis BG5: Szenarien vom 24.11.2026
+# (https://github.com/sebivtt/dpv-participant-management/issues/410#issuecomment-7124249280). Was der Server tut, prüft
+# tests/test_adressfeld.py.
+
+CLEAR = f"{FIELD} button.a-adresse-leeren"
+EDIT_SAVE = 'dialog.a-dialog .a-dialog-fuss button[type="submit"]'
+# Wo „Straße und Hausnummer“ steht, im Bild und in der Seite; dazu, ob die Seite seit dem Messen neu geladen wurde.
+_STRASSE = """() => {
+    const street = document.getElementById('id_street');
+    const dialog = street.closest('dialog');
+    return {top: street.getBoundingClientRect().top, bottom: street.getBoundingClientRect().bottom,
+            y: window.scrollY, innen: dialog ? dialog.scrollTop : null, hoehe: window.innerHeight,
+            ende: dialog ? dialog.scrollTop + dialog.clientHeight >= dialog.scrollHeight - 1
+                         : window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1,
+            fokus: document.activeElement.id, gleich: window.__gleicheSeite === true};
+}"""
+
+
+def _steht_still(vorher: dict, nachher: dict) -> None:
+    """Die Straße steht, wo sie vor dem Klick stand. Ist die Seite kürzer geworden, weil die Treffer weg sind, geht das
+    nicht ganz; dann steht die Seite (oder der Dialog) an ihrem Ende, nicht oben, und die Straße ist ganz zu sehen."""
+    gleich = abs(nachher["top"] - vorher["top"]) <= 2
+    am_ende = nachher["ende"] and 0 <= nachher["top"] and nachher["bottom"] <= nachher["hoehe"]
+    assert gleich or am_ende, (vorher, nachher)
+    def gerollt(lage: dict) -> float:
+        return lage["innen"] if lage["innen"] is not None else lage["y"]
+
+    assert gerollt(nachher) > 0 or gerollt(vorher) == 0, ("wieder oben", vorher, nachher)
+
+
+def _wanda_in_schritt_1(page: Page, location: str = "Burg Ludwigstein", name: str = "Pfingstlager 2028") -> None:
+    login(page)
+    _erika_in_den_falken()
+    page.goto(CREATE)
+    page.get_by_label("Name").fill(name)
+    page.locator(f'{STEP} input[name="start"]').fill("2028-06-02")
+    page.locator(f'{STEP} input[name="end"]').fill("2028-06-05")
+    page.locator(f'{STEP} input[name="location"]').fill(location)
+
+
+def _im_dialog_des_stifts(page: Page) -> None:
+    """Legt das Pfingstlager mit Burg Ludwigstein, ohne Adresse, an und öffnet den Dialog des Stifts."""
+    _wanda_in_schritt_1(page)
+    page.locator(NEXT).click()
+    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    page.locator(NEXT).click()
+    page.wait_for_url(f"{LIST}*/")
+    page.goto(f"{page.url}bearbeiten/")
+    expect(_dialog(page)).to_be_visible()
+
+
+def _leer(page: Page) -> None:
+    for name in ("street", "postal_code", "city"):
+        expect(page.locator(f'input[name="{name}"]')).to_have_value("")
+    expect(page.locator('select[name="state"]')).to_have_value("")
+    expect(page.locator('select[name="country"]')).to_have_value("DE")
+    expect(page.locator('input[name="coordinates"]')).to_have_value("")
+    expect(page.locator(f"{FIELD} .a-treffer")).to_have_count(0)
+    expect(page.locator(f"{FIELD} .a-meldung")).to_have_count(0)
+    expect(page.locator('input[name="location"]')).to_have_value("Burg Ludwigstein")
+
+
+@pytest.mark.parametrize("field", ["location", "street", "postal_code", "city"])
+def test_ba1_ba2_enter_in_bezeichnung_und_adresse_sucht(pc, osm, field):
+    """BA1 und BA2: Enter in Bezeichnung, Straße, PLZ oder Ort wirkt wie „Adresse suchen“; nichts ist gespeichert."""
+    _wanda_in_schritt_1(pc, location="" if field != "location" else "Burg Ludwigstein")
+    if field != "location":
+        pc.locator('input[name="street"]').fill("Burgweg 1")
+        pc.locator('input[name="city"]').fill("Musterhausen")
+
+    pc.locator(f'{STEP} [name="{field}"]').press("Enter")
+
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(pc.locator(f"{FIELD} .a-treffer")).to_have_count(3 if field == "location" else 1)
+    expect(pc.locator(f"{FIELD} .a-adresse-ergebnis")).to_be_focused()
+    assert Event.objects.count() == 0
+    assert len(osm.calls) == 1
+
+
+def test_ba1_enter_in_der_bezeichnung_sucht_auch_im_dialog_des_stifts(pc, osm):
+    _im_dialog_des_stifts(pc)
+
+    pc.locator('input[name="location"]').press("Enter")
+
+    pc.wait_for_url(f"{LIST}*/bearbeiten/adresse-suchen/")
+    expect(_dialog(pc)).to_be_visible()
+    expect(pc.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+
+
+@pytest.mark.parametrize("field", ["name", "start", "start_time", "end", "end_time"])
+def test_ba3_enter_anderswo_ist_weiter(pc, osm, field):
+    _wanda_in_schritt_1(pc)
+
+    pc.locator(f'{STEP} [name="{field}"]').press("Enter")
+
+    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    assert osm.calls == []
+
+
+def test_ba3_enter_im_namen_ist_im_dialog_des_stifts_speichern(pc, osm):
+    _im_dialog_des_stifts(pc)
+    pc.locator('dialog input[name="name"]').fill("Pfingstlager 28")
+
+    pc.locator('dialog input[name="name"]').press("Enter")
+
+    pc.wait_for_url(f"{LIST}*/")
+    expect(pc.locator(".a-kurz")).to_contain_text("Die Angaben zu Pfingstlager 28 sind gespeichert.")
+    assert osm.calls == []
+
+
+def test_bg1_enter_mit_nur_der_strasse_warnt_und_geht_nicht_weiter(pc, osm):
+    _wanda_in_schritt_1(pc, location="")
+    pc.locator('input[name="street"]').fill("Burgweg")
+
+    pc.locator('input[name="street"]').press("Enter")
+
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(pc.locator(f"{FIELD} .a-meldung.ist-warnung")).to_contain_text("Für die Suche gib bitte die Bezeichnung")
+    assert osm.calls == []
+    assert Event.objects.count() == 0
+
+
+def test_bg2_enter_in_der_bezeichnung_sucht_auch_ohne_namen(pc, osm):
+    _wanda_in_schritt_1(pc, name="")
+
+    pc.locator('input[name="location"]').press("Enter")
+
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(pc.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+    expect(pc.locator(f"{STEP} .invalid-feedback")).to_have_count(0)
+
+
+def test_ba4_am_pc_bleibt_die_seite_nach_uebernehmen_stehen(pc, osm):
+    """BA4: Die Seite sprang nach „Übernehmen“ an den Anfang (Chrome, Safari), weil der Browser nicht zur Straße rollt,
+    wenn sie im Bild ist. Jetzt steht die Straße an derselben Stelle wie vor dem Klick, mit dem Fokus darauf."""
+    _wanda_in_schritt_1(pc)
+    pc.locator(SEARCH).click()
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(pc.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+    # Wanda rollt bis zu den Treffern ans Ende der Seite; Safari rollt nach der Suche nicht von selbst dorthin.
+    pc.evaluate("window.scrollTo({top: document.documentElement.scrollHeight, behavior: 'instant'})")
+    vorher = pc.evaluate(_STRASSE)
+    assert vorher["y"] > 0, vorher
+
+    pc.locator(TAKE).first.click()
+    _uebernommen(pc)
+    # Manche Browser stellen die Seite nach dem Laden noch um; gemessen wird, wo sie danach steht.
+    pc.wait_for_timeout(500)
+    nachher = pc.evaluate(_STRASSE)
+
+    _steht_still(vorher, nachher)
+    assert nachher["fokus"] == "id_street"
+    assert run_axe(pc) == []
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_ba4_im_dialog_des_stifts_bleibt_die_strasse_im_bild(request, browser_name, osm, device):
+    page: Page = request.getfixturevalue(device)
+    _im_dialog_des_stifts(page)
+    page.locator(SEARCH).click()
+    page.wait_for_url(f"{LIST}*/bearbeiten/adresse-suchen/")
+    expect(page.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+    page.locator(f"{FIELD} .a-quelle").evaluate("e => e.scrollIntoView({block: 'end'})")
+    vorher = page.evaluate(_STRASSE)
+
+    page.locator(TAKE).first.focus()
+    page.keyboard.press("Enter")
+    page.wait_for_url(f"{LIST}*/bearbeiten/adresse-suchen/")
+    _uebernommen(page)
+    page.wait_for_timeout(500)
+    nachher = page.evaluate(_STRASSE)
+
+    assert nachher["fokus"] == "id_street"
+    assert 0 <= nachher["top"] and nachher["bottom"] <= nachher["hoehe"], (vorher, nachher)
+    if vorher["top"] >= 0:
+        _steht_still(vorher, nachher)
+
+
+def test_ba4_am_handy_steht_die_strasse_nach_uebernehmen_im_bild_und_die_seite_oben_nicht(handy, osm):
+    _wanda_in_schritt_1(handy)
+    handy.locator(SEARCH).click()
+    handy.wait_for_url(f"{CREATE}adresse-suchen/")
+    handy.locator(TAKE).first.scroll_into_view_if_needed()
+
+    handy.locator(TAKE).first.click()
+    _uebernommen(handy)
+    lage = handy.evaluate(_LAGE)
+
+    assert lage["fokus"] == "id_street"
+    assert lage["feld"]["top"] >= lage["leiste"] and lage["feld"]["bottom"] <= lage["hoehe"], lage
+    assert handy.evaluate("window.scrollY") > 0
+
+
+@pytest.mark.parametrize("device", ["pc", "handy"])
+def test_ba5_bv3_adresse_leeren_mit_skript(request, browser_name, osm, device):
+    """BA5 und BV3: „Adresse leeren“ leert die Adresse im Browser, ohne die Seite neu zu laden: Sie bleibt an ihrer
+    Stelle, der Fokus liegt auf der Straße, an OpenStreetMap geht nichts; danach geht es gleich wieder zur Suche."""
+    page: Page = request.getfixturevalue(device)
+    _wanda_in_schritt_1(page)
+    page.locator(SEARCH).click()
+    page.wait_for_url(f"{CREATE}adresse-suchen/")
+    page.locator(TAKE).first.click()
+    _uebernommen(page)
+    expect(page.locator(CLEAR)).to_be_visible()
+    page.evaluate("window.__gleicheSeite = true")
+    vorher = page.evaluate(_STRASSE)
+    calls = len(osm.calls)
+
+    page.locator(CLEAR).click()
+
+    _leer(page)
+    nachher = page.evaluate(_STRASSE)
+    assert nachher["gleich"], "die Seite wurde nicht neu geladen"
+    _steht_still(vorher, nachher)
+    assert nachher["fokus"] == "id_street"
+    expect(page.locator(CLEAR)).to_be_hidden()
+    assert len(osm.calls) == calls
+    assert Event.objects.count() == 0
+    _no_side_scroll(page)
+    assert run_axe(page) == []
+
+    page.locator(SEARCH).click()
+    page.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(page.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+
+
+@pytest.mark.parametrize("change", [
+    ('input[name="street"]', "Burgweg 1"), ('input[name="postal_code"]', "9"), ('input[name="city"]', "M"),
+    ('select[name="state"]', "HE"), ('select[name="country"]', "SE"),
+], ids=["strasse", "plz", "ort", "bundesland", "land"])
+def test_ba7_der_knopf_erscheint_sobald_etwas_in_der_adresse_steht(pc, change):
+    _wanda_in_schritt_1(pc)
+    expect(pc.locator(CLEAR)).to_be_hidden()
+
+    selector, value = change
+    if selector.startswith("select"):
+        pc.locator(selector).select_option(value)
+    else:
+        pc.locator(selector).press_sequentially(value)
+
+    expect(pc.locator(CLEAR)).to_be_visible()
+    pc.locator(CLEAR).click()
+    expect(pc.locator(CLEAR)).to_be_hidden()
+
+
+def test_ba6_im_dialog_leeren_und_abbrechen_oder_speichern(pc, osm):
+    _im_dialog_des_stifts(pc)
+    pc.locator(SEARCH).click()
+    pc.wait_for_url(f"{LIST}*/bearbeiten/adresse-suchen/")
+    pc.locator(TAKE).first.focus()
+    pc.keyboard.press("Enter")
+    _uebernommen(pc)
+    pc.locator(EDIT_SAVE).click()
+    pc.wait_for_url(f"{LIST}*/")
+    entry = Event.objects.get()
+    assert entry.city == "Musterhausen"
+    page_url = pc.url
+
+    pc.goto(f"{page_url}bearbeiten/")
+    pc.locator(CLEAR).click()
+    _leer(pc)
+    pc.locator("dialog .a-dialog-fuss a", has_text="Abbrechen").click()
+    pc.wait_for_url(page_url)
+    entry.refresh_from_db()
+    assert entry.city == "Musterhausen"
+
+    pc.goto(f"{page_url}bearbeiten/")
+    pc.locator(CLEAR).click()
+    pc.locator(EDIT_SAVE).click()
+    pc.wait_for_url(page_url)
+    entry.refresh_from_db()
+    assert (entry.street, entry.city, entry.country, entry.latitude) == ("", "", "", None)
+    assert entry.location == "Burg Ludwigstein"
+
+
+def test_bg3_leeren_entfernt_die_fehler_an_der_adresse(pc):
+    _wanda_in_schritt_1(pc)
+    pc.locator('input[name="street"]').fill("Burgweg 1")
+    pc.locator('input[name="postal_code"]').fill("9999")
+    pc.locator(NEXT).click()
+    expect(pc.locator(f"{FIELD} .invalid-feedback")).to_have_text(["Bitte gib 5 Ziffern ein.", "Bitte gib den Ort ein."])
+
+    pc.locator(CLEAR).click()
+
+    expect(pc.locator(f"{FIELD} .invalid-feedback")).to_have_count(0)
+    expect(pc.locator(f"{FIELD} .is-invalid")).to_have_count(0)
+    expect(pc.locator(f"{FIELD} [aria-invalid]")).to_have_count(0)
+    assert pc.locator('input[name="postal_code"]').get_attribute("aria-describedby") in (None, "")
+    assert run_axe(pc) == []
+
+
+def test_bg4_bg5_leeren_geht_auch_ohne_openstreetmap_und_nimmt_die_koordinaten_mit(pc, osm):
+    _wanda_in_schritt_1(pc)
+    pc.locator(SEARCH).click()
+    pc.wait_for_url(f"{CREATE}adresse-suchen/")
+    pc.locator(TAKE).first.click()
+    _uebernommen(pc)
+    osm.failure = TimeoutError()
+
+    pc.locator(CLEAR).click()
+    _leer(pc)
+    for name, value in (("street", "Burgweg 1"), ("postal_code", "99999"), ("city", "Musterhausen")):
+        pc.locator(f'input[name="{name}"]').fill(value)
+    pc.locator('select[name="state"]').select_option("HE")
+    pc.locator(NEXT).click()
+
+    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    entry = Event.objects.get()
+    assert (entry.city, entry.latitude) == ("Musterhausen", None)
+
+
+def _bis_beim_adressfeld(page: Page) -> None:
+    """Ohne Skript rollt der Browser weich zur Stelle „#adressfeld“; gewartet wird, bis er dort angekommen ist: das
+    Adressfeld oben im Bild, oder am Ende der Seite mit der Straße ganz im Bild. Nie oben auf der Seite."""
+    lage, feld = {}, None
+    for _ in range(50):
+        lage = page.evaluate(_STRASSE)
+        feld = page.locator(FIELD).evaluate("e => e.getBoundingClientRect().top")
+        if lage["y"] > 0 and (abs(feld) <= 2 or (lage["ende"] and lage["top"] >= 0 and lage["bottom"] <= lage["hoehe"])):
+            return
+        page.wait_for_timeout(100)
+    raise AssertionError(("nicht beim Adressfeld", lage, feld))
+
+
+def test_ba8_ohne_skript_leeren_und_uebernehmen_bleiben_beim_adressfeld(pc_ohne_skript, osm):
+    """BA8: ohne Skript ein gewöhnliches Formular; die Seite steht danach beim Adressfeld, nicht oben. Enter bleibt
+    überall „Weiter“."""
+    page = pc_ohne_skript
+    _wanda_in_schritt_1(page)
+    page.locator(SEARCH).click()
+    page.wait_for_url(f"{CREATE}adresse-suchen/")
+    page.locator(TAKE).first.click()
+    page.wait_for_url(f"{CREATE}adresse-suchen/#adressfeld")
+    _uebernommen(page)
+    # Der Browser rollt weich zum Adressfeld; am Ende der Seite hält er früher an, die Straße ist dann ganz im Bild.
+    _bis_beim_adressfeld(page)
+
+    page.locator(CLEAR).click()
+    page.wait_for_url(f"{CREATE}adresse-suchen/#adressfeld")
+    _leer(page)
+    _bis_beim_adressfeld(page)
+    expect(page.locator(CLEAR)).to_be_hidden()
+
+    page.locator('input[name="location"]').press("Enter")
+    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+
+
+def test_ba9_am_handy_sucht_die_eingabetaste_und_leeren_geht_mit_der_tastatur(handy, osm):
+    """BA9: am Handy wie mit Autokorrektur und Wortvorschlägen getippt; die Eingabetaste sucht, und „Adresse leeren“
+    erreicht man nur mit der Tastatur, mit sichtbarem Fokus."""
+    _wanda_in_schritt_1(handy, location="")
+    location = handy.locator(f'{STEP} input[name="location"]')
+    _type_like_a_phone(location, "Burg ", "Ludwig", "Ludwigstein", "")
+
+    location.press("Enter")
+
+    handy.wait_for_url(f"{CREATE}adresse-suchen/")
+    expect(handy.locator(f"{FIELD} .a-treffer")).to_have_count(3)
+    _zu(handy, TAKE, steps=5)
+    _uebernommen(handy)
+    _zu(handy, CLEAR, steps=15)
+    _leer(handy)
+    expect(handy.locator('input[name="street"]')).to_be_focused()
+    street = handy.locator('input[name="street"]')
+    _type_like_a_phone(street, "Burgweg ", "1", "1", "")
+    handy.locator('input[name="city"]').fill("Musterhausen")
+    calls = len(osm.calls)
+    street.press("Enter")
+    handy.wait_for_url(f"{CREATE}adresse-suchen/")
+    # Gesucht wird mit Bezeichnung und Adresse; die erfundenen Antworten kennen diese Verbindung nicht.
+    expect(handy.locator(f"{FIELD} .a-adresse-ergebnis")).to_be_visible()
+    assert osm.calls[calls]["q"] == "Burg Ludwigstein, Burgweg 1, Musterhausen"
