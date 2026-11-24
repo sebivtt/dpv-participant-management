@@ -1376,17 +1376,25 @@ def _hit(place) -> dict:
 
 
 def _searched_form(request: HttpRequest, form_id: str) -> tuple[EventForm, dict]:
-    """„Adresse suchen“ oder „Übernehmen“ (#163): das Formular mit allen Eingaben und das Ergebnis für das Adressfeld.
+    """„Adresse suchen“, „Übernehmen“ (#163) oder „Adresse leeren“ (#410): das Formular mit allen Eingaben und das
+    Ergebnis für das Adressfeld.
 
     Mit `treffer` übernimmt es die Adresse des Treffers in die Adressfelder und merkt sich versteckt seine
     Koordinaten; die Bezeichnung bleibt, wie sie war (G6). Ein veränderter Treffer ändert nichts. Sonst sucht es, wenn
     die Angaben reichen (G3), bei OpenStreetMap und zeigt bis zu 5 Treffer, „Keine Adresse gefunden …“ (G1) oder
     „… nicht erreichbar …“ (G2). Danach liegt der Fokus bei Treffer oder Meldung, nach „Übernehmen“ auf der Straße.
+    Mit `leeren` leert es die Adresse (ohne Skript; mit Skript leert app.js sie im Browser) und setzt den Fokus auf
+    die Straße.
     """
     values = {name: request.POST.get(name, "") for name in EventForm.base_fields if name != "duration_ok"}
     found = {}
     focus = ""
-    if "treffer" in request.POST:
+    if "leeren" in request.POST:
+        # „Adresse leeren“ ohne Skript (#410, BA8): Straße, PLZ, Ort und Bundesland leer, das Land Deutschland, ohne
+        # Koordinaten; die Bezeichnung bleibt. Es fragt OpenStreetMap nicht (BV3, BG5).
+        values.update({name: "" for name in PLACE_PARTS}, country=GERMANY, coordinates="")
+        focus = "street"
+    elif "treffer" in request.POST:
         taken = place_from_token(request.POST["treffer"])
         if taken is not None:
             values.update({name: taken[name] for name in PLACE_PARTS}, coordinates=request.POST["treffer"])
@@ -1900,14 +1908,16 @@ BUILDING_BLOCKS = {
         "pages": [_("Veranstaltungen")],
     },
     "adressfeld": {
-        "name": _("Adressfeld"), "template": "core/_adressfeld.html", "issues": [163],
+        "name": _("Adressfeld"), "template": "core/_adressfeld.html", "issues": [163, 410],
         "purpose": _("Eine freiwillige Adresse ohne eigene Überschrift (Vorleseprogramme hören „Adresse“): Straße und "
                      "Hausnummer, PLZ und Ort "
                      "nebeneinander, Bundesland und Land als Auswahl, „Deutschland“ vorgewählt; das Bundesland nur bei "
                      "Deutschland. Sobald etwas eingetragen ist, sind PLZ und Ort Pflicht, in Deutschland mit 5 "
                      "Ziffern; die Fehler stehen am Feld. Darunter „Adresse suchen“: sucht bei OpenStreetMap mit der "
                      "Bezeichnung des Orts und den ausgefüllten Feldern und zeigt bis zu 5 Treffer, die „Übernehmen“ in "
-                     "die Felder schreibt. Die Suche lässt sich abschalten. Am Handy liegen alle Felder untereinander."),
+                     "die Felder schreibt; Enter in Bezeichnung, Straße, PLZ oder Ort sucht ebenso. Daneben „Adresse "
+                     "leeren“, sobald etwas in der Adresse steht: leert sie, die Bezeichnung bleibt. Die Suche lässt "
+                     "sich abschalten. Am Handy liegen alle Felder untereinander."),
         "pages": [_("Veranstaltungen")],
     },
     "schalter": {

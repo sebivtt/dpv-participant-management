@@ -60,6 +60,25 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Netz der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 2 | 21.10.2026, „Antwort des DPV-Admins …“, „Hinweise der KI“, zweiter Punkt (nur „eigenes Netz“) |
 | Aktualisieren der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 3 | 22.10.2026, „Testumgebung im Container …“ (#37), Nr. 5; 21.10.2026, „Antwort des DPV-Admins …“, „Folge daraus“ (nur dass Sebastian oder der Admin nach Anleitung aktualisieren) |
 | Log der Datenbank auf dem Server | 23.11.2026, #59, „Technische Wahl“, Nr. 1 | 15.11.2026, #324, „Technische Wahl“, Nr. 3 (nur der Satz zum Log des Datenbankservers, für den Server: dort nur für die Datenbank des Tools) |
+| Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
+
+---
+
+## 2026-11-24 · Adressfeld: Enter sucht, Seite bleibt beim Übernehmen stehen, „Adresse leeren“ (#410)
+
+**Entscheidung** (Sebastian; Klärung in #398 am 24.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/398#issuecomment-7124224923), Fragen 1, 5, 6, 6a, 9 und 10; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/410#issuecomment-7124249280) von #410):
+
+1. **Enter sucht:** Enter in Bezeichnung, Straße, PLZ oder Ort wirkt wie „Adresse suchen“, mit denselben Meldungen; in Name, Beginn, Ende und den Uhrzeiten bleibt Enter „Weiter“ bzw. „Speichern“. Gilt in Schritt 1 und im Dialog des Stifts, am Handy ebenso für die Eingabetaste der Bildschirmtastatur. Ohne Skript bleibt Enter überall „Weiter“ bzw. „Speichern“. Ersetzt den Eintrag vom 18.11.2026 (#163), „Technische Wahl“, Nr. 1, nur den Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert; der unsichtbare erste Knopf bleibt für alle übrigen Felder und für die Fassung ohne Skript.
+2. **Seite bleibt stehen** (Fehler): Nach „Übernehmen“ bleibt die Seite beim Adressfeld, der Fokus liegt auf der Straße, wie in #163 schon festgelegt.
+3. **„Adresse leeren“:** zart blauer Knopf neben „Adresse suchen“, nur da, sobald etwas in der Adresse steht oder ein anderes Land als Deutschland gewählt ist. Er leert die Adresse ohne Rückfrage, die Bezeichnung bleibt (Frage 6, geändert bei der Zusammenfassung: nur die Adresse); gespeichert wird erst mit „Weiter“ bzw. „Speichern“.
+
+**Technische Wahl** (KI):
+
+1. **Enter im Skript:** Welche Felder suchen, steht am Adressfeld (`data-enter-sucht`); das Skript löst bei Enter dort „Adresse suchen“ aus, außer während eine Eingabe noch zusammengesetzt wird (Wortvorschläge, Akzente). So bleibt Enter ohne Skript beim unsichtbaren ersten Knopf.
+2. **Seite bleibt stehen:** Ursache war, dass der Browser nach dem neuen Laden nicht zur Straße rollt, wenn sie schon im Bild ist; die Seite stand dann wieder oben (gemessen in Chromium und WebKit). Mit Skript merkt sich die Seite beim Klick auf „Übernehmen“, wo die Straße im Bild stand, und stellt sie danach genau dorthin, in der Seite oder im Dialog; ist sie so nicht ganz zu sehen (am Handy unter der Kopfleiste), rollt sie nur so weit wie nötig. Ohne Skript schicken „Übernehmen“ und „Adresse leeren“ das Formular an „…/adresse-suchen/#adressfeld“, die Seite steht dann beim Adressfeld; der Browser setzt mit einer Stelle „#…“ keinen Fokus (#163, Technische Wahl, Nr. 1), deshalb nimmt das Skript sie heraus.
+3. **„Adresse leeren“ ohne neue Adresse:** Ohne Skript schickt der Knopf das Formular mit `leeren` an die Adresse der Suche; sie leert die Adresse und zeigt dieselbe Seite wieder, ohne etwas zu prüfen, zu speichern oder OpenStreetMap zu fragen. Damit gelten dieselben Rechte wie für die Suche (VA-07, VA-03), ohne neue Zeile der Rechtematrix. Mit Skript leert er die Felder im Browser, ohne die Seite neu zu laden. Ob es den Knopf gibt, legt ohne Skript der Server beim Laden fest, mit Skript das Skript bei jeder Eingabe.
+
+**Umsetzung:** `core/static/core/app.js` (Abschnitte „Adressfeld: Seite bleibt stehen“, „Adressfeld: Enter sucht“, „Adressfeld: „Adresse leeren““), `core/templates/core/_adressfeld.html`, `_knopf_verschieben.html` (Angabe zum Mitschicken, versteckt), `core/templatetags/layout.py`, `core/views.py`, `core/address_texts.py`, `docs/gestaltung.md`. Tests in `tests/test_adressfeld.py` und `rauchtests/test_adressfeld.py` (Teil „#410“).
 
 ---
 
