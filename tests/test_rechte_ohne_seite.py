@@ -5,7 +5,8 @@ deshalb jede Adresse des Tools auf, wie der Rundumtest: lesend und mit einem
 manipulierten Formular, angemeldet als Mitglied, Leitung, Verbandsleitung, Admin, Konto ohne
 Zuordnung und als Person mit vielen Rollen zugleich (#136, A17: je Fall). Danach muss die
 Datenbank unverändert sein, und keine Antwort darf zeigen, was niemand im Tool sieht. Kommt eine
-Adresse dazu, prüfen die Tests sie mit. Als erlaubten Fall prüfen sie die Gegenprobe: Der
+Adresse dazu, prüfen die Tests sie mit. Adressen mit Kennung ruft ein weiterer Test zusätzlich mit den
+Kennungen vorhandener Einträge jeder Art auf (#326, unten). Als erlaubten Fall prüfen sie die Gegenprobe: Der
 vorgesehene Weg (erster Login, Befehl auf dem Server, Schreiben ins Protokoll) geht weiter.
 
 Das Muster „nach dem verbotenen Versuch steht in der Datenbank noch dasselbe“ stammt aus
@@ -15,6 +16,7 @@ Das Muster „nach dem verbotenen Versuch steht in der Datenbank noch dasselbe�
 
 import io
 import re
+from datetime import date
 
 import pytest
 from allauth.account.models import EmailAddress, EmailConfirmation
@@ -24,16 +26,20 @@ from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.models import Session
 from django.core.management import call_command
-from django.db import connection
+from django.db import connection, transaction
 from django.test import Client
 
 from django.utils import timezone
 
+from access.rights import Rights
+from events.models import Event, Registration
+from persons.models import DisplayedLead, ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
 from tests.keycloak_fake import login
 from tests.test_rollen import BY, build_org, give
 from tests import urls as test_urls
-from access.keys import has_key
+from access.keys import KEY_CONVERTER, has_key
+from tests.urls import kinds_with_key
 from tests.test_rundumtest import ALL, EXAMPLE_KEY, _all_patterns, _example_address
 from units.models import Unit, UnitChange
 
@@ -395,3 +401,114 @@ def test_seite_mit_kennung_die_eine_nummer_zeigt_macht_die_suche_rot(org):
     found = {number for _address, number in pages_with_numbers(org, patterns)}
 
     assert {str(user.pk) for user in org.everyone} <= found
+
+
+# Dieselben Verbote auch mit den Kennungen vorhandener Einträge (#326, S4 und S5)
+#
+# Die Tests oben rufen Adressen mit Kennung nur mit einer erfundenen Kennung auf; jede Seite antwortet dort mit
+# „nicht gefunden“. Eine Seite, die erst bei einem gefundenen Eintrag etwas Verbotenes tut, fiele so nicht auf.
+# Deshalb kommt in jede Adresse mit Kennung zusätzlich die Kennung eines vorhandenen Eintrags jeder Art. Erlaubte
+# Handlungen, etwa das Entfernen einer Rolle durch ihre Leitung, ändern dabei die Datenbank; damit jede Adresse
+# denselben Stand vorfindet, wird nach jeder Adresse zurückgerollt, und geprüft wird vorher.
+
+# Wer mit welcher Kennung vorne in einer Adresse mit zwei Kennungen steht, etwa die Organisation in
+# „organisation/<key:unit>/entfernen/<key:role>/“; die letzte Kennung ist jede Art der Reihe nach.
+LEADING_KEYS = {"unit": Unit}
+
+
+@pytest.fixture
+def entries(org) -> dict:
+    """Je Art mit Kennung ein vorhandener Eintrag, alle bei der Sippe Falken, die Erika als Stammesleitung sieht."""
+    fiete = User.objects.create(username="fiete.falke", first_name="Fiete", last_name="Falke")
+    lead = give(fiete, R.GROUP_LEAD, org.falken)
+    mia = ManagedPerson(unit=org.falken, first_name="Mia", last_name="Muster", birth_date=date(2014, 3, 1))
+    mia.save()
+    shown = DisplayedLead(person=mia, kind=R.GROUP_LEAD, unit=org.falken)
+    shown.save()
+    event = Event.objects.create(name="Probelager 2027", start=date(2027, 5, 15), end=date(2027, 5, 17))
+    event.leads.add(org.erika)
+    registration = Rights(org.max).register(event, [org.max])
+    # Ein Bereich, der nur im Protokoll der Admin-Zugriffe steht (PR-05), wie oben.
+    AdminAccess.objects.create(at=timezone.now(), actor_id=org.admin.pk, actor_name="Ada Admin",
+                               action=AdminAccess.Action.STARTED, detail=AdminAccess.Detail.DEBUGGING,
+                               unit_id=org.falken.pk, unit_kind=Unit.Kind.GROUP, unit_name=OLD_ACCESS_NAME)
+    return {User: fiete, Unit: org.falken, Role: lead, ManagedPerson: mia, DisplayedLead: shown, Event: event,
+            Registration: registration}
+
+
+def addresses_with_real_keys(patterns, entries):
+    """Jede Adresse mit Kennung, je Art einmal mit der Kennung ihres Eintrags; gibt Adresse und Art zurück."""
+    for pattern, _entry in patterns:
+        if not has_key(pattern):
+            continue
+        names = re.findall(rf"<{KEY_CONVERTER}:(\w+)>", pattern)
+        parts = _example_address(pattern).split(EXAMPLE_KEY)
+        for kind, found in entries.items():
+            keys = [entries[LEADING_KEYS[name]].key for name in names[:-1]] + [found.key]
+            yield "".join(part + key for part, key in zip(parts[:-1], keys, strict=True)) + parts[-1], kind
+
+
+def protected_state(other_session: str) -> dict:
+    """Was keine Adresse ändern darf: Konten (EP-09), Admins (RO-19), Daten des Logins und eine fremde Sitzung (TD-01)."""
+    return {
+        "Konten": snapshot(User, "pk", "username", "email", "is_superuser", "is_staff"),
+        "Admins": sorted(Role.objects.filter(kind=R.ADMIN).values_list("user_id", "unit_id")),
+        **{model._meta.label: snapshot(model, *fields) for model, fields in LOGIN_TABLES},
+        "fremde Sitzung": list(Session.objects.filter(session_key=other_session).values_list("session_data")),
+    }
+
+
+def problems_with_real_keys(org, entries, patterns=ALL) -> list[tuple[str, type, str]]:
+    """Ruft jede Adresse mit den Kennungen aus `entries` auf, wie `every_attempt()`; gibt jeden Verstoß zurück.
+
+    Verstoß heißt: Nach den Aufrufen ist etwas aus `protected_state()` anders, oder eine Antwort zeigt, was nur im
+    Protokoll (PR-01, PR-03, PR-05) oder in den Daten des Logins steht, oder die Kennung einer fremden Sitzung (TD-01).
+    """
+    form = manipulated_form(org)
+    other = Client()
+    other.force_login(org.max)
+    other_session = other.session.session_key
+    hidden = (OLD_PERSON_NAME, OLD_UNIT_NAME, OLD_ACCESS_NAME, KEYCLOAK_DETAIL, "nur-test-1", other_session)
+    before = protected_state(other_session)
+    problems = []
+    for address, kind in addresses_with_real_keys(patterns, entries):
+        with transaction.atomic():
+            for response in _attempts(address, form, org):
+                headers = " ".join(f"{name}: {value}" for name, value in response.headers.items())
+                text = response.content.decode(errors="replace") + headers
+                problems += [(address, kind, f"zeigt {secret}") for secret in hidden if secret in text]
+            after = protected_state(other_session)
+            problems += [(address, kind, name) for name in before if after[name] != before[name]]
+            transaction.set_rollback(True)
+    return problems
+
+
+def test_jede_art_mit_kennung_hat_einen_eintrag_fuer_die_schutztests(entries):
+    """Kommt eine Art mit Kennung dazu, wird dieser Test rot, bis `entries` einen Eintrag davon hat (#326)."""
+    assert set(entries) == set(kinds_with_key())
+    assert all(isinstance(found, kind) and found.pk for kind, found in entries.items())
+    leading = {name for pattern, _entry in ALL for name in re.findall(rf"<{KEY_CONVERTER}:(\w+)>", pattern)[:-1]}
+    assert leading <= set(LEADING_KEYS)
+
+
+@pytest.mark.alle_adressen
+@pytest.mark.rechtematrix("EP-09", "RO-19", "PR-01", "PR-03", "PR-05", "TD-01")
+def test_keine_adresse_tut_verbotenes_auch_mit_kennungen_vorhandener_eintraege(org, entries):
+    """S4: als Max, Zora, Vera, Ada, Otto und Erika, lesend und mit manipuliertem Formular."""
+    assert problems_with_real_keys(org, entries) == []
+
+
+@pytest.mark.urls("tests.urls")
+@pytest.mark.rechtematrix("EP-09")
+def test_seite_die_nur_bei_vorhandenem_eintrag_ein_konto_anlegt_macht_den_schutztest_rot(org, entries):
+    """S5: Mit der erfundenen Kennung allein bliebe die Testseite unentdeckt; mit jeder Art vorhandener Einträge nicht."""
+    patterns = [(pattern, entry) for pattern, entry in _all_patterns(test_urls.urlpatterns)
+                if entry.name == "account_for_existing_entry"]
+    assert len(patterns) == 1
+    before = snapshot(User, "pk", "username")
+
+    list(every_attempt(org, patterns))
+
+    assert snapshot(User, "pk", "username") == before
+    found = problems_with_real_keys(org, entries, patterns)
+    assert {kind for _address, kind, what in found if what == "Konten"} == set(entries)

@@ -445,6 +445,21 @@ def test_wechsel_auf_dem_pfad_geht_trotz_leitungsrollen(org):
     assert membership(org.erika).unit == org.boreas
 
 
+@pytest.mark.rechtematrix("PK-19", "EP-10")
+def test_wechsel_der_mitgliedschaft_behaelt_die_leitungsrollen(org):
+    """#326, S1 (ROL-01): Nach jedem Wechsel ist Erika weiter Gruppenleitung der Falken und Stammesleitung von Walhall."""
+    give(org.erika, R.MEMBER, org.falken)
+    give(org.erika, R.GROUP_LEAD, org.falken)
+    give(org.erika, R.TROOP_LEAD, org.walhall)
+    leads = set(Role.objects.filter(user=org.erika, kind__in=LEADS_IN_UNITS).values_list("pk", "kind", "unit_id"))
+
+    for target in (org.woelfe, org.walhall, org.boreas):
+        move(org.erika, target)
+
+        assert membership(org.erika).unit == target
+        assert set(Role.objects.filter(user=org.erika, kind__in=LEADS_IN_UNITS).values_list("pk", "kind", "unit_id")) == leads
+
+
 def test_wechsel_nach_unten_geht_nur_wenn_die_leitungen_darueber_auf_dem_pfad_bleiben(org):
     give(org.max, R.MEMBER, org.boreas)
     give(org.max, R.TROOP_LEAD, org.zugvoegel)
