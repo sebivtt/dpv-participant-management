@@ -3,7 +3,7 @@
 Jede Seite trägt genau eine der beiden Markierungen:
 
 - `@checks_rights("PK-01", …)`: Die Seite zeigt oder ändert Personen- oder Anmeldedaten nach den
-  genannten Zeilen der Rechtematrix. Daten anderer Personen holt sie nur über die zentrale
+  genannten Kennungen der Rechtematrix. Daten anderer Personen holt sie nur über die zentrale
   Rechteprüfung (`request.rights`); ohne sie zeigt sie nur die angemeldete Person selbst (BER-01,
   Grund 1) oder ist der Login, der das eigene Konto anlegt (EP-09, TD-01). Der Rundumtest prüft,
   dass es die Kennungen gibt.
@@ -17,7 +17,7 @@ ROW_ID = re.compile(r"[A-Z]{2}-\d{2}")
 
 
 def checks_rights(*row_ids: str):
-    """Markiert eine Seite, die die Rechte nach den genannten Zeilen der Rechtematrix prüft."""
+    """Markiert eine Seite, die die Rechte nach den genannten Kennungen der Rechtematrix prüft."""
     if not row_ids or not all(isinstance(row, str) and ROW_ID.fullmatch(row) for row in row_ids):
         raise ValueError(f"Jede Markierung braucht mindestens eine Kennung der Rechtematrix wie PK-01: {row_ids!r}")
 

@@ -71,7 +71,7 @@ Entfällt ein Recht, bleibt seine Kennung als Verbot bestehen, weil Issues und T
 **Wer:**
 
 - **Leitung:** Gruppenleitung, Stammesleitung, Ringleitung oder Bundesleitung einer Einheit. Ihr **Bereich** ist die geleitete Einheit mit allen Einheiten darunter; der Bereich einer Gruppenleitung ist nur ihre Gruppe. Im Bereich sieht sie die Personen (BER-01). Was sie dort anlegen, zuordnen und benennen darf, hat je Zeile eine eigene Reichweite; es gibt keine pauschale Vererbung nach unten (#136, Grundsatz 1).
-- **Einspringende Leitung:** Hat eine Einheit keine Leitung mit Konto, hat die Leitung der Einheit direkt darüber dort alle Rechte einer Leitung dieser Einheit; fehlt auch sie, die nächsthöhere, höchstens bis zur Bundesleitung, nie die Verbandsleitung (ROL-02). Das wird bei jedem Klick berechnet, nicht als Rolle gespeichert, und endet, sobald eine Leitung mit Konto benannt ist. Eine angezeigte Leitungsrolle einer verwalteten Person zählt nicht als Leitung (VP-16), eine Leitung mit im Tool gesperrtem Konto ebenso wenig (RO-21); beide beenden das Einspringen nicht. Für einen Stamm ohne Ring in einem Bund mit Ringen ist die Bundesleitung die Leitung direkt darüber (#136, F2.7). Eine kommissarische Leitung außerhalb des eigenen Leitungspfads ist in #138 vorgemerkt. Im Raster hat die einspringende Leitung in dieser Einheit die Rechte aus der Spalte der Einheit (EH-18), auch wo eine Kennung früher „außer als einspringende Leitung“ nannte.
+- **Einspringende Leitung:** Hat eine Einheit keine Leitung mit Konto, hat die Leitung der Einheit direkt darüber dort alle Rechte einer Leitung dieser Einheit; fehlt auch sie, die nächsthöhere, höchstens bis zur Bundesleitung, nie die Verbandsleitung (ROL-02). Das wird bei jedem Klick berechnet, nicht als Rolle gespeichert, und endet, sobald eine Leitung mit Konto benannt ist. Eine angezeigte Leitungsrolle einer verwalteten Person zählt nicht als Leitung (VP-16), eine Leitung mit im Tool gesperrtem Konto ebenso wenig (RO-21); beide beenden das Einspringen nicht. Für einen Stamm ohne Ring in einem Bund mit Ringen ist die Bundesleitung die Leitung direkt darüber (#136, F2.7). Eine kommissarische Leitung außerhalb des eigenen Leitungspfads ist in #138 vorgemerkt. Im Raster hat die einspringende Leitung in dieser Einheit die Rechte aus der Spalte der Einheit (EH-18), auch wo ein Eintrag es nicht eigens nennt; manche nennen es weiter mit „außer als einspringende Leitung“.
 - **Mitglied:** Person mit Konto und Mitgliedschaft in einer Einheit, ohne Leitungsrolle.
 - **Zuordnung:** Mitgliedschaft in einer Gruppe, einem Stamm, einem Ring oder einem Bund, auch mit Leitungsrolle, oder die Rolle Verbandsleitung oder DPV-Veranstaltungsteam. Admin, Veranstaltungsleitung, Ansprechperson und Verwaltende eines Kreises sind keine Zuordnung (BER-03).
 - **Konto ohne Zuordnung:** Person mit Konto ohne Zuordnung (#9, BER-03). Sie pflegt im Tool nur das eigene Profil; ab P3 stellt sie Beitrittsanfragen (#140). Was sie darf, steht nur in dieser Matrix (Entscheidung vom 24.10.2026).
@@ -98,7 +98,7 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 | eigenes Profil ansehen („Mein Profil“) | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | EP-01 |
 | eigenen Fahrtenname eintragen, ändern, löschen | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | EP-03 |
 | eigene Mitgliedschaft beenden (austreten) | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | nur sich selbst | – | – | – | – | EP-06 |
-| eigene Mitgliedschaft verschieben | – | eine Ebene tiefer, Leitungsrollen bleiben auf dem Leitungspfad | eine Ebene tiefer, Leitungsrollen bleiben auf dem Leitungspfad | eine Ebene tiefer, Leitungsrollen bleiben auf dem Leitungspfad | – | – | – | – | – | EP-10 |
+| eigene Mitgliedschaft verschieben | – | eine Ebene tiefer, nur wenn alle Leitungsrollen auf dem Leitungspfad bleiben | eine Ebene tiefer, nur wenn alle Leitungsrollen auf dem Leitungspfad bleiben | eine Ebene tiefer, nur wenn alle Leitungsrollen auf dem Leitungspfad bleiben | – | – | – | – | – | EP-10 |
 
 **Was niemand darf:**
 
@@ -150,12 +150,13 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ansehen | Bereich¹ | Bereich¹ | Bereich¹ | Bereich¹ | –¹ | – | –¹ | – | – | PK-01, PK-02, PK-03, PK-04, PK-05, PK-06, PK-07, PK-08, SZ-06 |
 | suchen nach Vorname, Nachname, Fahrtenname | Bereich | Bereich | Bereich | Bereich | – | – | – | – | – | PK-09, PK-10, PK-14, SZ-06 |
-| finden über die genaue bestätigte Mail oder den genauen Benutzernamen | ja, höchstens 20 Suchen je Stunde | ja, höchstens 20 Suchen je Stunde | ja, höchstens 20 Suchen je Stunde | ja, höchstens 20 Suchen je Stunde | – | – | ja, höchstens 20 Suchen je Stunde | – | – | PK-13, PK-14, PK-24, SZ-06 |
+| finden über die genaue bestätigte Mail oder den genauen Benutzernamen | ja² | ja² | ja² | ja² | – | – | ja² | – | – | PK-13, PK-14, PK-24, SZ-06 |
 | als Mitglied aufnehmen | eigene Einheit, nur Personen ohne Mitgliedschaft | eigene Einheit, nur Personen ohne Mitgliedschaft | eigene Einheit, nur Personen ohne Mitgliedschaft | eigene Einheit, nur Personen ohne Mitgliedschaft | – | – | – | – | – | PK-17, PK-18, PK-23, PK-26 |
 | Mitglied verschieben | – | eine Ebene tiefer, nur wenn alle Leitungsrollen der Person auf ihrem Leitungspfad bleiben | eine Ebene tiefer, nur wenn alle Leitungsrollen der Person auf ihrem Leitungspfad bleiben | eine Ebene tiefer, nur wenn alle Leitungsrollen der Person auf ihrem Leitungspfad bleiben | – | – | – | – | – | PK-19, PK-20, PK-23, PK-25 |
 | Mitglied entfernen (austragen) | eigene Einheit | eigene Einheit | eigene Einheit | eigene Einheit | – | – | – | – | – | PK-21, PK-22, PK-23 |
 
 ¹ Name, Fahrtenname und Rolle von Leitungen sehen Leitungen auch auf ihrer Kette nach oben (RO-01), Mitglieder auf ihrer Kette nach oben (RO-02) und die Verbandsleitung auf der Verbandsebene (RO-05); siehe PK-04, PK-05 und PK-07.
+² Höchstens 20 Suchen je Person und Stunde (PK-24).
 
 **Was niemand darf:**
 
@@ -236,13 +237,13 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | anlegen | eigene Einheit | eigene Einheit | eigene Einheit | eigene Einheit | – | – | – | – | – | VP-01, VP-03, VP-06, VP-17, SZ-06 |
 | Einwilligung bestätigen, nur beim Anlegen und im eigenen Namen | eigene Einheit | eigene Einheit | eigene Einheit | eigene Einheit | – | – | – | – | – | VP-11 |
-| ansehen im Abschnitt „Personen“, suchen (Vorschläge im Dialog „… benennen“), bearbeiten | Bereich | Bereich | Bereich | Bereich | –¹ | – | –¹ | – | – | VP-02, VP-03, VP-04, VP-05, VP-06, SZ-06 |
+| ansehen im Abschnitt „Personen“, suchen (Vorschläge im Dialog „… benennen“), bearbeiten | Bereich¹ | Bereich¹ | Bereich¹ | Bereich¹ | –¹ | – | –¹ | – | – | VP-02, VP-03, VP-04, VP-05, VP-06, SZ-06 |
 | verschieben | – | eine Ebene tiefer | eine Ebene tiefer | eine Ebene tiefer | – | – | – | – | – | VP-07, VP-08 |
 | austragen eine Ebene nach oben | eigene Einheit | eigene Einheit | eigene Einheit | –² | – | – | – | – | – | VP-18 |
 | endgültig löschen | eigene Einheit | eigene Einheit | eigene Einheit | eigene Einheit | – | – | – | – | – | VP-09, VP-10 |
 | angezeigte Leitungsrolle eintragen, entfernen | eigene Einheit, eintragen nur auf dem Leitungspfad der Person | Bereich, eintragen nur auf dem Leitungspfad der Person | Bereich, eintragen nur auf dem Leitungspfad der Person | Bereich, eintragen nur auf dem Leitungspfad der Person | – | – | – | – | – | VP-14, VP-15 |
 
-¹ Name, Fahrtenname und Rolle angezeigter Leitungsrollen sehen Mitglieder und Verbandsleitung nach RO-09.
+¹ Name, Fahrtenname und Rolle angezeigter Leitungsrollen sehen alle, die die Leitungen einer Einheit sehen, nach RO-09: Leitungen auch auf ihrer Kette nach oben, Mitglieder auf ihrer Kette nach oben, die Verbandsleitung auf der Verbandsebene.
 ² Direkt im Bund gibt es kein Austragen (VP-18).
 
 **Was niemand darf:**
@@ -475,14 +476,15 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 
 | Recht | GL | StL | RL | BL | Mitgl. | o. Zuord. | VL | DPV-VT | Admin | Veranst.-Ltg. | Ansprechp. | Kennungen |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Veranstaltung anlegen | ja | ja | ja | ja | ja | – | ja | ja | – | – | – | VA-01, VA-05 |
+| Veranstaltung anlegen | ja² | ja² | ja² | ja² | ja | – | ja | ja | – | – | – | VA-01, VA-05 |
 | Veranstaltung ansehen, bearbeiten | – | – | – | – | – | – | – | – | – | eigene Veranstaltung | – | VA-02, VA-03 |
 | eigenen Entwurf beim Anlegen öffnen, Anlegen beenden, „Entwurf löschen“ | – | – | – | – | – | – | – | – | – | eigene Veranstaltung, nur beim Anlegen, als einzige Leitung und ohne Anmeldung | – | VA-06 |
-| Adresssuche über OpenStreetMap im Adressfeld | ja | ja | ja | ja | ja | – | ja | ja | – | – | – | VA-07 |
+| Adresssuche über OpenStreetMap im Adressfeld | ja² | ja² | ja² | ja² | ja | – | ja | ja | – | – | – | VA-07 |
 | Anmeldungen ansehen | – | – | – | – | – | – | – | – | – | eigene Veranstaltung | eigene Anmeldung, ohne Gesundheitsangaben | AN-01, AN-02, AN-03, SZ-06 |
-| anmelden (in P2 nur im Datenmodell) | Bereich, dazu sich selbst | Bereich, dazu sich selbst | Bereich, dazu sich selbst | Bereich, dazu sich selbst | nur sich selbst | nur sich selbst¹ | nur sich selbst | nur sich selbst | nur sich selbst¹ | – | – | AN-04, AN-05 |
+| anmelden (in P2 nur im Datenmodell) | Bereich¹, dazu sich selbst | Bereich¹, dazu sich selbst | Bereich¹, dazu sich selbst | Bereich¹, dazu sich selbst | nur sich selbst | nur sich selbst¹ | nur sich selbst | nur sich selbst | nur sich selbst¹ | – | – | AN-04, AN-05 |
 
-¹ Ab P3 nur, wer eine Zuordnung hat (BER-03, AN-04, AN-05). Ein Admin im Support-Zugang meldet nur sich selbst an, auch in der Einheit des Zugangs (AN-05).
+¹ Ab P3 nur, wer eine Zuordnung hat (BER-03, AN-04, AN-05). Ein Admin im Support-Zugang meldet nur sich selbst an, auch in der Einheit des Zugangs (AN-05), abweichend vom Satz über dem Raster.
+² Das Recht kommt aus der Zuordnung, nicht aus der Leitungsrolle; ein Admin im Support-Zugang hat es deshalb nicht, abweichend vom Satz über dem Raster (VA-05, VA-07).
 
 **Was niemand darf:**
 

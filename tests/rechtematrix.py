@@ -129,9 +129,10 @@ def invalid_ids(text: str) -> list[str]:
 
 
 def duplicate_ids(text: str) -> list[str]:
-    """Kennungen mit mehr als einem Eintrag."""
-    counts = Counter(cells[0] for cells in rows(text))
-    return sorted(row_id for row_id, count in counts.items() if count > 1)
+    """Kennungen mit mehr als einem Eintrag oder mehr als einer Zeile unter „Tests je Kennung“."""
+    entries = Counter(cells[0] for cells in rows(text))
+    tests = Counter(cells[0] for head, body in _tables(text) if head == TESTS_HEAD for cells in body)
+    return sorted({row_id for counts in (entries, tests) for row_id, count in counts.items() if count > 1})
 
 
 def row_ids(text: str) -> set[str]:

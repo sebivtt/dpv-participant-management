@@ -15,7 +15,7 @@ Anmelde- und Veranstaltungstool für den DPV e.V.: Veranstaltungen planen, Anmel
 | [`docs/review-leitfaden.md`](docs/review-leitfaden.md) | Leitfaden für das externe KI-Review am Ende jeder Phase |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Regeln für jede Änderung, egal ob von Menschen oder KI |
 | [`CLAUDE.md`](CLAUDE.md) | zusätzliche Hinweise für KI-Assistenten |
-| [`docs/rechtematrix.md`](docs/rechtematrix.md) | wer was darf, mit dem Stand je Zeile |
+| [`docs/rechtematrix.md`](docs/rechtematrix.md) | wer was darf, mit dem Stand je Kennung |
 | [`docs/gestaltung.md`](docs/gestaltung.md) | Leitlinie für die Gestaltung jeder Seite |
 | [`docs/zielbilder/`](docs/zielbilder/) | Sebastians Entwürfe für einzelne Seiten |
 | [`docs/aufbau.md`](docs/aufbau.md) | Aufbau des Codes: Apps, Schichten und ihre Richtung, wo man was baut |

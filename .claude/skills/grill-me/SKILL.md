@@ -73,7 +73,7 @@ Alle Entscheidungen kurz als Liste zeigen und fragen, ob das so stimmt. Erst nac
 
 Aus den Szenarien entstehen später die Tests; wann sie nötig sind und wann nicht, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3. Sie werden hier gesammelt, solange Sebastian im Thema ist.
 
-- Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
+- Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung aus der Rechtematrix, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
 - Sebastian entscheidet je Szenario (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3).
 - Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 8) in das Unter-Issue, zu dem sie gehören.
 - **Was bleibt unverändert?** Für jedes Issue mit Szenarien fragt die Klärung, welche bestehenden Abläufe dieselben Daten, Adressen oder Rechte berühren und was dort gleich bleiben muss. Die Antwort steht im Kommentar „Szenarien (Datum)“ als Abschnitt „Was bleibt unverändert?“, mit Sebastians Entscheidung wie jedes Szenario; berührt das Issue nichts Bestehendes, steht dort genau das mit Grund. <!-- R36 -->
