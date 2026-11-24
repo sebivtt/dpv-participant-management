@@ -789,6 +789,8 @@
         // Angesagt wird nur, wenn eine Meldung dazukommt; wegfallende sagt niemand an.
         if (added) {
           box.setAttribute("role", "alert");
+        } else {
+          box.removeAttribute("role");
         }
         if (box.textContent !== text) {
           box.textContent = text;
@@ -824,9 +826,13 @@
         // Verlässt man das Feld mit einem Klick, etwa auf „Weiter“, erscheint die Meldung erst nach dem Klick: Sonst
         // rutschte der Knopf unter der Maus weg, und der Klick ginge ins Leere (gefunden im Rauchtest).
         if (pointerDown) {
-          document.addEventListener("pointerup", function () {
+          var later = function () {
+            document.removeEventListener("pointerup", later);
+            document.removeEventListener("pointercancel", later);
             window.setTimeout(function () { update(true); }, 0);
-          }, { once: true });
+          };
+          document.addEventListener("pointerup", later);
+          document.addEventListener("pointercancel", later);
           return;
         }
         update(true);
@@ -870,8 +876,12 @@
     var asked = 0;
 
     // Uhrzeiten ohne Sekunden, wie der Server sie vergleicht (`_whole_minute()`).
+    // Ein Datum, das der Server nicht versteht (etwa ein fünfstelliges Jahr), zählt wie ein unvollständiges (Befund B2).
     function value(input) {
-      return input.type === "time" ? input.value.slice(0, 5) : input.value;
+      if (input.type === "time") {
+        return input.value.slice(0, 5);
+      }
+      return /^\d{4}-\d{2}-\d{2}$/.test(input.value) ? input.value : "";
     }
 
     function changed() {
@@ -907,7 +917,11 @@
       var days = dayNumber(to) - dayNumber(from) + 1;
       if (!found.get(start).length && days >= limit && changed(start, startTime, end, endTime)) {
         asked = days;
-        found.get(end).push(asking(days));
+        // Ist genau diese Dauer schon bestätigt, fragt auch der Server nicht mehr (`_ask_duration()`; Befund B1).
+        var confirmed = row && row.isConnected && row.querySelector("input");
+        if (!(confirmed && confirmed.checked && confirmed.value === String(days))) {
+          found.get(end).push(asking(days));
+        }
       }
       return found;
     }
