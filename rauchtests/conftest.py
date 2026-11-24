@@ -37,7 +37,8 @@ import urllib.request
 
 import pytest
 from django.conf import settings
-from playwright.sync_api import Browser, BrowserContext, Error, Page, expect, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Error, Locator, Page, expect, sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 from tests.check_ports import PORT_RELEASE_SECONDS, SMOKE_TEST_LOCK_PORT, SMOKE_TEST_PORT, fail_if_busy, tell, wait_for_turn
 from tests.nur_lokales_keycloak import require_local_keycloak
@@ -477,6 +478,26 @@ def wait_for_page_below(page: Page, address: str, button: str) -> None:
     """
     page.wait_for_url(address)
     expect(page.locator(f"#{button}")).to_be_focused()
+
+
+# Übliches Zeitlimit der Rauchtests: so lange wartet `expect()` von Playwright, wenn nichts anderes gesagt ist.
+# Setzt ein Rauchtest das Zeitlimit von `expect()` je anders (`expect.set_options`), diese Zahl mitziehen.
+EXPECT_TIMEOUT_MS = 5_000
+
+
+def expect_modal(dialog: Locator) -> None:
+    """Wartet bis zum üblichen Zeitlimit, bis der Dialog modal ist; danach nicht modal ist rot (#402).
+
+    Modal heißt: Der Dialog hält den Fokus fest, die Seite dahinter ist gesperrt. Der Dialog kommt offen vom
+    Server und ist damit schon sichtbar; modal macht ihn erst das Skript, das mit `defer` lädt. Eine einmalige
+    Abfrage gleich nach „sichtbar“ ist deshalb in einem langsamen Browser manchmal noch falsch (Firefox auf
+    GitHub). tests/test_rauchtests_modal.py meldet jede Stelle, die das wieder nur einmal abfragt.
+    """
+    handle = dialog.element_handle()  # fehlt der Dialog ganz, meldet das Playwright selbst
+    try:
+        dialog.page.wait_for_function("d => d.matches(':modal')", arg=handle, timeout=EXPECT_TIMEOUT_MS)
+    except PlaywrightTimeout:
+        raise AssertionError(f"Der Dialog ist nach {EXPECT_TIMEOUT_MS} ms nicht modal.") from None
 
 
 def login(page: Page, account=ERIKA) -> None:

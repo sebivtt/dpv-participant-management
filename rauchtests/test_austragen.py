@@ -11,7 +11,7 @@ Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
@@ -52,7 +52,7 @@ def test_am_pc_nur_mit_der_tastatur_austragen(pc):
     pc.wait_for_url(_expel_dialog(pc, units))
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Flink (Finn Falke) aus Sippe Falken austragen?")
     assert len(_shown_previews(pc)) == 1
     assert "direkt zu Stamm Walhall" in _shown_previews(pc)[0]

@@ -12,7 +12,7 @@ Barrierefreiheit. Die Regeln selbst prüft tests/test_verschieben.py. Alle Namen
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from roles.models import Role
@@ -74,7 +74,7 @@ def test_am_pc_nur_mit_der_tastatur_verschieben(pc):
     pc.wait_for_url(_move_dialog(units["walhall"], units["wilma"]))
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Verschieben")
     expect(dialog.locator(".a-unterzeile")).to_have_text("Wilma Walhall aus Stamm Walhall")
     expect(dialog.locator(".a-auswahl-folge")).to_have_count(0)
