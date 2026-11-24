@@ -257,6 +257,16 @@ def test_doppelte_kennung_macht_die_pruefung_rot():
     assert duplicate_ids(HEADER + row + other + "\n## Weiter\n\n" + HEADER + row) == ["XY-01"]
 
 
+def test_doppelte_zeile_unter_tests_je_kennung_ist_rot():
+    """Gegenprobe (#139, Befund der unabhängigen Prüfung): Eine zweite Zeile derselben Kennung
+    unter „Tests je Kennung“ überschreibt die erste nicht still."""
+    entry = HEADER + "| XY-01 | Beispiel | BER-01 | gebaut |\n\n"
+    tests = TESTS_HEADER + "| XY-01 | gebaut: erlaubt `a`; verboten `b` |\n"
+
+    assert duplicate_ids(entry + tests + "\n" + tests) == ["XY-01"]
+    assert duplicate_ids(entry + tests) == []
+
+
 # Korrekturen nach dem externen Review (#136)
 
 # Zeilen je Kennung im ersten Entwurf vom 23.10.2026. Issues und Tests nennen diese Kennungen;
