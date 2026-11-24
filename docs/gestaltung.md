@@ -144,7 +144,7 @@ Kein Zielbild (Frage 14 in #95); Entscheidungen in `docs/entscheidungen.md`, Ein
 
 Zielbild als `docs/zielbilder/verwaltete-personen.html`, Abweichungen in `docs/zielbilder/README.md`. Entscheidungen in `docs/entscheidungen.md`, Eintrag vom 11.11.2026 zu #117. Ein Baustein neu, fünf erweitert:
 
-- **Datumsfeld** (neu, N3): das Datumsfeld des Browsers, mit Beschriftung und Fehler am Feld wie das Textfeld, ohne Zahl der Zeichen. Der Browser zeigt das Datum in seiner Schreibweise, am PC mit kleinem Kalender, am Handy mit Drehrädern; Tage nach „heute“ lässt er beim Geburtsdatum nicht wählen. Der Kalender aus `docs/zielbilder/mein-profil.html` entfällt hier.
+- **Datumsfeld** (neu, N3): das Datumsfeld des Browsers, mit Beschriftung und Fehler am Feld wie das Textfeld, ohne Zahl der Zeichen. Der Browser zeigt das Datum in seiner Schreibweise, am PC mit kleinem Kalender, am Handy mit Drehrädern; Tage nach „heute“ lässt er beim Geburtsdatum nicht wählen. Der Kalender aus `docs/zielbilder/mein-profil.html` entfällt hier. Datum und Uhrzeit stehen in jedem Browser senkrecht mittig wie der Text im Textfeld (#409; in Safari stellt das eine eigene Regel in `core/static/core/app.css` sicher).
 - **Überschrift einer Fläche:** links neben dem Knopf darf ein zweiter stehen, zart blau wie „Verschieben“, etwa „Verwaltete Person anlegen“ neben „Person mit Konto aufnehmen“ (N6); am Handy untereinander. Seit #298 entfallen (Abschnitt „Person aufnehmen“ unten).
 - **Person in einer Liste:** Eine verwaltete Person hat einen grauen Kreis, in der zweiten Zeile die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Mail und Geburtsdatum stehen nicht in der Liste.
 - **Marke:** neu „verwaltet“, grau wie „nur lesen“, ohne Schloss.
