@@ -11,7 +11,7 @@ tests/test_person_aufnehmen.py. Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key
@@ -47,7 +47,7 @@ def test_am_pc_nur_mit_der_tastatur_beide_wege_zurueck_und_schliessen(pc):
     pc.wait_for_url(choice)
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Person aufnehmen")
     expect(pc.locator(TILES)).to_have_count(2)
     # PA2: Die obere Fläche hat beim Öffnen den Fokus, Tab erreicht die untere; der Fokus ist zu sehen.

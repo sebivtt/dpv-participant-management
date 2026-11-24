@@ -14,7 +14,7 @@ from datetime import date
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
@@ -71,7 +71,7 @@ def test_am_pc_nur_mit_der_tastatur_verschieben_austragen_und_loeschen(pc):
     pc.keyboard.press("Enter")
     pc.wait_for_url(_managed_address(units["walhall"], units["paul"], "verschieben"))
     dialog = _dialog(pc)
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator(".a-unterzeile")).to_have_text("Paul Probe aus Stamm Walhall")
     assert run_axe(pc) == []
     stations = _stations_to_element(pc, "dialog .btn-primary", steps=10)
@@ -116,7 +116,7 @@ def test_am_pc_nur_mit_der_tastatur_verschieben_austragen_und_loeschen(pc):
 
     pc.wait_for_url(_managed_address(units["falken"], units["lena"], "loeschen"))
     dialog = _dialog(pc)
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Kiwi (Lena Probe) endgültig löschen?")
     expect(dialog).to_contain_text("Das lässt sich nicht rückgängig machen.")
     expect(dialog.locator(".a-dialog-fuss .btn")).to_have_text(["Nicht löschen", "Endgültig löschen"])

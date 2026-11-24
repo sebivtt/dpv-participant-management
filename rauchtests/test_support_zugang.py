@@ -9,10 +9,11 @@ Tastatur erreichbar; die Seiten bestehen die Prüfung auf Barrierefreiheit, und 
 Die Regeln selbst prüft tests/test_support_zugang.py. Alle Namen sind erfunden.
 """
 
+import pytest
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from roles.models import AdminAccess, Role
@@ -61,7 +62,7 @@ def test_am_pc_nur_mit_der_tastatur_starten_und_beenden(pc):
 
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Support-Zugang für Stamm Walhall starten")
     expect(dialog.locator("input[type=radio]:checked")).to_have_count(0)
     assert run_axe(pc) == []
@@ -168,3 +169,16 @@ def test_ohne_skript_starten_und_beenden(pc_ohne_skript):
     page.wait_for_url(_page_of(units["walhall"]))
     expect(page.locator("[data-kurz]")).to_contain_text("Support-Zugang für Stamm Walhall beendet.")
     expect(page.locator(BAR)).to_have_count(0)
+
+
+def test_ohne_skript_ist_der_dialog_nicht_modal_und_expect_modal_bleibt_rot(pc_ohne_skript):
+    """Gegenprobe zu expect_modal() (#402): Ohne Skript ist der Dialog sichtbar, aber nie modal; nach dem Warten rot."""
+    page = pc_ohne_skript
+    login(page)
+    units = _boreas_with_admin()
+    page.goto(f"{_page_of(units['walhall'])}support-zugang/")
+
+    dialog = _dialog(page)
+    expect(dialog).to_be_visible()
+    with pytest.raises(AssertionError, match="nicht modal"):
+        expect_modal(dialog)

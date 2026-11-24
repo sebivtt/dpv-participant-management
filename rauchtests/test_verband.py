@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, HANDY, login, run_axe
+from rauchtests.conftest import BASE, HANDY, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from roles.models import Role
@@ -71,7 +71,7 @@ def test_am_pc_nur_mit_der_tastatur_bundesleitung_benennen(pc):
     pc.wait_for_url(f"{ADDRESS}verband/bund/{units['boreas'].key}/benennen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Bundesleitung benennen")
     field = pc.get_by_label("Mail oder Benutzername")
     expect(field).to_be_focused()

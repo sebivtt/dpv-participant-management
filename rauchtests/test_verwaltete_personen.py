@@ -14,7 +14,7 @@ tests/test_verwaltete_personen.py. Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key, _type_like_a_phone
@@ -56,7 +56,7 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_bearbeiten(pc):
     pc.wait_for_url(f"{page_address}verwaltete-person/anlegen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Verwaltete Person anlegen")
     expect(pc.get_by_label("Vorname")).to_be_focused()
     assert run_axe(pc) == []
