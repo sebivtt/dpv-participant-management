@@ -510,11 +510,63 @@ def test_zwei_gleichzeitige_erste_logins_ohne_fehlerseite_und_ohne_verwaistes_ko
     assert SocialAccount.objects.count() == 1
 
 
-def _return_in_own_connection(browser, state: str) -> None:
+def _return_in_own_connection(browser, state: str, answers: list | None = None) -> None:
     try:
-        browser.get(RETURN, {"state": state, "code": "code-nur-test"})
+        response = browser.get(RETURN, {"state": state, "code": "code-nur-test"})
+        if answers is not None:
+            answers.append(response)
     finally:
         connection.close()
+
+
+def _two_first_logins_in_one_browser(client, monkeypatch):
+    """Doppelklick oder zwei Tabs eines Browsers (#326, S2): beide teilen sich die Cookies.
+
+    Wie oben ist die Rückkehr von Tab B schon fertig, während die von Tab A läuft. Gibt die
+    Antworten an A und B zurück.
+    """
+    tab_b = Client()
+    tab_b.cookies = client.cookies
+    state_a = keycloak_parameters(start_login(client))["state"]
+    state_b = keycloak_parameters(start_login(tab_b))["state"]
+    original = SocialAccountAdapter.pre_social_login
+    answers_b, calls = [], []
+
+    def b_finishes_first(self, request, sociallogin):
+        calls.append(1)
+        if len(calls) == 1:
+            thread = threading.Thread(target=_return_in_own_connection, args=(tab_b, state_b, answers_b))
+            thread.start()
+            thread.join()
+        return original(self, request, sociallogin)
+
+    monkeypatch.setattr(SocialAccountAdapter, "pre_social_login", b_finishes_first)
+    answer_a = client.get(RETURN, {"state": state_a, "code": "code-nur-test"})
+    return answer_a, answers_b[0], tab_b
+
+
+@pytest.mark.rechtematrix("EP-09", "TD-01")
+@pytest.mark.django_db(transaction=True)
+def test_zwei_gleichzeitige_erste_logins_ein_konto_und_beide_tabs_angemeldet(client, keycloak, monkeypatch):
+    """#326, S2: genau ein Konto mit einer Verknüpfung, und in beiden Tabs steht danach „Hallo Erika!“."""
+    _answer_a, answer_b, tab_b = _two_first_logins_in_one_browser(client, monkeypatch)
+
+    assert answer_b.status_code == 302 and answer_b["Location"] == "/"
+    erika = User.objects.get()
+    assert SocialAccount.objects.get().user == erika
+    assert SocialAccount.objects.get().uid == ERIKA["sub"]
+    # Beide Tabs teilen sich die Cookies wie in einem Browser; ein Aufruf zeigt, was jeder Tab beim Neuladen sieht.
+    assert tab_b.cookies is client.cookies
+    assert "Hallo Erika!" in _page(client.get("/"))
+
+
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#416: der zweite Tab zeigt „Ungültige Anfrage“ (400)")
+@pytest.mark.django_db(transaction=True)
+def test_zwei_gleichzeitige_erste_logins_im_selben_browser_ohne_fehlerseite(client, keycloak, monkeypatch):
+    """#326, S2: Auch der Tab, dessen Rückkehr als zweite fertig wird, zeigt keine Fehlerseite."""
+    answer_a, _answer_b, _tab_b = _two_first_logins_in_one_browser(client, monkeypatch)
+
+    assert answer_a.status_code == 302, answer_a.status_code
 
 
 def test_sehr_langer_name_aus_keycloak_fuehrt_nicht_zur_fehlerseite(client, keycloak):

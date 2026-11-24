@@ -1,9 +1,10 @@
-"""Adressen nur für die Tests des Fehlerprotokolls (#6), für „nicht gefunden“ (#64) und für die Suche nach Nummern (#156). Im Tool selbst gibt es sie nicht.
+"""Adressen nur für die Tests des Fehlerprotokolls (#6), für „nicht gefunden“ (#64), für die Suche nach Nummern (#156) und für die Schutztests mit vorhandenen Einträgen (#326). Im Tool selbst gibt es sie nicht.
 
 Übernimmt Adressen und Fehlerseite aus config/urls.py. Fehlt dort die Fehlerseite,
 schlägt schon der Import fehl, und die Tests werden rot.
 """
 
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_not_required
 from django.core.exceptions import PermissionDenied
@@ -11,11 +12,12 @@ from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
+from access.keys import new_key
 from config.urls import handler500
 from config.urls import urlpatterns as tool_urlpatterns
 from units.models import Unit
 
-__all__ = ["handler500", "urlpatterns"]
+__all__ = ["handler500", "kinds_with_key", "urlpatterns"]
 
 
 @csrf_exempt
@@ -133,6 +135,29 @@ def without_number(request: HttpRequest) -> HttpResponse:
     )
 
 
+# Eine Seite, die nur bei einem vorhandenen Eintrag etwas Verbotenes tut: Gegenprobe zu den Schutztests mit
+# Kennungen vorhandener Einträge (#326, S5).
+
+
+def kinds_with_key() -> list:
+    """Jede Art von Eintrag mit zufälliger Kennung (`access.keys.key_field()`), etwa Konto, Organisation, Rolle."""
+    return [
+        model for model in apps.get_models()
+        if any(field.name == "key" and field.default is new_key for field in model._meta.concrete_fields)
+    ]
+
+
+def account_for_existing_entry(request: HttpRequest, key: str) -> HttpResponse:
+    """Legt ein Konto an, aber nur, wenn es einen Eintrag mit dieser Kennung gibt, gleich welcher Art (EP-09).
+
+    Die Antwort ist immer „nicht gefunden“, genau wie bei einer erfundenen Kennung; wer nur die Antworten
+    vergleicht, sieht nichts. Auffallen muss das neue Konto in der Datenbank.
+    """
+    if any(model.objects.filter(key=key).exists() for model in kinds_with_key()):
+        get_user_model().objects.get_or_create(username=f"gekapert-{key}")
+    raise Http404
+
+
 def lead_section(request: HttpRequest) -> HttpResponse:
     """Ein ganzer Bereich ohne Kennung, nur für Leitungen; im Tool kommt so „Organisation“ (#93)."""
     request.rights.require_section(bool(request.rights.area))
@@ -158,4 +183,5 @@ urlpatterns = [
     path("test/nummer/cookie/", number_in_cookie, name="number_in_cookie"),
     path("test/nummer/keine/", without_number, name="without_number"),
     path("test/nummer/<key:key>/", number_of_person, name="number_of_person"),
+    path("test/vorhanden/<key:key>/", account_for_existing_entry, name="account_for_existing_entry"),
 ]
