@@ -545,8 +545,10 @@
     window.scrollTo({ top: target, behavior: "instant" });
   }
 
-  // Ein Feld des Adressfelds ganz ins Bild holen und nur so weit rollen wie nötig (#410): auf der Seite unter der
-  // Kopfleiste, wenn sie oben klebt (am Handy), im Dialog in dessen Fläche. `wanted` ist, wo es oben stehen soll.
+  // Ein Feld des Adressfelds mit seiner Beschriftung (der ganze Baustein „Textfeld“) ganz ins Bild holen und nur so weit
+  // rollen wie nötig (#410; Befund M1 der unabhängigen Prüfung: nur das Feld ließ am Handy die Beschriftung unter der
+  // Kopfleiste): auf der Seite unter der Kopfleiste, wenn sie oben klebt, im Dialog in dessen Fläche. `wanted` ist, wo
+  // es oben stehen soll.
   function placeField(field, wanted) {
     var dialog = field.closest("dialog");
     var box = field.getBoundingClientRect();
@@ -583,7 +585,7 @@
     }
     try {
       window.sessionStorage.setItem(STREET_KEY, JSON.stringify({
-        top: field.getBoundingClientRect().top,
+        top: field.closest(".a-textfeld").getBoundingClientRect().top,
         from: window.location.href.split("#")[0],
       }));
     } catch (error) {
@@ -600,7 +602,7 @@
     }
     var cameFrom = streetSpot && document.referrer.split("#")[0] === streetSpot.from;
     streetInput.focus({ preventScroll: true });
-    placeField(streetInput, cameFrom && typeof streetSpot.top === "number" ? streetSpot.top : null);
+    placeField(street, cameFrom && typeof streetSpot.top === "number" ? streetSpot.top : null);
   }
 
   // Adressfeld: Enter sucht (#410, BA1 bis BA3, BA9). Enter in Bezeichnung, Straße, PLZ oder Ort (die Felder aus
@@ -678,7 +680,7 @@
       });
       update();
       texts[0].focus({ preventScroll: true });
-      placeField(texts[0], null);
+      placeField(texts[0].closest(".a-textfeld"), null);
     });
     box.addEventListener("input", update);
     box.addEventListener("change", update);

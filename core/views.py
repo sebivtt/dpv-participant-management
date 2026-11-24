@@ -1860,13 +1860,13 @@ BUILDING_BLOCKS = {
         "pages": [_("Mein Profil"), _("Organisation")],
     },
     "knopfverschieben": {
-        "name": _("Zart blauer Knopf"), "template": "core/_knopf_verschieben.html", "issues": [287, 117, 92, 163],
+        "name": _("Zart blauer Knopf"), "template": "core/_knopf_verschieben.html", "issues": [287, 117, 92, 163, 410],
         "purpose": _("Für Handlungen, die etwas umstellen oder öffnen, ohne etwas wegzunehmen, etwa „Verschieben“ bei "
                      "einer Person oder „Bearbeiten“ bei einer verwalteten Person: Knopf mit zarter blauer Fläche und "
                      "blauer Schrift, die Farben der Informationsmeldung, meist klein. Beschriftung und Symbol sind "
                      "wählbar; groß und mit Schild steht er als „Support-Zugang starten“ im Kopf einer Organisation. "
                      "Er führt zum Dialog, nie gleich zur Handlung. Im Adressfeld schickt er als „Adresse suchen“ "
-                     "das Formular an die Suche, ohne etwas zu speichern."),
+                     "und als „Adresse leeren“ das Formular an die Suche, ohne etwas zu speichern."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "wahlflaechen": {
