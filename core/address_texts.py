@@ -15,6 +15,8 @@ CHOOSE = gettext_lazy("Bitte wählen")
 
 # Suche (Zielbild, Ansichten 1 bis 4)
 SEARCH = gettext_lazy("Adresse suchen")
+# „Adresse leeren“ neben „Adresse suchen“ (#410, Punkt 6 aus #398)
+CLEAR = gettext_lazy("Adresse leeren")
 SEARCH_HINT = gettext_lazy("Sucht mit der Bezeichnung oder einer Straße mit PLZ oder Ort.")
 HITS = gettext_lazy("Treffer")
 TAKE = gettext_lazy("Übernehmen")

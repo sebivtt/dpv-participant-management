@@ -527,25 +527,165 @@
   // auf Treffern oder Meldung (`autofocus`), und wo „Straße und Hausnummer“ dann stand, war Zufall, manchmal halb
   // unter der Leiste. Deshalb setzt das Skript den Fokus selbst, ohne zu rollen, und stellt die Seite so, dass die
   // Straße direkt unter der Leiste beginnt; passt so der Anfang der Treffer oder der Meldung nicht ins Bild, rollt es
-  // nur so weit, dass er unten im Bild steht, denn der Fokus liegt nie außerhalb (WCAG 2.4.11). Nach „Übernehmen“
-  // liegt der Fokus auf der Straße, und das Skript rollt sie ebenso nach oben. Am Ende der Seite hält der Browser
-  // früher an; die Straße steht dann tiefer, aber ganz im Bild. Am PC (dort klebt keine Leiste) und im Dialog bleibt es
-  // beim Browser, ebenso ohne Skript.
+  // nur so weit, dass er unten im Bild steht, denn der Fokus liegt nie außerhalb (WCAG 2.4.11). Am Ende der Seite hält
+  // der Browser früher an; die Straße steht dann tiefer, aber ganz im Bild. Am PC (dort klebt keine Leiste) und im
+  // Dialog bleibt es beim Browser, ebenso ohne Skript. Nach „Übernehmen“ gilt der nächste Abschnitt (#410).
   var topbar = document.querySelector(".a-topbar");
+  var GAP = 8;
+  var stickyTopbar = topbar && window.getComputedStyle(topbar).position === "sticky";
   var addressFocus = document.querySelector(".a-adressfeld [autofocus]");
   var streetInput = addressFocus && addressFocus.closest(".a-adressfeld").querySelector("[name='street']");
   var street = streetInput && streetInput.closest(".a-textfeld");
-  if (topbar && street && !addressFocus.closest("dialog") && window.getComputedStyle(topbar).position === "sticky") {
-    var GAP = 8;
+  if (stickyTopbar && street && addressFocus.matches(".a-adresse-ergebnis") && !addressFocus.closest("dialog")) {
     addressFocus.focus({ preventScroll: true });
     var below = topbar.getBoundingClientRect().bottom + GAP;
     var target = window.scrollY + street.getBoundingClientRect().top - below;
-    if (addressFocus.matches(".a-adresse-ergebnis")) {
-      var resultStart = addressFocus.querySelector(".a-treffer") || addressFocus.firstElementChild || addressFocus;
-      target = Math.max(target, window.scrollY + resultStart.getBoundingClientRect().bottom + GAP - window.innerHeight);
-    }
+    var resultStart = addressFocus.querySelector(".a-treffer") || addressFocus.firstElementChild || addressFocus;
+    target = Math.max(target, window.scrollY + resultStart.getBoundingClientRect().bottom + GAP - window.innerHeight);
     window.scrollTo({ top: target, behavior: "instant" });
   }
+
+  // Ein Feld des Adressfelds mit seiner Beschriftung (der ganze Baustein „Textfeld“) ganz ins Bild holen und nur so weit
+  // rollen wie nötig (#410; Befund M1 der unabhängigen Prüfung: nur das Feld ließ am Handy die Beschriftung unter der
+  // Kopfleiste): auf der Seite unter der Kopfleiste, wenn sie oben klebt, im Dialog in dessen Fläche. `wanted` ist, wo
+  // es oben stehen soll.
+  function placeField(field, wanted) {
+    var dialog = field.closest("dialog");
+    var box = field.getBoundingClientRect();
+    var top = dialog ? dialog.getBoundingClientRect().top + GAP : (stickyTopbar ? topbar.getBoundingClientRect().bottom : 0) + GAP;
+    var bottom = dialog ? dialog.getBoundingClientRect().bottom - GAP : window.innerHeight - GAP;
+    var at = Math.min(Math.max(typeof wanted === "number" ? wanted : box.top, top), bottom - box.height);
+    var by = box.top - at;
+    if (Math.abs(by) < 1) {
+      return;
+    }
+    if (dialog) {
+      dialog.scrollTop += by;
+    } else {
+      window.scrollTo({ top: window.scrollY + by, behavior: "instant" });
+    }
+  }
+
+  // Adressfeld: Seite bleibt stehen (#410, BA4). Nach „Übernehmen“ kommt die Seite neu vom Server, mit dem Fokus auf
+  // der Straße. Stand die Straße dabei schon im Bild, rollte der Browser nicht zu ihr, und die Seite stand wieder oben.
+  // Deshalb merkt sich die Seite beim Klick, wo die Straße im Bild stand, und die neue Seite stellt sie genau dorthin,
+  // in der Seite oder im Dialog, aber nur, wenn sie von genau dieser Seite kommt. Stand sie außerhalb des Bilds oder
+  // am Handy unter der Kopfleiste, rollt sie nur so weit, dass sie ganz zu sehen ist. Ohne Skript führt „#adressfeld“
+  // in der Adresse zum Adressfeld; mit Skript fällt diese Stelle weg, damit der Fokus auf der Straße liegen kann.
+  var STREET_KEY = "adresse-stelle";
+  document.querySelectorAll(".a-adressfeld button[formaction*='#adressfeld']").forEach(function (button) {
+    button.setAttribute("formaction", button.getAttribute("formaction").split("#")[0]);
+  });
+  document.addEventListener("submit", function (event) {
+    var button = event.submitter;
+    var box = button && button.closest ? button.closest(".a-adressfeld") : null;
+    var field = box && box.querySelector("[name='street']");
+    if (!field || (button.name !== "treffer" && button.name !== "leeren")) {
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(STREET_KEY, JSON.stringify({
+        top: field.closest(".a-textfeld").getBoundingClientRect().top,
+        from: window.location.href.split("#")[0],
+      }));
+    } catch (error) {
+      // Ist der Speicher gesperrt, steht die Straße nur sicher im Bild.
+    }
+  });
+  if (streetInput && addressFocus === streetInput) {
+    var streetSpot = null;
+    try {
+      streetSpot = JSON.parse(window.sessionStorage.getItem(STREET_KEY));
+      window.sessionStorage.removeItem(STREET_KEY);
+    } catch (error) {
+      streetSpot = null;
+    }
+    var cameFrom = streetSpot && document.referrer.split("#")[0] === streetSpot.from;
+    streetInput.focus({ preventScroll: true });
+    placeField(street, cameFrom && typeof streetSpot.top === "number" ? streetSpot.top : null);
+  }
+
+  // Adressfeld: Enter sucht (#410, BA1 bis BA3, BA9). Enter in Bezeichnung, Straße, PLZ oder Ort (die Felder aus
+  // „data-enter-sucht“) wirkt wie „Adresse suchen“, am Handy ebenso die Eingabetaste der Bildschirmtastatur. In den
+  // übrigen Feldern bleibt Enter, was der Browser tut: der erste Knopf des Formulars, also „Weiter“ oder „Speichern“.
+  // Während eine Eingabe noch zusammengesetzt wird (Wortvorschläge, Akzente), schließt Enter nur sie ab. Ohne Skript
+  // bleibt Enter überall „Weiter“ bzw. „Speichern“, gesucht wird über den Knopf.
+  document.querySelectorAll(".a-adressfeld[data-enter-sucht]").forEach(function (box) {
+    var search = box.querySelector(".a-adresse-suchen");
+    var names = box.getAttribute("data-enter-sucht").split(" ");
+    if (!search || !search.form) {
+      return;
+    }
+    document.addEventListener("keydown", function (event) {
+      var input = event.target;
+      if (event.key !== "Enter" || event.isComposing || event.keyCode === 229 || event.shiftKey || event.ctrlKey ||
+          event.metaKey || event.altKey || !(input instanceof HTMLInputElement) || input.form !== search.form ||
+          names.indexOf(input.name) < 0) {
+        return;
+      }
+      event.preventDefault();
+      search.click();
+    });
+  });
+
+  // Adressfeld: „Adresse leeren“ (#410, BA5 bis BA7, BG3 bis BG5). Den Knopf gibt es, sobald in Straße, PLZ, Ort oder
+  // Bundesland etwas steht oder ein anderes Land als Deutschland gewählt ist. Mit Skript leert er die Adresse im
+  // Browser, ohne die Seite neu zu laden und ohne Rückfrage: Straße, PLZ, Ort und Bundesland leer, das Land
+  // Deutschland, die Koordinaten eines übernommenen Treffers, Treffer und Meldung der Suche und die Fehler an der
+  // Adresse weg; die Bezeichnung bleibt. Der Fokus liegt danach auf der Straße. Gespeichert wird erst mit „Weiter“
+  // bzw. „Speichern“; an OpenStreetMap geht nichts. Ohne Skript schickt der Knopf das Formular (core/views.py).
+  var GERMANY = "DE";
+  document.querySelectorAll(".a-adressfeld").forEach(function (box) {
+    var clear = box.querySelector(".a-adresse-leeren");
+    if (!clear) {
+      return;
+    }
+    function field(name) {
+      return box.querySelector("[name='" + name + "']");
+    }
+    var texts = ["street", "postal_code", "city"].map(field);
+    var state = field("state");
+    var country = field("country");
+    var coordinates = field("coordinates");
+
+    function update() {
+      clear.hidden = !(texts.some(function (input) { return input.value.trim(); }) || state.value ||
+        (country.value && country.value !== GERMANY));
+    }
+
+    clear.addEventListener("click", function (event) {
+      event.preventDefault();
+      texts.forEach(function (input) {
+        input.value = "";
+        // Wie Tippen: Die Zahl der Zeichen passt sich an.
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      state.value = "";
+      country.value = GERMANY;
+      country.dispatchEvent(new Event("change", { bubbles: true }));
+      if (coordinates) {
+        coordinates.value = "";
+      }
+      var result = box.querySelector(".a-adresse-ergebnis");
+      if (result) {
+        result.remove();
+      }
+      box.querySelectorAll(".is-invalid").forEach(function (input) {
+        input.classList.remove("is-invalid");
+        input.removeAttribute("aria-invalid");
+        describedBy(input, input.id + "-fehler", false);
+      });
+      box.querySelectorAll(".invalid-feedback").forEach(function (error) {
+        error.remove();
+      });
+      update();
+      texts[0].focus({ preventScroll: true });
+      placeField(texts[0].closest(".a-textfeld"), null);
+    });
+    box.addEventListener("input", update);
+    box.addEventListener("change", update);
+    update();
+  });
 
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
   // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
