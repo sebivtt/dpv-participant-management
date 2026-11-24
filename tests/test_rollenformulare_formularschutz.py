@@ -63,7 +63,9 @@ def submit(client: Client, page_response, action: str, person=None, **fields):
     """Schickt das Formular mit dem Ziel `action` von der Seite ab, mit allen Feldern, die die Seite mitgibt.
 
     Mit `person` das Formular, das diese Person benennt (je Treffer ein eigenes Formular); `fields` sind die Felder,
-    die die Person selbst ausfüllt, etwa der Suchbegriff.
+    die die Person selbst ausfüllt, etwa der Suchbegriff. Gelesen werden nur `<input>`-Felder, alle mit ihrem Wert;
+    das genügt für die Rollenformulare (versteckte Felder und Suchfeld). Für Formulare mit Auswahllisten, Textfeldern,
+    Kästchen oder Knöpfen mit eigenem Wert müsste die Hilfe wie der Browser mehr lesen und nicht Angekreuztes weglassen.
     """
     forms = [form for form in _by_tag(_tree(page_response), "form", method="post") if (_attr(form, "action") or "").split("#")[0] == action]
     data_of = [
@@ -101,7 +103,7 @@ def test_rollenformulare_gelingen_mit_eingeschaltetem_formularschutz(org):
     assert_done(submit(zora, zora.get(remove), remove), adler)
     assert not Role.objects.filter(pk=paul_lead.pk).exists()
 
-    # Vera benennt Otto als Bundesleitung von Boreas (RO-11).
+    # Vera benennt Otto als Bundesleitung von Boreas (RO-15).
     vera = browser(org.vera)
     appoint = link_on(vera, ORGANISATION, f"/organisation/verband/bund/{org.boreas.key}/benennen/")
     found = submit(vera, vera.get(appoint), f"{appoint}suchen/", suche="otto.ohne@example.org")

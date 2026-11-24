@@ -411,41 +411,71 @@ def test_seite_mit_kennung_die_eine_nummer_zeigt_macht_die_suche_rot(org):
 # Handlungen, etwa das Entfernen einer Rolle durch ihre Leitung, ändern dabei die Datenbank; damit jede Adresse
 # denselben Stand vorfindet, wird nach jeder Adresse zurückgerollt, und geprüft wird vorher.
 
-# Wer mit welcher Kennung vorne in einer Adresse mit zwei Kennungen steht, etwa die Organisation in
-# „organisation/<key:unit>/entfernen/<key:role>/“; die letzte Kennung ist jede Art der Reihe nach.
+# Was vorne in einer Adresse mit zwei Kennungen steht, etwa die Organisation in
+# „organisation/<key:unit>/entfernen/<key:role>/“: die Organisation des Eintrags dahinter, sonst die erste Organisation
+# aus `entries`. Die letzte Kennung ist jeder Eintrag jeder Art der Reihe nach.
 LEADING_KEYS = {"unit": Unit}
+
+
+def unit_of(entry, default: Unit) -> Unit:
+    """Die Organisation, zu der ein Eintrag gehört: bei einer Person mit Konto ihre Mitgliedschaft."""
+    if isinstance(entry, User):
+        member = Role.objects.filter(user=entry, kind=R.MEMBER).first()
+        return member.unit if member else default
+    found = getattr(entry, "unit", None)
+    return found if isinstance(found, Unit) else default
 
 
 @pytest.fixture
 def entries(org) -> dict:
-    """Je Art mit Kennung ein vorhandener Eintrag, alle bei der Sippe Falken, die Erika als Stammesleitung sieht."""
+    """Je Art mit Kennung vorhandene Einträge, so gewählt, dass jede Adresse mit Kennung einen davon findet.
+
+    Zuerst steht die Sippe Falken, die Erika als Stammesleitung von Walhall sieht; die übrigen Einheiten braucht
+    „… anlegen“ (Walhall) und die Seite „Verband“ (Verband und Bund), die Verbandsleitung von Vera braucht „Entfernen“
+    im Verband, Wilma und Mo direkt in Walhall „Verschieben“ (nur in eine Organisation darunter), der Entwurf von
+    Erika „Anlegen in Schritten“ (#380). Ob das reicht, prüft `problems_with_real_keys()` mit den Mustern ohne Treffer.
+    """
     fiete = User.objects.create(username="fiete.falke", first_name="Fiete", last_name="Falke")
     lead = give(fiete, R.GROUP_LEAD, org.falken)
     mia = ManagedPerson(unit=org.falken, first_name="Mia", last_name="Muster", birth_date=date(2014, 3, 1))
     mia.save()
+    wilma = User.objects.create(username="wilma.walhall", first_name="Wilma", last_name="Walhall")
+    give(wilma, R.MEMBER, org.walhall)
+    mo = ManagedPerson(unit=org.walhall, first_name="Mo", last_name="Muster", birth_date=date(2013, 4, 2))
+    mo.save()
     shown = DisplayedLead(person=mia, kind=R.GROUP_LEAD, unit=org.falken)
     shown.save()
     event = Event.objects.create(name="Probelager 2027", start=date(2027, 5, 15), end=date(2027, 5, 17))
     event.leads.add(org.erika)
+    draft = Event.objects.create(name="Entwurf 2027", start=date(2027, 6, 1), end=date(2027, 6, 3), creating_by=org.erika)
+    draft.leads.add(org.erika)
     registration = Rights(org.max).register(event, [org.max])
     # Ein Bereich, der nur im Protokoll der Admin-Zugriffe steht (PR-05), wie oben.
     AdminAccess.objects.create(at=timezone.now(), actor_id=org.admin.pk, actor_name="Ada Admin",
                                action=AdminAccess.Action.STARTED, detail=AdminAccess.Detail.DEBUGGING,
                                unit_id=org.falken.pk, unit_kind=Unit.Kind.GROUP, unit_name=OLD_ACCESS_NAME)
-    return {User: fiete, Unit: org.falken, Role: lead, ManagedPerson: mia, DisplayedLead: shown, Event: event,
-            Registration: registration}
+    return {
+        User: [fiete, wilma],
+        Unit: [org.falken, org.walhall, org.boreas, org.dpv],
+        Role: [lead, Role.objects.get(user=org.federation_lead, kind=R.FEDERATION_LEAD)],
+        ManagedPerson: [mia, mo],
+        DisplayedLead: [shown],
+        Event: [event, draft],
+        Registration: [registration],
+    }
 
 
 def addresses_with_real_keys(patterns, entries):
-    """Jede Adresse mit Kennung, je Art einmal mit der Kennung ihres Eintrags; gibt Adresse und Art zurück."""
+    """Jede Adresse mit Kennung, mit der Kennung jedes Eintrags aus `entries`; gibt Muster, Adresse und Art zurück."""
     for pattern, _entry in patterns:
         if not has_key(pattern):
             continue
         names = re.findall(rf"<{KEY_CONVERTER}:(\w+)>", pattern)
         parts = _example_address(pattern).split(EXAMPLE_KEY)
         for kind, found in entries.items():
-            keys = [entries[LEADING_KEYS[name]].key for name in names[:-1]] + [found.key]
-            yield "".join(part + key for part, key in zip(parts[:-1], keys, strict=True)) + parts[-1], kind
+            for each in found:
+                keys = [unit_of(each, entries[LEADING_KEYS[name]][0]).key for name in names[:-1]] + [each.key]
+                yield pattern, "".join(part + key for part, key in zip(parts[:-1], keys, strict=True)) + parts[-1], kind
 
 
 def protected_state(other_session: str) -> dict:
@@ -458,8 +488,12 @@ def protected_state(other_session: str) -> dict:
     }
 
 
-def problems_with_real_keys(org, entries, patterns=ALL) -> list[tuple[str, type, str]]:
+def problems_with_real_keys(org, entries, patterns=ALL) -> tuple[list[tuple[str, type, str]], list[str]]:
     """Ruft jede Adresse mit den Kennungen aus `entries` auf, wie `every_attempt()`; gibt jeden Verstoß zurück.
+
+    Dazu die Muster, bei denen keine Antwort die Seite zeigt (200) und sich die Zahl der Einträge dieser Art nie
+    ändert: Dort fand keine Kennung einen Eintrag, und ein Verstoß erst beim gefundenen Eintrag bliebe unentdeckt
+    (Befund B1 der unabhängigen Prüfung).
 
     Verstoß heißt: Nach den Aufrufen ist etwas aus `protected_state()` anders, oder eine Antwort zeigt, was nur im
     Protokoll (PR-01, PR-03, PR-05) oder in den Daten des Logins steht, oder die Kennung einer fremden Sitzung (TD-01).
@@ -470,23 +504,31 @@ def problems_with_real_keys(org, entries, patterns=ALL) -> list[tuple[str, type,
     other_session = other.session.session_key
     hidden = (OLD_PERSON_NAME, OLD_UNIT_NAME, OLD_ACCESS_NAME, KEYCLOAK_DETAIL, "nur-test-1", other_session)
     before = protected_state(other_session)
-    problems = []
-    for address, kind in addresses_with_real_keys(patterns, entries):
+    problems, found = [], set()
+    for pattern, address, kind in addresses_with_real_keys(patterns, entries):
         with transaction.atomic():
+            count = kind.objects.count()
             for response in _attempts(address, form, org):
+                if response.status_code == 200:
+                    found.add(pattern)
+            # Ein reines Formular wie „Entwurf löschen“ zeigt nie eine Seite; gefunden hat es den Eintrag, wenn es ihn
+            # löscht (oder einen anlegt).
+            if kind.objects.count() != count:
+                found.add(pattern)
                 headers = " ".join(f"{name}: {value}" for name, value in response.headers.items())
                 text = response.content.decode(errors="replace") + headers
                 problems += [(address, kind, f"zeigt {secret}") for secret in hidden if secret in text]
             after = protected_state(other_session)
             problems += [(address, kind, name) for name in before if after[name] != before[name]]
             transaction.set_rollback(True)
-    return problems
+    unfound = sorted({pattern for pattern, _entry in patterns if has_key(pattern)} - found)
+    return problems, unfound
 
 
 def test_jede_art_mit_kennung_hat_einen_eintrag_fuer_die_schutztests(entries):
     """Kommt eine Art mit Kennung dazu, wird dieser Test rot, bis `entries` einen Eintrag davon hat (#326)."""
     assert set(entries) == set(kinds_with_key())
-    assert all(isinstance(found, kind) and found.pk for kind, found in entries.items())
+    assert all(found and all(isinstance(each, kind) and each.pk for each in found) for kind, found in entries.items())
     leading = {name for pattern, _entry in ALL for name in re.findall(rf"<{KEY_CONVERTER}:(\w+)>", pattern)[:-1]}
     assert leading <= set(LEADING_KEYS)
 
@@ -495,7 +537,10 @@ def test_jede_art_mit_kennung_hat_einen_eintrag_fuer_die_schutztests(entries):
 @pytest.mark.rechtematrix("EP-09", "RO-19", "PR-01", "PR-03", "PR-05", "TD-01")
 def test_keine_adresse_tut_verbotenes_auch_mit_kennungen_vorhandener_eintraege(org, entries):
     """S4: als Max, Zora, Vera, Ada, Otto und Erika, lesend und mit manipuliertem Formular."""
-    assert problems_with_real_keys(org, entries) == []
+    problems, unfound = problems_with_real_keys(org, entries)
+
+    assert problems == []
+    assert unfound == []
 
 
 @pytest.mark.urls("tests.urls")
@@ -510,5 +555,5 @@ def test_seite_die_nur_bei_vorhandenem_eintrag_ein_konto_anlegt_macht_den_schutz
     list(every_attempt(org, patterns))
 
     assert snapshot(User, "pk", "username") == before
-    found = problems_with_real_keys(org, entries, patterns)
-    assert {kind for _address, kind, what in found if what == "Konten"} == set(entries)
+    problems, _unfound = problems_with_real_keys(org, entries, patterns)
+    assert {kind for _address, kind, what in problems if what == "Konten"} == set(entries)

@@ -555,8 +555,9 @@ def test_zwei_gleichzeitige_erste_logins_ein_konto_und_beide_tabs_angemeldet(cli
     erika = User.objects.get()
     assert SocialAccount.objects.get().user == erika
     assert SocialAccount.objects.get().uid == ERIKA["sub"]
+    # Beide Tabs teilen sich die Cookies wie in einem Browser; ein Aufruf zeigt, was jeder Tab beim Neuladen sieht.
+    assert tab_b.cookies is client.cookies
     assert "Hallo Erika!" in _page(client.get("/"))
-    assert "Hallo Erika!" in _page(tab_b.get("/"))
 
 
 @pytest.mark.xfail(strict=True, raises=AssertionError, reason="#416: der zweite Tab zeigt „Ungültige Anfrage“ (400)")
