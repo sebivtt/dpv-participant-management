@@ -499,6 +499,14 @@ dialog.a-drawer::backdrop { background: rgba(15, 30, 50, .45); }
 /* Datumsfeld (#117): Wer mit Tab zwischen Tag, Monat und Jahr wechselt, bekommt in Chromium und WebKit kein
    :focus-visible am Feld; der Fokusrahmen steht deshalb, solange das Feld den Fokus hat. */
 .a-datumsfeld .form-control:focus, .a-datumsfeld .form-control:focus-within { outline: 3px solid var(--fokus); outline-offset: 2px; box-shadow: none; }
+/* Datum und Uhrzeit senkrecht mittig wie der Text im Textfeld (#409). Safari stellt sein Datumsfeld selbst als
+   Flexbox mit mittigem Inhalt dar; Bootstraps „display: block“ für .form-control hebt das auf, und das Datum rutscht
+   etwa 4 Punkte nach oben. Das hier stellt Safaris eigene Darstellung wieder her, nur in WebKit (der Technik hinter
+   Safari): Nur WebKit kennt „hanging-punctuation“. In Chromium und Firefox steht das Datum schon mittig; dort würde
+   die Flexbox es um gut einen Punkt verschieben. Höhe und Bedienung des Felds bleiben gleich. */
+@supports (hanging-punctuation: first) {
+  .a-datumsfeld .form-control { display: flex; align-items: center; }
+}
 /* Vor- und Nachname nebeneinander im Dialog einer verwalteten Person (#117, Zielbild); schmal untereinander */
 .a-felder-nebeneinander { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); column-gap: 14px; }
 /* Dialog: ein Fenster über der Seite mit Kopf, Inhalt und Fuß. Mit Skript modal (showModal), ohne Skript
