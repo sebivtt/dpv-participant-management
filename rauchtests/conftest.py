@@ -481,6 +481,7 @@ def wait_for_page_below(page: Page, address: str, button: str) -> None:
 
 
 # Übliches Zeitlimit der Rauchtests: so lange wartet `expect()` von Playwright, wenn nichts anderes gesagt ist.
+# Setzt ein Rauchtest das Zeitlimit von `expect()` je anders (`expect.set_options`), diese Zahl mitziehen.
 EXPECT_TIMEOUT_MS = 5_000
 
 
@@ -492,9 +493,9 @@ def expect_modal(dialog: Locator) -> None:
     Abfrage gleich nach „sichtbar“ ist deshalb in einem langsamen Browser manchmal noch falsch (Firefox auf
     GitHub). tests/test_rauchtests_modal.py meldet jede Stelle, die das wieder nur einmal abfragt.
     """
+    handle = dialog.element_handle()  # fehlt der Dialog ganz, meldet das Playwright selbst
     try:
-        dialog.page.wait_for_function("d => d.matches(':modal')", arg=dialog.element_handle(),
-                                      timeout=EXPECT_TIMEOUT_MS)
+        dialog.page.wait_for_function("d => d.matches(':modal')", arg=handle, timeout=EXPECT_TIMEOUT_MS)
     except PlaywrightTimeout:
         raise AssertionError(f"Der Dialog ist nach {EXPECT_TIMEOUT_MS} ms nicht modal.") from None
 
