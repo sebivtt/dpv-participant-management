@@ -156,6 +156,11 @@ def test_ca4_ca5_nachfrage_zur_dauer_mit_schalter_und_weiter(pc):
     _all_visible(_stations_to_element(pc, f'{STEP} input[name="duration_ok"]', steps=25))
     pc.keyboard.press("Space")
     expect(switch).to_be_checked()
+    # Befund B1 der unabhängigen Prüfung: Ist die Dauer bestätigt, fragt die Seite wie der Server nicht noch einmal.
+    _field(pc, "end").focus()
+    _leave_to(pc, "end_time")
+    expect(_error(pc, "end")).to_have_count(0)
+    expect(switch).to_be_checked()
     pc.locator(NEXT).click()
     pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
     assert Event.objects.get(name="Pfingstlager 2028").end == date(2028, 7, 1)
@@ -191,10 +196,16 @@ def test_ca6_bearbeiten_nur_geaendertes_und_ohne_aenderung_nichts(pc):
     _field(pc, "start", scope="dialog").fill("2028-01-02")
     expect(_error(pc, "start", scope="dialog")).to_have_count(0)
 
+    # Befund B3 der unabhängigen Prüfung: auch im Dialog des Stifts mit dem Schalter, den das Skript einsetzt (CA4).
+    _field(pc, "end", scope="dialog").fill("2028-01-30")
+    _leave_to(pc, "end_time", scope="dialog")
+    expect(_error(pc, "end", scope="dialog")).to_have_text("Die Veranstaltung dauert 29 Tage. Stimmt das?")
+    pc.get_by_role("checkbox", name=SWITCH).check()
+
     pc.locator(SAVE).click()
     pc.wait_for_url(f"{LIST}{found.key}/")
     found.refresh_from_db()
-    assert found.end == date(2028, 1, 12)
+    assert found.end == date(2028, 1, 30)
 
 
 def test_cg1_cg2_keine_meldung_zu_leeren_oder_unvollstaendigen_feldern(pc):
@@ -240,3 +251,20 @@ def test_ca8_ohne_skript_erst_nach_weiter(pc_ohne_skript):
 
     page.wait_for_url(CREATE)
     expect(_error(page, "end")).to_have_text(END_BEFORE_START)
+
+
+def test_cg2_tippfehler_mit_fuenfstelliger_jahreszahl_ergibt_keine_meldung(pc):
+    """Befund B2 der unabhängigen Prüfung: Ein Jahr wie „20288“ versteht der Server nicht als Datum; die Seite meldet
+    dazu deshalb wie bei einem unvollständigen Datum nichts, statt „Das Ende liegt vor dem Beginn.“ (CG2)."""
+    if pc.context.browser.browser_type.name != "chromium":
+        pytest.skip("Nur Chromium nimmt im Datumsfeld mehr als vier Stellen für das Jahr an.")
+    _schritt_1(pc)
+    _field(pc, "end").fill("2028-06-30")
+    _field(pc, "start").focus()
+    # Tag und Monat in der Reihenfolge, die das Feld zeigt; es geht nur um das Jahr.
+    pc.keyboard.type("0202")
+    pc.keyboard.type("20288")
+    assert _field(pc, "start").input_value() == "20288-02-02"
+    _leave_to(pc, "start_time")
+    _leave_to(pc, "location")
+    expect(pc.locator(f"{STEP} .a-datumsfeld .invalid-feedback")).to_have_count(0)
