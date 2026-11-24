@@ -6,9 +6,8 @@ Bildschirmfoto des Felds. Wie der Browser ein Datum schreibt, hängt von seiner 
 links im Feld und verglichen mit „02“ im Textfeld daneben: Stehen beide mittig, haben sie oben und unten
 denselben Abstand zum Rand. Der Platzhalter („TT.MM.JJJJ“) steht auf derselben Grundlinie wie danach das
 eingetragene Datum. Rechts zeichnen Chromium und Firefox ihr Kalender- oder Uhr-Symbol; dort misst der Test nicht.
-Die Nummern verweisen auf die
-„Szenarien (24.11.2026)“ in #409; jeder Test läuft in Chromium, Firefox und WebKit (der Technik hinter
-Safari, conftest.py). Alle Namen und Daten sind erfunden.
+Die Nummern verweisen auf die „Szenarien (24.11.2026)“ in #409; jeder Test läuft in Chromium, Firefox und
+WebKit (der Technik hinter Safari, conftest.py). Alle Namen und Daten sind erfunden.
 """
 
 import re
