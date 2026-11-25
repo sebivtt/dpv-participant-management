@@ -116,6 +116,33 @@ def _scrolled(page: Page) -> None:
     raise AssertionError("Die Seite scrollt nach 5 Sekunden noch")
 
 
+def _half_under_topbar(page: Page) -> list[str]:
+    """Bedienelemente, die am Handy teils unter der Kopfleiste stecken und teils darunter zu sehen sind (#420)."""
+    return page.evaluate(
+        """() => {
+            const bar = document.querySelector('.a-topbar');
+            const edge = bar ? bar.getBoundingClientRect().bottom : 0;
+            if (edge <= 0) return [];
+            const found = [];
+            for (const e of document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')) {
+                if (bar.contains(e)) continue;
+                const b = e.getBoundingClientRect();
+                if (b.width > 0 && b.height > 0 && b.top < edge && b.bottom > edge) {
+                    found.push(e.id || e.getAttribute('name') || e.textContent.trim() || e.tagName);
+                }
+            }
+            return found;
+        }"""
+    )
+
+
+def _to_top(page: Page) -> None:
+    """Rollt sofort an den Anfang der Seite und prüft, dass dort nichts halb unter der Kopfleiste steckt (#420)."""
+    page.evaluate("window.scrollTo({top: 0, left: 0, behavior: 'instant'})")
+    assert page.evaluate("scrollY") == 0
+    assert _half_under_topbar(page) == []
+
+
 def _box(locator) -> dict:
     return locator.evaluate(
         """e => { const b = e.getBoundingClientRect();
@@ -333,7 +360,11 @@ def test_stapel_im_katalog_hoechstens_drei_neueste_unten(request, browser_name, 
     assert box["scroll"] <= box["vw"] and box["left"] >= 0 and box["right"] <= box["vw"], box
     close = _box(info.get_by_role("button", name="Meldung schließen"))
     assert close["right"] <= box["right"] and close["left"] >= box["left"], close
+    # Wohin der Browser beim Klick rollt, ist nicht festgelegt; liegt dann ein Feld halb unter der
+    # Kopfleiste, schlägt axe an, ohne dass es an der kurzen Meldung liegt (#420). Deshalb vor axe
+    # an den Anfang der Seite, und dort steckt nachweislich nichts halb unter der Kopfleiste.
     info.hover()
+    _to_top(page)
     assert _axe(page) == []
     info.get_by_role("button", name="Meldung schließen").click()
     expect(_short(page)).to_have_count(0)
@@ -372,6 +403,18 @@ def test_stapel_im_katalog_hoechstens_drei_neueste_unten(request, browser_name, 
     expect(_short(page)).to_have_count(3)
     _later(page, 1500)
     expect(_short(page)).to_have_count(0)
+
+
+@pytest.mark.bausteinkatalog
+def test_lagepruefung_erkennt_ein_feld_halb_unter_der_kopfleiste(handy):
+    """Gegenprobe zu `_to_top` (#420): Steckt „Ort“ wie im roten Lauf halb unter der Kopfleiste, meldet die Prüfung es."""
+    login(handy)
+    handy.goto(f"{BASE}/bausteine/")
+    handy.evaluate("""() => window.scrollTo({top: window.scrollY + document.getElementById('katalog_adresse_city')
+        .getBoundingClientRect().top - document.querySelector('.a-topbar').getBoundingClientRect().bottom + 12,
+        behavior: 'instant'})""")
+    assert "katalog_adresse_city" in _half_under_topbar(handy)
+    _to_top(handy)
 
 
 # Szenario 16: Bewegung reduzieren
