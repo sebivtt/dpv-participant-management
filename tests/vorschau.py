@@ -142,7 +142,7 @@ def schreibe_vorschau(faelle, ziel, titel="Vorschau"):
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{html.escape(titel)}</title><style>{_STIL}</style></head><body>"
         f"<header><h1>{html.escape(titel)}</h1><nav>{knoepfe}</nav>"
-        '<p class="hinweis">Nur zum Ansehen: Links und Speichern sind gesperrt, Neuladen und Springen der Seite sind hier nicht zu sehen, Dialoge schließen sich nicht, und Vorschläge beim Tippen bleiben leer.</p>'
+        '<p class="hinweis">Nur zum Ansehen: Links und Speichern sind gesperrt, Neuladen und Springen der Seite sind hier nicht zu sehen, Dialoge schließen sich nicht, und Vorschläge beim Tippen kommen nicht (statt ihrer erscheint die Meldung, dass sie nicht geladen werden konnten, #378).</p>'
         f"</header><main>{bereiche}</main><script>{_UMSCHALTER}</script></body></html>\n"
     )
     ziel.parent.mkdir(parents=True, exist_ok=True)
