@@ -509,3 +509,9 @@ def test_sichtbarer_eintrag_ohne_recht_zur_aktion_darf_eine_abfrage_mehr_ausloes
 def test_testseite_mit_nummer_einer_fremden_person_ist_nicht_gefunden(org):
     """Die Testseite für die Suche nach Nummern hält sich selbst an „nicht gefunden“ (Prüfung aus V8)."""
     assert_like_missing(org.walhall_leitung, f"/test/nummer/{org.adler_kind.key}/")
+
+
+@pytest.mark.wie_nicht_vorhanden("test/vorhanden/<key:key>/")
+def test_testseite_fuer_vorhandene_eintraege_antwortet_wie_nicht_vorhanden(org):
+    """Die Testseite für die Schutztests mit vorhandenen Einträgen (#326, S5) hält sich selbst an „nicht gefunden“."""
+    assert_like_missing(org.walhall_leitung, f"/test/vorhanden/{org.adler_kind.key}/")
