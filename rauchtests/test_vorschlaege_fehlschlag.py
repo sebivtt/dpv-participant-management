@@ -13,7 +13,7 @@ from contextlib import suppress
 
 from playwright.sync_api import Error, Page, Route, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, EXPECT_TIMEOUT_MS, login, run_axe
 from rauchtests.test_benennen import _dialog, _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 
@@ -95,7 +95,9 @@ def test_s3_zu_langsam_dann_kommt_die_antwort_doch_noch(pc):
     assert len(held) == 1
     _flink_suggested(dialog)
 
-    _failure_shown(dialog)  # spätestens nach 5 Sekunden; `expect` wartet bis zu 5 Sekunden darüber hinaus
+    # Nach 5 Sekunden ohne Antwort; die Wartezeit beginnt erst hier, deshalb etwas Luft obendrauf.
+    expect(dialog.locator("[data-treffer] .a-meldung")).to_have_count(1, timeout=EXPECT_TIMEOUT_MS + 5000)
+    _failure_shown(dialog)
     # Die späte Antwort wird verworfen: Die Meldung bleibt, die Liste bleibt leer.
     pc.unroute(SUGGESTIONS)
     # Hat das Skript die Abfrage schon abgebrochen, kommt die Antwort gar nicht mehr an.
@@ -152,3 +154,15 @@ def test_s6_unter_drei_zeichen(pc):
 
     expect(field).to_have_value("Fi")
     expect(dialog.locator("[data-treffer]")).to_be_empty()
+
+
+def test_u3_abgelaufene_anmeldung_fuehrt_zum_login_nicht_zur_meldung(pc):
+    """Risikovariante zu U3 (#92): Die neue Fehlerbehandlung darf die Weiterleitung nicht verschlucken."""
+    dialog, field = _open(pc)
+    # Wie nach Ablauf der Sitzung: Das Formular bleibt gültig, die Anmeldung ist weg.
+    pc.context.clear_cookies(name="sessionid")
+
+    field.press_sequentially("Fin")
+
+    pc.wait_for_url(f"{BASE}/anmelden/**")
+    expect(pc.locator(".a-meldung", has_text="Die Vorschläge konnten")).to_have_count(0)
