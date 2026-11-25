@@ -18,7 +18,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
@@ -69,7 +69,7 @@ def _stift_oeffnen(page: Page, steps: int) -> None:
     page.wait_for_url(f"{LIST}*/bearbeiten/")
     dialog = _dialog(page)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Pfingstlager 2028 bearbeiten")
     expect(page.get_by_label("Name")).to_be_focused()
     _no_side_scroll(page)

@@ -11,7 +11,7 @@ tests/test_angezeigte_leitungsrollen.py. Alle Namen sind erfunden.
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_benennen import APPOINT_BUTTON
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
@@ -37,7 +37,7 @@ def _appoint_lena(page: Page, units: dict, phone: bool) -> None:
     page.wait_for_url(f"{BASE}/organisation/{units['falken'].key}/benennen/")
     dialog = _dialog(page)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     field = page.get_by_label(FIELD)
     if phone:
         # Wie am Handy: ein Wort als Zusammensetzung, ersetzt per Wortvorschlag; die Vorschläge kommen trotzdem.
@@ -69,7 +69,7 @@ def _remove_lena(page: Page, units: dict) -> None:
     page.keyboard.press("Enter")
     dialog = _dialog(page)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Kiwi (Lena Probe) als Gruppenleitung von Sippe Falken entfernen?")
     assert run_axe(page) == []
     stations = _stations_to_element(page, "dialog .btn-gefahr", steps=10)

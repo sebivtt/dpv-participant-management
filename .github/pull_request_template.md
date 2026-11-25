@@ -40,7 +40,7 @@ Die Prüfung „PR-Angaben“ auf GitHub liest „Closes #…“, die Szenarien-
 
 <!-- Nur ausfüllen, wenn Modelle, Migrationen oder die Rechteprüfung geändert sind: welche Dateien, damit sie sich nachlesen lassen. Sonst „nicht betroffen“. -->
 
-- Neue Daten? Welche Zeilen der Rechtematrix (`docs/rechtematrix.md`)?
+- Neue Daten? Welche Kennungen der Rechtematrix (`docs/rechtematrix.md`)?
 
 ## Neue Pakete
 

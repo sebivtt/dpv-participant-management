@@ -403,6 +403,9 @@ class EventForm(AddressForm):
     - Ab 29 Tagen, gezählt wie in der Kachel, fragt es nach, ob die Dauer stimmt, wenn Beginn oder Ende
       eingegeben oder geändert werden (AG4). Bestätigt ist erst, wenn „Ja, die Dauer stimmt“ für genau diese
       Zahl an Tagen angetippt ist; nach einer anderen Dauer kommt die Frage neu, mit Schalter auf „aus“.
+
+    Seit #411 prüft das Skript dieselben Regeln schon beim Verlassen eines Datums- oder Uhrzeitfelds; was es dafür
+    braucht, setzt `_for_checks_on_leave()` an die Felder. Maßgeblich bleibt diese Prüfung beim Speichern.
     """
 
     name = forms.CharField(
@@ -445,6 +448,7 @@ class EventForm(AddressForm):
         ),
     )
     # Steht nur da, wenn die Nachfrage zur Dauer kommt (Baustein „Schalter“, #379); sein Wert ist die Zahl der Tage.
+    # Sonst liegt er als Vorlage bereit, die das Skript bei der Nachfrage schon beim Verlassen einsetzt (#411).
     duration_ok = forms.BooleanField(
         label=event_texts.DURATION_OK,
         required=False,
@@ -458,6 +462,36 @@ class EventForm(AddressForm):
             field.widget.attrs["form"] = form_id
         # Die Zahl der Tage, nach der das Tool gerade fragt; 0 heißt: keine Nachfrage, kein Schalter.
         self.duration_question = 0
+        self._for_checks_on_leave()
+
+    def _for_checks_on_leave(self) -> None:
+        """Was das Skript braucht, um Beginn, Ende und Dauer schon beim Verlassen eines Felds zu prüfen (#411).
+
+        Dieselben Regeln wie `clean()`, deshalb stehen Wortlaute, Grenze und Vergleichswerte hier an den Feldern:
+        der heutige Tag des Servers (CG3: nicht die Uhr des Rechners), welche Uhrzeit zu welchem Datum gehört, und
+        beim Bearbeiten die gespeicherten Angaben, weil nur Geändertes geprüft wird (CA6). Die Zahl der Tage setzt
+        das Skript für „{anzahl}“ ein, wie bei der Zahl der Zeichen (#215).
+        """
+        start, end = self.fields["start"].widget.attrs, self.fields["end"].widget.attrs
+        start.update({
+            "data-heute": timezone.localdate().isoformat(),
+            "data-vergangen": str(event_texts.START_IN_PAST),
+            "data-uhrzeit": self["start_time"].auto_id,
+        })
+        end.update({
+            "data-beginn": self["start"].auto_id,
+            "data-uhrzeit": self["end_time"].auto_id,
+            "data-vor-beginn": str(event_texts.END_BEFORE_START),
+            "data-dauer-frage": event_texts.DURATION_QUESTION % {"count": "{anzahl}"},
+            "data-dauer-ab": DURATION_QUESTION_DAYS,
+        })
+        if self.before is None:
+            return
+        for name in ("start", "end"):
+            self.fields[name].widget.attrs["data-gespeichert"] = getattr(self.before, name).isoformat()
+        for name in ("start_time", "end_time"):
+            stored = getattr(self.before, name)
+            self.fields[name].widget.attrs["data-gespeichert"] = stored.strftime("%H:%M") if stored else ""
 
     @classmethod
     def for_create(cls, **kwargs) -> "EventForm":

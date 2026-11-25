@@ -43,7 +43,7 @@ Sebastian zuerst eine kurze Übersicht geben, bevor die erste Frage kommt:
 Diese Themen immer durchgehen und nur auslassen, was offensichtlich nicht zutrifft:
 - **Ziel:** Welches Problem löst es, für wen? Woran merkt man, dass es erfüllt ist?
 - **Fachliches Verhalten:** Ändert sich am Tool etwas für Nutzende? Wenn nicht (z. B. reine Doku, CI oder Arbeitsregeln), wird das festgehalten. Was daraus für die Szenarien folgt, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3; Sebastian kann trotzdem Szenarien wollen, etwa für Abläufe bei reinen Arbeitsregeln.
-- **Rollen und Rechte:** Wer darf es sehen, wer ändern, und wer ausdrücklich nicht? Rollen nach ROL-01, dazu Veranstaltungsleitung und Ansprechperson. Welche Zeile der Rechtematrix (`docs/rechtematrix.md`) ändert sich? Bringt das Issue neue Daten, werden beim Klären ihre Zeilen festgelegt: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten (`CONTRIBUTING.md`, Abschnitt 4).
+- **Rollen und Rechte:** Wer darf es sehen, wer ändern, und wer ausdrücklich nicht? Rollen nach ROL-01, dazu Veranstaltungsleitung und Ansprechperson. Welche Rasterzeile und welche Kennung der Rechtematrix (`docs/rechtematrix.md`) ändern sich? Bringt das Issue neue Daten, werden beim Klären ihre Rasterzeilen und Kennungen festgelegt: wer sie sehen, anlegen, bearbeiten und löschen bzw. verwalten darf, erlaubt und verboten (`CONTRIBUTING.md`, Abschnitt 4).
 - **Ablauf:** Wo im Tool, in welchem Schritt, was passiert vorher und danach?
 - **Grenzfälle:** leere Eingaben, null, sehr große Werte, Fristen abgelaufen, nachträgliche Änderungen, Personen entfernt, mehrere Bearbeitende gleichzeitig, bestehende Veranstaltungen und Anmeldungen.
 - **Meldungen:** Was sieht man bei Fehlern oder im Erfolgsfall, mit welchem Wortlaut?
@@ -73,7 +73,7 @@ Alle Entscheidungen kurz als Liste zeigen und fragen, ob das so stimmt. Erst nac
 
 Aus den Szenarien entstehen später die Tests; wann sie nötig sind und wann nicht, regelt `CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3. Sie werden hier gesammelt, solange Sebastian im Thema ist.
 
-- Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung der Matrixzeile, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
+- Die KI schlägt Szenarien vor, in der Form wie in #89: Wer tut was, was passiert, mit der Kennung aus der Rechtematrix, gruppiert nach erlaubt, verboten und Grenzfällen. Erfundene Personen und Einheiten wie in den Szenarien zu #90.
 - Sebastian entscheidet je Szenario (`CLAUDE.md`, „Ablauf je Aufgabe“, Schritt 3).
 - Danach kommen sie als Kommentar „Szenarien (Datum)“ ins Issue, mit seinen Entscheidungen. Wird das Issue aufgeteilt, kommen sie beim Aufteilen (Abschnitt 8) in das Unter-Issue, zu dem sie gehören.
 - **Was bleibt unverändert?** Für jedes Issue mit Szenarien fragt die Klärung, welche bestehenden Abläufe dieselben Daten, Adressen oder Rechte berühren und was dort gleich bleiben muss. Die Antwort steht im Kommentar „Szenarien (Datum)“ als Abschnitt „Was bleibt unverändert?“, mit Sebastians Entscheidung wie jedes Szenario; berührt das Issue nichts Bestehendes, steht dort genau das mit Grund. <!-- R36 -->

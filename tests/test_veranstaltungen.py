@@ -220,8 +220,10 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
     assert [_attr(field, "type") for field in _by_tag(found, "input") if _attr(field, "name") in ("start", "end")] == [
         "date", "date"]
     # Seit #380 „Weiter“ statt „Anlegen“; danach die Zusammenfassung mit „Veranstaltung speichern“.
-    # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“ (tests/test_adressfeld.py).
-    assert [_visible_text(button) for button in _by_tag(found, "button") if _visible_text(button)] == ["Adresse suchen", "Weiter"]
+    # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“, seit #410 ohne Adresse versteckt „Adresse leeren“
+    # (tests/test_adressfeld.py).
+    assert [_visible_text(button) for button in _by_tag(found, "button")
+            if _visible_text(button) and _attr(button, "hidden") is None] == ["Adresse suchen", "Weiter"]
 
     response = create(org.finn, client=client)
 
@@ -267,8 +269,10 @@ def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     assert _text(_one(_by_tag(found, "h2"))) == "Probelager 2027 bearbeiten"
     assert field_values(found) == {"name": "Probelager 2027", "start": "2027-05-15", "start_time": "",
                                    "end": "2027-05-17", "end_time": "", "location": ""}
-    # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“ (tests/test_adressfeld.py).
-    assert [_visible_text(button) for button in _by_tag(found, "button") if _visible_text(button)] == ["Adresse suchen", "Speichern"]
+    # Seit #163 steht im Adressfeld zusätzlich „Adresse suchen“, seit #410 ohne Adresse versteckt „Adresse leeren“
+    # (tests/test_adressfeld.py).
+    assert [_visible_text(button) for button in _by_tag(found, "button")
+            if _visible_text(button) and _attr(button, "hidden") is None] == ["Adresse suchen", "Speichern"]
 
     response = save(org.finn, probelager, client=client, end="2027-05-18")
 

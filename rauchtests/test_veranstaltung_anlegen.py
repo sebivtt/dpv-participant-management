@@ -17,7 +17,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from rauchtests.test_veranstaltungen import CREATE_BUTTON, _dialog, _erika_in_den_falken
@@ -106,7 +106,7 @@ def test_am_pc_nur_mit_der_tastatur_durch_den_ganzen_ablauf(pc):
     pc.wait_for_url(f"{LIST}*/anlegen/abbrechen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Anlegen abbrechen?")
     expect(dialog.locator(".a-dialog-fuss button")).to_have_text(["Entwurf löschen", "Entwurf speichern"])
     _no_side_scroll(pc)

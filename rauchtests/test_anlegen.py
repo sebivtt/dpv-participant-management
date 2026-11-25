@@ -13,7 +13,7 @@ import re
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from roles.models import Role
@@ -67,7 +67,7 @@ def test_am_pc_nur_mit_der_tastatur_eine_gruppe_anlegen(pc):
     pc.wait_for_url(f"{_page_of(units['walhall'])}anlegen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     field = pc.get_by_label("Name (Pflicht)")
     expect(field).to_be_focused()
     assert run_axe(pc) == []

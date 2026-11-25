@@ -11,7 +11,7 @@ Alle Namen sind erfunden.
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from roles.models import Role
@@ -56,7 +56,7 @@ def test_am_pc_nur_mit_der_tastatur_entfernen(pc):
     pc.wait_for_url(f"{page_address}entfernen/**")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Funke (Fiete Falke) als Gruppenleitung von Sippe Falken entfernen?")
     expect(dialog).to_contain_text("springt die Leitung von Stamm Walhall ein. Trotzdem entfernen?")
     assert run_axe(pc) == []

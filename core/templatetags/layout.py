@@ -12,6 +12,7 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy
 
 from core import address_texts
+from core.models import GERMANY
 
 register = template.Library()
 
@@ -178,6 +179,14 @@ def datumsfeld(field, time=None) -> dict:
     }
 
 
+def _has_address(form) -> bool:
+    """Steht im Adressfeld etwas, das „Adresse leeren“ wegnähme? Das vorgewählte Deutschland allein zählt nicht."""
+    def value(name: str) -> str:
+        return str(form[name].value() or "").strip()
+
+    return any(value(name) for name in ("street", "postal_code", "city", "state")) or value("country") not in ("", GERMANY)
+
+
 @register.inclusion_tag("core/_adressfeld.html")
 def adressfeld(form, address: dict) -> dict:
     """Baustein „Adressfeld“ (#163): die Felder einer Adresse aus einem Formular mit `core.forms.AddressForm`.
@@ -190,6 +199,14 @@ def adressfeld(form, address: dict) -> dict:
         "address": address,
         "title": address_texts.ADDRESS,
         "search_label": address_texts.SEARCH,
+        "clear_label": address_texts.CLEAR,
+        # „Adresse leeren“ gibt es, sobald in Straße, PLZ, Ort oder Bundesland etwas steht oder ein anderes Land als
+        # Deutschland gewählt ist (#410, BA7); ohne Skript gilt, was beim Laden der Seite dasteht (BA8).
+        "has_address": _has_address(form),
+        # Ohne Skript führen „Übernehmen“ und „Adresse leeren“ zum Adressfeld zurück (#410, BA8); app.js nimmt die
+        # Stelle wieder heraus und hält die Seite selbst an ihrem Platz.
+        "back_action": f"{address['search_action']}#adressfeld" if "#" not in address["search_action"] else
+        address["search_action"],
         "search_hint": address_texts.SEARCH_HINT,
         "hits_title": address_texts.HITS,
         "source": address_texts.SOURCE,

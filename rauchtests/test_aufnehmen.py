@@ -9,7 +9,7 @@ Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_personen.py. 
 
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe, wait_for_page_below
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, wait_for_page_below
 from rauchtests.test_benennen import _walhall_for_erika
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
@@ -43,7 +43,7 @@ def test_am_pc_nur_mit_der_tastatur_aufnehmen(pc):
     pc.wait_for_url(f"{page_address}aufnehmen/")
     dialog = _dialog(pc)
     expect(dialog).to_be_visible()
-    assert dialog.evaluate("d => d.matches(':modal')")
+    expect_modal(dialog)
     expect(dialog.locator("h2")).to_have_text("Person mit Konto aufnehmen")
     expect(dialog).to_contain_text("Die Person muss sich schon einmal im Tool angemeldet haben.")
     field = pc.get_by_label("Mail oder Benutzername")

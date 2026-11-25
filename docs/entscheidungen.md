@@ -60,8 +60,70 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Netz der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 2 | 21.10.2026, „Antwort des DPV-Admins …“, „Hinweise der KI“, zweiter Punkt (nur „eigenes Netz“) |
 | Aktualisieren der Testumgebung auf dem Server | 23.11.2026, #59, Nr. 3 | 22.10.2026, „Testumgebung im Container …“ (#37), Nr. 5; 21.10.2026, „Antwort des DPV-Admins …“, „Folge daraus“ (nur dass Sebastian oder der Admin nach Anleitung aktualisieren) |
 | Log der Datenbank auf dem Server | 23.11.2026, #59, „Technische Wahl“, Nr. 1 | 15.11.2026, #324, „Technische Wahl“, Nr. 3 (nur der Satz zum Log des Datenbankservers, für den Server: dort nur für die Datenbank des Tools) |
+| Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
+| Prüfung der Datumsfelder im Browser | 24.11.2026, #411, Nr. 1 bis 4 | 17.11.2026, #379, „Technische Wahl“, Nr. 2 (nur der Satz „der Browser prüft die Felder nicht selbst“, für die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds) |
+| Form der Rechtematrix | 24.11.2026, #139, Nr. 1 bis 5 | 23.10.2026, #87, Nr. 1 (nur die Form der Zeilen: Kennung, wer, Daten, Aktion, erlaubt oder verboten, Quelle und Stand je Zeile) |
 | Anzeigename des Test-Realms | 23.11.2026, #63, Nr. 1 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 5 |
 | Keycloak-Fassung des DPV | 23.11.2026, #63, Nr. 2 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 7 (nur dass jede Abweichung von 26.7.5 eine Angleichung braucht) |
+
+---
+
+## 2026-11-24 · Rechtematrix als Raster: Rollen als Spalten (#139)
+
+**Entscheidung** (Sebastian; Klärung von #139 am 17. und 18.11.2026, [Vorschlag der KI](https://github.com/sebivtt/dpv-participant-management/issues/139#issuecomment-6959283627) und Protokoll in den Kommentaren des Issues; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 23.10.2026 (#87), Nr. 1, nur in der Form der Zeilen; Inhaltsverzeichnis, ein Abschnitt je Art von Daten, das dauerhafte Fortschreiben und alle Kennungen bleiben.
+
+1. **Raster:** Jeder Abschnitt mit Rechten beginnt mit einem Raster: je Recht eine Zeile, je Rolle eine Spalte, dazu eine Spalte mit den Kennungen. Immer dieselben neun Rollenspalten in fester Folge, bei Veranstaltungen und Gesundheitsangaben zwei mehr, nie zusammengelegt (Protokoll, Frage 2 neu: „Immer alle neun“).
+2. **Zellen:** Jede Zelle beginnt mit einem Wort aus einer festen Liste, die die Lesehilfe erklärt; danach darf eine kurze Grenze folgen (Frage 3: „Wort plus kurze Grenze“).
+3. **Zwei Arten von Verboten:** „–“ heißt „diese Rolle gibt das nicht“; Verbote für jede Person stehen je Abschnitt im Block „Was niemand darf“, mit ihrer Geltung (Wunsch vom 24.10.2026 in #139).
+4. **Einspringen und Support-Zugang:** Über jedem Raster steht derselbe Satz zur einspringenden Leitung (EH-18) und zum Admin im Support-Zugang (SZ-03, SZ-05); die genaue Regel steht einmal in der Lesehilfe (Frage 4).
+5. **Einträge:** Unter dem Raster steht je Kennung genau ein Eintrag mit „Was genau“, Quelle und Stand; die Tests je Kennung stehen aufklappbar am Ende des Abschnitts.
+
+**Technische Wahl** (KI):
+
+1. **Einleser:** `tests/rechtematrix.py` erkennt die Teile am Kopf ihrer Tabellen („Recht“, „Kennung | Was genau | Quelle | Stand“, „Kennung | Tests“) und am Block „**Was niemand darf:**“ mit Punkten der Form `- VP-13 (im Tool): …`. Jede andere Tabelle in einem Abschnitt mit Rechten macht die Prüfung rot, ebenso eine Kennung ohne Raster und ohne Block, eine Zelle ohne Wort der Liste und ein Raster ohne den Satz zum Einspringen.
+2. **Wörter über die Mindestliste hinaus:** „eigener Bund“, „alle Bünde“, „Verbandsebene“, „eigene Veranstaltung“ und „eigene Anmeldung“, weil die Rechte der Einheiten, der Verbandsleitung und der Veranstaltungen sonst nur mit langen Grenzen gingen.
+3. **Wörtlich übernommen:** Quellen und Tests je Kennung stehen wörtlich wie vorher; „Was genau“ fasst Wer, Daten, Aktion und Ergebnis der alten Zeile zusammen, in den meisten Abschnitten wörtlich. Ein einmaliger Abgleich im Pull Request belegt das.
+4. **Support-Zugang:** Die Spalte „Admin“ meint den Admin ohne Support-Zugang; im Abschnitt „Support-Zugang der Admins“ zeigt eine Zeile mit Hinweis, was er nach dem Start eines Zugangs darf.
+
+**Umsetzung:** `docs/rechtematrix.md`, `tests/rechtematrix.py`, `tests/test_rechtematrix.py`; nachgezogen: `README.md`, `CONTRIBUTING.md` (Abschnitt 4), `CLAUDE.md` (Musterdateien), `docs/aufbau.md`, `.github/pull_request_template.md`, Kopfkommentar in `access/rights.py`.
+
+---
+
+## 2026-11-24 · Datumsprüfungen schon beim Verlassen des Felds (#411)
+
+**Entscheidung** (Sebastian; Klärung in #398 am 24.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/398#issuecomment-7124224923), Fragen 3, 4, 8, 9 und 10; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/411#issuecomment-7124250592) von #411). Ersetzt den Eintrag vom 17.11.2026 (#379), „Technische Wahl“, Nr. 2, nur den Satz „der Browser prüft die Felder nicht selbst“, soweit es die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds betrifft; `novalidate` bleibt, die Blasen des Browsers kommen weiter nicht.
+
+1. **Beim Verlassen:** Verlässt man in Schritt 1 von „Veranstaltung erstellen“ oder im Dialog des Stifts ein Datums- oder Uhrzeitfeld von Beginn oder Ende, prüft die Seite dieselben Regeln wie der Server (#379, Nr. 2) und zeigt die Meldungen am Feld im bekannten Wortlaut: „Das Ende liegt vor dem Beginn.“, „Der Beginn liegt in der Vergangenheit.“ und ab 29 Tagen die Nachfrage zur Dauer mit dem Schalter „Ja, die Dauer stimmt“, auf aus. Liegt der Beginn in der Vergangenheit, kommt die Nachfrage noch nicht.
+2. **Weg beim Korrigieren:** Eine Meldung verschwindet, sobald die Angaben stimmen, schon beim Tippen. Ändert sich die Dauer, kommt die Frage mit der neuen Zahl und dem Schalter auf aus.
+3. **Nur Geändertes, nichts zu Leerem:** Beim Bearbeiten zählt wie beim Speichern nur, was anders ist als gespeichert. Leere oder unvollständige Felder meldet die Seite nicht; das bleibt bei #299.
+4. **Server bleibt maßgeblich:** Beim Speichern prüft der Server unverändert; ohne Skript kommen die Meldungen erst dann.
+
+**Technische Wahl** (KI):
+
+1. **Heute vom Server:** Die Seite bringt den heutigen Tag des Servers mit (`data-heute` am Beginn), damit eine falsche Uhr am Rechner nichts verfälscht (CG3). Bleibt die Seite über Mitternacht offen, entscheidet beim Speichern der Server.
+2. **Alles aus dem Formular:** Wortlaute, die Grenze von 29 Tagen, die Verbindung von Datum und Uhrzeit und beim Bearbeiten die gespeicherten Angaben (`data-gespeichert`) setzt `EventForm` an die Felder; so stehen sie an einem Ort für beide Seiten. Auch nach „Adresse suchen“ kennt das Formular die gespeicherte Veranstaltung, sonst sähe das Skript einen laufenden Beginn als neu eingegeben.
+3. **Schalter aus einer Vorlage:** Fragt der Server nicht schon nach der Dauer, steht der Baustein „Schalter“ in einem `<template>`; das Skript setzt ihn darunter ein, ohne seinen Aufbau nachzubauen. Ohne Skript zeigt eine Vorlage nichts und schickt nichts.
+4. **Verfahren für #299:** `checkOnLeave()` in `core/static/core/app.js` zeigt die Meldungen einer Prüfung beim Verlassen im Fehler des Bausteins, mit den Eingaben verknüpft und angesagt (`role="alert"`), ohne den Fokus zu bewegen; beim Tippen nimmt es nur weg. Andere Meldungen vom Server am selben Feld bleiben stehen. Eine weitere Prüfung, etwa die leeren Pflichtfelder aus #299, übergibt ihm nur ihre Regeln und Wortlaute.
+
+**Umsetzung:** `core/forms.py` (`EventForm`), `core/views.py` (`_searched_form()`), `core/templates/core/veranstaltung_anlegen.html`, `veranstaltung.html`, `core/static/core/app.js` (Abschnitte „Prüfung beim Verlassen“ und „Datumsprüfungen beim Verlassen“), `docs/gestaltung.md`. Tests in `tests/test_datumspruefung.py` und `rauchtests/test_datumspruefung.py`.
+
+---
+
+## 2026-11-24 · Adressfeld: Enter sucht, Seite bleibt beim Übernehmen stehen, „Adresse leeren“ (#410)
+
+**Entscheidung** (Sebastian; Klärung in #398 am 24.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/398#issuecomment-7124224923), Fragen 1, 5, 6, 6a, 9 und 10; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/410#issuecomment-7124249280) von #410):
+
+1. **Enter sucht:** Enter in Bezeichnung, Straße, PLZ oder Ort wirkt wie „Adresse suchen“, mit denselben Meldungen; in Name, Beginn, Ende und den Uhrzeiten bleibt Enter „Weiter“ bzw. „Speichern“. Gilt in Schritt 1 und im Dialog des Stifts, am Handy ebenso für die Eingabetaste der Bildschirmtastatur. Ohne Skript bleibt Enter überall „Weiter“ bzw. „Speichern“. Ersetzt den Eintrag vom 18.11.2026 (#163), „Technische Wahl“, Nr. 1, nur den Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert; der unsichtbare erste Knopf bleibt für alle übrigen Felder und für die Fassung ohne Skript.
+2. **Seite bleibt stehen** (Fehler): Nach „Übernehmen“ bleibt die Seite beim Adressfeld, der Fokus liegt auf der Straße, wie in #163 schon festgelegt.
+3. **„Adresse leeren“:** zart blauer Knopf neben „Adresse suchen“, nur da, sobald etwas in der Adresse steht oder ein anderes Land als Deutschland gewählt ist. Er leert die Adresse ohne Rückfrage, die Bezeichnung bleibt (Frage 6, geändert bei der Zusammenfassung: nur die Adresse); gespeichert wird erst mit „Weiter“ bzw. „Speichern“.
+
+**Technische Wahl** (KI):
+
+1. **Enter im Skript:** Welche Felder suchen, steht am Adressfeld (`data-enter-sucht`); das Skript löst bei Enter dort „Adresse suchen“ aus, außer während eine Eingabe noch zusammengesetzt wird (Wortvorschläge, Akzente). So bleibt Enter ohne Skript beim unsichtbaren ersten Knopf.
+2. **Seite bleibt stehen:** Ursache war, dass der Browser nach dem neuen Laden nicht zur Straße rollt, wenn sie schon im Bild ist; die Seite stand dann wieder oben (gemessen in Chromium und WebKit). Mit Skript merkt sich die Seite beim Klick auf „Übernehmen“, wo die Straße im Bild stand, und stellt sie danach genau dorthin, in der Seite oder im Dialog; ist sie so nicht ganz zu sehen (am Handy unter der Kopfleiste), rollt sie nur so weit wie nötig. Ohne Skript schicken „Übernehmen“ und „Adresse leeren“ das Formular an „…/adresse-suchen/#adressfeld“, die Seite steht dann beim Adressfeld; der Browser setzt mit einer Stelle „#…“ keinen Fokus (#163, Technische Wahl, Nr. 1), deshalb nimmt das Skript sie heraus.
+3. **„Adresse leeren“ ohne neue Adresse:** Ohne Skript schickt der Knopf das Formular mit `leeren` an die Adresse der Suche; sie leert die Adresse und zeigt dieselbe Seite wieder, ohne etwas zu prüfen, zu speichern oder OpenStreetMap zu fragen. Damit gelten dieselben Rechte wie für die Suche (VA-07, VA-03), ohne neue Zeile der Rechtematrix. Mit Skript leert er die Felder im Browser, ohne die Seite neu zu laden. Ob es den Knopf gibt, legt ohne Skript der Server beim Laden fest, mit Skript das Skript bei jeder Eingabe.
+
+**Umsetzung:** `core/static/core/app.js` (Abschnitte „Adressfeld: Seite bleibt stehen“, „Adressfeld: Enter sucht“, „Adressfeld: „Adresse leeren““), `core/templates/core/_adressfeld.html`, `_knopf_verschieben.html` (Angabe zum Mitschicken, versteckt), `core/templatetags/layout.py`, `core/views.py`, `core/address_texts.py`, `docs/gestaltung.md`. Tests in `tests/test_adressfeld.py` und `rauchtests/test_adressfeld.py` (Teil „#410“).
 
 ---
 

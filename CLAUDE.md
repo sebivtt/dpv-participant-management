@@ -66,18 +66,18 @@ Eine neue Seite entsteht nach dem Vorbild dieser Dateien aus P2. Hauptvorbild f�
 Verwaltete Personen (#117):
 
 - **Datenmodell:** `persons/models.py`, Klasse `ManagedPerson`: zufällige Kennung für Adressen, Stand für gleichzeitiges Speichern, Kennung des Dialogs gegen doppeltes Anlegen und Prüfungen, die die Datenbank selbst durchsetzt.
-- **Zeile der Rechtematrix und Rechteprüfung (#87, #90):** die Zeilen VP-01 bis VP-06 in `docs/rechtematrix.md` und dazu in `access/rights.py` `managed_in()`, `may_add_managed()`, `add_managed()` und `edit_managed()`: Personendaten nur über die zentrale Rechteprüfung, der Eintrag über `entry()` mit der Kennung aus der Adresse.
+- **Kennungen der Rechtematrix und Rechteprüfung (#87, #90, #139):** die Kennungen VP-01 bis VP-06 im Abschnitt „Verwaltete Personen“ (Raster, „Was niemand darf“, Einträge) in `docs/rechtematrix.md` und dazu in `access/rights.py` `managed_in()`, `may_add_managed()`, `add_managed()` und `edit_managed()`: Personendaten nur über die zentrale Rechteprüfung, der Eintrag über `entry()` mit der Kennung aus der Adresse.
 - **Seite mit Liste:** der Abschnitt „Personen“ einer Organisation, `_persons_section()` in `units/organisation.py`: nur, was die Rechteprüfung liefert, nach Nachname, mit Satz bei leerer Liste und ohne Abfragen je Eintrag. Für Suche und Seiten zu 50 gibt es in P2 kein Vorbild (Klärung von #117 am 28.10.2026); die erste Seite, die das braucht, legt das Muster an und trägt es hier ein.
 - **Seite mit Formular:** `ManagedPersonAddForm` und `ManagedPersonForm` in `core/forms.py`, dazu `organisation_add_managed()` und `organisation_edit_managed()` in `core/views.py` und die Adressen in `config/urls.py`: Dialog mit Fehlern am Feld; wer gleichzeitig speichert, bekommt den Hinweis aus `persons/texts.py`, statt etwas zu überschreiben.
 - **Vorlage:** `core/templates/core/organisation.html`: bindet die Bausteine aus dem Bausteinkatalog ein; die Texte stehen übersetzbar in `persons/texts.py`.
 - **Teil im Skript (falls nötig):** `core/static/core/app.js`, Abschnitt „Zurück aus einem Dialog“: das Skript ergänzt nur, ohne Skript bleibt alles bedienbar.
-- **Tests für erlaubt und verboten:** `tests/test_verwaltete_personen.py`: je Szenario ein Test, mit den Kennungen der Matrixzeilen, „wie nicht vorhanden“ für fremde Kennungen und dem Test, dass die Liste nicht mit den Abfragen wächst; im Browser `rauchtests/test_verwaltete_personen.py`.
+- **Tests für erlaubt und verboten:** `tests/test_verwaltete_personen.py`: je Szenario ein Test, mit den Kennungen der Rechtematrix, „wie nicht vorhanden“ für fremde Kennungen und dem Test, dass die Liste nicht mit den Abfragen wächst; im Browser `rauchtests/test_verwaltete_personen.py`.
 - **Szenario-Test (Leitungswechsel):** in `tests/test_verwaltete_personen.py` der Teil „Leitungswechsel“ und im Browser `rauchtests/test_hauptablauf.py`, mit der Maus und nur mit der Tastatur.
 - **Eintrag auf der Musterseite:** der Baustein „Datumsfeld“ im Bausteinkatalog, `core/templates/core/bausteine.html` und `building_blocks()` in `core/views.py`, dazu der Abschnitt „Verwaltete Personen“ in `docs/gestaltung.md`.
 
 Schlichte Seite ohne Personendaten, die Veranstaltung (#100):
 
-- **Datenmodell, Rechte und Seiten:** `events/models.py`, die Zeilen VA-01 bis VA-05 in `docs/rechtematrix.md`, Liste und Seite in `core/templates/core/veranstaltungen.html` und `core/templates/core/veranstaltung.html`.
+- **Datenmodell, Rechte und Seiten:** `events/models.py`, die Kennungen VA-01 bis VA-05 in `docs/rechtematrix.md`, Liste und Seite in `core/templates/core/veranstaltungen.html` und `core/templates/core/veranstaltung.html`.
 - **Tests:** `tests/test_veranstaltungen.py` und im Browser `rauchtests/test_veranstaltungen.py`.
 
 ## Ablauf einer Phase

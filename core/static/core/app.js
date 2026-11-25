@@ -527,33 +527,178 @@
   // auf Treffern oder Meldung (`autofocus`), und wo „Straße und Hausnummer“ dann stand, war Zufall, manchmal halb
   // unter der Leiste. Deshalb setzt das Skript den Fokus selbst, ohne zu rollen, und stellt die Seite so, dass die
   // Straße direkt unter der Leiste beginnt; passt so der Anfang der Treffer oder der Meldung nicht ins Bild, rollt es
-  // nur so weit, dass er unten im Bild steht, denn der Fokus liegt nie außerhalb (WCAG 2.4.11). Nach „Übernehmen“
-  // liegt der Fokus auf der Straße, und das Skript rollt sie ebenso nach oben. Am Ende der Seite hält der Browser
-  // früher an; die Straße steht dann tiefer, aber ganz im Bild. Am PC (dort klebt keine Leiste) und im Dialog bleibt es
-  // beim Browser, ebenso ohne Skript.
+  // nur so weit, dass er unten im Bild steht, denn der Fokus liegt nie außerhalb (WCAG 2.4.11). Am Ende der Seite hält
+  // der Browser früher an; die Straße steht dann tiefer, aber ganz im Bild. Am PC (dort klebt keine Leiste) und im
+  // Dialog bleibt es beim Browser, ebenso ohne Skript. Nach „Übernehmen“ gilt der nächste Abschnitt (#410).
   var topbar = document.querySelector(".a-topbar");
+  var GAP = 8;
+  var stickyTopbar = topbar && window.getComputedStyle(topbar).position === "sticky";
   var addressFocus = document.querySelector(".a-adressfeld [autofocus]");
   var streetInput = addressFocus && addressFocus.closest(".a-adressfeld").querySelector("[name='street']");
   var street = streetInput && streetInput.closest(".a-textfeld");
-  if (topbar && street && !addressFocus.closest("dialog") && window.getComputedStyle(topbar).position === "sticky") {
-    var GAP = 8;
+  if (stickyTopbar && street && addressFocus.matches(".a-adresse-ergebnis") && !addressFocus.closest("dialog")) {
     addressFocus.focus({ preventScroll: true });
     var below = topbar.getBoundingClientRect().bottom + GAP;
     var target = window.scrollY + street.getBoundingClientRect().top - below;
-    if (addressFocus.matches(".a-adresse-ergebnis")) {
-      var resultStart = addressFocus.querySelector(".a-treffer") || addressFocus.firstElementChild || addressFocus;
-      target = Math.max(target, window.scrollY + resultStart.getBoundingClientRect().bottom + GAP - window.innerHeight);
-    }
+    var resultStart = addressFocus.querySelector(".a-treffer") || addressFocus.firstElementChild || addressFocus;
+    target = Math.max(target, window.scrollY + resultStart.getBoundingClientRect().bottom + GAP - window.innerHeight);
     window.scrollTo({ top: target, behavior: "instant" });
   }
 
+  // Ein Feld des Adressfelds mit seiner Beschriftung (der ganze Baustein „Textfeld“) ganz ins Bild holen und nur so weit
+  // rollen wie nötig (#410; Befund M1 der unabhängigen Prüfung: nur das Feld ließ am Handy die Beschriftung unter der
+  // Kopfleiste): auf der Seite unter der Kopfleiste, wenn sie oben klebt, im Dialog in dessen Fläche. `wanted` ist, wo
+  // es oben stehen soll.
+  function placeField(field, wanted) {
+    var dialog = field.closest("dialog");
+    var box = field.getBoundingClientRect();
+    var top = dialog ? dialog.getBoundingClientRect().top + GAP : (stickyTopbar ? topbar.getBoundingClientRect().bottom : 0) + GAP;
+    var bottom = dialog ? dialog.getBoundingClientRect().bottom - GAP : window.innerHeight - GAP;
+    var at = Math.min(Math.max(typeof wanted === "number" ? wanted : box.top, top), bottom - box.height);
+    var by = box.top - at;
+    if (Math.abs(by) < 1) {
+      return;
+    }
+    if (dialog) {
+      dialog.scrollTop += by;
+    } else {
+      window.scrollTo({ top: window.scrollY + by, behavior: "instant" });
+    }
+  }
+
+  // Adressfeld: Seite bleibt stehen (#410, BA4). Nach „Übernehmen“ kommt die Seite neu vom Server, mit dem Fokus auf
+  // der Straße. Stand die Straße dabei schon im Bild, rollte der Browser nicht zu ihr, und die Seite stand wieder oben.
+  // Deshalb merkt sich die Seite beim Klick, wo die Straße im Bild stand, und die neue Seite stellt sie genau dorthin,
+  // in der Seite oder im Dialog, aber nur, wenn sie von genau dieser Seite kommt. Stand sie außerhalb des Bilds oder
+  // am Handy unter der Kopfleiste, rollt sie nur so weit, dass sie ganz zu sehen ist. Ohne Skript führt „#adressfeld“
+  // in der Adresse zum Adressfeld; mit Skript fällt diese Stelle weg, damit der Fokus auf der Straße liegen kann.
+  var STREET_KEY = "adresse-stelle";
+  document.querySelectorAll(".a-adressfeld button[formaction*='#adressfeld']").forEach(function (button) {
+    button.setAttribute("formaction", button.getAttribute("formaction").split("#")[0]);
+  });
+  document.addEventListener("submit", function (event) {
+    var button = event.submitter;
+    var box = button && button.closest ? button.closest(".a-adressfeld") : null;
+    var field = box && box.querySelector("[name='street']");
+    if (!field || (button.name !== "treffer" && button.name !== "leeren")) {
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(STREET_KEY, JSON.stringify({
+        top: field.closest(".a-textfeld").getBoundingClientRect().top,
+        from: window.location.href.split("#")[0],
+      }));
+    } catch (error) {
+      // Ist der Speicher gesperrt, steht die Straße nur sicher im Bild.
+    }
+  });
+  if (streetInput && addressFocus === streetInput) {
+    var streetSpot = null;
+    try {
+      streetSpot = JSON.parse(window.sessionStorage.getItem(STREET_KEY));
+      window.sessionStorage.removeItem(STREET_KEY);
+    } catch (error) {
+      streetSpot = null;
+    }
+    var cameFrom = streetSpot && document.referrer.split("#")[0] === streetSpot.from;
+    streetInput.focus({ preventScroll: true });
+    placeField(street, cameFrom && typeof streetSpot.top === "number" ? streetSpot.top : null);
+  }
+
+  // Adressfeld: Enter sucht (#410, BA1 bis BA3, BA9). Enter in Bezeichnung, Straße, PLZ oder Ort (die Felder aus
+  // „data-enter-sucht“) wirkt wie „Adresse suchen“, am Handy ebenso die Eingabetaste der Bildschirmtastatur. In den
+  // übrigen Feldern bleibt Enter, was der Browser tut: der erste Knopf des Formulars, also „Weiter“ oder „Speichern“.
+  // Während eine Eingabe noch zusammengesetzt wird (Wortvorschläge, Akzente), schließt Enter nur sie ab. Ohne Skript
+  // bleibt Enter überall „Weiter“ bzw. „Speichern“, gesucht wird über den Knopf.
+  document.querySelectorAll(".a-adressfeld[data-enter-sucht]").forEach(function (box) {
+    var search = box.querySelector(".a-adresse-suchen");
+    var names = box.getAttribute("data-enter-sucht").split(" ");
+    if (!search || !search.form) {
+      return;
+    }
+    document.addEventListener("keydown", function (event) {
+      var input = event.target;
+      if (event.key !== "Enter" || event.isComposing || event.keyCode === 229 || event.shiftKey || event.ctrlKey ||
+          event.metaKey || event.altKey || !(input instanceof HTMLInputElement) || input.form !== search.form ||
+          names.indexOf(input.name) < 0) {
+        return;
+      }
+      event.preventDefault();
+      search.click();
+    });
+  });
+
+  // Adressfeld: „Adresse leeren“ (#410, BA5 bis BA7, BG3 bis BG5). Den Knopf gibt es, sobald in Straße, PLZ, Ort oder
+  // Bundesland etwas steht oder ein anderes Land als Deutschland gewählt ist. Mit Skript leert er die Adresse im
+  // Browser, ohne die Seite neu zu laden und ohne Rückfrage: Straße, PLZ, Ort und Bundesland leer, das Land
+  // Deutschland, die Koordinaten eines übernommenen Treffers, Treffer und Meldung der Suche und die Fehler an der
+  // Adresse weg; die Bezeichnung bleibt. Der Fokus liegt danach auf der Straße. Gespeichert wird erst mit „Weiter“
+  // bzw. „Speichern“; an OpenStreetMap geht nichts. Ohne Skript schickt der Knopf das Formular (core/views.py).
+  var GERMANY = "DE";
+  document.querySelectorAll(".a-adressfeld").forEach(function (box) {
+    var clear = box.querySelector(".a-adresse-leeren");
+    if (!clear) {
+      return;
+    }
+    function field(name) {
+      return box.querySelector("[name='" + name + "']");
+    }
+    var texts = ["street", "postal_code", "city"].map(field);
+    var state = field("state");
+    var country = field("country");
+    var coordinates = field("coordinates");
+
+    function update() {
+      clear.hidden = !(texts.some(function (input) { return input.value.trim(); }) || state.value ||
+        (country.value && country.value !== GERMANY));
+    }
+
+    clear.addEventListener("click", function (event) {
+      event.preventDefault();
+      texts.forEach(function (input) {
+        input.value = "";
+        // Wie Tippen: Die Zahl der Zeichen passt sich an.
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      state.value = "";
+      country.value = GERMANY;
+      country.dispatchEvent(new Event("change", { bubbles: true }));
+      if (coordinates) {
+        coordinates.value = "";
+      }
+      var result = box.querySelector(".a-adresse-ergebnis");
+      if (result) {
+        result.remove();
+      }
+      box.querySelectorAll(".is-invalid").forEach(function (input) {
+        input.classList.remove("is-invalid");
+        input.removeAttribute("aria-invalid");
+        describedBy(input, input.id + "-fehler", false);
+      });
+      box.querySelectorAll(".invalid-feedback").forEach(function (error) {
+        error.remove();
+      });
+      update();
+      texts[0].focus({ preventScroll: true });
+      placeField(texts[0].closest(".a-textfeld"), null);
+    });
+    box.addEventListener("input", update);
+    box.addEventListener("change", update);
+    update();
+  });
+
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
-  // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
-  // ältere Antwort, die erst nach einer neueren ankommt, wird verworfen. „Suchen“ und Enter schicken
-  // weiter das Formular ab. Ohne Skript gibt es keine Vorschläge, nur „Suchen“.
+  // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Nur die
+  // neueste Abfrage zählt; eine ältere Antwort, auch ein späterer Fehlschlag, wird verworfen. „Suchen“ und
+  // Enter schicken weiter das Formular ab. Ohne Skript gibt es keine Vorschläge, nur „Suchen“.
+  // Scheitert die neueste Abfrage (#378: keine Verbindung, Fehler im Tool oder nach 5 Sekunden keine
+  // Antwort), wird die Liste leer und an ihrer Stelle steht die Meldung, die der Server im Dialog mitbringt.
+  // Beim Warten bleiben die alten Vorschläge stehen; neu versucht wird erst beim Weitertippen.
+  var SUGGESTIONS_LIMIT = 5000;
   document.querySelectorAll("form[data-vorschlaege]").forEach(function (form) {
     var input = form.querySelector("input[name='suche']");
     var list = form.parentElement.querySelector("[data-treffer]");
+    var failure = form.parentElement.querySelector("template[data-vorschlaege-fehler]");
     var address = form.getAttribute("data-vorschlaege");
     var asked = 0;
     var timer = null;
@@ -561,6 +706,12 @@
       return;
     }
     list.setAttribute("aria-live", "polite");
+    function showFailure() {
+      list.innerHTML = "";
+      if (failure) {
+        list.appendChild(failure.content.cloneNode(true));
+      }
+    }
     input.addEventListener("input", function () {
       window.clearTimeout(timer);
       var text = input.value.trim();
@@ -570,27 +721,276 @@
         return;
       }
       timer = window.setTimeout(function () {
+        var stop = new AbortController();
+        var over = false;
+        // Nur das Erste zählt: Antwort, Fehlschlag oder Zeitlimit; was danach kommt, ändert nichts mehr.
+        function finish(show) {
+          if (over) {
+            return;
+          }
+          over = true;
+          window.clearTimeout(limit);
+          if (number === asked) {
+            show();
+          }
+        }
+        var limit = window.setTimeout(function () {
+          finish(showFailure);
+          stop.abort();
+        }, SUGGESTIONS_LIMIT);
         // Als Formular mit Formularschutz, damit der Name nicht in der Adresse und in keinem Protokoll steht.
-        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin" })
+        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin", signal: stop.signal })
           .then(function (response) {
             // Abgelaufene Anmeldung oder abgelaufener Support-Zugang (#92): Statt der Seite in der Liste geht es
             // dorthin, wohin das Tool weiterleitet, etwa zum Login oder zur Seite mit der Meldung nach Ablauf.
             if (response.redirected) {
+              finish(function () {});
               window.location.assign(response.url);
-              return "";
+              return null;
             }
-            return response.ok ? response.text() : "";
+            if (!response.ok) {
+              throw new Error("Vorschläge: " + response.status);
+            }
+            return response.text();
           })
           .then(function (html) {
-            if (number === asked) {
-              list.innerHTML = html;
+            if (html !== null) {
+              finish(function () {
+                list.innerHTML = html;
+              });
             }
           })
           .catch(function () {
-            // Ohne Verbindung bleibt die Liste, wie sie ist; „Suchen“ geht weiter.
+            finish(showFailure);
           });
       }, 200);
     });
+  });
+
+  // Prüfung beim Verlassen (#411; so gebaut, dass #299 sie für leere Pflichtfelder nutzen kann). `inputs` sind die
+  // Eingaben, bei deren Verlassen geprüft wird. `check()` gibt je Baustein „Textfeld“ oder „Datumsfeld“ (als dessen
+  // erste Eingabe) die Meldungen zurück, die jetzt gelten; `known` sind Muster aller Meldungen dieser Prüfung, damit
+  // sie von denen des Servers zu unterscheiden sind. Eine Meldung steht im Fehler des Bausteins („…-fehler“), mit
+  // allen seinen Eingaben verknüpft, und wird angesagt; der Fokus bleibt, wo er ist. Beim Verlassen zeigt sie, was
+  // gilt; beim Tippen nimmt sie nur weg, was nicht mehr gilt, damit nichts aufblinkt, solange man noch tippt. Andere
+  // Meldungen vom Server am selben Feld (etwa „Bitte gib den Beginn ein.“) bleiben, bis das Formular abgeschickt ist.
+  // `after(leaving)` läuft nach jeder Prüfung, etwa für einen Schalter, der zu einer Meldung gehört.
+  var pointerDown = false;
+  document.addEventListener("pointerdown", function () { pointerDown = true; }, true);
+  document.addEventListener("pointerup", function () { pointerDown = false; }, true);
+  document.addEventListener("pointercancel", function () { pointerDown = false; }, true);
+
+  function checkOnLeave(inputs, owners, known, check, after) {
+    var state = new Map();
+    owners.forEach(function (owner) {
+      var box = document.getElementById(owner.id + "-fehler");
+      var text = box ? box.textContent : "";
+      var shown = [];
+      known.forEach(function (pattern) {
+        text = text.replace(pattern, function (found) {
+          shown.push(found);
+          return "";
+        });
+      });
+      var block = owner.closest(".a-textfeld");
+      state.set(owner, {
+        others: text.replace(/\s+/g, " ").trim(),
+        shown: shown,
+        inputs: Array.from(block.querySelectorAll("input")),
+        // Was der Server rot umrandet hat, bleibt es, solange seine übrigen Meldungen dastehen.
+        invalid: Array.from(block.querySelectorAll("input.is-invalid")),
+      });
+    });
+
+    function show(owner, messages) {
+      var entry = state.get(owner);
+      var errorId = owner.id + "-fehler";
+      var box = document.getElementById(errorId);
+      var text = [entry.others].concat(messages).filter(Boolean).join(" ");
+      var added = messages.some(function (message) { return entry.shown.indexOf(message) < 0; });
+      entry.shown = messages;
+      if (!text) {
+        if (box) {
+          box.remove();
+        }
+      } else {
+        if (!box) {
+          box = document.createElement("div");
+          box.className = "invalid-feedback";
+          box.id = errorId;
+          owner.closest(".a-textfeld").append(box);
+        }
+        // Angesagt wird nur, wenn eine Meldung dazukommt; wegfallende sagt niemand an.
+        if (added) {
+          box.setAttribute("role", "alert");
+        } else {
+          box.removeAttribute("role");
+        }
+        if (box.textContent !== text) {
+          box.textContent = text;
+        }
+      }
+      entry.inputs.forEach(function (input) {
+        var invalid = (input === owner && messages.length > 0) || (!!entry.others && entry.invalid.indexOf(input) >= 0);
+        input.classList.toggle("is-invalid", invalid);
+        if (invalid) {
+          input.setAttribute("aria-invalid", "true");
+        } else {
+          input.removeAttribute("aria-invalid");
+        }
+        describedBy(input, errorId, !!text);
+      });
+    }
+
+    function update(leaving) {
+      var now = check();
+      owners.forEach(function (owner) {
+        var valid = now.get(owner) || [];
+        var entry = state.get(owner);
+        var next = leaving ? valid : entry.shown.filter(function (message) { return valid.indexOf(message) >= 0; });
+        if (next.join("\n") !== entry.shown.join("\n")) {
+          show(owner, next);
+        }
+      });
+      after(leaving);
+    }
+
+    inputs.forEach(function (input) {
+      input.addEventListener("focusout", function () {
+        // Verlässt man das Feld mit einem Klick, etwa auf „Weiter“, erscheint die Meldung erst nach dem Klick: Sonst
+        // rutschte der Knopf unter der Maus weg, und der Klick ginge ins Leere (gefunden im Rauchtest).
+        if (pointerDown) {
+          var later = function () {
+            document.removeEventListener("pointerup", later);
+            document.removeEventListener("pointercancel", later);
+            window.setTimeout(function () { update(true); }, 0);
+          };
+          document.addEventListener("pointerup", later);
+          document.addEventListener("pointercancel", later);
+          return;
+        }
+        update(true);
+      });
+      input.addEventListener("input", function () {
+        update(false);
+      });
+    });
+  }
+
+  function exactly(text) {
+    return new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  }
+
+  // Datumsprüfungen beim Verlassen (#411, Teil C von #398): Beginn, Ende und ihre Uhrzeiten in „Veranstaltung
+  // erstellen“ und im Dialog des Stifts prüft die Seite schon beim Verlassen eines dieser Felder, mit denselben Regeln
+  // und Wortlauten wie der Server (`EventForm.clean()` in core/forms.py; docs/entscheidungen.md, 17.11.2026, #379,
+  // Nr. 2): Ende vor Beginn, auch am selben Tag mit früherer Uhrzeit; Beginn vor dem heutigen Tag, und zwar dem des
+  // Servers („data-heute“), nicht dem der Uhr am Rechner; ab „data-dauer-ab“ Tagen die Nachfrage zur Dauer mit dem
+  // Schalter „Ja, die Dauer stimmt“, aber erst, wenn der Beginn stimmt. Beim Bearbeiten zählt wie dort nur, was
+  // anders ist als gespeichert („data-gespeichert“). Leere oder unvollständige Felder meldet es nicht (#299); das
+  // Feld des Browsers gibt dann keinen Wert. Den Schalter holt es aus der Vorlage „data-dauerfrage“; ändert sich die
+  // Zahl der Tage, steht er wieder auf aus. Der Server prüft beim Speichern weiter; ohne Skript kommen die Meldungen
+  // erst dann.
+  document.querySelectorAll("input[data-dauer-frage]").forEach(function (end) {
+    var start = document.getElementById(end.getAttribute("data-beginn"));
+    var startTime = start && document.getElementById(start.getAttribute("data-uhrzeit"));
+    var endTime = document.getElementById(end.getAttribute("data-uhrzeit"));
+    var pair = end.closest(".a-felder-nebeneinander");
+    if (!start || !startTime || !endTime || !pair) {
+      return;
+    }
+    var today = start.getAttribute("data-heute");
+    var past = start.getAttribute("data-vergangen");
+    var beforeStart = end.getAttribute("data-vor-beginn");
+    var question = end.getAttribute("data-dauer-frage");
+    var limit = parseInt(end.getAttribute("data-dauer-ab"), 10);
+    var template = pair.parentElement.querySelector("template[data-dauerfrage]");
+    var existing = pair.parentElement.querySelector("input[name='duration_ok']");
+    var row = existing ? existing.closest(".a-schalter-zeile") : null;
+    var asked = 0;
+
+    // Uhrzeiten ohne Sekunden, wie der Server sie vergleicht (`_whole_minute()`).
+    // Ein Datum, das der Server nicht versteht (etwa ein fünfstelliges Jahr), zählt wie ein unvollständiges (Befund B2).
+    function value(input) {
+      if (input.type === "time") {
+        return input.value.slice(0, 5);
+      }
+      return /^\d{4}-\d{2}-\d{2}$/.test(input.value) ? input.value : "";
+    }
+
+    function changed() {
+      return Array.prototype.some.call(arguments, function (input) {
+        var stored = input.getAttribute("data-gespeichert");
+        return stored === null || stored !== value(input);
+      });
+    }
+
+    function dayNumber(day) {
+      var parts = day.split("-");
+      return Date.UTC(+parts[0], +parts[1] - 1, +parts[2]) / 86400000;
+    }
+
+    function asking(days) {
+      return question.replace("{anzahl}", days);
+    }
+
+    function check() {
+      var found = new Map([[start, []], [end, []]]);
+      var from = value(start), to = value(end), fromTime = value(startTime), toTime = value(endTime);
+      asked = 0;
+      if (from && from < today && changed(start, startTime)) {
+        found.get(start).push(past);
+      }
+      if (!from || !to) {
+        return found;
+      }
+      if (to < from || (to === from && fromTime && toTime && toTime < fromTime)) {
+        found.get(end).push(beforeStart);
+        return found;
+      }
+      var days = dayNumber(to) - dayNumber(from) + 1;
+      if (!found.get(start).length && days >= limit && changed(start, startTime, end, endTime)) {
+        asked = days;
+        // Ist genau diese Dauer schon bestätigt, fragt auch der Server nicht mehr (`_ask_duration()`; Befund B1).
+        var confirmed = row && row.isConnected && row.querySelector("input");
+        if (!(confirmed && confirmed.checked && confirmed.value === String(days))) {
+          found.get(end).push(asking(days));
+        }
+      }
+      return found;
+    }
+
+    // Der Schalter steht da, solange die Nachfrage gilt; für eine andere Zahl an Tagen wieder auf aus. Beim Tippen
+    // fällt er nur weg, wenn die Nachfrage nicht mehr gilt. Er hängt an der Prüfung, nicht an der Meldung: Nach
+    // „Adresse suchen“ steht ein schon eingeschalteter Schalter ohne Meldung da (#163, A9) und bleibt so.
+    function toggleSwitch(leaving) {
+      var current = row && row.isConnected ? row.querySelector("input").value : "";
+      if (!leaving || !asked) {
+        if (current && current !== String(asked)) {
+          row.querySelector("input").checked = false;
+          row.remove();
+        }
+        return;
+      }
+      if (!row && template) {
+        row = template.content.querySelector(".a-schalter-zeile").cloneNode(true);
+      }
+      if (!row) {
+        return;
+      }
+      var box = row.querySelector("input");
+      if (box.value !== String(asked)) {
+        box.value = String(asked);
+        box.checked = false;
+      }
+      if (!row.isConnected) {
+        pair.after(row);
+      }
+    }
+
+    checkOnLeave([start, startTime, end, endTime], [start, end],
+                 [exactly(past), exactly(beforeStart), new RegExp(exactly(question).source.replace("\\{anzahl\\}", "\\d+"))],
+                 check, toggleSwitch);
   });
 
   // Formulare im Bausteinkatalog (#176) zeigen nur das Aussehen und schicken nichts ab.
