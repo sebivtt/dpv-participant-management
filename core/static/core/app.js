@@ -688,12 +688,17 @@
   });
 
   // Vorschläge beim Tippen (#190, PK-09): Ab drei Zeichen fragt das Skript die Personen aus dem eigenen
-  // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Eine
-  // ältere Antwort, die erst nach einer neueren ankommt, wird verworfen. „Suchen“ und Enter schicken
-  // weiter das Formular ab. Ohne Skript gibt es keine Vorschläge, nur „Suchen“.
+  // Bereich ab und zeigt sie in der Trefferliste; darunter wird nicht gesucht und nichts gezählt. Nur die
+  // neueste Abfrage zählt; eine ältere Antwort, auch ein späterer Fehlschlag, wird verworfen. „Suchen“ und
+  // Enter schicken weiter das Formular ab. Ohne Skript gibt es keine Vorschläge, nur „Suchen“.
+  // Scheitert die neueste Abfrage (#378: keine Verbindung, Fehler im Tool oder nach 5 Sekunden keine
+  // Antwort), wird die Liste leer und an ihrer Stelle steht die Meldung, die der Server im Dialog mitbringt.
+  // Beim Warten bleiben die alten Vorschläge stehen; neu versucht wird erst beim Weitertippen.
+  var SUGGESTIONS_LIMIT = 5000;
   document.querySelectorAll("form[data-vorschlaege]").forEach(function (form) {
     var input = form.querySelector("input[name='suche']");
     var list = form.parentElement.querySelector("[data-treffer]");
+    var failure = form.parentElement.querySelector("template[data-vorschlaege-fehler]");
     var address = form.getAttribute("data-vorschlaege");
     var asked = 0;
     var timer = null;
@@ -701,6 +706,12 @@
       return;
     }
     list.setAttribute("aria-live", "polite");
+    function showFailure() {
+      list.innerHTML = "";
+      if (failure) {
+        list.appendChild(failure.content.cloneNode(true));
+      }
+    }
     input.addEventListener("input", function () {
       window.clearTimeout(timer);
       var text = input.value.trim();
@@ -710,24 +721,47 @@
         return;
       }
       timer = window.setTimeout(function () {
+        var stop = new AbortController();
+        var over = false;
+        // Nur das Erste zählt: Antwort, Fehlschlag oder Zeitlimit; was danach kommt, ändert nichts mehr.
+        function finish(show) {
+          if (over) {
+            return;
+          }
+          over = true;
+          window.clearTimeout(limit);
+          if (number === asked) {
+            show();
+          }
+        }
+        var limit = window.setTimeout(function () {
+          finish(showFailure);
+          stop.abort();
+        }, SUGGESTIONS_LIMIT);
         // Als Formular mit Formularschutz, damit der Name nicht in der Adresse und in keinem Protokoll steht.
-        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin" })
+        fetch(address, { method: "POST", body: new FormData(form), credentials: "same-origin", signal: stop.signal })
           .then(function (response) {
             // Abgelaufene Anmeldung oder abgelaufener Support-Zugang (#92): Statt der Seite in der Liste geht es
             // dorthin, wohin das Tool weiterleitet, etwa zum Login oder zur Seite mit der Meldung nach Ablauf.
             if (response.redirected) {
+              finish(function () {});
               window.location.assign(response.url);
-              return "";
+              return null;
             }
-            return response.ok ? response.text() : "";
+            if (!response.ok) {
+              throw new Error("Vorschläge: " + response.status);
+            }
+            return response.text();
           })
           .then(function (html) {
-            if (number === asked) {
-              list.innerHTML = html;
+            if (html !== null) {
+              finish(function () {
+                list.innerHTML = html;
+              });
             }
           })
           .catch(function () {
-            // Ohne Verbindung bleibt die Liste, wie sie ist; „Suchen“ geht weiter.
+            finish(showFailure);
           });
       }, 200);
     });

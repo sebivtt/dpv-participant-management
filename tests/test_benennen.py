@@ -288,6 +288,38 @@ def test_platzhalter_in_vorschlaegen_finden_nichts(org):
         assert hits(suggest(org.bundesleitung, org.boreas, text)) == {}, text
 
 
+# Fehlschlag der Vorschläge (#378, Szenarien vom 17.11.2026:
+# https://github.com/sebivtt/dpv-participant-management/issues/378). Was der Browser daraus macht, prüft
+# rauchtests/test_vorschlaege_fehlschlag.py; hier nur, dass die Meldung vom Server kommt.
+SUGGESTIONS_FAILED = (
+    "Die Vorschläge konnten gerade nicht geladen werden. Tippe weiter, um es noch einmal zu versuchen, oder finde "
+    "die Person mit „Suchen“ über die genaue Mail oder den Benutzernamen."
+)
+
+
+def _failure_templates(root):
+    return _all(root, lambda e: e.name == "template" and _attr(e, "data-vorschlaege-fehler") is not None)
+
+
+def test_s1_der_dialog_bringt_die_meldung_fuer_einen_fehlschlag_als_fehler_mit(org):
+    dialog = dialog_of(page_tree(org.walhall_leitung, appoint_address(org.falken)))
+
+    template = _one(_failure_templates(dialog))
+    notice = _one(_all(template, lambda e: "a-meldung" in _classes(e)))
+    assert "ist-fehler" in _classes(notice)
+    assert _attr(notice, "role") == "alert"
+    assert _text(_one(_all(notice, lambda e: "sr-nur" in _classes(e)))) == "Fehler:"
+    assert _visible_text(notice) == SUGGESTIONS_FAILED
+    # Ohne Skript zeigt die Vorlage nichts (U4): Außerhalb von ihr steht im Dialog keine Meldung.
+    assert _all(dialog, lambda e: "a-meldung" in _classes(e)) == []
+
+
+def test_u5_dialoge_ohne_vorschlaege_haben_keine_meldung_fuer_einen_fehlschlag(org):
+    admit = dialog_of(page_tree(org.falken_leitung, f"{unit_address(org.falken)}aufnehmen/"))
+
+    assert _failure_templates(admit) == []
+
+
 # ---------- „Suchen“: genaue Mail oder genauer Benutzername ----------
 
 

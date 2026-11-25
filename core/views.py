@@ -306,6 +306,7 @@ def _appoint_page(request: HttpRequest, found: Unit, form: AccountSearchForm | N
         "form": form or AccountSearchForm(),
         "search_action": to_section(reverse("organisation_search", args=[found.key]), sections.LEADS),
         "suggestions_href": reverse("organisation_suggestions", args=[found.key]),
+        "suggestions_failed": texts.SUGGESTIONS_FAILED,
         "help_text": texts.APPOINT_HELP,
         "appoint_action": to_section(reverse("organisation_appoint", args=[found.key]), sections.LEADS),
         "hits": hits or [],

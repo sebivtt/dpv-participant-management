@@ -90,6 +90,11 @@ SUGGESTIONS_TITLE = gettext_lazy("Vorschläge aus deinem Bereich")
 NO_SUGGESTIONS = gettext_lazy(
     "Keine Vorschläge aus deinem Bereich. Mit „Suchen“ findest du andere über die genaue Mail oder den Benutzernamen."
 )
+# Wenn die Vorschläge nicht kommen (#378): keine Verbindung, Fehler im Tool oder keine Antwort nach 5 Sekunden.
+SUGGESTIONS_FAILED = gettext_lazy(
+    "Die Vorschläge konnten gerade nicht geladen werden. Tippe weiter, um es noch einmal zu versuchen, oder finde "
+    "die Person mit „Suchen“ über die genaue Mail oder den Benutzernamen."
+)
 APPOINT_HELP = gettext_lazy(
     "Ab drei Zeichen schlägt das Tool Personen aus deinem Bereich vor. Alle anderen findest du mit „Suchen“ über "
     "die genaue Mail oder den Benutzernamen."
