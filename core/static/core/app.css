@@ -646,8 +646,8 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 a.a-schalter { cursor: pointer; }
 .a-schalter.ist-an .a-schalter-bahn { border-color: var(--dpv); background: var(--dpv); }
 .a-schalter.ist-an .a-schalter-bahn::after { transform: translateX(20px); }
-a.a-schalter:focus-visible { outline: none; }
-a.a-schalter:focus-visible .a-schalter-bahn { outline: 3px solid var(--dpv); outline-offset: 3px; }
+a.a-schalter { border-radius: 999px; }
+a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px; }
 .a-schalter.ist-gesperrt .a-schalter-bahn { opacity: .6; }
 
 /* Veranstaltung in einer Liste (#379, Zielbild Ansicht 1): breite, flache Zeilen mit feinem Rand; der Name fett in
