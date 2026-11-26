@@ -588,3 +588,28 @@ def test_lebenszyklus_steht_als_diagramm_in_den_anforderungen():
     assert "Der Schalter „sichtbar“ aus VER-08 heißt im Tool „Veröffentlicht“ (#356, E2)." in text
     skill = (ROOT / ".claude" / "skills" / "grill-me" / "SKILL.md").read_text(encoding="utf-8")
     assert "Fehlendes Diagramm zum Lebenszyklus" not in skill
+
+
+# ---------- Frage bei der Umsetzung (26.11.2026, Befund M1 der unabhängigen Prüfung) ----------
+
+
+def test_veroeffentlichen_waehrend_des_anlegens_beendet_das_anlegen(org):
+    """Sebastian, 26.11.2026: „Veröffentlichen beendet“. Danach gibt es kein „Entwurf löschen“ mehr (VA-04, VA-06)."""
+    from tests.test_veranstaltung_anlegen import cancel_address, delete_address, summary_address, weiter
+
+    client = client_for(org.wanda)
+    assert weiter(org.wanda, client=client).status_code == 302
+    entry = Event.objects.get(name="Pfingstlager 2028")
+    assert entry.creating_by_id == org.wanda.pk
+
+    assert confirm_publish(org.wanda, entry, client=client).status_code == 302
+
+    entry.refresh_from_db()
+    assert (entry.published, entry.creating_by_id) == (True, None)
+    for address in (summary_address(entry), cancel_address(entry)):
+        response = client.get(address)
+        assert (response.status_code, response.url) == (302, event_address(entry)), address
+    response = client.post(delete_address(entry))
+    assert (response.status_code, response.url) == (302, event_address(entry))
+    entry.refresh_from_db()
+    assert entry.published is True
