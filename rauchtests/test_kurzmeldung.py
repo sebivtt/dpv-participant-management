@@ -136,8 +136,28 @@ def _half_under_topbar(page: Page) -> list[str]:
     )
 
 
+def _still(page: Page) -> None:
+    """Wartet, bis der Browser mit seinem eigenen Rollen nach dem Laden fertig ist (#358).
+
+    Der Katalog hat ein Feld mit `autofocus` weit unten; dorthin rollt der Browser nach dem Laden weich. Seit #358
+    lädt der Katalog Trix und braucht etwas länger; auf dem langsameren Rechner von GitHub lief das weiche Rollen noch,
+    wenn der Test rollte, und Chrome rollte danach weiter. Fertig ist es, wenn die Stelle 150 ms lang gleich bleibt.
+    Gewartet wird mit echter Zeit von hier aus, nicht im Skript der Seite: Viele Tests halten die Uhr der Seite an
+    (`_stop_clock`), und dann laufen dort weder Zeitgeber noch `requestAnimationFrame`.
+    """
+    last, same = page.evaluate("scrollY"), 0
+    for _ in range(60):
+        page.wait_for_timeout(50)
+        now = page.evaluate("scrollY")
+        same = same + 1 if now == last else 0
+        last = now
+        if same >= 3:
+            return
+
+
 def _to_top(page: Page) -> None:
     """Rollt sofort an den Anfang der Seite und prüft, dass dort nichts halb unter der Kopfleiste steckt (#420)."""
+    _still(page)
     page.evaluate("window.scrollTo({top: 0, left: 0, behavior: 'instant'})")
     assert page.evaluate("scrollY") == 0
     assert _half_under_topbar(page) == []
@@ -410,6 +430,7 @@ def test_lagepruefung_erkennt_ein_feld_halb_unter_der_kopfleiste(handy):
     """Gegenprobe zu `_to_top` (#420): Steckt „Ort“ wie im roten Lauf halb unter der Kopfleiste, meldet die Prüfung es."""
     login(handy)
     handy.goto(f"{BASE}/bausteine/")
+    _still(handy)
     handy.evaluate("""() => window.scrollTo({top: window.scrollY + document.getElementById('katalog_adresse_city')
         .getBoundingClientRect().top - document.querySelector('.a-topbar').getBoundingClientRect().bottom + 12,
         behavior: 'instant'})""")
