@@ -72,7 +72,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 1. **Zustandsmarke:** Der Baustein „Marke“ wird erweitert, kein neuer (Frage 1: „Marke erweitern“).
 2. **Schalter mit Rückfrage:** Der Schalter „Veröffentlicht“ ist ein neuer Baustein, weil der Baustein „Schalter“ erst mit dem Knopf eines Dialogs wirkt; der bisherige bleibt unverändert (26.11.2026: „Neuer Baustein“).
-3. **Lebenszyklus in den Anforderungen:** Das Diagramm aus #356 (Frage 15: „Ja, so“) steht an der Stelle des Platzhalters in `docs/anforderungen.md`, beschriftet wie im Tool (Frage 6: „Wie im Tool“), mit dem Pfeil aus #360, Frage 3a; VER-08 selbst bleibt unverändert.
+3. **Veröffentlichen beendet das Anlegen:** Wer eine Veranstaltung veröffentlicht, während das Anlegen in Schritten noch läuft, beendet es damit wie mit „Veranstaltung speichern“; „Entwurf löschen“ gibt es danach nicht mehr (26.11.2026: „Veröffentlichen beendet“; Befund M1 der unabhängigen Prüfung).
+4. **Lebenszyklus in den Anforderungen:** Das Diagramm aus #356 (Frage 15: „Ja, so“) steht an der Stelle des Platzhalters in `docs/anforderungen.md`, beschriftet wie im Tool (Frage 6: „Wie im Tool“), mit dem Pfeil aus #360, Frage 3a; VER-08 selbst bleibt unverändert.
 
 **Technische Wahl** (KI):
 

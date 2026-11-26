@@ -1231,7 +1231,8 @@ class Rights:
         wird nur mit Beginn ab heute (VER-03, Frage 2), zurückgenommen nur vor dem Beginn (Frage 3); beides prüft es zur
         Zeit des Abschickens unter Sperre der Veranstaltung, damit eine über Mitternacht offene Rückfrage oder ein
         verändertes Formular nichts ändert (ZV1, ZV2, ZG4). Ist sie schon so, etwa weil eine zweite Leitung schneller
-        war, ändert sich nichts, und der Satz sagt „schon …“ (ZG3). Ohne Leitung „nicht gefunden“.
+        war, ändert sich nichts, und der Satz sagt „schon …“ (ZG3). Veröffentlichen beendet ein laufendes Anlegen in
+        Schritten (`finish_creating()`). Ohne Leitung „nicht gefunden“.
         """
         if self.user is None or not is_key(key):
             raise Http404
@@ -1247,7 +1248,12 @@ class Rights:
             if not publish and entry.has_begun(now):
                 return "refused", entry, str(event_texts.ALREADY_BEGUN)
             entry.published = publish
-            entry.save(update_fields=["published"])
+            # Veröffentlichen beendet ein noch laufendes Anlegen in Schritten, wie „Veranstaltung speichern“: Sonst
+            # löschte „Entwurf löschen“ danach eine veröffentlichte Veranstaltung (Sebastian, 26.11.2026:
+            # „Veröffentlichen beendet“; Befund M1 der unabhängigen Prüfung).
+            if publish:
+                entry.creating_by = None
+            entry.save(update_fields=["published", "creating_by"])
         return "done", entry, str((event_texts.PUBLISHED if publish else event_texts.WITHDRAWN) % names)
 
     # Anmeldungen (#101, ANM-01, ANM-02; Probe in P2)

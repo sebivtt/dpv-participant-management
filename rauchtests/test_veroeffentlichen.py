@@ -2,8 +2,9 @@
 und ohne Skript.
 
 Erika meldet sich wirklich bei der Keycloak-Testumgebung an, ist Mitglied der Sippe Falken und leitet das
-„Pfingstlager 2028“ (02.06.2028, 18:00, bis 05.06.2028, 12:00) als Entwurf. Die Uhr bleibt die echte: Der Beginn liegt
-in der Zukunft, und Keycloak prüft die Zeit seiner Anmeldung selbst. Geprüft wird, was nur ein Browser zeigt: Der
+„Pfingstlager 2028“ als Entwurf, mit Beginn in rund einem halben Jahr, 18:00, und Ende drei Tage später, 12:00.
+Die Uhr bleibt die echte, weil Keycloak die Zeit seiner Anmeldung selbst prüft; deshalb liegt der Beginn immer
+relativ zu heute in der Zukunft (Befund G5 der unabhängigen Prüfung). Geprüft wird, was nur ein Browser zeigt: Der
 Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“) öffnet mit Leertaste, Enter, Klick oder Tippen die
 Rückfrage, auch ohne Skript; Escape schließt sie, ohne dass sich etwas ändert (Z3); nach dem Bestätigen steht die
 Marke „Angekündigt“ und der Schalter hat wieder den Fokus; nichts steht seitlich über, der Fokus ist zu sehen, und
@@ -12,9 +13,10 @@ Ende, wie in den übrigen Rauchtests ohne Skript). Die Regeln selbst prüft test
 Namen sind erfunden; „Burg Ludwigstein“ stammt aus dem Zielbild (#356).
 """
 
-from datetime import date, time
+from datetime import time, timedelta
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
@@ -31,8 +33,9 @@ SENTENCE = ".a-zustand .a-zustand-satz"
 
 def _pfingstlager() -> Event:
     erika = get_user_model().objects.get(username="erika.testfrau")
-    found = Event.objects.create(name="Pfingstlager 2028", start=date(2028, 6, 2), start_time=time(18, 0),
-                                 end=date(2028, 6, 5), end_time=time(12, 0), location="Burg Ludwigstein")
+    start = timezone.localdate() + timedelta(days=180)
+    found = Event.objects.create(name="Pfingstlager 2028", start=start, start_time=time(18, 0),
+                                 end=start + timedelta(days=3), end_time=time(12, 0), location="Burg Ludwigstein")
     found.leads.add(erika)
     return found
 

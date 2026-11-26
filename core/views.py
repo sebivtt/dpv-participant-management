@@ -1015,7 +1015,7 @@ def publish_switch(entry, now) -> dict:
         locked, href = entry.has_begun(now), reverse("event_withdraw", args=[entry.key])
     else:
         locked, href = entry.starts_before(now), reverse("event_publish", args=[entry.key])
-    return {"id": SWITCH_ID, "title": event_texts.PUBLISHED_SWITCH, "checked": entry.published, "locked": locked,
+    return {"id": SWITCH_ID, "title": event_texts.PUBLISHED_SWITCH, "checked": entry.published,
             "href": None if locked else href}
 
 
@@ -2308,7 +2308,7 @@ def _event_examples() -> dict:
         # Schalter mit Rückfrage (#359): aus, an, an und gesperrt (ab Beginn), aus und gesperrt (Beginn vorbei).
         "publish_switches": [
             {"id": f"katalog-schalter-{number}", "title": event_texts.PUBLISHED_SWITCH, "checked": checked,
-             "locked": locked, "href": None if locked else "#h-schalterrueckfrage"}
+             "href": None if locked else "#h-schalterrueckfrage"}
             for number, (checked, locked) in enumerate(((False, False), (True, False), (True, True), (False, True)),
                                                         start=1)],
         "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
