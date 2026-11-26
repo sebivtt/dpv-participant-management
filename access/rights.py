@@ -1218,6 +1218,44 @@ class Rights:
             entry.save()
         return True, entry, str(event_texts.SAVED % {"event": entry.name})
 
+    # Veröffentlichen (#359, VA-08, VER-07, VER-08)
+    #
+    # Jede Veranstaltungsleitung darf die eigene Veranstaltung veröffentlichen und die Veröffentlichung zurücknehmen
+    # (TEAM-01), auch ohne Zuordnung wie beim Bearbeiten (V4); alle anderen bekommen „nicht gefunden“, auch Admins im
+    # Support-Zugang (VA-03). Das Formular nennt, was es will; ist es schon so, ändert sich nichts (ZG3).
+
+    def set_published(self, key, publish: bool) -> tuple[str, Event, str]:
+        """Veröffentlicht eine eigene Veranstaltung oder nimmt die Veröffentlichung zurück (VA-08).
+
+        Gibt zurück, wie es ausging („done“, „already“ oder „refused“), die Veranstaltung und den Satz dazu. Veröffentlicht
+        wird nur mit Beginn ab heute (VER-03, Frage 2), zurückgenommen nur vor dem Beginn (Frage 3); beides prüft es zur
+        Zeit des Abschickens unter Sperre der Veranstaltung, damit eine über Mitternacht offene Rückfrage oder ein
+        verändertes Formular nichts ändert (ZV1, ZV2, ZG4). Ist sie schon so, etwa weil eine zweite Leitung schneller
+        war, ändert sich nichts, und der Satz sagt „schon …“ (ZG3). Veröffentlichen beendet ein laufendes Anlegen in
+        Schritten (`finish_creating()`). Ohne Leitung „nicht gefunden“.
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        with transaction.atomic():
+            entry = self.entry(self.events().select_for_update(), key)
+            now = timezone.now()
+            names = {"event": entry.name}
+            if entry.published == publish:
+                text = event_texts.ALREADY_PUBLISHED if publish else event_texts.ALREADY_WITHDRAWN
+                return "already", entry, str(text % names)
+            if publish and entry.starts_before(now):
+                return "refused", entry, str(event_texts.START_PASSED)
+            if not publish and entry.has_begun(now):
+                return "refused", entry, str(event_texts.ALREADY_BEGUN)
+            entry.published = publish
+            # Veröffentlichen beendet ein noch laufendes Anlegen in Schritten, wie „Veranstaltung speichern“: Sonst
+            # löschte „Entwurf löschen“ danach eine veröffentlichte Veranstaltung (Sebastian, 26.11.2026:
+            # „Veröffentlichen beendet“; Befund M1 der unabhängigen Prüfung).
+            if publish:
+                entry.creating_by = None
+            entry.save(update_fields=["published", "creating_by"])
+        return "done", entry, str((event_texts.PUBLISHED if publish else event_texts.WITHDRAWN) % names)
+
     # Anmeldungen (#101, ANM-01, ANM-02; Probe in P2)
     #
     # Eine Anmeldung sehen nur die Veranstaltungsleitung (AN-01) und ihre Ansprechperson (AN-02), auch nach Verlust

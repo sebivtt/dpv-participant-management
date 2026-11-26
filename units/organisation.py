@@ -42,10 +42,14 @@ CHILDREN_WORD = {Kind.TROOP: texts.GROUPS, Kind.RING: texts.TROOPS, Kind.ASSOCIA
 
 @dataclass(frozen=True)
 class Mark:
-    """Kleine Marke an einer Organisation (A23) oder einer Leitung (A16): Text und Art für die Farbe."""
+    """Kleine Marke an einer Organisation (A23) oder einer Leitung (A16): Text und Art für die Farbe.
+
+    Seit #359 auch die Zustandsmarke einer Veranstaltung, mit `symbol` aus core/templates/core/_symbole.svg (#356 N3).
+    """
 
     text: str
     kind: str
+    symbol: str = ""
 
 
 @dataclass

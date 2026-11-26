@@ -1,4 +1,7 @@
-"""Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379, Adresse des Orts seit #163) und Anmeldungen (#101, ANM-01, ANM-02)."""
+"""Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379, Adresse des Orts seit #163, Zustand und
+„Veröffentlicht“ seit #359) und Anmeldungen (#101, ANM-01, ANM-02)."""
+
+from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -63,6 +66,10 @@ class Event(PostalAddress):
     # löschen (EP-09), deshalb PROTECT wie bei der Ansprechperson einer Anmeldung.
     creating_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
                                     editable=False, related_name="+")
+    # Schalter „Veröffentlicht“ (#359, VER-07, VER-08; im Tool „Veröffentlicht“ statt „sichtbar“, #356 E2). Jede
+    # Veranstaltung ist ein Entwurf, bis ihre Leitung sie veröffentlicht, auch alle aus P2 (ZG1). Setzt nur
+    # `Rights.set_published()`, nie ein Formular der Grunddaten.
+    published = models.BooleanField(default=False, editable=False)
 
     class Meta:
         constraints = [
@@ -80,10 +87,58 @@ class Event(PostalAddress):
     def __str__(self) -> str:
         return self.name
 
+    class Status(models.TextChoices):
+        """Der Zustand im Lebenszyklus (#359, #356 N2); „Anmeldung offen“ und „Geschlossen“ ergänzt #360."""
+
+        DRAFT = "entwurf", texts.STATE_DRAFT
+        ANNOUNCED = "angekuendigt", texts.STATE_ANNOUNCED
+        RUNNING = "laeuft", texts.STATE_RUNNING
+        ENDED = "beendet", texts.STATE_ENDED
+
     @property
     def days(self) -> int:
         """Die Dauer in Tagen, Beginn und Ende mitgezählt: 02.06. bis 05.06. sind 4 Tage (#379, Kachel „Grunddaten“)."""
         return (self.end - self.start).days + 1
+
+    def begins_at(self) -> datetime:
+        """Der Beginn als Zeitpunkt in der Zeit des Tools; ohne Uhrzeit um 0:00 des ersten Tags (#359)."""
+        return timezone.make_aware(datetime.combine(self.start, self.start_time or time(0, 0)))
+
+    def ends_at(self) -> datetime:
+        """Das Ende als Zeitpunkt in der Zeit des Tools; ohne Uhrzeit um 0:00 nach dem letzten Tag (#359)."""
+        if self.end_time is None:
+            return timezone.make_aware(datetime.combine(self.end + timedelta(days=1), time(0, 0)))
+        return timezone.make_aware(datetime.combine(self.end, self.end_time))
+
+    def status_at(self, now: datetime) -> "Event.Status":
+        """Der Zustand zum Zeitpunkt `now` (#359): aus „Veröffentlicht“, Beginn und Ende.
+
+        Nicht veröffentlicht ist sie ein Entwurf, auch wenn der Zeitraum vorbei ist (Frage 4); veröffentlicht vor dem
+        Beginn „Angekündigt“, ab Beginn bis vor dem Ende „Läuft“, ab dem Ende „Beendet“.
+        """
+        if not self.published:
+            return self.Status.DRAFT
+        if now < self.begins_at():
+            return self.Status.ANNOUNCED
+        if now < self.ends_at():
+            return self.Status.RUNNING
+        return self.Status.ENDED
+
+    @property
+    def status(self) -> "Event.Status":
+        """Der Zustand jetzt, nach der Uhr des Servers (`status_at()`)."""
+        return self.status_at(timezone.now())
+
+    def starts_before(self, now: datetime) -> bool:
+        """Liegt der Beginn vor dem Tag von `now`? Dann lässt sie sich nicht veröffentlichen (VER-03, Frage 2).
+
+        Heute ist immer erlaubt, gleich zu welcher Uhrzeit (Z9, wie #379).
+        """
+        return self.start < timezone.localtime(now).date()
+
+    def has_begun(self, now: datetime) -> bool:
+        """Hat sie zum Zeitpunkt `now` schon begonnen? Dann lässt sich die Veröffentlichung nicht zurücknehmen (Frage 3)."""
+        return now >= self.begins_at()
 
 
 class Registration(models.Model):

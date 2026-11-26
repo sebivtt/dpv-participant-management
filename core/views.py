@@ -9,7 +9,7 @@ from django.db import DatabaseError
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils import dateformat
+from django.utils import dateformat, timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_control, never_cache
 
@@ -972,11 +972,58 @@ def calendar_sheets(entry) -> dict:
     }
 
 
+# Zustandsmarke (#359, Baustein „Marke“): je Zustand das Symbol (#356 N3); die Farbe kommt aus der Art (app.css).
+STATE_SYMBOLS = {Event.Status.DRAFT: "entwurf", Event.Status.ANNOUNCED: "angekuendigt", Event.Status.RUNNING: "laeuft",
+                 Event.Status.ENDED: "beendet"}
+# Zeilen der Liste (#356 Nr. 1, Ansicht 1): Entwürfe gestrichelt, „noch nicht oder nicht mehr offen“ grau.
+GREY_STATES = (Event.Status.ANNOUNCED, Event.Status.ENDED)
+# Wohin die Rückfragen zurückführen: zum Schalter, der wieder den Fokus bekommt (Muster „Zurück aus einem Dialog“, #117).
+SWITCH_ID = "schalter-veroeffentlicht"
+
+
+def state_mark(state: Event.Status) -> Mark:
+    """Die Zustandsmarke einer Veranstaltung: Wort, Art und Symbol (#359)."""
+    return Mark(state.label, state.value, STATE_SYMBOLS[state])
+
+
+def event_row(entry, now) -> dict:
+    """Eine Zeile unter „Von mir geleitet“ (Baustein „Veranstaltung in einer Liste“), seit #359 mit Zustandsmarke."""
+    state = entry.status_at(now)
+    return {"name": entry.name, "line": with_location(period_with_times(entry), entry),
+            "href": reverse("event_page", args=[entry.key]), "mark": state_mark(state),
+            "draft": state == Event.Status.DRAFT, "grey": state in GREY_STATES}
+
+
+def state_sentence(entry, state: Event.Status, now) -> str:
+    """Der Satz unter der Zustandsmarke auf der Leitungsseite (#359, Frage 5)."""
+    if state == Event.Status.DRAFT:
+        return str(event_texts.START_PASSED if entry.starts_before(now) else event_texts.ONLY_LEADS_SEE)
+    if state == Event.Status.ANNOUNCED:
+        return str(event_texts.IS_PUBLISHED)
+    if state == Event.Status.RUNNING:
+        return str(event_texts.RUNS_UNTIL % {"end": _day(entry.end, entry.end_time)})
+    return str(event_texts.ENDED_ON % {"end": entry.end.strftime("%d.%m.%Y")})
+
+
+def publish_switch(entry, now) -> dict:
+    """Der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“, #359).
+
+    Er führt zur Rückfrage in die Richtung, die er umschaltet. Gesperrt steht er da, wenn sich das nicht umschalten
+    lässt: aus mit Beginn vor heute (ZV1), an ab Beginn (ZV2). Der Server prüft beim Bestätigen trotzdem erneut.
+    """
+    if entry.published:
+        locked, href = entry.has_begun(now), reverse("event_withdraw", args=[entry.key])
+    else:
+        locked, href = entry.starts_before(now), reverse("event_publish", args=[entry.key])
+    return {"id": SWITCH_ID, "title": event_texts.PUBLISHED_SWITCH, "checked": entry.published,
+            "href": None if locked else href}
+
+
 def _events_page(request: HttpRequest) -> HttpResponse:
-    """Die Liste „Veranstaltungen“ mit dem Abschnitt „Von mir geleitet“ (#379, A5)."""
+    """Die Liste „Veranstaltungen“ mit dem Abschnitt „Von mir geleitet“ (#379, A5), seit #359 mit Zustandsmarken."""
     rights = request.rights
-    rows = [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
-             "href": reverse("event_page", args=[entry.key])} for entry in rights.own_events()]
+    now = timezone.now()
+    rows = [event_row(entry, now) for entry in rights.own_events()]
     return render(request, "core/veranstaltungen.html", {
         "rows": rows,
         # Den Knopf gibt es nur mit Zuordnung, ohne auch keinen Ersatztext (#100).
@@ -988,9 +1035,9 @@ def _events_page(request: HttpRequest) -> HttpResponse:
 
 
 def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> HttpResponse:
-    """Die Leitungsseite einer Veranstaltung (#379): Kopf, Kachel „Grunddaten“ und der Abschnitt „Anmeldungen“ (#101).
+    """Die Leitungsseite einer Veranstaltung (#379): Kopf, Zustand (#359), Kachel „Grunddaten“ und „Anmeldungen“ (#101).
 
-    Im Kopf Name und Zeitraum ohne Uhrzeit, mit Ort; die Kachel zeigt Beginn und Ende als Kalenderblätter mit
+    Unter dem Kopf die Zustandsmarke mit ihrem Satz und dem Schalter „Veröffentlicht“ (#359). Im Kopf Name und Zeitraum ohne Uhrzeit, mit Ort; die Kachel zeigt Beginn und Ende als Kalenderblätter mit
     Uhrzeit, dazwischen die Dauer, darunter den Ort, und oben rechts den Stift. Im Abschnitt je Anmeldung die
     Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen, die älteste zuerst (S1);
     ohne Anmeldungen ein Satz (S2). Auf Wunsch mit offenem Dialog.
@@ -1000,9 +1047,15 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
         "names": ", ".join(person.shown_name for person in registration.shown_persons),
         "href": reverse("registration_page", args=[registration.key]),
     } for registration in request.rights.event_registrations(entry)]
+    now = timezone.now()
+    state = entry.status_at(now)
     return render(request, "core/veranstaltung.html", {
         "event": entry,
         "head_line": with_location(period(entry), entry, address=True),
+        "state_label": event_texts.STATE_LABEL,
+        "state_mark": state_mark(state),
+        "state_sentence": state_sentence(entry, state, now),
+        "publish_switch": publish_switch(entry, now),
         "calendar": calendar_sheets(entry),
         "basics_title": event_texts.BASICS,
         "basics_edit": event_texts.BASICS_EDIT,
@@ -1128,6 +1181,63 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     dialog = _event_dialog(form, action=request.path, close_href=reverse("event_page", args=[entry.key]), entry=entry,
                            hidden=[("version", version)], conflict=conflict, search_action=_edit_search(rights, entry))
     return _event_page(request, entry, dialog)
+
+
+def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
+    """Die Rückfrage des Schalters „Veröffentlicht“ (#359, Ansichten 6b und 6d; Baustein „Dialog“).
+
+    Veröffentlichen mit dunkelblauem Knopf, Zurücknehmen mit rotem, weil es etwas wegnimmt. × und „Abbrechen“
+    führen zum Schalter zurück. `error` ist die Ablehnung des Servers; sie steht oben im Dialog (ZV1, ZV2, ZG4).
+    """
+    names = {"event": entry.name}
+    question, text, label, target = (
+        (event_texts.PUBLISH_QUESTION, event_texts.PUBLISH_TEXT, event_texts.PUBLISH_BUTTON, "event_publish")
+        if publish else
+        (event_texts.WITHDRAW_QUESTION, event_texts.WITHDRAW_TEXT, event_texts.WITHDRAW_BUTTON, "event_withdraw"))
+    return {
+        "title": question % names,
+        "text": text,
+        "error": error,
+        "close_href": f"{reverse('event_page', args=[entry.key])}#{SWITCH_ID}",
+        "confirm_action": reverse(target, args=[entry.key]),
+        "confirm_label": label,
+        "confirm_primary": publish,
+        "publish_question": True,
+    }
+
+
+def _set_published(request: HttpRequest, event: str, publish: bool) -> HttpResponse:
+    """Rückfrage zeigen und nach dem Bestätigen veröffentlichen oder zurücknehmen (VA-08, #359).
+
+    Lesend zeigt sie die Leitungsseite mit der Rückfrage; abgeschickt schaltet sie in die Richtung der Adresse um,
+    nie bloß um (ZG3). Danach geht es zum Schalter mit der kurzen Meldung, auch wenn es schon so war („schon …“, als
+    Information). Lehnt der Server ab, bleibt die Rückfrage mit dem Satz als Fehler offen, und nichts ändert sich.
+    Nur die Veranstaltungsleitung, sonst „nicht gefunden“ (VA-03); andere Anfragen ebenso.
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    error = ""
+    if request.method == "POST":
+        outcome, entry, text = rights.set_published(event, publish)
+        if outcome != "refused":
+            (messages.success if outcome == "done" else messages.info)(request, text)
+            return redirect(f"{reverse('event_page', args=[entry.key])}#{SWITCH_ID}")
+        error = text
+    elif request.method not in READING:
+        raise Http404
+    return _event_page(request, entry, _publish_dialog(entry, publish, error))
+
+
+@checks_rights(*EVENT_ROWS, "VA-08")
+def event_publish(request: HttpRequest, event: str) -> HttpResponse:
+    """Rückfrage „… veröffentlichen?“ und Veröffentlichen einer eigenen Veranstaltung (VA-08, #359)."""
+    return _set_published(request, event, publish=True)
+
+
+@checks_rights(*EVENT_ROWS, "VA-08")
+def event_withdraw(request: HttpRequest, event: str) -> HttpResponse:
+    """Rückfrage „Veröffentlichung von … zurücknehmen?“ und Zurücknehmen (VA-08, #359)."""
+    return _set_published(request, event, publish=False)
 
 
 def _edit_search(rights, entry) -> str | None:
@@ -1836,10 +1946,12 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "kennmarke": {
-        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218, 117],
+        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218, 117, 359],
         "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Person: „Du springst ein“, „nur "
-                     "lesen“, „gesperrt“ oder „verwaltet“."),
-        "pages": [_("Organisation")],
+                     "lesen“, „gesperrt“ oder „verwaltet“. An einer Veranstaltung zeigt sie ihren Zustand, je mit "
+                     "eigenem Symbol: „Entwurf“ weiß und gestrichelt, „Angekündigt“ zart blau, „Läuft“ dunkelblau, "
+                     "„Beendet“ grau (zweite Reihe)."),
+        "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "leitung": {
         "name": _("Person in einer Liste"), "template": "core/_leitung.html", "issues": [189, 191, 285, 286, 287, 117, 99],
@@ -1887,10 +1999,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "veranstaltungszeile": {
-        "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379],
+        "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379, 359],
         "purpose": _("Eine Veranstaltung als breite, flache Zeile mit feinem Rand: der Name fett als Link zu ihrer "
                      "Seite, darunter grau Zeitraum, mit Uhrzeiten, wo eingetragen, und Ort. Keine Lilie, solange es "
-                     "keine Bilder gibt; rechts kommen später Zustand und Anmeldezahl dazu."),
+                     "keine Bilder gibt. Rechts die Zustandsmarke; ein Entwurf ist gestrichelt umrandet, "
+                     "„Angekündigt“ und „Beendet“ stehen grau, die übrigen hell. Die Anmeldezahl kommt später dazu."),
         "pages": [_("Veranstaltungen")],
     },
     "fortschritt": {
@@ -1931,6 +2044,16 @@ BUILDING_BLOCKS = {
                      "auf „aus“, Vorleseprogramme sagen ihn als Ankreuzfeld an, und fehlt die Bestätigung, steht "
                      "der Fehler rot darunter, wie beim Textfeld."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
+    },
+    "schalterrueckfrage": {
+        "name": _("Schalter mit Rückfrage"), "template": "core/_schalter_rueckfrage.html", "issues": [359],
+        "purpose": _("Schaltet etwas um, das erst eine Rückfrage bestätigt, etwa „Veröffentlicht“ auf der "
+                     "Leitungsseite einer Veranstaltung: der runde Schalter wie beim Baustein „Schalter“, eingeschaltet "
+                     "blau, rechts daneben der fette Titel. Ein Klick, Tippen, Enter oder die Leertaste öffnet die "
+                     "Rückfrage als Dialog mit eigener Adresse, auch ohne Skript; erst sie schaltet um. Gesperrt steht er "
+                     "grau da und lässt sich nicht bedienen, etwa wenn der Beginn vorbei ist (drittes und viertes "
+                     "Beispiel)."),
+        "pages": [_("Veranstaltungen")],
     },
     "orgakopf": {
         "name": _("Kopf einer Organisationsseite"), "template": "core/_orgakopf.html", "issues": [189, 218, 95, 92],
@@ -2173,9 +2296,21 @@ def _event_examples() -> dict:
     cancel = dict(_cancel_dialog(long_name, deletable=True), close_href="#h-dialog", confirm_action="#h-dialog",
                   second_action="#h-dialog", preview_id="h-dialog-abbrechen",
                   text=event_texts.CANCEL_TEXT % {"event": "Sommerfahrt 2028"})
+    status = Event.Status
+    # Zustände wie in Ansicht 1 des Zielbilds (#359): je eine Zeile angekündigt, als Entwurf und laufend.
+    rows = ((thing, status.ANNOUNCED), (camp, status.DRAFT), (long_name, status.RUNNING))
     return {
         "event_rows": [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
-                        "href": "#h-veranstaltungszeile"} for entry in (thing, camp, long_name)],
+                        "href": "#h-veranstaltungszeile", "mark": state_mark(shown),
+                        "draft": shown == status.DRAFT, "grey": shown in GREY_STATES} for entry, shown in rows],
+        # Zustandsmarken (#359) im Eintrag „Marke“, nach den Marken an Organisationen und Personen.
+        "state_marks": [state_mark(shown) for shown in status],
+        # Schalter mit Rückfrage (#359): aus, an, an und gesperrt (ab Beginn), aus und gesperrt (Beginn vorbei).
+        "publish_switches": [
+            {"id": f"katalog-schalter-{number}", "title": event_texts.PUBLISHED_SWITCH, "checked": checked,
+             "href": None if locked else "#h-schalterrueckfrage"}
+            for number, (checked, locked) in enumerate(((False, False), (True, False), (True, True), (False, True)),
+                                                        start=1)],
         "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
         # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, wie auf der Zusammenfassung.
         "steps": _steps(2),

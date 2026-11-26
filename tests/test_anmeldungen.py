@@ -548,7 +548,9 @@ def test_u1_die_seite_der_veranstaltung_bleibt_und_bekommt_nur_den_abschnitt(org
     edit = _all(main, lambda e: "a-stift" in _classes(e))
     assert [_attr(link, "href") for link in edit] == [f"{event_address(org.probelager)}bearbeiten/"]
     surfaces = [section for section in _by_tag(main, "section") if "a-flaeche" in _classes(section)]
-    assert [_attr(section, "aria-labelledby") for section in surfaces] == ["h-grunddaten", SECTION]
+    # Seit #359 steht unter dem Kopf zuerst die Fläche „Zustand“ (ohne Überschrift, mit Namen für Vorleseprogramme).
+    assert [_attr(section, "aria-labelledby") or _attr(section, "aria-label") for section in surfaces] == [
+        "Zustand", "h-grunddaten", SECTION]
     for user in (org.wanda, org.fiete, org.vera, org.max):
         assert client_for(user).get(event_address(org.probelager)).status_code == 404, user.username
 

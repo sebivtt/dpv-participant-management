@@ -66,6 +66,28 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-26 · Zustand und Veröffentlichen einer Veranstaltung (#359)
+
+**Entscheidung** (Sebastian; Klärung von #359 am 17.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/359#issuecomment-6956482564), Fragen 1 bis 6, und bei der Umsetzung am 26.11.2026, [Kommentar](https://github.com/sebivtt/dpv-participant-management/issues/359#issuecomment-7185965936); maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/359#issuecomment-6956474559) von #359).
+
+1. **Zustandsmarke:** Der Baustein „Marke“ wird erweitert, kein neuer (Frage 1: „Marke erweitern“).
+2. **Schalter mit Rückfrage:** Der Schalter „Veröffentlicht“ ist ein neuer Baustein, weil der Baustein „Schalter“ erst mit dem Knopf eines Dialogs wirkt; der bisherige bleibt unverändert (26.11.2026: „Neuer Baustein“).
+3. **Veröffentlichen beendet das Anlegen:** Wer eine Veranstaltung veröffentlicht, während das Anlegen in Schritten noch läuft, beendet es damit wie mit „Veranstaltung speichern“; „Entwurf löschen“ gibt es danach nicht mehr (26.11.2026: „Veröffentlichen beendet“; Befund M1 der unabhängigen Prüfung).
+4. **Lebenszyklus in den Anforderungen:** Das Diagramm aus #356 (Frage 15: „Ja, so“) steht an der Stelle des Platzhalters in `docs/anforderungen.md`, beschriftet wie im Tool (Frage 6: „Wie im Tool“), mit dem Pfeil aus #360, Frage 3a; VER-08 selbst bleibt unverändert.
+
+**Technische Wahl** (KI):
+
+1. **Zustand berechnet, nicht gespeichert:** Gespeichert wird nur „Veröffentlicht“; der Zustand ergibt sich bei jeder Anfrage aus ihm, Beginn und Ende nach der Uhr des Servers in der Zeit des Tools. So braucht es keine Aufgabe im Hintergrund, und der Zustand ist nie veraltet.
+2. **Namen im Code** (`CONTRIBUTING.md`, Abschnitt 1): Zustand `status` (`Event.Status`, weil `state` schon das Bundesland der Adresse ist), „Veröffentlicht“ `published`, Entwurf `draft`, Angekündigt `announced`, Läuft `running`, Beendet `ended`, veröffentlichen `publish`, Veröffentlichung zurücknehmen `withdraw`.
+3. **Je Richtung eine Adresse** (`…/veroeffentlichen/`, `…/zuruecknehmen/`): Lesend zeigt sie die Rückfrage als Dialog, abgeschickt schaltet sie nur in ihre Richtung. Geprüft wird unter Sperre der Veranstaltung zur Zeit des Abschickens; ist es schon so, ändert sich nichts (ZG3).
+4. **Schalter als Link** mit der Rolle „switch“: So öffnet er die Rückfrage auch ohne Skript; das Skript ergänzt nur die Leertaste. Nach der Rückfrage führt die Adresse mit der Kennung des Schalters zurück, und er bekommt wieder den Fokus (wie #117).
+5. **Kennung VA-08:** Die Szenarien nennen die neue Zeile „VA-07“; diese Kennung hat seit #163 die Adresssuche, deshalb die nächste freie.
+6. **Ablehnung in der Rückfrage:** Lehnt der Server ab, bleibt die Rückfrage offen, und der Satz steht als Fehlermeldung oben darin, wie bei „… wurde inzwischen geändert“ (#379, AG7).
+
+**Umsetzung:** `events/models.py` (Feld `published`, Migration `0006_veroeffentlicht`), `access/rights.py` (`set_published()`), `core/views.py`, `config/urls.py`, `core/templates/core/veranstaltung.html`, `_veranstaltungszeile.html`, `_kennmarke.html`, neu `_schalter_rueckfrage.html`, `core/static/core/app.css` und `app.js`, `docs/rechtematrix.md` (VA-03, VA-08), `docs/gestaltung.md`, `docs/anforderungen.md` (Lebenszyklus), Skill `grill-me` (Punkt zum fehlenden Diagramm gestrichen), `docs/zielbilder/README.md`.
+
+---
+
 ## 2026-11-24 · Rechtematrix als Raster: Rollen als Spalten (#139)
 
 **Entscheidung** (Sebastian; Klärung von #139 am 17. und 18.11.2026, [Vorschlag der KI](https://github.com/sebivtt/dpv-participant-management/issues/139#issuecomment-6959283627) und Protokoll in den Kommentaren des Issues; maßgeblich ist der Text des Issues). Ersetzt den Eintrag vom 23.10.2026 (#87), Nr. 1, nur in der Form der Zeilen; Inhaltsverzeichnis, ein Abschnitt je Art von Daten, das dauerhafte Fortschreiben und alle Kennungen bleiben.
