@@ -271,10 +271,12 @@ def _wie_am_handy(page: Page, first: str, composed: str, replaced: str, last: st
     """Tippt wie ein Handy: ein Wort erst als Zusammensetzung, dann per Wortvorschlag ersetzt, danach weiter."""
     page.keyboard.type(first)
     page.keyboard.insert_text(composed)
+    _gezeichnet(page)
     # Der Wortvorschlag ersetzt das angefangene Wort: Der Browser markiert es und setzt das Wort ein.
     page.locator(EDITOR).evaluate(
         "(element, length) => { const [, end] = element.editor.getSelectedRange();"
         " element.editor.setSelectedRange([end - length, end]); }", len(composed))
+    _gezeichnet(page)
     page.keyboard.insert_text(replaced)
     page.keyboard.type(last)
 
@@ -351,7 +353,10 @@ def test_g7_e7_am_pc_breiter_dialog_escape_aendert_nichts_und_eingefuegtes_aus_w
             const data = new DataTransfer();
             data.setData('text/html', html);
             data.setData('text/plain', 'Packliste Kluft Halstuch');
-            element.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true}));
+            // Firefox übernimmt die Zwischenablage nicht aus den Angaben des Ereignisses; so geht es überall gleich.
+            const event = new Event('paste', {bubbles: true, cancelable: true});
+            Object.defineProperty(event, 'clipboardData', {value: data});
+            element.dispatchEvent(event);
         }""", word)
     expect(pc.locator(EDITOR)).to_contain_text("Halstuch")
     _dialog(pc).get_by_role("button", name="Speichern").click()
@@ -425,3 +430,26 @@ def test_e6_am_pc_ohne_skript(pc_ohne_skript):
 
 def test_e6_am_handy_ohne_skript(handy_ohne_skript):
     _ohne_skript(handy_ohne_skript)
+
+
+# ---------- Die Seite bleibt, wo sie ist ----------
+
+
+def test_zeichnet_trix_neu_bleiben_fokus_und_seite_wo_sie_sind(pc):
+    """Fehler aus dem Lauf auf GitHub: Trix setzte nach dem Zeichnen die Schreibmarke in den Text, auch wenn der Fokus
+    woanders war; Chrome holte dann den Fokus in den Editor und rollte die Seite dorthin (Bausteinkatalog direkt nach
+    dem Laden, Knopfleiste). Hier zeichnet Trix neu, während der Fokus auf „Weiter“ steht."""
+    login(pc)
+    _erika_in_den_falken()
+    _schritt_2(pc)
+    _editor_bereit(pc)
+    pc.locator(STEP_SUBMIT).focus()
+    before = pc.evaluate("scrollY")
+
+    # Wie nach einer Änderung im Text: Trix merkt sich eine neue Stelle und zeichnet.
+    pc.locator(EDITOR).evaluate("element => element.editor.setSelectedRange([0, 0])")
+    _gezeichnet(pc)
+    _gezeichnet(pc)
+
+    expect(pc.locator(STEP_SUBMIT)).to_be_focused()
+    assert pc.evaluate("scrollY") == before
