@@ -9,7 +9,9 @@ Finn (Mitglied Sippe Falken), Vera (Verbandsleitung), Max (nur Admin), Otto (Kon
 erfunden; „Burg Ludwigstein“ ist als Bezeichnung eines Orts aus dem Zielbild übernommen (#356).
 
 Die Felder und Prüfungen von Schritt 1 sind die aus #379 (`tests/test_grunddaten.py`); hier steht nur, was der
-Ablauf dazu bringt.
+Ablauf dazu bringt. Seit #358 liegt zwischen Schritt 1 und der Zusammenfassung Schritt 2 „Einladungstext“
+(`tests/test_einladungstext.py`): „Weiter“ in Schritt 1 führt dorthin, „Zurück“ in der Zusammenfassung ebenso, und
+die Zusammenfassung ist Schritt 3. Nur diese Erwartungen sind hier nachgezogen.
 """
 
 from datetime import date
@@ -89,6 +91,11 @@ def basics_address(entry) -> str:
     return f"{event_address(entry)}anlegen/"
 
 
+def invitation_step_address(entry) -> str:
+    """Schritt 2 „Einladungstext“ (#358), wohin „Weiter“ in Schritt 1 führt."""
+    return f"{event_address(entry)}anlegen/einladungstext/"
+
+
 def summary_address(entry) -> str:
     return f"{event_address(entry)}anlegen/zusammenfassung/"
 
@@ -103,7 +110,8 @@ def delete_address(entry) -> str:
 
 
 def flow_addresses(entry) -> list[str]:
-    return [basics_address(entry), summary_address(entry), cancel_address(entry), delete_address(entry)]
+    return [basics_address(entry), invitation_step_address(entry), summary_address(entry), cancel_address(entry),
+            delete_address(entry)]
 
 
 def step_form(root):
@@ -203,7 +211,8 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
 
     root, _key = open_step_one(org.wanda, client=client)
     assert head(root) == ("Veranstaltung erstellen", "")
-    assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Zusammenfassung", False)]
+    assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Einladungstext", False),
+                              ("Schritt 3 Zusammenfassung", False)]
     labels = [_visible_text(label) for label in _by_tag(step_form(root), "label") if "sr-nur" not in _classes(label)]
     # Seit #163 folgt unter dem Ort das Adressfeld (tests/test_adressfeld.py); seit der Vorschau dort heißt der Ort
     # „Bezeichnung“ und steht mit der Adresse in einer eigenen Fläche „Ort“.
@@ -219,14 +228,15 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     assert (created.name, created.location) == ("Pfingstlager 2028", "Burg Ludwigstein")
     assert leads_of(created) == {"wanda.walhall"}
     assert response.status_code == 302
-    assert response.url == summary_address(created)
+    assert response.url == invitation_step_address(created)
     assert rows(org.wanda) == ["Pfingstlager 2028"]
 
-    page = client.get(response.url)
+    page = client.get(summary_address(created))
     assert short_notices(page) == []
     root = _tree(page)
     assert head(root) == ("Pfingstlager 2028", "Entwurf · Veranstaltung erstellen")
-    assert progress(root) == [("Schritt 1 Grunddaten", False), ("Schritt 2 Zusammenfassung", True)]
+    assert progress(root) == [("Schritt 1 Grunddaten", False), ("Schritt 2 Einladungstext", False),
+                              ("Schritt 3 Zusammenfassung", True)]
     tile = basics_tile(root)
     assert _visible_text(_one(_by_tag(tile, "h2"))) == "Grunddaten"
     pencil = _one(_all(tile, lambda e: "a-stift" in _classes(e)))
@@ -236,7 +246,7 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     sheets = [_visible_text(sheet) for sheet in _all(tile, lambda e: "a-kalenderblatt" in _classes(e))]
     assert sheets == ["Fr 02 Jun 2028 18:00", "Mo 05 Jun 2028 12:00"]
     assert place(root) == "Burg Ludwigstein"
-    assert buttons(root) == {"Abbrechen": cancel_address(created), "Zurück": basics_address(created),
+    assert buttons(root) == {"Abbrechen": cancel_address(created), "Zurück": invitation_step_address(created),
                              "Veranstaltung speichern": "senden"}
 
     response = client.post(summary_address(created))
@@ -253,21 +263,24 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
 def test_b2_zurueck_und_der_stift_fuehren_zu_schritt_1_mit_allen_eingaben(org, entwurf):
     client = client_for(org.wanda)
     root = _tree(client.get(summary_address(entwurf)))
-    assert buttons(root)["Zurück"] == basics_address(entwurf)
+    # Seit #358 führt „Zurück“ zu Schritt 2 „Einladungstext“ und von dort zu Schritt 1.
+    assert buttons(root)["Zurück"] == invitation_step_address(entwurf)
+    assert buttons(_tree(client.get(invitation_step_address(entwurf))))["Zurück"] == basics_address(entwurf)
     assert _attr(_one(_all(basics_tile(root), lambda e: "a-stift" in _classes(e))), "href") == basics_address(entwurf)
 
     root = _tree(client.get(basics_address(entwurf)))
 
     assert head(root) == ("Pfingstlager 2028", "Entwurf · Veranstaltung erstellen")
-    assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Zusammenfassung", False)]
+    assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Einladungstext", False),
+                              ("Schritt 3 Zusammenfassung", False)]
     assert field_values(step_form(root)) == {key: value for key, value in PFINGSTLAGER.items()}
     assert buttons(root) == {"Abbrechen": LIST, "Weiter": "senden"}
 
     response = client.post(basics_address(entwurf), {**shown(org.wanda, entwurf, client), "location": "Zeltplatz Moor"})
 
     assert response.status_code == 302
-    assert response.url == summary_address(entwurf)
-    assert place(_tree(client.get(response.url))) == "Zeltplatz Moor"
+    assert response.url == invitation_step_address(entwurf)
+    assert place(_tree(client.get(summary_address(entwurf)))) == "Zeltplatz Moor"
     assert Event.objects.count() == 1
     entwurf.refresh_from_db()
     assert entwurf.location == "Zeltplatz Moor"
@@ -331,7 +344,7 @@ def test_b6_kreuz_schliesst_den_dialog_ohne_aenderung(org, sommerfahrt):
     assert _attr(dialog, "data-schliessen") == summary_address(sommerfahrt)
     root = _tree(client.get(summary_address(sommerfahrt)))
     assert not _by_tag(root, "dialog", aria_labelledby="h-dialog")
-    assert progress(root)[1] == ("Schritt 2 Zusammenfassung", True)
+    assert progress(root)[2] == ("Schritt 3 Zusammenfassung", True)
     # Nichts hat sich geändert: Das Anlegen läuft, und „Entwurf löschen“ geht weiter.
     assert "Entwurf löschen" in dialog_buttons(open_dialog(_tree(client.get(cancel_address(sommerfahrt)))))
 
@@ -478,7 +491,7 @@ def test_bg1_doppelklick_auf_weiter_ergibt_nur_einen_entwurf(org):
     second = client.post(CREATE, form)
 
     assert Event.objects.count() == 1
-    assert first.url == second.url == summary_address(Event.objects.get())
+    assert first.url == second.url == invitation_step_address(Event.objects.get())
 
 
 def test_doppelklick_auf_weiter_nach_zurueck_fuehrt_zur_zusammenfassung(org, entwurf):
@@ -487,7 +500,8 @@ def test_doppelklick_auf_weiter_nach_zurueck_fuehrt_zur_zusammenfassung(org, ent
     Grundlage ist der Eintrag zu #380 in `docs/entscheidungen.md`, „Technische Wahl“, Nr. 4.
 
     Die Regel „gleiche Angaben bei älterem Stand gelten als gespeichert“ (#391, DK2) gilt darum auch hier: Der
-    zweite Klick auf „Weiter“ führt zur Zusammenfassung statt zu „… wurde inzwischen geändert“.
+    zweite Klick auf „Weiter“ führt zur Zusammenfassung statt zu „… wurde inzwischen geändert“. Seit #358 ist der
+    nächste Schritt nach Schritt 1 „Einladungstext“; die Regel ist dieselbe.
     """
     client = client_for(org.wanda)
     form = {**shown(org.wanda, entwurf, client), "location": "Zeltplatz Moor"}
@@ -496,7 +510,7 @@ def test_doppelklick_auf_weiter_nach_zurueck_fuehrt_zur_zusammenfassung(org, ent
     second = client.post(basics_address(entwurf), form)
 
     assert (first.status_code, second.status_code) == (302, 302)
-    assert first.url == second.url == summary_address(entwurf)
+    assert first.url == second.url == invitation_step_address(entwurf)
     entwurf.refresh_from_db()
     assert (entwurf.location, entwurf.version) == ("Zeltplatz Moor", 2)
 

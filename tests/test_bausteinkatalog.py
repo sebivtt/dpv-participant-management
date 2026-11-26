@@ -215,9 +215,10 @@ def test_die_alte_adresse_der_musterseite_gibt_es_nicht(settings, visible):
 # ---------- Szenario 7: Eingabefelder nur aus Bausteinen ----------
 
 # Bausteine, aus denen ein Eingabefeld kommen darf: Textfeld (#111), Feld zum Antippen (#180),
-# Auswahl im Dialog (#286, Antwort von Sebastian bei der Umsetzung am 10.11.2026) und Schalter (#95;
-# als Regler der Einwilligung erweitert mit #98, Sebastian am 12.11.2026: „Schalter erweitern“).
-FIELD_BLOCKS = ("a-textfeld", "a-antippfeld", "a-auswahl", "a-schalter")
+# Auswahl im Dialog (#286, Antwort von Sebastian bei der Umsetzung am 10.11.2026), Schalter (#95;
+# als Regler der Einwilligung erweitert mit #98, Sebastian am 12.11.2026: „Schalter erweitern“) und
+# seit #358 der Editor des Einladungstexts (ohne Skript ein Textfeld mit der Formatierung als Zeichen).
+FIELD_BLOCKS = ("a-textfeld", "a-antippfeld", "a-auswahl", "a-schalter", "a-editor")
 
 
 def self_built_fields(html: str) -> list[str]:

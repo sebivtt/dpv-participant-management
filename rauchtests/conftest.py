@@ -510,6 +510,24 @@ def login(page: Page, account=ERIKA) -> None:
     page.wait_for_url(f"{BASE}/")
 
 
+def ueber_schritt_einladungstext(page: Page, keyboard: bool = False) -> None:
+    """Seit #358 liegt beim Anlegen zwischen Schritt 1 „Grunddaten“ und der Zusammenfassung Schritt 2 „Einladungstext“.
+
+    Wartet auf Schritt 2 und geht mit leerem Text weiter (freiwillig, E2), mit der Maus oder, mit `keyboard`, nur mit
+    der Tastatur; danach steht die Zusammenfassung da. Für Rauchtests, die Schritt 2 nicht selbst prüfen.
+    """
+    from rauchtests.test_rauchtest import _all_visible, _stations_to_element
+
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/einladungstext/")
+    submit = 'form#f-schritt .a-schritt-rechts button[type="submit"]'
+    if keyboard:
+        _all_visible(_stations_to_element(page, submit, steps=40))
+        page.keyboard.press("Enter")
+    else:
+        page.locator(submit).click()
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
+
+
 # Wartezeit der Seite, bevor eine kurze Meldung in ihren Bereich wandert (SHORT_DELAY in core/static/core/app.js)
 SHORT_DELAY_MS = 100
 

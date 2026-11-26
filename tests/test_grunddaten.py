@@ -42,6 +42,7 @@ from tests.test_veranstaltungen import (
     leads_of,
     open_create,
     step_form,
+    invitation_step_address,
     summary_address,
 )
 
@@ -244,10 +245,11 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
     assert (created.name, created.start, created.start_time, created.end, created.end_time, created.location) == (
         "Stammesthing Walhall", date(2028, 1, 14), time(18, 0), date(2028, 1, 16), time(12, 0), "")
     assert leads_of(created) == {"wanda.walhall"}
-    # Seit #380 führt „Weiter“ zur Zusammenfassung, erst „Veranstaltung speichern“ dort zur Leitungsseite.
+    # Seit #380 führt „Weiter“ zur Zusammenfassung, erst „Veranstaltung speichern“ dort zur Leitungsseite; seit #358
+    # liegt dazwischen Schritt 2 „Einladungstext“.
     assert response.status_code == 302
-    assert response.url == summary_address(created)
-    response = client.post(response.url)
+    assert response.url == invitation_step_address(created)
+    response = client.post(summary_address(created))
     assert response.url == event_address(created)
     page = client.get(response.url)
     assert short_notices(page) == [

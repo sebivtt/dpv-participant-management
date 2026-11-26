@@ -27,7 +27,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
-from rauchtests.conftest import BASE, login, run_axe
+from rauchtests.conftest import BASE, login, run_axe, ueber_schritt_einladungstext
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from roles.models import Role
@@ -106,7 +106,7 @@ def test_am_pc_nur_mit_der_tastatur_erstellen_und_bearbeiten(pc):
     stations = _stations_to_element(pc, STEP_SUBMIT, steps=20)
     _all_visible(stations)
     pc.keyboard.press("Enter")
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc, keyboard=True)
     stations = _stations_to_element(pc, STEP_SUBMIT, steps=30)
     _all_visible(stations)
     expect(pc.locator(STEP_SUBMIT)).to_have_text("Veranstaltung speichern")
@@ -180,7 +180,7 @@ def test_am_handy_nur_mit_der_tastatur_und_mit_autokorrektur(handy):
     stations = _stations_to_element(handy, STEP_SUBMIT, steps=20)
     _all_visible(stations)
     handy.keyboard.press("Enter")
-    handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(handy, keyboard=True)
     stations = _stations_to_element(handy, STEP_SUBMIT, steps=30)
     _all_visible(stations)
     handy.keyboard.press("Enter")
