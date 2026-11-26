@@ -23,6 +23,7 @@ from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
 from accounts.adapter import SocialAccountAdapter
+from accounts.views import KeycloakAdapter
 from tests.keycloak_fake import ERIKA, MAX, RETURN, keycloak_parameters, login, start_login
 
 pytestmark = pytest.mark.django_db
@@ -510,6 +511,39 @@ def test_zwei_gleichzeitige_erste_logins_ohne_fehlerseite_und_ohne_verwaistes_ko
     assert SocialAccount.objects.count() == 1
 
 
+@pytest.mark.rechtematrix("EP-09", "TD-01")
+@pytest.mark.django_db(transaction=True)
+def test_zwei_gleichzeitige_erste_logins_aus_verschiedenen_browsern_weiter_mit_hinweis(client, keycloak, monkeypatch):
+    """#416, „Was bleibt unverändert?“: Aus einem anderen Browser bleibt es bei der Login-Seite mit Hinweis.
+
+    Schutz dafür, dass die Behebung für Tabs desselben Browsers diesen Fall nicht mit erfasst.
+    """
+    other = Client()
+    state_a = keycloak_parameters(start_login(client))["state"]
+    state_b = keycloak_parameters(start_login(other))["state"]
+    original = SocialAccountAdapter.pre_social_login
+    calls = []
+
+    def b_finishes_first(self, request, sociallogin):
+        calls.append(1)
+        if len(calls) == 1:
+            thread = threading.Thread(target=_return_in_own_connection, args=(other, state_b))
+            thread.start()
+            thread.join()
+        return original(self, request, sociallogin)
+
+    monkeypatch.setattr(SocialAccountAdapter, "pre_social_login", b_finishes_first)
+
+    response = client.get(RETURN, {"state": state_a, "code": "code-nur-test"})
+
+    _assert_lands_on_login_page_with(client, response, HINT_CANCELLED)
+    assert "Hallo Erika!" in _page(other.get("/"))
+    # Der nächste Klick auf „Anmelden“ klappt.
+    assert login(client)["Location"] == "/"
+    assert "Hallo Erika!" in _page(client.get("/"))
+    assert User.objects.count() == 1
+
+
 def _return_in_own_connection(browser, state: str, answers: list | None = None) -> None:
     try:
         response = browser.get(RETURN, {"state": state, "code": "code-nur-test"})
@@ -519,28 +553,39 @@ def _return_in_own_connection(browser, state: str, answers: list | None = None) 
         connection.close()
 
 
-def _two_first_logins_in_one_browser(client, monkeypatch):
+def _two_first_logins_in_one_browser(
+    client,
+    monkeypatch,
+    keycloak=None,
+    person_b: dict | None = None,
+    b_during=(SocialAccountAdapter, "pre_social_login"),
+):
     """Doppelklick oder zwei Tabs eines Browsers (#326, S2): beide teilen sich die Cookies.
 
-    Wie oben ist die Rückkehr von Tab B schon fertig, während die von Tab A läuft. Gibt die
-    Antworten an A und B zurück.
+    Wie oben ist die Rückkehr von Tab B schon fertig, während die von Tab A läuft, und zwar
+    während des Schritts `b_during` von A. Gibt die Antworten an A und B zurück. Mit `person_b`
+    meldet sich in Tab B eine andere Person an (#416, S3); Tab A hat seine Angaben von Keycloak
+    dann schon.
     """
     tab_b = Client()
     tab_b.cookies = client.cookies
     state_a = keycloak_parameters(start_login(client))["state"]
     state_b = keycloak_parameters(start_login(tab_b))["state"]
-    original = SocialAccountAdapter.pre_social_login
+    owner, step = b_during
+    original = getattr(owner, step)
     answers_b, calls = [], []
 
-    def b_finishes_first(self, request, sociallogin):
+    def b_finishes_first(self, request, *args, **kwargs):
         calls.append(1)
         if len(calls) == 1:
+            if person_b is not None:
+                keycloak.person = dict(person_b)
             thread = threading.Thread(target=_return_in_own_connection, args=(tab_b, state_b, answers_b))
             thread.start()
             thread.join()
-        return original(self, request, sociallogin)
+        return original(self, request, *args, **kwargs)
 
-    monkeypatch.setattr(SocialAccountAdapter, "pre_social_login", b_finishes_first)
+    monkeypatch.setattr(owner, step, b_finishes_first)
     answer_a = client.get(RETURN, {"state": state_a, "code": "code-nur-test"})
     return answer_a, answers_b[0], tab_b
 
@@ -560,13 +605,67 @@ def test_zwei_gleichzeitige_erste_logins_ein_konto_und_beide_tabs_angemeldet(cli
     assert "Hallo Erika!" in _page(client.get("/"))
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#416: der zweite Tab zeigt „Ungültige Anfrage“ (400)")
+# #416: Kein Tab eines Browsers zeigt beim doppelten Login eine Fehlerseite.
+@pytest.mark.rechtematrix("EP-09", "TD-01")
 @pytest.mark.django_db(transaction=True)
 def test_zwei_gleichzeitige_erste_logins_im_selben_browser_ohne_fehlerseite(client, keycloak, monkeypatch):
-    """#326, S2: Auch der Tab, dessen Rückkehr als zweite fertig wird, zeigt keine Fehlerseite."""
-    answer_a, _answer_b, _tab_b = _two_first_logins_in_one_browser(client, monkeypatch)
+    """#326, S2 und #416, S1: Auch der Tab, dessen Rückkehr als zweite fertig wird, zeigt keine Fehlerseite.
+
+    Er landet auf der Startseite mit „Hallo Erika!“, ohne Hinweis; es bleibt bei einem Konto.
+    """
+    answer_a, answer_b, _tab_b = _two_first_logins_in_one_browser(client, monkeypatch)
 
     assert answer_a.status_code == 302, answer_a.status_code
+    assert answer_a["Location"] == "/"
+    assert answer_b.status_code == 302 and answer_b["Location"] == "/"
+    home = _page(client.get("/"))
+    assert "Hallo Erika!" in home
+    assert HINT_CANCELLED not in home
+    assert User.objects.count() == 1
+    assert SocialAccount.objects.get().uid == ERIKA["sub"]
+
+
+@pytest.mark.rechtematrix("EP-09", "TD-01")
+@pytest.mark.django_db(transaction=True)
+def test_doppelter_login_mit_vorhandenem_konto_im_selben_browser_ohne_fehlerseite(client, keycloak, monkeypatch):
+    """#416, S2: Erika hat schon ein Konto; zwei Tabs zugleich, beide angemeldet, ein Konto.
+
+    Tab B wird fertig, während Tab A die Angaben von Keycloak schon hat, aber die Datenbank noch
+    nicht berührt. Später käme B nicht vorbei: A hält dann das bestehende Konto gesperrt, bis
+    A fertig ist, und B wartet.
+    """
+    login(client)
+    client.post("/abmelden/")
+
+    answer_a, answer_b, _tab_b = _two_first_logins_in_one_browser(
+        client, monkeypatch, b_during=(KeycloakAdapter, "complete_login")
+    )
+
+    assert answer_a.status_code == 302 and answer_a["Location"] == "/"
+    assert answer_b.status_code == 302 and answer_b["Location"] == "/"
+    home = _page(client.get("/"))
+    assert "Hallo Erika!" in home
+    assert HINT_CANCELLED not in home
+    assert User.objects.count() == 1
+    assert SocialAccount.objects.count() == 1
+
+
+@pytest.mark.rechtematrix("EP-09", "TD-01")
+@pytest.mark.django_db(transaction=True)
+def test_zwei_personen_zugleich_im_selben_browser_ohne_fehlerseite_und_ohne_mischung(client, keycloak, monkeypatch):
+    """#416, S3: Max wird in Tab B zuerst fertig, Erika in Tab A zuletzt; der Browser ist danach nur Erika."""
+    answer_a, answer_b, _tab_b = _two_first_logins_in_one_browser(client, monkeypatch, keycloak, person_b=MAX)
+
+    assert answer_a.status_code == 302 and answer_a["Location"] == "/"
+    assert answer_b.status_code == 302 and answer_b["Location"] == "/"
+    home = _page(client.get("/"))
+    profile = _page(client.get("/profil/"))
+    assert "Hallo Erika!" in home
+    assert "erika.testfrau@example.org" in profile
+    for page in (home, profile):
+        assert "Max" not in page and "Testmann" not in page and "max.testmann" not in page
+    assert sorted(SocialAccount.objects.values_list("uid", flat=True)) == sorted([ERIKA["sub"], MAX["sub"]])
+    assert User.objects.count() == 2
 
 
 def test_sehr_langer_name_aus_keycloak_fuehrt_nicht_zur_fehlerseite(client, keycloak):
