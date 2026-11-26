@@ -665,9 +665,10 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
 
 /* Zeile „Zustand“ der Leitungsseite (#359, Zielbild Ansicht 6): links Zustandsmarke und Satz, rechts der Schalter
    „Veröffentlicht“; schmal untereinander. */
-.a-zustand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+/* Abstand zur Kachel darunter wie zwischen den Flächen im Zielbild (20 Pixel; Sebastian bei der Vorschau, 26.11.2026). */
+.a-zustand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 20px; }
 .a-zustand-wie { flex: 1 1 260px; min-width: 0; }
-.a-zustand-satz { margin: 6px 0 0; color: var(--text-leise); }
+.a-zustand-satz { margin: 6px 0 0; color: var(--text-leise); font-size: .95rem; }
 
 /* Kacheln der Leitungsseite (#379, Zielbild Ansicht 6): am PC zwei nebeneinander, schmal untereinander. Eine
    Kachel ist eine Fläche mit Stift oben rechts (Baustein „Bearbeiten-Symbol“); der Titel rückt nicht darunter. */
