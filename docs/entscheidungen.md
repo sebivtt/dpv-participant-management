@@ -63,6 +63,8 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
 | Prüfung der Datumsfelder im Browser | 24.11.2026, #411, Nr. 1 bis 4 | 17.11.2026, #379, „Technische Wahl“, Nr. 2 (nur der Satz „der Browser prüft die Felder nicht selbst“, für die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds) |
 | Form der Rechtematrix | 24.11.2026, #139, Nr. 1 bis 5 | 23.10.2026, #87, Nr. 1 (nur die Form der Zeilen: Kennung, wer, Daten, Aktion, erlaubt oder verboten, Quelle und Stand je Zeile) |
+| Anzeigename des Test-Realms | 23.11.2026, #63, Nr. 1 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 5 |
+| Keycloak-Fassung des DPV | 23.11.2026, #63, Nr. 2 | 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 7 (nur dass jede Abweichung von 26.7.5 eine Angleichung braucht) |
 
 ---
 
@@ -124,6 +126,18 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 **Umsetzung:** `core/static/core/app.js` (Abschnitte „Adressfeld: Seite bleibt stehen“, „Adressfeld: Enter sucht“, „Adressfeld: „Adresse leeren““), `core/templates/core/_adressfeld.html`, `_knopf_verschieben.html` (Angabe zum Mitschicken, versteckt), `core/templatetags/layout.py`, `core/views.py`, `core/address_texts.py`, `docs/gestaltung.md`. Tests in `tests/test_adressfeld.py` und `rauchtests/test_adressfeld.py` (Teil „#410“).
 
 ---
+
+## 2026-11-23 · Test-Realm im Keycloak des DPV: Anzeigename, Keycloak-Fassung, Verwaltungskonto (#63)
+
+**Entscheidung** (Sebastian, Klärung von #63 am 15.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/63#issuecomment-6901555534), Frage 6, und am 23.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/63#issuecomment-7108315873), Fragen 4 und 5; maßgeblich ist der Text von #63):
+
+1. **Anzeigename:** Der Test-Realm `dpv-test` behält den Anzeigenamen „Anmeldetool Test“, mit dem Sebastian ihn beim DPV eingerichtet hat (#222, Nachtrag 2); die Importdatei bekommt denselben (Frage 5: „Bleibt (Empfohlen)“). Die Login-Seite von Keycloak zeigt ihn. Ersetzt den Eintrag vom 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 5.
+2. **Keycloak-Fassung:** Maßgeblich ist die Hauptfassung (heute 26.7). Weicht sie beim DPV von der Hauptfassung der lokalen Testumgebung und der Prüfung auf GitHub ab (etwa 26.8 oder 27), werden diese in einem eigenen Issue angeglichen, vorher oder zusammen mit dem Nachweis. Andere Unterfassungen (26.7.x) brauchen keine Angleichung, weil der DPV sie jede Woche automatisch einspielt (#222, Befunde vom 12.11.2026). Die genaue Fassung trägt Sebastian beim Nachweis mit Datum in #38 ein; zeigt die Verwaltung sie ihm mit Rechten nur im Realm `dpv-test` nicht, nennt sie der Admin (Frage 6 vom 15.11.2026: „Hauptfassung 26.7 zählt“). Ersetzt den Eintrag vom 22.10.2026, „Test-Realm im Keycloak des DPV: Konten, Passwörter, Nachweis“ (#38), Nr. 7, teilweise: nur dass jede Abweichung von 26.7.5 eine Angleichung braucht.
+3. **Verwaltungskonto:** Sebastians Verwaltungskonto liegt im Realm `dpv-test` selbst. Es bleibt dort; im README steht nur die Regel, sich in der Testumgebung nie damit anzumelden (Frage 4: „Nur Regel im README“). Die Empfehlung der KI war, es vom Admin in den Realm `master` verlegen zu lassen, damit ein Login damit gar nicht erst möglich ist.
+
+**Begründung:** Zu 1: Der Realm ist so eingerichtet; ein Anzeigename macht die Login-Seite des Test-Realms erkennbar. Zu 2: Unterfassungen wechseln jede Woche, eine Angleichung jeder einzelnen wäre nie fertig. Zu 3: Protokoll in #63.
+
+**Umsetzung:** `testumgebung/keycloak/dpv-test-realm.json`, `README.md` (Abschnitt „Testumgebung auf dem Server“, „Nachweis: Login über den Test-Realm“), Tests in `tests/test_testrealm_datei.py`, `tests/test_testrealm_echt.py` und `tests/test_nachweis_login_server.py`.
 
 ## 2026-11-23 · Testumgebung auf dem Server: gemeinsames PostgreSQL, Netz `dpv`, Abbild von GitHub, Abruf durch den Server (#59)
 

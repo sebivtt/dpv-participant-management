@@ -221,10 +221,28 @@ def test_login_seite_bietet_weder_registrieren_noch_passwort_vergessen(client, b
     assert "login-actions/reset-credentials" not in page.text
 
 
+def test_login_seite_zeigt_den_anzeigenamen_anmeldetool_test(client, browser, admin):
+    # Wie im eingerichteten Realm beim DPV (#63, Beispiel: „Login-Seite von Keycloak mit ‚Anmeldetool Test‘“).
+    page = _open_keycloak(client, browser)
+
+    assert page.status_code == 200
+    assert "Anmeldetool Test" in page.text
+
+
 def test_direkt_aufgerufene_registrierung_zeigt_kein_formular(client, browser, admin):
     page = _open_keycloak(client, browser, auth_params="prompt=create")
 
     assert 'name="password-confirm"' not in page.text
+
+
+def test_link_registrieren_fuehrt_zur_fehlerseite_registrierung_nicht_erlaubt(client, browser, admin):
+    # So beschreibt es die Checkliste im README, N1 (#63, Antwort Sebastian vom 23.11.2026: „A) Link
+    # bleibt (Empfohlen)“): eine Seite von Keycloak mit dem Anzeigenamen, ohne Formular.
+    page = _open_keycloak(client, browser, auth_params="prompt=create")
+
+    assert "Anmeldetool Test" in page.text
+    assert "Registrierung nicht erlaubt." in page.text
+    assert 'name="password"' not in page.text
 
 
 def test_nach_vielen_falschen_passwoertern_sperrt_keycloak_vorlaeufig(client, browser, admin):

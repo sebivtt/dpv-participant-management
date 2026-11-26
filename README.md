@@ -339,6 +339,26 @@ S13. `admin.test` zum Admin ernennen (Abschnitt „Admins ernennen und entfernen
 
 Jeder andere Befehl aus diesem README, der lokal mit `uv run --env-file .env python manage.py` beginnt, heißt auf dem Server (nach S6 und S7) `sudo docker compose exec anmeldetool python manage.py`, z. B. `sudo docker compose exec anmeldetool python manage.py association list`.
 
+**Nachweis: Login über den Test-Realm** (einmalig, Sebastian; nach S13, #63)
+
+Diese Checkliste belegt, dass der Login auch mit dem Keycloak des DPV funktioniert, nicht nur mit der Keycloak-Testumgebung auf dem eigenen Rechner; sie funktioniert ohne KI. Melde dich in der Testumgebung nur mit den erfundenen Testkonten aus S1 und S2 an, nie mit deinem eigenen Verwaltungskonto des Test-Realms: Es liegt im Realm `dpv-test` selbst, und das Tool übernähme beim Login deinen echten Namen und deine echte Mail.
+
+N1. Im Browser https://anmeldetool.scout-tools.de/ öffnen und auf „Noch kein Konto? Registrieren“ klicken.
+   Danach: eine Seite von Keycloak mit „Anmeldetool Test“ und „Es ist ein Fehler aufgetreten.“ mit „Registrierung nicht erlaubt.“ Das ist richtig: Im Test-Realm kann sich niemand selbst registrieren; im echten Betrieb führt der Link zur Registrierung (#63). Mit „Zurück“ im Browser wieder zur Login-Seite des Tools.
+N2. „Mit DPV-Konto anmelden“ klicken und als `erika.testfrau` anmelden.
+   Danach: „Hallo Erika!“ mit dem gelben Band.
+N3. Links unten in der Seitenleiste „Abmelden“ klicken (am Handy im „Menü“).
+   Danach: die Login-Seite des Tools.
+N4. Wieder „Mit DPV-Konto anmelden“ klicken.
+   Danach: Keycloak verlangt Benutzername und Passwort; ohne sie geht es nicht weiter. Wieder als `erika.testfrau` anmelden. Meldet Keycloak dich ohne Passwort an, hat das Abmelden in N3 nicht auch bei Keycloak abgemeldet.
+N5. Die Kontosuche beim Benennen prüfen: Als `erika.testfrau` (Stammesleitung Walhall aus S12) in der Seitenleiste „Organisation“ öffnen, dann links in der Gliederung den Stamm Walhall, bei „Leitungen“ auf „Stammesleitung benennen“ klicken, ins Suchfeld `max.testmann@example.org` eintragen und „Suchen“ klicken.
+   Danach: Unter den Treffern steht Max Testmann mit „schon woanders Mitglied“ und dem Hinweis, dass er hier keine Leitung werden kann. Das ist richtig, weil er nach S12 Stammesleitung von Zugvögel ist; wichtig ist nur, dass er gefunden wird. Dann „Abbrechen“. Steht dort „Kein Konto gefunden“, schickt der Keycloak des DPV „Mail bestätigt“ nicht mit, und die Kontosuche über die Mail geht dort nicht (#251); `max.testmann` muss sich aber vorher in S11 einmal angemeldet haben.
+N6. Abmelden, dann als `ohne.name` anmelden.
+   Danach: nur „Hallo!“, ohne Namen. Danach wieder abmelden.
+N7. Die genaue Fassung von Keycloak nachsehen, in der Verwaltung von Keycloak über das Fragezeichen oben rechts. Zeigt die Verwaltung sie dir mit den Rechten nur für `dpv-test` nicht, nennt sie der Admin.
+   Danach: eine Fassung wie `26.7.6`. Die Fassung trägst du mit dem Datum in #38 ein. Maßgeblich ist nur die Hauptfassung, also `26.7`: Ist sie eine andere als die der Keycloak-Testumgebung auf dem eigenen Rechner (`26.7` aus `26.7.5`, Abschnitt „Test-Realm im Keycloak des DPV“), braucht es ein eigenes Issue zur Angleichung (`docs/entscheidungen.md`, 23.11.2026, #63, Nr. 2).
+N8. Das Ergebnis in #106 eintragen, beim Abschlusskriterium „Login per Keycloak auf dem Testserver“: Datum, ob N1 bis N7 wie beschrieben waren (sonst welcher Schritt nicht), und den Stand von `main`, also die Kennung hinter `sha-` der Version, die S8 zeigt.
+
 **Nach einem übernommenen Pull Request** (der neue Stand kommt von selbst)
 
 S14. Auf GitHub im Repo oben „Actions“ öffnen. Erst wird „Prüfungen“ für `main` grün, danach „Abbild veröffentlichen“.
