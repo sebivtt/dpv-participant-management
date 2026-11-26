@@ -294,6 +294,23 @@
     editor.addEventListener("trix-initialize", function () {
       editorKeepStop(toolbar);
       update();
+      // Trix setzt nach jedem Zeichnen die Schreibmarke im Text, auch wenn der Fokus woanders ist. Chrome holt den
+      // Fokus dann in den Text und rollt die Seite dorthin, etwa kurz nach dem Laden oder aus der Knopfleiste. Die
+      // Schreibmarke setzt Trix deshalb nur, solange der Fokus im Text ist oder das Feld für einen Link offen ist oder
+      // sich gerade schließt; sonst merkt es sich die Stelle nur.
+      var manager = editor.editorController && editor.editorController.selectionManager;
+      if (manager && typeof manager.setLocationRange === "function") {
+        var setLocationRange = manager.setLocationRange.bind(manager);
+        manager.setLocationRange = function (locationRange) {
+          var active = document.activeElement;
+          if (linkOpen || (active && editor.contains(active))) {
+            return setLocationRange(locationRange);
+          }
+          if (typeof manager.updateCurrentLocationRange === "function") {
+            manager.updateCurrentLocationRange(locationRange);
+          }
+        };
+      }
     });
     // Die Zahl steht gleich da, nicht erst, wenn Trix fertig ist; sonst rutschte die Seite darunter nach.
     if (counter) {
@@ -324,7 +341,16 @@
       linkField.style.left = left + "px";
       linkField.style.top = (Math.max(bottom, box.top) - area.top + 6) + "px";
     }
+    var linkOpen = false;
+    editor.addEventListener("trix-toolbar-dialog-hide", function () {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          linkOpen = false;
+        });
+      });
+    });
     editor.addEventListener("trix-toolbar-dialog-show", function () {
+      linkOpen = true;
       var linked = editor.editor.attributeIsActive("href");
       linkField.querySelector("[data-mit-link]").hidden = !linked;
       linkField.querySelector("[data-ohne-link]").hidden = linked;

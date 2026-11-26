@@ -14,7 +14,7 @@ Django teilt das Tool in Apps, also Ordner mit je einem Fachbereich; `access` un
 | `units/` | Einheiten (Verband, Bund, Ring, Stamm, Gruppe) mit ihrem Protokoll, die Aufbereitung der Seite „Organisation“ (`units/organisation.py`) und die Befehle `federation` und `association`. |
 | `roles/` | Rollen (Leitungen, Mitglieder, Teams, Admin) mit ihrem Protokoll und die Befehle `admin` und `federation_lead`. |
 | `persons/` | Verwaltete Personen: Profile ohne Konto, die eine Leitung für ihre Organisation anlegt (#117, PER-02). |
-| `events/` | Veranstaltungen mit ihrer Veranstaltungsleitung und Anmeldungen mit ihrer Ansprechperson und den angemeldeten Personen; in P2 die Proben mit Name, Beginn und Ende (#100, TEAM-01) und Anmeldungen nur im Datenmodell (#101, ANM-02); seit #379 mit Uhrzeiten, Ort und Leitungsseite. |
+| `events/` | Veranstaltungen mit ihrer Veranstaltungsleitung und Anmeldungen mit ihrer Ansprechperson und den angemeldeten Personen; in P2 die Proben mit Name, Beginn und Ende (#100, TEAM-01) und Anmeldungen nur im Datenmodell (#101, ANM-02); seit #379 mit Uhrzeiten, Ort und Leitungsseite, seit #358 mit dem Einladungstext. |
 | `config/` | Einstellungen (`config/settings.py`) und die Liste aller Adressen (`config/urls.py`). |
 
 Die Apps hängen gegenseitig voneinander ab, weil Grundbausteine in Apps liegen, die auch obere Teile enthalten (etwa `access/keys.py` neben `access/rights.py`). Die Richtung legen deshalb nicht die Apps fest, sondern die Schichten.
@@ -25,7 +25,7 @@ Jede Datei des Tools gehört zu genau einer Schicht. Sie bindet nur Dateien aus 
 
 | Nr. | Schicht | Aufgabe | Dateien |
 | --- | --- | --- | --- |
-| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Sprungmarken, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak | `access/keys.py`, `core/actors.py`, `core/sections.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `events/texts.py`, `core/texts.py`, `core/address_texts.py`, `core/countries.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/server_checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
+| 1 | Grundbausteine | ohne Fachlogik: Texte, Kennungen, Sprungmarken, Urheber, Protokolle, Mail, Sitzung, Abgleich mit Keycloak, Bereinigen formatierten Texts (#358) | `access/keys.py`, `events/invitation.py`, `core/actors.py`, `core/sections.py`, `roles/expressions.py`, `accounts/texts.py`, `roles/texts.py`, `units/texts.py`, `persons/texts.py`, `events/texts.py`, `core/texts.py`, `core/address_texts.py`, `core/countries.py`, `accounts/keycloak_abgleich.py`, `accounts/session.py`, `accounts/checks.py`, `core/server_checks.py`, `core/errors.py`, `core/mail.py`, `core/gunicorn_log.py`, `core/testumgebung.py` |
 | 2 | Modelle | was in der Datenbank steht, mit den Regeln beim Speichern | `accounts/models.py`, `units/models.py`, `roles/models.py`, `persons/models.py`, `events/models.py`, `core/models.py` |
 | 3 | Rechteprüfung | wer was darf; Kennzeichnung der Seiten | `access/rights.py`, `access/addresses.py` |
 | 4 | Aufbereitung | ordnet Daten für Seiten und Befehle, Formulare, Navigation, Bausteine für Vorlagen | `units/organisation.py`, `units/management/common.py`, `core/management/mass_data.py`, `accounts/forms.py`, `core/forms.py`, `core/address_search.py`, `core/navigation.py`, `core/templatetags/layout.py` |
