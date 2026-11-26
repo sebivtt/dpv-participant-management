@@ -301,6 +301,37 @@
       counter.hidden = false;
     }
     editor.addEventListener("trix-change", update);
+
+    // Feld „Adresse“ für einen Link (Vorschau, Sebastian, 26.11.2026): Es schwebt direkt unter dem gewählten Text über
+    // allem anderen, wie die Knöpfe beim Fahrtennamen. Ohne Link darin „Link setzen“ und „Verwerfen“, mit Link
+    // „Link setzen“ und „Link entfernen“. Trix öffnet und schließt es; das Skript stellt es nur an seinen Platz.
+    var linkField = toolbar.querySelector(".a-editor-link");
+    function placeLink() {
+      if (!linkField || !linkField.hasAttribute("data-trix-active")) {
+        return;
+      }
+      var range = editor.editor.getSelectedRange();
+      var start = editor.editor.getClientRectAtPosition(range[0]);
+      var end = editor.editor.getClientRectAtPosition(range[1]) || start;
+      var area = frame.getBoundingClientRect();
+      var box = editor.getBoundingClientRect();
+      if (!start) {
+        start = end = { left: box.left, bottom: box.top };
+      }
+      var bottom = Math.min(Math.max(start.bottom, end.bottom), box.bottom);
+      var width = linkField.offsetWidth;
+      var left = Math.min(Math.max(start.left - area.left, 0), Math.max(area.width - width, 0));
+      linkField.style.left = left + "px";
+      linkField.style.top = (Math.max(bottom, box.top) - area.top + 6) + "px";
+    }
+    editor.addEventListener("trix-toolbar-dialog-show", function () {
+      var linked = editor.editor.attributeIsActive("href");
+      linkField.querySelector("[data-mit-link]").hidden = !linked;
+      linkField.querySelector("[data-ohne-link]").hidden = linked;
+      placeLink();
+    });
+    editor.addEventListener("scroll", placeLink);
+    window.addEventListener("resize", placeLink);
     new MutationObserver(function () {
       editorKeepStop(toolbar);
     }).observe(toolbar, { subtree: true, attributes: true, attributeFilter: ["class"] });
