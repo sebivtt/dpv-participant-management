@@ -368,8 +368,10 @@ def test_g7_e7_am_pc_breiter_dialog_escape_aendert_nichts_und_eingefuegtes_aus_w
     assert re.search(r"<strong>Packliste(<br>)?</strong>", entry.invitation_text), entry.invitation_text
     for kept in ("Kluft", "Halstuch", "Kleidung: style=casual"):
         assert kept in entry.invitation_text, kept
+    # Gestaltung, Klassen, Tabellen und span fallen weg; nur in Tags gesucht, sichtbarer Text darf sie nennen.
+    tags = "".join(re.findall(r"<[^>]*>", entry.invitation_text))
     for gone in ("style", "class", "table", "span"):
-        assert gone not in entry.invitation_text, gone
+        assert gone not in tags, gone
 
 
 # ---------- G1: zu lang ----------
