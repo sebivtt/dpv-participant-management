@@ -229,6 +229,11 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-gesperrt { background: var(--ab-grund); color: var(--ab-text); }
 /* Verwaltete Person (#117, Zielbild): grau wie „nur lesen“, ohne Schloss; dazu ein grauer Kreis */
 .a-kennmarke.ist-verwaltet { background: var(--zu-grund); color: var(--zu-text); }
+/* Zustandsmarke einer Veranstaltung (#359, Zielbild „Veranstaltung“, Ansicht 1): je Zustand Farbe und Symbol. */
+.a-kennmarke.ist-entwurf { border: 1px dashed var(--entwurf-text); background: var(--flaeche); color: var(--entwurf-text); }
+.a-kennmarke.ist-angekuendigt { background: var(--dpv-hauch); color: var(--dpv); }
+.a-kennmarke.ist-laeuft { background: var(--dpv); color: #fff; }
+.a-kennmarke.ist-beendet { background: var(--zu-grund); color: var(--zu-text); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
 .a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
@@ -635,14 +640,34 @@ dialog.a-dialog.ist-vorschau { position: static; z-index: auto; width: 100%; max
 /* „Ja, die Dauer stimmt“ unter Beginn und Ende: Abstand zum Ort darunter, wie zwischen zwei Feldern. */
 .a-felder-nebeneinander + .a-schalter-zeile { margin: 0 0 16px; }
 
+/* Schalter mit Rückfrage (#359): der runde Schalter als Link zur Rückfrage, der Titel rechts daneben (Zielbild
+   „Veranstaltung“, Ansicht 6). Aussehen wie beim Baustein „Schalter“; gesperrt grau und ohne Mauszeiger. */
+.a-schalter-rueckfrage { display: inline-flex; align-items: center; gap: 10px; }
+a.a-schalter { cursor: pointer; }
+.a-schalter.ist-an .a-schalter-bahn { border-color: var(--dpv); background: var(--dpv); }
+.a-schalter.ist-an .a-schalter-bahn::after { transform: translateX(20px); }
+a.a-schalter:focus-visible { outline: none; }
+a.a-schalter:focus-visible .a-schalter-bahn { outline: 3px solid var(--dpv); outline-offset: 3px; }
+.a-schalter.ist-gesperrt .a-schalter-bahn { opacity: .6; }
+
 /* Veranstaltung in einer Liste (#379, Zielbild Ansicht 1): breite, flache Zeilen mit feinem Rand; der Name fett in
-   DPV-Blau, darunter grau Zeitraum und Ort. Rechts kommen mit #359 Zustandsmarken dazu. */
+   DPV-Blau, darunter grau Zeitraum und Ort. Seit #359 rechts die Zustandsmarke; Entwürfe gestrichelt, „Angekündigt“
+   und „Beendet“ grau. */
 .a-va-zeilen { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .a-va-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px 16px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
 .a-va-zeile-wer { flex: 1 1 260px; min-width: 0; }
 .a-va-zeile-wer a { color: var(--dpv); font-size: 1.05rem; font-weight: 800; text-decoration: none; overflow-wrap: anywhere; }
 .a-va-zeile-wer a:hover { text-decoration: underline; }
 .a-va-zeile-wer p { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; overflow-wrap: anywhere; }
+.a-va-zeile.ist-entwurf { border: 2px dashed var(--entwurf-rand); }
+.a-va-zeile.ist-grau { border-color: var(--grund); background: var(--grund); }
+.a-va-zeile-rechts { display: grid; justify-items: end; gap: 4px; text-align: right; }
+
+/* Zeile „Zustand“ der Leitungsseite (#359, Zielbild Ansicht 6): links Zustandsmarke und Satz, rechts der Schalter
+   „Veröffentlicht“; schmal untereinander. */
+.a-zustand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.a-zustand-wie { flex: 1 1 260px; min-width: 0; }
+.a-zustand-satz { margin: 6px 0 0; color: var(--text-leise); }
 
 /* Kacheln der Leitungsseite (#379, Zielbild Ansicht 6): am PC zwei nebeneinander, schmal untereinander. Eine
    Kachel ist eine Fläche mit Stift oben rechts (Baustein „Bearbeiten-Symbol“); der Titel rückt nicht darunter. */

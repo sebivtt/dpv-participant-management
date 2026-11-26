@@ -127,6 +127,10 @@
     <div class="a-flaeche a-katalog-knoepfe">
       {% for mark in examples.org_marks %}{% include "core/_kennmarke.html" %}{% endfor %}
     </div>
+    {# Zustandsmarken einer Veranstaltung (#359). #}
+    <div class="a-flaeche a-katalog-knoepfe">
+      {% for mark in examples.state_marks %}{% include "core/_kennmarke.html" %}{% endfor %}
+    </div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-leitung">
@@ -181,6 +185,11 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-schalter">
     {% include "core/_katalogeintrag.html" with block=blocks.schalter %}
     <div class="a-flaeche">{% for switch in examples.switches %}{% include "core/_schalter.html" %}{% endfor %}</div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-schalterrueckfrage">
+    {% include "core/_katalogeintrag.html" with block=blocks.schalterrueckfrage %}
+    <div class="a-flaeche a-katalog-knoepfe">{% for switch in examples.publish_switches %}{% include "core/_schalter_rueckfrage.html" %}{% endfor %}</div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-orgakopf">

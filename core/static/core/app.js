@@ -502,6 +502,18 @@
     });
   });
 
+  // Schalter mit Rückfrage (#359): Er ist ein Link zur Rückfrage; Vorleseprogramme sagen ihn als Schalter an, und
+  // einen Schalter bedient man mit der Leertaste. Ein Link kennt nur Enter, deshalb öffnet die Leertaste hier die
+  // Rückfrage ebenso, statt die Seite zu rollen. Ohne Skript gehen Enter, Klick und Tippen.
+  document.querySelectorAll("a[data-schalter-rueckfrage]").forEach(function (link) {
+    link.addEventListener("keydown", function (event) {
+      if (event.key === " ") {
+        event.preventDefault();
+        link.click();
+      }
+    });
+  });
+
   // Zurück aus einem Dialog (#117): Führt der Dialog zur Seite mit der Kennung eines Knopfs in der Adresse
   // („#…“), etwa „Bearbeiten“ bei einer verwalteten Person, bekommt dieser Knopf wieder den Fokus. Ohne
   // Skript beginnt die Tastatur dort, weil der Browser zu ihm springt. Mit gemerkter Stelle (#220) springt

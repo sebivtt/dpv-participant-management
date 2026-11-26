@@ -211,7 +211,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 #379 baut Ansicht 1 nur mit „Von mir geleitet“ und von Ansicht 6 den Kopf und die Kachel „Grunddaten“; dazu Uhrzeiten und Ort im Dialog „Veranstaltung erstellen“.
 
 1. **Plus weiß** (E1 aus #356): „Veranstaltung erstellen“ ist der Knopf der „Überschrift einer Fläche“ mit weißem Plus, wie im Zielbild; die frühere Regel „Sonnengelb für das Symbol von ‚Veranstaltung erstellen‘“ in `docs/gestaltung.md` gilt nicht mehr (`docs/entscheidungen.md`, 17.11.2026, #379).
-2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359), „Für mich ausgeschrieben“ (#362), Zustand, „Einladung ansehen“ und „Veröffentlicht“ auf der Leitungsseite (#359, #362), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163, seit dem 18.11.2026 gebaut, Abschnitt „Adressfeld“). Was fehlt, fehlt ganz, ohne Platzhalter.
+2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359, seit dem 26.11.2026 gebaut, Abschnitt unten), „Für mich ausgeschrieben“ (#362), Zustand, „Einladung ansehen“ und „Veröffentlicht“ auf der Leitungsseite (#359, #362), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163, seit dem 18.11.2026 gebaut, Abschnitt „Adressfeld“). Was fehlt, fehlt ganz, ohne Platzhalter.
 3. **Kachel allein:** Solange „Grunddaten“ die einzige Kachel ist, steht sie am PC in der linken Spalte, rechts bleibt frei; schmal steht sie über die ganze Breite.
 4. **Bausteine statt nachgebautem Aussehen:** die Zeilen der Liste als neuer Baustein „Veranstaltung in einer Liste“, die Kachel als Fläche mit „Überschrift einer Fläche“ und „Bearbeiten-Symbol“, Beginn und Ende als neuer Baustein „Kalenderblätter“, die Felder im Dialog als „Textfeld“ und „Datumsfeld“ mit Uhrzeit (Sebastian, 17.11.2026, [Kommentar in #379](https://github.com/sebivtt/dpv-participant-management/issues/379#issuecomment-6956297747)). Der Stift öffnet einen Dialog mit eigener Adresse, den das Zielbild nicht zeigt.
 5. **Vorleseprogramme** hören vor den Kalenderblättern „Beginn:“ und „Ende:“ und vor dem Ort „Ort:“; sichtbar ist das nicht.
@@ -231,6 +231,16 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 5. **Satz im Dialog** „Sommerfahrt 2028 ist als Entwurf gespeichert. …“ ohne „bis Schritt 3“, wie im Text von #380. Darf die Person nicht löschen (Mitleitung, Anmeldung), stehen nur „Entwurf speichern“ und der Satz ohne „oder ihn löschen“.
 6. **Kopf von Schritt 1:** „Veranstaltung erstellen“ wie im Zielbild; für einen gespeicherten Entwurf (nach „Zurück“ oder dem Stift) sein Name mit „Entwurf · Veranstaltung erstellen“ wie auf der Zusammenfassung.
 7. **Stift** mit dem Baustein „Bearbeiten-Symbol“; Vorleseprogramme hören „Grunddaten ändern“. Er führt zu Schritt 1, nicht zu einem Dialog.
+
+### Abweichungen vom Zielbild (#359)
+
+#359 baut in Ansicht 1 Zustandsmarken und Zeilen unter „Von mir geleitet“, in Ansicht 6 die Fläche „Zustand“ und die Rückfragen der Ansichten 6b und 6d; der Kopf nach dem Veröffentlichen (6c) zeigt „Angekündigt“.
+
+1. **Symbol statt Punkt** in jeder Zustandsmarke (#356 N3, „Regel gilt, Symbol dazu“): „Entwurf“ Blatt, „Angekündigt“ Megafon, „Läuft“ Abspielzeichen, „Beendet“ Zielfahne; die Farben wie im Zielbild.
+2. **Schalter als eigener Baustein** „Schalter mit Rückfrage“ (Sebastian, 26.11.2026: „Neuer Baustein“, [Kommentar in #359](https://github.com/sebivtt/dpv-participant-management/issues/359#issuecomment-7185965936)); Aussehen wie im Zielbild, der Titel „Veröffentlicht“ rechts neben dem Schalter.
+3. **Noch nicht gebaut, kommt mit seinem Issue:** „Einladung ansehen“ (#362); in Satz und Rückfrage der Teilnahmekreis (#361) und der Beginn der Anmeldung (#360), daher „Die Veranstaltung ist veröffentlicht.“ statt „Sichtbar für Stamm Walhall. …“ (6c) und „Danach sieht der Teilnahmekreis die Einladung.“ ohne Namen und ohne zweiten Satz (6b); „Anmeldung offen“, „Geschlossen“ und die Frist unter der Marke (#360). Was fehlt, fehlt ganz, ohne Platzhalter.
+4. **Ohne Hinweis auf P4** in der Rückfrage „… zurücknehmen?“: Der graue Satz „Was mit bestehenden Anmeldungen geschieht, kommt mit P4 (#366).“ ist eine Notiz des Zielbilds, kein Text des Tools.
+5. **Fehler in der Rückfrage:** Lehnt der Server ab (Beginn vorbei, schon begonnen), bleibt die Rückfrage offen und zeigt den Satz als Fehlermeldung oben; das Zielbild zeigt diesen Fall nicht.
 
 ## Adressfeld
 

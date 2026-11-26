@@ -201,7 +201,29 @@ Hinweis: Bis TEAM-02 umgesetzt ist, sieht jede Veranstaltungsleitung auch Gesund
 
 ### Lebenszyklus
 
-&#91;embedded content: Lebenszyklus einer Veranstaltung · 8 Zustände\]
+Lebenszyklus einer Veranstaltung · 8 Zustände (Vorschlag aus der Klärung von #356, Frage 15, Sebastian: „Ja, so“; Beschriftungen wie im Tool nach #359, Frage 6, und der Pfeil „veröffentlichen ohne oder nach dem Anmeldestart“ nach #360, Frage 3a):
+
+```mermaid
+stateDiagram-v2
+    [*] --> Entwurf
+    Entwurf --> Angekündigt: veröffentlichen
+    Entwurf --> AnmeldungOffen: veröffentlichen ohne oder nach dem Anmeldestart
+    Angekündigt --> AnmeldungOffen: Anmeldestart
+    AnmeldungOffen --> Geschlossen: Anmeldeschluss
+    Geschlossen --> AnmeldungOffen: Anmeldeschluss verschoben
+    Geschlossen --> Läuft: Beginn
+    Läuft --> Beendet: Ende
+    Beendet --> Archiviert: 6 Monate nach Ende (DSG-03)
+    Angekündigt --> Entwurf: Veröffentlichung zurücknehmen
+    AnmeldungOffen --> Entwurf: Veröffentlichung zurücknehmen
+    Geschlossen --> Entwurf: Veröffentlichung zurücknehmen
+    Angekündigt --> Abgesagt: absagen (VER-12)
+    AnmeldungOffen --> Abgesagt: absagen (VER-12)
+    Geschlossen --> Abgesagt: absagen (VER-12)
+    AnmeldungOffen: Anmeldung offen
+```
+
+Der Schalter „sichtbar“ aus VER-08 heißt im Tool „Veröffentlicht“ (#356, E2).
 
 Nach dem Anmeldeschluss sind Änderungen und Nachmeldungen zu bestehenden Anmeldungen bis zum Änderungsschluss möglich. Wird der Anmeldeschluss verschoben, wechselt die Veranstaltung von „Geschlossen“ zurück zu „Anmeldung offen“. Die Veranstaltungsleitung kann eine Veranstaltung in jedem Zustand endgültig löschen (DSG-04).
 

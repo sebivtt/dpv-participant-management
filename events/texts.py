@@ -2,7 +2,8 @@
 
 Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026, für Anmeldungen aus den Szenarien zu #101 vom
 15.11.2026, für Uhrzeiten, Ort, Prüfungen und Leitungsseite aus dem Text von #379 und seinen Szenarien vom
-17.11.2026, für das Anlegen in Schritten aus dem Text von #380 und seinen Szenarien vom 17.11.2026.
+17.11.2026, für das Anlegen in Schritten aus dem Text von #380 und seinen Szenarien vom 17.11.2026, für Zustand und
+Veröffentlichen aus dem Text von #359 und seinen Szenarien vom 17.11.2026.
 """
 
 from django.utils.translation import gettext_lazy, ngettext_lazy
@@ -79,6 +80,34 @@ SAVED = gettext_lazy("Die Angaben zu %(event)s sind gespeichert.")
 # Gleichzeitiges Speichern wie bei verwalteten Personen (#379, AG7; Muster in persons/texts.py). Ohne „von jemand
 # anderem“, weil es auch das eigene zweite Fenster sein kann.
 CHANGED_MEANWHILE = gettext_lazy("%(event)s wurde inzwischen geändert. Bitte prüfe die Angaben und speichere erneut.")
+
+# Zustand und Veröffentlichen (#359): Zustandsmarke (#356 N2), Satz darunter (Frage 5), Schalter und Rückfragen
+STATE_DRAFT = gettext_lazy("Entwurf")
+STATE_ANNOUNCED = gettext_lazy("Angekündigt")
+STATE_RUNNING = gettext_lazy("Läuft")
+STATE_ENDED = gettext_lazy("Beendet")
+STATE_LABEL = gettext_lazy("Zustand")
+ONLY_LEADS_SEE = gettext_lazy("Nur die Leitung sieht die Veranstaltung.")
+START_PASSED = gettext_lazy("Der Beginn liegt in der Vergangenheit. Ändere ihn in den Grunddaten, um zu veröffentlichen.")
+IS_PUBLISHED = gettext_lazy("Die Veranstaltung ist veröffentlicht.")
+RUNS_UNTIL = gettext_lazy("Die Veranstaltung läuft bis %(end)s.")
+ENDED_ON = gettext_lazy("Die Veranstaltung ist am %(end)s zu Ende gegangen.")
+PUBLISHED_SWITCH = gettext_lazy("Veröffentlicht")
+PUBLISH_QUESTION = gettext_lazy("%(event)s veröffentlichen?")
+PUBLISH_TEXT = gettext_lazy("Danach sieht der Teilnahmekreis die Einladung.")
+PUBLISH_BUTTON = gettext_lazy("Veröffentlichen")
+WITHDRAW_QUESTION = gettext_lazy("Veröffentlichung von %(event)s zurücknehmen?")
+WITHDRAW_TEXT = gettext_lazy("Danach sieht nur noch die Leitung die Veranstaltung; beim Teilnahmekreis verschwindet "
+                             "die Einladung.")
+WITHDRAW_BUTTON = gettext_lazy("Zurücknehmen")
+# Kurze Meldungen (#186) danach; „schon …“, wenn jemand anderes oder ein zweites Fenster schneller war (ZG3).
+PUBLISHED = gettext_lazy("%(event)s ist veröffentlicht.")
+WITHDRAWN = gettext_lazy("Die Veröffentlichung von %(event)s ist zurückgenommen.")
+ALREADY_PUBLISHED = gettext_lazy("%(event)s ist schon veröffentlicht.")
+ALREADY_WITHDRAWN = gettext_lazy("%(event)s ist schon nicht mehr veröffentlicht.")
+# Ablehnung beim Zurücknehmen ab Beginn (Frage 3, ZG4); beim Veröffentlichen mit Beginn vor heute START_PASSED.
+ALREADY_BEGUN = gettext_lazy("Die Veranstaltung hat schon begonnen. Die Veröffentlichung lässt sich nicht mehr "
+                             "zurücknehmen.")
 
 # Anmeldungen (#101): Abschnitt auf der Seite der Veranstaltung und Seite der Anmeldung
 REGISTRATIONS = gettext_lazy("Anmeldungen")

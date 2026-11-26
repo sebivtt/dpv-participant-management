@@ -2,9 +2,13 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Zustandsmarke, Schalter „Veröffentlicht“, „Einladung ansehen“ und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
+  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Seit #359 unter dem Kopf die Zeile „Zustand“ (Ansicht 6): links die Zustandsmarke mit ihrem Satz, rechts der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“). „Einladung ansehen“ (#362) und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ head_line }}</p></div>
+  <section class="a-flaeche a-zustand" aria-label="{{ state_label }}">
+    <div class="a-zustand-wie">{% include "core/_kennmarke.html" with mark=state_mark %}<p class="a-zustand-satz" id="zustand-satz">{{ state_sentence }}</p></div>
+    {% include "core/_schalter_rueckfrage.html" with switch=publish_switch described_by="zustand-satz" %}
+  </section>
   <div class="a-kacheln">
     <section class="a-flaeche a-kachel" aria-labelledby="h-grunddaten">
       {% include "core/_stift.html" with href=edit_href label=basics_edit %}
@@ -23,7 +27,13 @@
       <p class="a-leer-satz">{{ no_registrations }}</p>
     {% endif %}
   </section>
-  {% if dialog %}
+  {% if dialog.publish_question %}
+    {# Rückfrage des Schalters „Veröffentlicht“ (#359, Ansichten 6b und 6d): eigene Adresse je Richtung, kommt offen vom Server; ohne Skript liegt sie ebenso über der Seite. Lehnt der Server ab, steht der Satz als Fehler oben (ZV1, ZV2, ZG4). #}
+    {% include "core/_dialog_auf.html" %}
+    {% if dialog.error %}{% meldung "error" text=dialog.error live=True %}{% endif %}
+    <p>{{ dialog.text }}</p>
+    {% include "core/_dialog_zu.html" %}
+  {% elif dialog %}
     {# Dialog des Stifts „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen, seit #163 mit dem „Adressfeld“. Hat inzwischen jemand gespeichert, steht der Satz dazu oben (AG7). #}
     {% include "core/_dialog_auf.html" %}
     {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
