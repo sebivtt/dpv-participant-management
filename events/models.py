@@ -63,6 +63,10 @@ class Event(PostalAddress):
     # löschen (EP-09), deshalb PROTECT wie bei der Ansprechperson einer Anmeldung.
     creating_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
                                     editable=False, related_name="+")
+    # Schalter „Veröffentlicht“ (#359, VER-07, VER-08; im Tool „Veröffentlicht“ statt „sichtbar“, #356 E2). Jede
+    # Veranstaltung ist ein Entwurf, bis ihre Leitung sie veröffentlicht, auch alle aus P2 (ZG1). Setzt nur
+    # `Rights.set_published()`, nie ein Formular der Grunddaten.
+    published = models.BooleanField(default=False, editable=False)
 
     class Meta:
         constraints = [

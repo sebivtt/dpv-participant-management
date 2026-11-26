@@ -20,6 +20,8 @@ from core.views import (
     event_edit,
     event_edit_address,
     event_page,
+    event_publish,
+    event_withdraw,
     events,
     federation_appoint,
     federation_appoint_lead,
@@ -130,6 +132,10 @@ urlpatterns = [
     path("veranstaltungen/<key:event>/anlegen/zusammenfassung/", event_create_summary, name="event_create_summary"),
     path("veranstaltungen/<key:event>/anlegen/abbrechen/", event_create_cancel, name="event_create_cancel"),
     path("veranstaltungen/<key:event>/anlegen/loeschen/", event_create_delete, name="event_create_delete"),
+    # Schalter „Veröffentlicht“ (#359): je Richtung eine Adresse mit der Rückfrage als Dialog; das Formular nennt so, was
+    # es will, statt nur umzuschalten (ZG3).
+    path("veranstaltungen/<key:event>/veroeffentlichen/", event_publish, name="event_publish"),
+    path("veranstaltungen/<key:event>/zuruecknehmen/", event_withdraw, name="event_withdraw"),
     # Anmeldungen (#101, Probe in P2): nur die Seite je Anmeldung, ohne Formular (AN-06); die Ansprechperson kommt in P2
     # nur über die Adresse hierher.
     path("anmeldungen/<key:registration>/", registration_page, name="registration_page"),

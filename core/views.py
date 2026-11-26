@@ -1130,6 +1130,24 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
+@checks_rights(*EVENT_ROWS, "VA-08")
+def event_publish(request: HttpRequest, event: str) -> HttpResponse:
+    """Rückfrage „… veröffentlichen?“ und Veröffentlichen (#359, Gerüst)."""
+    entry = request.rights.event(event)
+    if request.method == "POST":
+        return redirect("event_page", event=entry.key)
+    return _event_page(request, entry)
+
+
+@checks_rights(*EVENT_ROWS, "VA-08")
+def event_withdraw(request: HttpRequest, event: str) -> HttpResponse:
+    """Rückfrage „Veröffentlichung von … zurücknehmen?“ und Zurücknehmen (#359, Gerüst)."""
+    entry = request.rights.event(event)
+    if request.method == "POST":
+        return redirect("event_page", event=entry.key)
+    return _event_page(request, entry)
+
+
 def _edit_search(rights, entry) -> str | None:
     """Wohin „Adresse suchen“ im Dialog des Stifts schickt; ohne Zuordnung gibt es den Knopf nicht (VA-07)."""
     return reverse("event_edit_address", args=[entry.key]) if rights.may_search_address() else None
