@@ -2,6 +2,7 @@
 
 import logging
 from datetime import date, time
+from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
@@ -10,6 +11,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import dateformat, timezone
+from django.utils.csp import CSP
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_control, never_cache
 
@@ -27,6 +29,7 @@ from core.forms import (
     AddressForm,
     EventForm,
     FederationSearchForm,
+    InvitationForm,
     ManagedPersonAddForm,
     ManagedPersonForm,
     PatternForm,
@@ -37,6 +40,7 @@ from core.forms import (
 )
 from core.models import GERMANY, STATES
 from core.sections import to_section
+from events import invitation
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
 from events.models import Event
@@ -896,6 +900,42 @@ STEP_FORM = "f-schritt"
 DELETED_DRAFTS = "geloeschte_entwuerfe"
 
 
+def with_editor(view):
+    """Seiten mit dem Baustein „Editor“ (#358): die schmale Ausnahme von der Sicherheitsrichtlinie (#278).
+
+    Trix legt beim Start seine eigene Gestaltung als Element `<style>` in die Seite. Dafür darf auf diesen Seiten
+    Gestaltung mit dem Schlüssel stehen, den die Antwort je Aufruf neu bekommt (`'nonce-…'`); Trix liest ihn aus der
+    Angabe `trix-csp-nonce` im Kopf der Seite (base.html). Alles andere bleibt wie in `SECURE_CSP`, auch auf allen
+    anderen Seiten. Ein Schlüssel steht nur in der Antwort, wenn die Seite ihn auch nutzt; Weiterleitungen und
+    „nicht gefunden“ bleiben so unverändert streng.
+    """
+
+    @wraps(view)
+    def wrapped(request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        response = view(request, *args, **kwargs)
+        response._csp_config = {**settings.SECURE_CSP, "style-src": [*settings.SECURE_CSP["style-src"], CSP.NONCE]}
+        return response
+
+    return wrapped
+
+
+def invitation_tile(entry, edit_href: str, edit_label) -> dict:
+    """Was der Abschnitt „Einladungstext“ zeigt: die ersten höchstens 300 Zeichen mit Formatierung oder den Satz
+    „Noch kein Einladungstext.“, dazu den Stift (#358, Frage 10, G5, G6)."""
+    return {
+        "title": event_texts.INVITATION,
+        "excerpt": invitation.excerpt(entry.invitation_text) if entry.invitation_text else "",
+        "none_yet": event_texts.NO_INVITATION,
+        "edit_href": edit_href,
+        "edit_label": edit_label,
+    }
+
+
+def invitation_form_of(entry, form_id: str) -> InvitationForm:
+    """Das Formular mit dem gespeicherten Einladungstext."""
+    return InvitationForm(initial={"invitation_text": entry.invitation_text}, form_id=form_id)
+
+
 def period(entry) -> str:
     """Der Zeitraum ohne Uhrzeit, etwa im Kopf der Leitungsseite: „15.05.2027 bis 17.05.2027“, ein Tag nur „05.06.2027“."""
     start, end = entry.start.strftime("%d.%m.%Y"), entry.end.strftime("%d.%m.%Y")
@@ -1040,7 +1080,8 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     Unter dem Kopf die Zustandsmarke mit ihrem Satz und dem Schalter „Veröffentlicht“ (#359). Im Kopf Name und Zeitraum ohne Uhrzeit, mit Ort; die Kachel zeigt Beginn und Ende als Kalenderblätter mit
     Uhrzeit, dazwischen die Dauer, darunter den Ort, und oben rechts den Stift. Im Abschnitt je Anmeldung die
     Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen, die älteste zuerst (S1);
-    ohne Anmeldungen ein Satz (S2). Auf Wunsch mit offenem Dialog.
+    ohne Anmeldungen ein Satz (S2). Seit #358 unter den Kacheln die Kachel „Einladungstext“ über die ganze Breite
+    (Zielbild von #356, Ansicht 6). Auf Wunsch mit offenem Dialog; mit dem Editor im Dialog lädt die Seite Trix.
     """
     registrations = [{
         "contact": name_of(registration.contact),
@@ -1060,10 +1101,13 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
         "basics_title": event_texts.BASICS,
         "basics_edit": event_texts.BASICS_EDIT,
         "edit_href": reverse("event_edit", args=[entry.key]),
+        "invitation": invitation_tile(entry, reverse("event_edit_invitation", args=[entry.key]),
+                                      event_texts.INVITATION_EDIT),
         "registrations": registrations,
         "registrations_title": event_texts.REGISTRATIONS,
         "no_registrations": event_texts.NO_REGISTRATIONS,
         "dialog": dialog,
+        "editor_page": bool(dialog and dialog.get("invitation_form")),
     })
 
 
@@ -1131,7 +1175,7 @@ def event_create(request: HttpRequest) -> HttpResponse:
         form = EventForm(request.POST, form_id=STEP_FORM)
         if form.is_valid():
             entry = rights.create_event(form.cleaned_data, creation_key)
-            return redirect("event_create_summary", event=entry.key)
+            return redirect("event_create_invitation", event=entry.key)
     elif request.method in READING:
         form, creation_key = EventForm.for_create(form_id=STEP_FORM), new_key()
     else:
@@ -1183,10 +1227,57 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
+def _invitation_dialog(entry, form: InvitationForm, version, conflict: str = "") -> dict:
+    """Der Dialog „Einladungstext bearbeiten“ (#358, Frage 8): in der breiten Form des Bausteins „Dialog“ (N2).
+
+    Darunter der Name der Veranstaltung, darin der Editor mit dem ganzen Text, unten „Abbrechen“ und der dunkelblaue
+    Knopf „Speichern“. Hat inzwischen jemand anderes gespeichert, steht der Satz aus G2 als Warnung oben im Dialog,
+    und der eigene Text bleibt im Editor (Nachklärung, „Hinweis inzwischen geändert“).
+    """
+    return {
+        "title": event_texts.INVITATION_EDIT,
+        "subtitle": entry.name,
+        "close_href": reverse("event_page", args=[entry.key]),
+        "confirm_action": reverse("event_edit_invitation", args=[entry.key]),
+        "confirm_label": event_texts.SAVE_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "novalidate": True,
+        "wide": True,
+        "invitation_form": form,
+        "conflict": conflict,
+        "hidden": [("invitation_version", version)],
+    }
+
+
 @checks_rights(*EVENT_ROWS)
+@with_editor
 def event_edit_invitation(request: HttpRequest, event: str) -> HttpResponse:
-    """Dialog „Einladungstext bearbeiten“ (#358); Gerüst für die Tests."""
-    raise Http404
+    """Dialog des Stifts der Kachel „Einladungstext“ zeigen und den Einladungstext speichern (VA-02 seit #358).
+
+    Nur die Veranstaltungsleitung, auch während die Veranstaltung läuft: Die Prüfung „Beginn in der Vergangenheit“
+    gehört zu den Grunddaten und greift hier nicht (G8). Alle anderen bekommen „nicht gefunden“ (VA-03, V2 bis V4).
+    Danach geht es zur Leitungsseite mit der kurzen Meldung (#186); bei einem Fehler oder wenn inzwischen jemand
+    anderes gespeichert hat (G2), bleibt der Dialog mit dem eigenen, bereinigten Text offen, und nichts wird
+    gespeichert. Abbrechen, × und Escape führen ohne Änderung zur Leitungsseite (G7).
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("invitation_version", "")
+        form = InvitationForm(request.POST, form_id="f-dialog")
+        if form.is_valid():
+            done, entry, text = rights.edit_invitation(event, form.cleaned_data["invitation_text"], version)
+            if done:
+                _saved_once(request, text)
+                return redirect("event_page", event=entry.key)
+            version, conflict = entry.invitation_version, text
+    elif request.method in READING:
+        form, version = invitation_form_of(entry, "f-dialog"), entry.invitation_version
+    else:
+        raise Http404
+    return _event_page(request, entry, _invitation_dialog(entry, form, version, conflict))
 
 
 def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
@@ -1254,23 +1345,31 @@ def _edit_search(rights, entry) -> str | None:
 def _steps(current: int) -> list[dict]:
     """Die Fortschrittsanzeige beim Anlegen (#380): je Schritt Nummer, Name und ob er erledigt oder der aktuelle ist.
 
-    Spätere Issues fügen ihre Schritte zwischen „Grunddaten“ und „Zusammenfassung“ ein (#356, Tabelle).
+    Spätere Issues fügen ihre Schritte zwischen „Grunddaten“ und „Zusammenfassung“ ein (#356, Tabelle); seit #358
+    steht dort „Einladungstext“.
     """
-    names = (event_texts.BASICS, event_texts.STEP_SUMMARY)
+    names = (event_texts.BASICS, event_texts.INVITATION, event_texts.STEP_SUMMARY)
     return [{"number": event_texts.STEP % {"number": number}, "name": name, "done": number < current,
              "current": number == current} for number, name in enumerate(names, start=1)]
 
 
-def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | None = None, hidden: tuple = (),
+# Die Schritte beim Anlegen (#380), seit #358 mit „Einladungstext“ zwischen Grunddaten und Zusammenfassung.
+BASICS_STEP, INVITATION_STEP, SUMMARY_STEP = 1, 2, 3
+
+
+def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden: tuple = (),
                  conflict: str = "", dialog: dict | None = None, found: dict | None = None) -> HttpResponse:
     """Ein Schritt beim Anlegen (#380): Kopf, Fortschrittsanzeige, Inhalt und unten „Abbrechen“, „Zurück“ und „Weiter“.
 
     Schritt 1 „Grunddaten“ zeigt die Felder aus #379; ohne `entry` für eine neue Veranstaltung, sonst für den
     gespeicherten Entwurf (Ziel von „Zurück“ und dem Stift). „Abbrechen“ führt dort ohne Rückfrage zur Liste
-    (B5). Schritt 2 „Zusammenfassung“ zeigt die Grunddaten wie die Kachel der Leitungsseite, mit dem Stift zurück
-    zu Schritt 1; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 1 (#29, Frage 4).
+    (B5). Schritt 2 „Einladungstext“ (#358) zeigt den Editor mit `form` (`InvitationForm`); „Zurück“ führt zu
+    Schritt 1, „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“. Schritt 3 „Zusammenfassung“ zeigt die Grunddaten wie
+    die Kachel der Leitungsseite und darunter den Einladungstext, je mit dem Stift zu ihrem Schritt; „Abbrechen“ öffnet
+    den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 2 (#29, Frage 4).
     In Schritt 1 steht unter dem Ort das Adressfeld (#163); `found` ist das Ergebnis von „Adresse suchen“. Das Formular
-    geht immer an die Adresse des Schritts, auch wenn die Seite von der Suche kommt.
+    geht immer an die Adresse des Schritts, auch wenn die Seite von der Suche kommt. `conflict` ist der Satz, wenn
+    inzwischen ein zweites Fenster gespeichert hat: in Schritt 1 als Fehler (#379, AG7), in Schritt 2 als Warnung (G2).
     """
     context = {
         "title": entry.name if entry else event_texts.CREATE_TITLE,
@@ -1282,7 +1381,7 @@ def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | 
         "back_label": event_texts.BACK,
         "dialog": dialog,
     }
-    if step == 1:
+    if step == BASICS_STEP:
         rights = request.rights
         action = reverse("event_create_basics", args=[entry.key]) if entry else reverse("event_create")
         search = None
@@ -1294,12 +1393,21 @@ def _create_page(request: HttpRequest, step: int, entry=None, form: EventForm | 
             "hidden": list(hidden), "conflict": conflict, "cancel_href": reverse("events"), "back_href": None,
             "submit_label": event_texts.NEXT,
         })
+    elif step == INVITATION_STEP:
+        context.update({
+            "action": reverse("event_create_invitation", args=[entry.key]), "invitation_form": form,
+            "hidden": list(hidden), "conflict": conflict, "editor_page": True,
+            "cancel_href": reverse("event_create_cancel", args=[entry.key]),
+            "back_href": reverse("event_create_basics", args=[entry.key]), "submit_label": event_texts.NEXT,
+        })
     else:
         basics = reverse("event_create_basics", args=[entry.key])
+        step_two = reverse("event_create_invitation", args=[entry.key])
         context.update({
             "action": reverse("event_create_summary", args=[entry.key]), "calendar": calendar_sheets(entry),
             "basics_title": event_texts.BASICS, "basics_change": event_texts.BASICS_CHANGE, "basics_href": basics,
-            "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": basics,
+            "invitation": invitation_tile(entry, step_two, event_texts.INVITATION_CHANGE),
+            "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": step_two,
             "submit_label": event_texts.SAVE_EVENT,
         })
     return render(request, "core/veranstaltung_anlegen.html", context)
@@ -1360,7 +1468,7 @@ def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
         if form.is_valid():
             done, entry, text = request.rights.edit_event(event, form.cleaned_data, version)
             if done:
-                return redirect("event_create_summary", event=entry.key)
+                return redirect("event_create_invitation", event=entry.key)
             form, version, conflict = _event_form_of(entry, STEP_FORM), entry.version, text
     elif request.method in READING:
         form, version = _event_form_of(entry, STEP_FORM), entry.version
@@ -1370,9 +1478,35 @@ def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
 
 
 @checks_rights(*EVENT_CREATE_ROWS)
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
+@with_editor
 def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
-    """Schritt 2 „Einladungstext“ beim Anlegen (#358); Gerüst für die Tests."""
-    raise Http404
+    """Schritt 2 „Einladungstext“ beim Anlegen (#358): „Weiter“ speichert den Text und führt zur Zusammenfassung.
+
+    Freiwillig, auch leer (E2). Nur für die Person, die anlegt (`_draft()`), sonst „nicht gefunden“ (VA-06, #380 BV1);
+    ist das Anlegen beendet, zur Leitungsseite (BV2). Gespeichert wird wie im Dialog des Stifts
+    (`Rights.edit_invitation()`): bereinigt, höchstens 10.000 Zeichen, ohne ein zweites Fenster zu überschreiben (G2).
+    Bei einem Fehler bleibt der Schritt mit dem bereinigten Text stehen. Der Browser speichert die Seite nicht, damit
+    „Zurück“ im Browser nie einen alten Text zeigt.
+    """
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("invitation_version", "")
+        form = InvitationForm(request.POST)
+        if form.is_valid():
+            done, entry, text = request.rights.edit_invitation(event, form.cleaned_data["invitation_text"], version)
+            if done:
+                return redirect("event_create_summary", event=entry.key)
+            version, conflict = entry.invitation_version, text
+    elif request.method in READING:
+        form, version = invitation_form_of(entry, STEP_FORM), entry.invitation_version
+    else:
+        raise Http404
+    return _create_page(request, INVITATION_STEP, entry=entry, form=form,
+                        hidden=[("invitation_version", version)], conflict=conflict)
 
 
 @checks_rights(*EVENT_CREATE_ROWS)
@@ -1392,7 +1526,7 @@ def event_create_summary(request: HttpRequest, event: str) -> HttpResponse:
         return redirect("event_page", event=entry.key)
     if request.method not in READING:
         raise Http404
-    return _create_page(request, 2, entry=entry)
+    return _create_page(request, SUMMARY_STEP, entry=entry)
 
 
 @checks_rights(*EVENT_CREATE_ROWS)
@@ -1413,7 +1547,7 @@ def event_create_cancel(request: HttpRequest, event: str) -> HttpResponse:
         return redirect("events")
     if request.method not in READING:
         raise Http404
-    return _create_page(request, 2, entry=entry, dialog=_cancel_dialog(entry, rights.may_delete_draft(entry)))
+    return _create_page(request, SUMMARY_STEP, entry=entry, dialog=_cancel_dialog(entry, rights.may_delete_draft(entry)))
 
 
 @checks_rights(*EVENT_CREATE_ROWS)
@@ -2077,7 +2211,7 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "dialog": {
-        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220, 331, 380],
+        "name": _("Dialog"), "template": "core/_dialog_auf.html", "issues": [190, 191, 94, 286, 287, 95, 117, 118, 220, 331, 380, 358],
         "purpose": _("Ein Fenster über der Seite mit Titel, Zeile darunter und × oben rechts, unten „Abbrechen“; "
                      "mit Escape oder Tippen daneben zurück zur Seite. Er hat eine eigene Adresse und geht so "
                      "auch ohne Skript. Zum Bestätigen steht unten neben „Abbrechen“ ein roter Knopf, etwa "
@@ -2092,8 +2226,21 @@ BUILDING_BLOCKS = {
                      "Jeder Text im Dialog bricht um, ein sehr langer Name notfalls mitten im Wort; der Dialog "
                      "bleibt so breit wie sonst und rollt nie seitlich (#331). Statt „Abbrechen“ kann ein zweiter, "
                      "roter Knopf stehen, der etwas abschickt, etwa „Entwurf löschen“ neben „Entwurf speichern“ "
-                     "(fünftes Beispiel); geschlossen wird er dann mit × und Escape (#380)."),
+                     "(fünftes Beispiel); geschlossen wird er dann mit × und Escape (#380). In der breiten Form ist er "
+                     "bis etwa 860 Pixel breit und am Handy bildschirmfüllend, etwa für den Editor im Dialog "
+                     "„Einladungstext bearbeiten“ (sechstes Beispiel, #358)."),
         "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
+    },
+    "editor": {
+        "name": _("Editor"), "template": "core/_editor.html", "issues": [358],
+        "purpose": _("Ein Feld für formatierten Text mit Beschriftung und Knopfleiste in drei Gruppen: fett, kursiv, "
+                     "durchgestrichen und Link; Überschrift, Zitat, Aufzählung und nummerierte Liste; Rückgängig und "
+                     "Wiederholen. Die Knopfleiste ist ein Halt der Tab-Taste, darin wechseln die Pfeiltasten. Rechts "
+                     "darunter steht beim Tippen die Zahl der Zeichen ohne Formatierung, rot über der Grenze; "
+                     "abgeschnitten wird nichts. Gespeichert wird nur erlaubte Formatierung. Ohne Skript ist es ein "
+                     "Textfeld mit der Formatierung als Zeichen. Darunter, wie Zusammenfassung und Kachel den Text "
+                     "zeigen: die ersten höchstens 300 Zeichen mit Formatierung."),
+        "pages": [_("Veranstaltungen")],
     },
     "auswahl": {
         "name": _("Auswahl im Dialog"), "template": "core/_auswahl.html", "issues": [286, 287, 95, 92, 329],
@@ -2297,6 +2444,15 @@ def _organisation_examples() -> dict:
             "no_account": ("warning", texts.NO_ACCOUNT)}
 
 
+# Erfundener Einladungstext für den Bausteinkatalog (#358), wie Trix ihn speichert.
+KATALOG_INVITATION = (
+    "<div>Liebe Walhallerinnen und Walhaller, liebe Eltern,</div><div>zu Pfingsten fahren wir gemeinsam ins "
+    "<strong>Pfingstlager 2028</strong> auf die Burg.</div><h3>Packliste</h3><ul><li>Kluft und Halstuch</li>"
+    "<li>Schlafsack und <em>Isomatte</em></li></ul><blockquote>Wir achten aufeinander.</blockquote>"
+    '<div>Die <a href="https://example.org/anfahrt" target="_blank" rel="noopener noreferrer">Anfahrt</a> findet '
+    "ihr hier.</div>")
+
+
 def _event_examples() -> dict:
     """Erfundene Veranstaltungen für den Bausteinkatalog (#379): Zeilen der Liste und Kalenderblätter."""
     camp = Event(name="Pfingstlager 2028", start=date(2028, 6, 2), start_time=time(18, 0), end=date(2028, 6, 5),
@@ -2324,8 +2480,17 @@ def _event_examples() -> dict:
             for number, (checked, locked) in enumerate(((False, False), (True, False), (True, True), (False, True)),
                                                         start=1)],
         "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
-        # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, wie auf der Zusammenfassung.
+        # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, seit #358 „Einladungstext“.
         "steps": _steps(2),
+        # Editor (#358) mit erfundenem Text wie im Zielbild, Ansicht 1; das Formular schickt nichts ab.
+        "invitation_form": InvitationForm(initial={"invitation_text": KATALOG_INVITATION}, form_id="katalog-editor",
+                                          auto_id="katalog_einladung_%s"),
+        "invitation": invitation_tile(Event(name=camp.name, invitation_text=KATALOG_INVITATION), "#h-editor",
+                                      event_texts.INVITATION_EDIT),
+        # Die breite Form des Dialogs (#358, N2) an ihrem Platz im Katalog; der Knopf schickt nichts ab.
+        "wide_dialog": {"title": event_texts.INVITATION_EDIT, "subtitle": camp.name, "close_href": "#h-dialog",
+                        "confirm_action": "#h-dialog", "confirm_label": event_texts.SAVE_BUTTON,
+                        "confirm_primary": True, "wide": True, "preview_id": "h-dialog-breit"},
         "cancel_dialog": cancel,
         # Adressfeld (#163) wie nach „Übernehmen“ (Zielbild, Ansicht 3); der Knopf schickt im Katalog nichts ab.
         "address_form": AddressForm(initial={"street": "Burgweg 1", "postal_code": "99999", "city": "Musterhausen",
@@ -2340,6 +2505,7 @@ def _event_examples() -> dict:
 
 
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")
+@with_editor
 def building_blocks(request: HttpRequest) -> HttpResponse:
     """Bausteinkatalog (#176): jeder entschiedene Baustein mit erfundenen Beispielen.
 
@@ -2380,5 +2546,6 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
         "unnamed": {"short_name": ""},
     }
     blocks = {key: dict(block, id=f"h-{key}") for key, block in BUILDING_BLOCKS.items()}
-    context = {"blocks": blocks, "examples": examples, "pattern_form": PatternForm.example()}
+    # Der Katalog zeigt den Editor (#358) und lädt dafür Trix.
+    context = {"blocks": blocks, "examples": examples, "pattern_form": PatternForm.example(), "editor_page": True}
     return render(request, "core/bausteine.html", context)

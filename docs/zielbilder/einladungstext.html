@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grober Entwurf 2: Einladungstext mit Editor (#358)</title>
+<style>
+:root {
+  --dpv: #1a4b7e; --dpv-tief: #12385f; --dpv-hauch: #e9eff6; --akzent: #f0ad2c;
+  --grund: #f4f6f9; --flaeche: #ffffff; --linie: #dbe2ea; --text: #1b2532; --text-leise: #566375;
+  --ok-text: #245c3d; --ok-grund: #e1f0e6; --warte-text: #74500c; --warte-grund: #fbefd5;
+  --ab-text: #8a2c2c; --ab-grund: #f7e2e2;
+  --zu-text: #3f4a58; --zu-grund: #e6e9ee; --entwurf-text: #485465; --entwurf-grund: #eef1f5; --entwurf-rand: #9aa6b5;
+  --radius: 14px; --radius-klein: 9px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #d9dee5; color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; }
+.ic { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hinweis { max-width: 1100px; margin: 24px auto; padding: 16px 20px; background: var(--flaeche); border-radius: var(--radius); }
+.hinweis h1 { margin: 0 0 8px; font-size: 1.3rem; }
+.hinweis p, .hinweis li { margin: 4px 0; color: var(--text-leise); }
+.hinweis a { color: var(--dpv); font-weight: 700; }
+.ansicht-titel { max-width: 1100px; margin: 40px auto 8px; padding: 0 4px; font-size: 1rem; color: var(--text-leise); font-weight: 700; }
+.bildschirm { max-width: 1100px; margin: 0 auto; display: flex; background: var(--grund); border-radius: var(--radius); overflow: hidden; border: 1px solid #c4ccd6; position: relative; }
+.leiste { width: 220px; flex: none; background: var(--flaeche); border-right: 1px solid var(--linie); padding: 20px 14px; }
+.marke { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--dpv); margin-bottom: 22px; }
+.lilie { width: 32px; height: 32px; border-radius: 50%; background: var(--dpv); color: #fff; display: grid; place-items: center; font-size: .75rem; }
+.leiste ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.leiste li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-klein); font-weight: 600; }
+.leiste li.aktiv { background: var(--dpv-hauch); color: var(--dpv); font-weight: 800; }
+.leiste li.aktiv::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--akzent); }
+.inhalt { flex: 1; min-width: 0; padding: 32px 36px; display: grid; gap: 20px; align-content: start; }
+.kopf h2 { margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -.01em; }
+.kopf p { margin: 4px 0 0; color: var(--text-leise); font-size: 1.05rem; }
+.flaeche { position: relative; background: var(--flaeche); border-radius: var(--radius); padding: 20px 24px; }
+.fkopf { display: flex; align-items: center; gap: 12px; margin: 0 0 17px; flex-wrap: wrap; }
+.fkopf h3 { margin: 0; font-size: 1.1rem; font-weight: 800; flex: 1 1 auto; }
+.fic { width: 36px; height: 36px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .55rem 1.1rem; border-radius: var(--radius-klein); border: 1px solid var(--dpv); background: var(--dpv); color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: default; }
+.btn.aktion { margin-left: auto; padding: .45rem .9rem; font-size: .92rem; }
+.btn.zart { background: var(--flaeche); color: var(--text); border-color: var(--linie); }
+.btn.blau { background: var(--dpv-hauch); color: var(--dpv); border-color: var(--dpv-hauch); }
+.btn.rot { background: var(--ab-grund); color: var(--ab-text); border-color: var(--ab-grund); }
+.btn.klein { padding: .3rem .7rem; font-size: .88rem; }
+.stift { position: absolute; top: 12px; right: 12px; display: inline-flex; padding: 6px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); color: var(--text); }
+.zeilen { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.zeile { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px 16px; border-radius: var(--radius-klein); background: var(--flaeche); border: 1px solid var(--linie); }
+.zeile.entwurf { border: 2px dashed var(--entwurf-rand); }
+.zeile.grau { background: var(--grund); border-color: var(--grund); }
+.zeile-wer { flex: 1 1 260px; min-width: 0; }
+.zeile-wer a { color: var(--dpv); font-weight: 800; text-decoration: none; font-size: 1.05rem; }
+.zeile-wer p { margin: 2px 0 0; color: var(--text-leise); font-size: .95rem; }
+.zeile-rechts { display: grid; justify-items: end; gap: 4px; text-align: right; }
+.zeile-rechts small { color: var(--text-leise); font-size: .85rem; }
+.zm { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: .82rem; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.zm::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.z-entwurf { background: var(--flaeche); color: var(--entwurf-text); border: 1px dashed var(--entwurf-text); }
+.z-angekuendigt { background: var(--dpv-hauch); color: var(--dpv); }
+.z-offen { background: var(--ok-grund); color: var(--ok-text); }
+.z-geschlossen { background: var(--warte-grund); color: var(--warte-text); }
+.z-laeuft { background: var(--dpv); color: #fff; }
+.z-beendet { background: var(--zu-grund); color: var(--zu-text); }
+.p4 { display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border: 2px dashed #c9b27a; border-radius: var(--radius-klein); background: #fffaf0; color: var(--warte-text); font-size: .85rem; font-weight: 700; }
+.balken { width: 90px; height: 6px; border-radius: 3px; background: var(--linie); overflow: hidden; }
+.balken span { display: block; height: 100%; width: 100%; background: var(--warte-text); }
+.schritte { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.schritte li { flex: 1 1 140px; padding: 10px 12px; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--text-leise); font-weight: 600; border-bottom: 4px solid var(--linie); }
+.schritte li.fertig { color: var(--text); border-bottom-color: var(--dpv); }
+.schritte li.jetzt { color: var(--text); font-weight: 800; border-bottom-color: var(--akzent); }
+.schritte b { display: block; font-size: .8rem; color: var(--text-leise); font-weight: 700; }
+.satz { margin: 0; color: var(--text-leise); font-size: .95rem; }
+.baustein { border: 2px dashed #8fa3bb; border-radius: var(--radius-klein); background: #f7f9fc; padding: 16px; color: var(--text-leise); }
+.baustein strong { color: var(--text); display: block; margin-bottom: 4px; }
+.spaeter { border: 2px dashed #c9b27a; border-radius: var(--radius-klein); background: #fffaf0; padding: 14px 16px; color: var(--warte-text); }
+.knoepfe { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.zusammen dl { display: grid; grid-template-columns: 180px 1fr; gap: 6px 16px; margin: 0; }
+.zusammen dt { color: var(--text-leise); }
+.zusammen dd { margin: 0; }
+.meldung { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); }
+.meldung p { margin: 0; color: var(--text); }
+.zustand { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.zustand-knoepfe { display: flex; gap: 10px; flex-wrap: wrap; }
+.raster { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.raster .flaeche p { margin: 0; }
+.leitungen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.leitung { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 11px 14px; border-radius: var(--radius-klein); background: var(--grund); }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--dpv); color: #fff; display: grid; place-items: center; flex: none; font-weight: 800; }
+.leitung-wer { flex: 1 1 12rem; min-width: 0; }
+.leitung-wer p { margin: 0; }
+.leitung-name { font-weight: 800; }
+.leise { color: var(--text-leise); font-size: .88rem; }
+.rollenmarke { display: inline-block; margin-top: 4px; padding: 4px 8px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); font-size: .82rem; font-weight: 700; }
+.einladung-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; align-items: flex-start; }
+.anmelde-kasten { flex: 0 1 300px; background: var(--flaeche); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 10px; }
+.anmelde-kasten p { margin: 0; }
+.text h4 { margin: 18px 0 6px; font-size: 1.05rem; }
+.text a { color: var(--dpv); }
+.schleier { position: absolute; inset: 0; background: rgb(27 37 50 / 55%); display: grid; place-items: center; padding: 16px; }
+.dialog { position: relative; width: min(520px, 100%); background: var(--flaeche); border-radius: var(--radius); border: 1px solid var(--linie); box-shadow: 0 20px 45px rgb(18 56 95 / 22%); padding: 22px 24px; display: grid; gap: 14px; }
+.dialog h3 { margin: 0; padding-right: 44px; font-size: 1.2rem; font-weight: 800; }
+.dialog p { margin: 0; }
+.dialog .zu { position: absolute; top: 14px; right: 14px; display: inline-flex; padding: 6px; border: 1px solid var(--linie); border-radius: var(--radius-klein); }
+.dialog-knoepfe { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.mit-dialog { min-height: 380px; }
+@media (max-width: 760px) {
+  .bildschirm { flex-direction: column; border-radius: 0; }
+  .leiste { width: auto; border-right: 0; border-bottom: 1px solid var(--linie); padding: 12px 16px; }
+  .leiste ul { display: none; }
+  .marke { margin: 0; }
+  .inhalt { padding: 20px 16px; }
+  .raster { grid-template-columns: 1fr; }
+  .zusammen dl { grid-template-columns: 1fr; }
+  .zusammen dd { margin-bottom: 8px; }
+  .zeile-rechts { justify-items: start; text-align: left; }
+  .btn.aktion span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .btn.aktion { width: 40px; height: 40px; padding: 0; }
+}
+.feld { display: grid; gap: 6px; margin-bottom: 16px; }
+.feld label { font-weight: 700; }
+.pflicht { color: var(--text-leise); font-weight: 400; }
+.eingabe { min-height: 42px; padding: 9px 12px; border: 1px solid #b8c3d0; border-radius: var(--radius-klein); background: #fff; color: var(--text); }
+.nebeneinander { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.datum-zeit { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.flaeche > h3 { margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; }
+.knoepfe .rechts { display: flex; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 760px) { .nebeneinander { grid-template-columns: 1fr; } }
+.schalter { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; }
+.bahn { width: 46px; height: 26px; border-radius: 999px; background: var(--grund); border: 1px solid var(--linie); position: relative; flex: none; }
+.bahn::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.schalter.an .bahn { background: var(--dpv); border-color: var(--dpv); }
+.schalter.an .bahn::after { transform: translateX(20px); }
+.angaben { display: grid; grid-template-columns: 70px 1fr; gap: 8px 14px; margin: 0; }
+.angaben dt { color: var(--text-leise); }
+.angaben dd { margin: 0; }
+.zeitleiste { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.zeitleiste li { display: flex; gap: 12px; align-items: flex-start; position: relative; }
+.zeitleiste li:not(:last-child)::before { content: ""; position: absolute; left: 6px; top: 16px; bottom: -14px; width: 2px; background: var(--linie); }
+.zeitleiste .punkt { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dpv); background: #fff; flex: none; margin-top: 4px; position: relative; z-index: 1; }
+.zeitleiste .heute .punkt { background: var(--akzent); border-color: var(--akzent); }
+.zeitleiste div { display: grid; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); font-weight: 700; font-size: .92rem; }
+.chip .ic { width: 16px; height: 16px; }
+.auszug { max-height: 7.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.auszug p { margin: 0 0 6px; }
+.eckdaten { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 20px; }
+.eck { display: grid; gap: 2px; align-content: start; }
+.eck p { margin: 0; }
+.eck .fkopf { margin-bottom: 10px; }
+.aktion-rechts { margin-left: auto; }
+.eck a { color: var(--dpv); font-weight: 700; }
+.karte { height: 220px; border: 2px dashed #8fa3bb; border-radius: var(--radius-klein); background: repeating-linear-gradient(45deg, #f7f9fc 0 14px, #eef2f7 14px 28px); display: grid; place-items: center; text-align: center; padding: 16px; color: var(--text-leise); }
+.karte strong { color: var(--text); }
+@media (max-width: 760px) { .eckdaten { grid-template-columns: 1fr; } .eck.anmelden { order: -1; } .angaben { grid-template-columns: 1fr; } .angaben dd { margin-bottom: 6px; } }
+.zustand > div:first-child { flex: 1 1 260px; min-width: 0; }
+.zustand-knoepfe { flex: none; align-items: center; }
+@media (max-width: 760px) { .zustand-knoepfe { flex: 1 1 100%; } }
+.termin { display: flex; align-items: stretch; gap: 10px; margin-bottom: 16px; }
+.tag { flex: 0 0 96px; display: grid; justify-items: center; padding: 8px 6px; border-radius: var(--radius-klein); background: var(--dpv-hauch); color: var(--dpv); }
+.tag-wt { font-size: .8rem; font-weight: 700; }
+.tag-zahl { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.tag-monat { font-size: .8rem; font-weight: 700; }
+.tag-zeit { margin-top: 4px; padding: 1px 8px; border-radius: 20px; background: var(--flaeche); font-size: .82rem; font-weight: 700; }
+.termin-mitte { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 60px; }
+.termin-linie { flex: 1; height: 2px; background: var(--linie); }
+.dauer { font-size: .85rem; font-weight: 700; color: var(--text-leise); white-space: nowrap; }
+.ort { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: var(--radius-klein); background: var(--grund); }
+.ort-ic { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: var(--radius-klein); background: var(--flaeche); color: var(--dpv); }
+.titelzeile { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
+.titelzeile .kopf { flex: 1 1 320px; min-width: 0; }
+.anmelde-zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.anmelden-platz { display: inline-flex; align-items: center; padding: 6px 14px; border: 2px dashed #c9b27a; border-radius: var(--radius-klein); background: #fffaf0; color: var(--warte-text); font-weight: 700; font-size: .92rem; }
+.fk-titel { font-size: .78rem; font-weight: 800; color: var(--dpv); text-transform: uppercase; letter-spacing: .04em; }
+.lang h4 { margin: 18px 0 6px; }
+.lang p { margin: 0 0 10px; }
+.tag.gruen { background: var(--ok-grund); color: var(--ok-text); }
+.tag-text { display: grid; gap: 2px; }
+.tag-zeit { white-space: nowrap; }
+.eck-reihe { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 12px; }
+.block { background: var(--flaeche); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 10px; align-content: start; }
+.block .fk-titel { display: inline-flex; align-items: center; gap: 6px; }
+.block .fk-titel .ic { width: 16px; height: 16px; }
+.termin.klein { margin: 0; gap: 8px; }
+.termin.klein .tag { flex: 0 0 74px; padding: 6px 4px; }
+.termin.klein .tag-zahl { font-size: 1.35rem; }
+.termin.klein .tag-wt, .termin.klein .tag-monat { font-size: .75rem; }
+.termin.klein .tag-zeit { font-size: .75rem; margin-top: 3px; }
+.termin.klein .tag.gruen { flex-basis: 96px; }
+.termin.klein.einzeln { align-items: center; gap: 12px; }
+.wo-text { display: grid; }
+.wo-text span { color: var(--text-leise); font-size: .92rem; }
+.wo-text a { margin-top: 6px; color: var(--dpv); font-weight: 700; font-size: .92rem; }
+@media (max-width: 900px) { .eck-reihe { grid-template-columns: 1fr 1fr; } .eck-reihe .block:first-child { grid-column: 1 / -1; } }
+@media (max-width: 560px) { .eck-reihe { grid-template-columns: 1fr; } }
+.inhalt { grid-template-columns: minmax(0, 1fr); }
+.p4 { flex-wrap: wrap; }
+.anmelde-stapel { display: grid; justify-items: end; gap: 8px; }
+.eck-zwei { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
+.wann-gross { align-content: stretch; grid-template-rows: auto 1fr; }
+.wann-gross .termin { align-self: center; }
+.wann-gross .termin.klein .tag { flex-basis: 92px; padding: 10px 6px; }
+.wann-gross .termin.klein .tag-zahl { font-size: 1.7rem; }
+.eck-stapel { display: grid; gap: 12px; }
+.eck-stapel .wo-text { grid-template-columns: auto; }
+@media (max-width: 760px) { .anmelde-stapel { justify-items: start; } .eck-zwei { grid-template-columns: 1fr; } }
+
+.ed { border: 1px solid #b8c3d0; border-radius: var(--radius-klein); background: #fff; overflow: hidden; }
+.ed:focus-within, .ed.fokus { border-color: var(--dpv); box-shadow: 0 0 0 3px rgb(26 75 126 / 18%); }
+.ed.fehler { border-color: var(--ab-text); }
+.leiste-ed { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid var(--linie); background: var(--grund); }
+.gruppe { display: flex; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--linie); }
+.gruppe:last-child { border-right: 0; margin-left: auto; }
+.kn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--text); font: inherit; font-weight: 800; }
+.kn.an { background: var(--dpv-hauch); color: var(--dpv); border-color: #c9d6e5; }
+.kn.aus { color: #a8b2bf; }
+.kn .ic { width: 20px; height: 20px; }
+.kn.k-i { font-style: italic; font-family: Georgia, serif; }
+.kn.k-s { text-decoration: line-through; }
+.kn.k-h { font-size: .95rem; }
+.ed-text { padding: 14px 16px; min-height: 220px; max-height: 380px; overflow: auto; }
+.ed-text h2, .rt h2 { font-size: 1.15rem; margin: 14px 0 6px; font-weight: 800; }
+.ed-text p, .rt p { margin: 0 0 10px; }
+.ed-text ul, .ed-text ol, .rt ul, .rt ol { margin: 0 0 10px; padding-left: 1.4em; }
+.ed-text blockquote, .rt blockquote { margin: 0 0 10px; padding: 4px 12px; border-left: 3px solid #9fb3c8; color: var(--text-leise); }
+.ed-text a, .rt a { color: var(--dpv); }
+.cursor { display: inline-block; width: 2px; height: 1.1em; background: var(--text); vertical-align: -2px; }
+.markiert { background: #cfe0f3; }
+.linkfeld { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--linie); background: #fff; }
+.linkfeld .eingabe { flex: 1 1 240px; min-height: 38px; padding: 7px 10px; }
+.unter { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: .9rem; color: var(--text-leise); }
+.feldfehler { color: var(--ab-text); font-weight: 700; font-size: .92rem; margin-top: 6px; }
+.dialog.breit { width: min(860px, 100%); }
+.mit-dialog.hoch { min-height: 760px; }
+.hinweis-gelb { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: var(--radius-klein); background: var(--warte-grund); color: var(--warte-text); }
+.hinweis-gelb p { color: var(--text); }
+textarea.roh { width: 100%; min-height: 220px; font: .92rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 12px; border: 1px solid #b8c3d0; border-radius: var(--radius-klein); color: var(--text); }
+.handy-rahmen { width: 375px; max-width: 100%; margin: 0 auto; border: 10px solid #1b2532; border-radius: 34px; overflow: hidden; background: var(--grund); }
+.handy-rahmen .dialog { border-radius: 0; border: 0; box-shadow: none; padding: 16px; }
+.handy-rahmen .leiste-ed { gap: 2px; }
+.handy-rahmen .gruppe { padding-right: 3px; }
+.handy-rahmen .ed-text { min-height: 260px; max-height: none; }
+.tastatur { background: #cfd5dd; padding: 8px; display: grid; gap: 6px; }
+.tastatur .vorschlaege { display: flex; justify-content: space-around; font-size: .9rem; color: var(--text); background: #e4e8ee; border-radius: 6px; padding: 6px; }
+.tastatur .tasten { height: 120px; border-radius: 6px; background: repeating-linear-gradient(90deg, #fff 0 30px, #cfd5dd 30px 34px); opacity: .7; }
+.zahl { margin: 4px 0 0; color: var(--text-leise); font-size: .85rem; text-align: right; }
+.notiz { max-width: 1100px; margin: 8px auto 0; padding: 0 4px; color: var(--text-leise); font-size: .92rem; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-kalender" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-organisation" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3"/></symbol>
+  <symbol id="i-schliessen" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-stift" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.2-7 8-7s7 2.5 8 7"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4 0 4 1.6 4.5 4.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
+
+  <symbol id="i-liste" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-nummer" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 4.5h1.5V9M3.5 9h3M3.5 14.5c0-1 .8-1.5 1.6-1.5s1.6.5 1.6 1.4c0 1.4-3.2 2.4-3.2 4.1h3.3"/></symbol>
+  <symbol id="i-zitat" viewBox="0 0 24 24"><path d="M5 17c0-4 1-7 4-9M5 17h4v-4H5M13 17c0-4 1-7 4-9M13 17h4v-4h-4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M4 12h10a6 6 0 0 1 0 12"/></symbol>
+  <symbol id="i-vor" viewBox="0 0 24 24"><path d="m15 7 5 5-5 5"/><path d="M20 12H10a6 6 0 0 0 0 12"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-haken" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+</svg>
+
+<div class="hinweis">
+  <h1>Grober Entwurf 2: Einladungstext mit Editor (#358)</h1>
+  <p>Stand 17.11.2026, nach der Klärung und Sebastians Anmerkung zum Entwurf 1 (Zahl der Zeichen), von #358 (Fragen 1 bis 11) und den Szenarien vom 17.11.2026. Grundlage für Sebastians Zielbild des Bausteins „Editor“; Aufbau und Farben wie im Zielbild von #356. Alle Personen, Orte, Adressen und Nummern sind erfunden.</p>
+  <p>Gezeigt wird nur das Aussehen; der Editor selbst ist Trix, Knöpfe und Symbole bekommen die Gestaltung des Bausteinkatalogs.</p>
+  <p>Ansichten: <a href="#a1">1 Schritt 2</a> · <a href="#a2">2 Link</a> · <a href="#a3">3 Zu lang</a> · <a href="#a4">4 Zusammenfassung</a> · <a href="#a5">5 Kachel</a> · <a href="#a6">6 Dialog</a> · <a href="#a7">7 Gleichzeitig</a> · <a href="#a8">8 Ohne JavaScript</a> · <a href="#a9">9 Handy</a></p>
+</div>
+
+<p class="ansicht-titel" id="a1">Ansicht 1: Anlegen, Schritt 2 „Einladungstext“ mit Editor</p><p class="notiz">Knopfleiste: fett, kursiv, durchgestrichen, Link · Überschrift, Zitat, Aufzählung, nummerierte Liste · Rückgängig, Wiederholen (Fragen 2 und 3). Hervorgehoben ist, was an der Schreibmarke gerade gilt. Mit „Weiter“ wird der Text gespeichert, auch leer (Frage 4). Rechts unter dem Editor läuft beim Tippen die Zahl der Zeichen mit, gezählt ohne Formatierung (#215, `docs/gestaltung.md`); ohne JavaScript gibt es sie nicht.</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>Entwurf · Veranstaltung erstellen</p></div><ol class="schritte"><li class="fertig"><b>Schritt 1</b>Grunddaten</li><li class="jetzt"><b>Schritt 2</b>Einladungstext</li><li class=""><b>Schritt 3</b>Anmeldung</li><li class=""><b>Schritt 4</b>Zusammenfassung</li></ol>
+<section class="flaeche"><div class="feld"><label>Einladungstext <span class="pflicht">(freiwillig)</span></label>
+<div class="ed fokus"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn an" title="Fett" aria-label="Fett" aria-pressed="true">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn" title="Link" aria-label="Link" aria-pressed="false"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn" title="Aufzählung" aria-label="Aufzählung" aria-pressed="false"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. <span class="markiert">Wir freuen uns</span> auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Isomatte</li><li>Regenjacke und <em>eingelaufene</em> feste Schuhe</li><li>Taschenlampe, Trinkflasche, Essgeschirr</li></ul>
+<p><s>Handys</s> bleiben bitte zu Hause.</p>
+<h2>Anmeldung</h2>
+<ol><li>Anmeldung im Tool bis 30.04.2028</li><li>Beitrag überweisen bis 07.05.2028</li></ol>
+<blockquote>Wir achten aufeinander, auf die Natur und auf die Burg, die uns zu Gast hat.</blockquote>
+<p>Die <a href="#">Anfahrt mit Bahn und Bus</a> findet ihr hier. Fragen an Wanda: <a href="#">wanda@example.org</a> oder <a href="#">0000 000000</a>.</p></div></div><p class="zahl">708/10.000</p>
+</div></section>
+<div class="knoepfe"><span class="btn zart">Abbrechen</span><div class="rechts"><span class="btn zart">Zurück</span><span class="btn">Weiter</span></div></div></main></div>
+<p class="ansicht-titel" id="a2">Ansicht 2: Link setzen</p><p class="notiz">Der Knopf „Link“ öffnet unter der Knopfleiste ein Feld für die Adresse. Erlaubt sind Adressen mit https, http, mailto und tel; Links öffnen sich in einem neuen Fenster (Frage 3).</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>Entwurf · Veranstaltung erstellen</p></div><ol class="schritte"><li class="fertig"><b>Schritt 1</b>Grunddaten</li><li class="jetzt"><b>Schritt 2</b>Einladungstext</li><li class=""><b>Schritt 3</b>Anmeldung</li><li class=""><b>Schritt 4</b>Zusammenfassung</li></ol>
+<section class="flaeche"><div class="feld"><label>Einladungstext <span class="pflicht">(freiwillig)</span></label>
+<div class="ed fokus"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn" title="Fett" aria-label="Fett" aria-pressed="false">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn an" title="Link" aria-label="Link" aria-pressed="true"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn" title="Aufzählung" aria-label="Aufzählung" aria-pressed="false"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="linkfeld"><label class="leise" for="lk">Adresse</label><span class="eingabe" id="lk">https://example.org/anfahrt</span><span class="btn klein">Link setzen</span><span class="btn zart klein">Link entfernen</span></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><p>Die <span class="markiert">Anfahrt mit Bahn und Bus</span> findet ihr hier.</p></div></div><p class="zahl">708/10.000</p>
+</div></section></main></div>
+<p class="ansicht-titel" id="a3">Ansicht 3: Zu lang (G1)</p><p class="notiz">Die Zahl wird schon beim Tippen rot, nichts wird abgeschnitten. Nach „Weiter“ oder „Speichern“: Fehler am Feld, der Text bleibt im Editor stehen. Formatierung zählt nicht mit (Frage 5).</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>Entwurf · Veranstaltung erstellen</p></div><ol class="schritte"><li class="fertig"><b>Schritt 1</b>Grunddaten</li><li class="jetzt"><b>Schritt 2</b>Einladungstext</li><li class=""><b>Schritt 3</b>Anmeldung</li><li class=""><b>Schritt 4</b>Zusammenfassung</li></ol>
+<section class="flaeche"><div class="feld"><label>Einladungstext <span class="pflicht">(freiwillig)</span></label>
+<div class="ed fehler"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn" title="Fett" aria-label="Fett" aria-pressed="false">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn" title="Link" aria-label="Link" aria-pressed="false"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn" title="Aufzählung" aria-label="Aufzählung" aria-pressed="false"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Isomatte</li><li>Regenjacke und <em>eingelaufene</em> feste Schuhe</li><li>Taschenlampe, Trinkflasche, Essgeschirr</li></ul>
+<p><s>Handys</s> bleiben bitte zu Hause.</p>
+<h2>Anmeldung</h2>
+<ol><li>Anmeldung im Tool bis 30.04.2028</li><li>Beitrag überweisen bis 07.05.2028</li></ol>
+<blockquote>Wir achten aufeinander, auf die Natur und auf die Burg, die uns zu Gast hat.</blockquote>
+<p>Die <a href="#">Anfahrt mit Bahn und Bus</a> findet ihr hier. Fragen an Wanda: <a href="#">wanda@example.org</a> oder <a href="#">0000 000000</a>.</p></div></div><p class="zahl" style="color:var(--ab-text);font-weight:700">10.001/10.000</p>
+<p class="feldfehler">Der Einladungstext ist zu lang: höchstens 10.000 Zeichen, jetzt 10.001.</p>
+</div></section>
+<div class="knoepfe"><span class="btn zart">Abbrechen</span><div class="rechts"><span class="btn zart">Zurück</span><span class="btn">Weiter</span></div></div></main></div>
+<p class="ansicht-titel" id="a4">Ansicht 4: Zusammenfassung, Abschnitt „Einladungstext“ (mit Text und leer)</p><p class="notiz">Die ersten höchstens 300 Zeichen mit Formatierung, an einer Wortgrenze gekürzt, mit „…“ (Frage 10, G5); hier 290 Zeichen. Darunter derselbe Abschnitt ohne Text (Frage 4). Die übrigen Abschnitte der Zusammenfassung wie im Zielbild von #356.</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>Entwurf · Veranstaltung erstellen</p></div><ol class="schritte"><li class="fertig"><b>Schritt 1</b>Grunddaten</li><li class="fertig"><b>Schritt 2</b>Einladungstext</li><li class="fertig"><b>Schritt 3</b>Anmeldung</li><li class="jetzt"><b>Schritt 4</b>Zusammenfassung</li></ol>
+<section class="flaeche zusammen"><span class="stift" title="Einladungstext ändern"><svg class="ic"><use href="#i-stift"/></svg></span><div class="fkopf"><h3>Einladungstext</h3></div><div class="rt"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<p>…</p></div></section>
+<section class="flaeche zusammen"><span class="stift" title="Einladungstext ändern"><svg class="ic"><use href="#i-stift"/></svg></span><div class="fkopf"><h3>Einladungstext</h3></div><p class="satz">Noch kein Einladungstext.</p></section>
+</main></div>
+<p class="ansicht-titel" id="a5">Ansicht 5: Leitungsseite, Kachel „Einladungstext“ nach dem Speichern</p><p class="notiz">Kachel mit denselben ersten Zeilen wie die Zusammenfassung; der Satz „ganz zu lesen unter ‚Einladung ansehen‘“ kommt erst mit #362 (Frage 10). Die zweite Kachel zeigt den leeren Fall. Die übrigen Kacheln wie im Zielbild von #356.</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>02.06.2028 bis 05.06.2028 · Burg Ludwigstein</p></div>
+<div class="meldung"><svg class="ic"><use href="#i-haken"/></svg><p>Der Einladungstext von Pfingstlager 2028 ist gespeichert.</p></div>
+<section class="flaeche"><span class="stift" title="Einladungstext bearbeiten"><svg class="ic"><use href="#i-stift"/></svg></span><div class="fkopf"><span class="fic"><svg class="ic"><use href="#i-info"/></svg></span><h3>Einladungstext</h3></div><div class="rt"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<p>…</p></div></section>
+<section class="flaeche"><span class="stift" title="Einladungstext bearbeiten"><svg class="ic"><use href="#i-stift"/></svg></span><div class="fkopf"><span class="fic"><svg class="ic"><use href="#i-info"/></svg></span><h3>Einladungstext</h3></div><p class="satz">Noch kein Einladungstext.</p></section>
+</main></div>
+<p class="ansicht-titel" id="a6">Ansicht 6: Dialog „Einladungstext bearbeiten“ (breit)</p><p class="notiz">Der Stift der Kachel öffnet den Dialog mit dem ganzen Text (Frage 8). Ist der Text länger als das Fenster, rollt nur der Dialog. „Abbrechen“, × und Escape ändern nichts (G7).</p>
+<div class="bildschirm mit-dialog hoch"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>02.06.2028 bis 05.06.2028 · Burg Ludwigstein</p></div></main>
+<div class="schleier"><div class="dialog breit" role="dialog" aria-label="Einladungstext bearbeiten"><span class="zu" title="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></span>
+<h3>Einladungstext bearbeiten</h3><p class="satz">Pfingstlager 2028</p>
+<div class="ed fokus"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn" title="Fett" aria-label="Fett" aria-pressed="false">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn" title="Link" aria-label="Link" aria-pressed="false"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn" title="Aufzählung" aria-label="Aufzählung" aria-pressed="false"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Isomatte</li><li>Regenjacke und <em>eingelaufene</em> feste Schuhe</li><li>Taschenlampe, Trinkflasche, Essgeschirr</li></ul>
+<p><s>Handys</s> bleiben bitte zu Hause.</p>
+<h2>Anmeldung</h2>
+<ol><li>Anmeldung im Tool bis 30.04.2028</li><li>Beitrag überweisen bis 07.05.2028</li></ol>
+<blockquote>Wir achten aufeinander, auf die Natur und auf die Burg, die uns zu Gast hat.</blockquote>
+<p>Die <a href="#">Anfahrt mit Bahn und Bus</a> findet ihr hier. Fragen an Wanda: <a href="#">wanda@example.org</a> oder <a href="#">0000 000000</a>.</p></div></div><p class="zahl">708/10.000</p>
+<div class="dialog-knoepfe"><span class="btn zart">Abbrechen</span><span class="btn">Speichern</span></div></div></div></div>
+<p class="ansicht-titel" id="a7">Ansicht 7: Inzwischen von jemand anderem geändert (G2)</p><p class="notiz">Nichts wird überschrieben; der eigene Text bleibt im Dialog (Frage 9). Wortlaut nach dem Muster bei verwalteten Personen (`persons/texts.py`), hier um den Satz zum eigenen Text ergänzt.</p>
+<div class="bildschirm mit-dialog hoch"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>02.06.2028 bis 05.06.2028 · Burg Ludwigstein</p></div></main>
+<div class="schleier"><div class="dialog breit" role="dialog" aria-label="Einladungstext bearbeiten"><span class="zu" title="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></span>
+<h3>Einladungstext bearbeiten</h3><p class="satz">Pfingstlager 2028</p>
+<div class="hinweis-gelb"><svg class="ic"><use href="#i-warn"/></svg><p>Der Einladungstext von Pfingstlager 2028 wurde inzwischen von jemand anderem geändert. Dein Text steht unten noch im Editor und ist nicht gespeichert. Bitte prüfe ihn und speichere erneut.</p></div>
+<div class="ed fokus"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn" title="Fett" aria-label="Fett" aria-pressed="false">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn" title="Link" aria-label="Link" aria-pressed="false"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn" title="Aufzählung" aria-label="Aufzählung" aria-pressed="false"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><p>Liebe Walhallerinnen und Walhaller, liebe Eltern,</p>
+<p>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, auch die Packliste, bevor ihr euch anmeldet.</p>
+<h2>Packliste</h2>
+<ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Isomatte</li><li>Regenjacke und <em>eingelaufene</em> feste Schuhe</li><li>Taschenlampe, Trinkflasche, Essgeschirr</li></ul>
+<p><s>Handys</s> bleiben bitte zu Hause.</p>
+<h2>Anmeldung</h2>
+<ol><li>Anmeldung im Tool bis 30.04.2028</li><li>Beitrag überweisen bis 07.05.2028</li></ol>
+<blockquote>Wir achten aufeinander, auf die Natur und auf die Burg, die uns zu Gast hat.</blockquote>
+<p>Die <a href="#">Anfahrt mit Bahn und Bus</a> findet ihr hier. Fragen an Wanda: <a href="#">wanda@example.org</a> oder <a href="#">0000 000000</a>.</p></div></div><p class="zahl">728/10.000</p>
+<div class="dialog-knoepfe"><span class="btn zart">Abbrechen</span><span class="btn">Speichern</span></div></div></div></div>
+<p class="ansicht-titel" id="a8">Ansicht 8: Ohne JavaScript</p><p class="notiz">Ohne Skript ein normales Textfeld mit der Formatierung als Zeichen; gespeichert wird genauso bereinigt (Frage 11). Im Dialog auf der Leitungsseite ebenso.</p>
+<div class="bildschirm"><aside class="leiste"><div class="marke"><span class="lilie">DPV</span>DPV Anmeldetool</div>
+    <ul><li><svg class="ic"><use href="#i-home"/></svg> Startseite</li><li><svg class="ic"><use href="#i-organisation"/></svg> Organisation</li><li class="aktiv"><svg class="ic"><use href="#i-kalender"/></svg> Veranstaltungen</li></ul></aside><main class="inhalt"><div class="kopf"><h2>Pfingstlager 2028</h2><p>Entwurf · Veranstaltung erstellen</p></div><ol class="schritte"><li class="fertig"><b>Schritt 1</b>Grunddaten</li><li class="jetzt"><b>Schritt 2</b>Einladungstext</li><li class=""><b>Schritt 3</b>Anmeldung</li><li class=""><b>Schritt 4</b>Zusammenfassung</li></ol>
+<section class="flaeche"><div class="feld"><label for="roh">Einladungstext <span class="pflicht">(freiwillig)</span></label>
+<textarea class="roh" id="roh">&lt;p&gt;Liebe Walhallerinnen und Walhaller, liebe Eltern,&lt;/p&gt;
+&lt;p&gt;zu Pfingsten fahren wir gemeinsam ins &lt;strong&gt;Pfingstlager 2028&lt;/strong&gt; auf die Burg. Wir freuen uns auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den Text ganz durch, bevor ihr euch anmeldet.&lt;/p&gt;
+&lt;h2&gt;Packliste&lt;/h2&gt;
+&lt;ul&gt;&lt;li&gt;Kluft und Halstuch&lt;/li&gt;&lt;li&gt;Schlafsack (warm!) und Isomatte&lt;/li&gt;&lt;li&gt;Regenjacke und &lt;em&gt;eingelaufene&lt;/em&gt; feste Schuhe&lt;/li&gt;&lt;li&gt;Taschenlampe, Trinkflasche, Essgeschirr&lt;/li&gt;&lt;/ul&gt;
+&lt;p&gt;&lt;s&gt;Handys&lt;/s&gt; bleiben bitte zu Hause.&lt;/p&gt;
+&lt;h2&gt;Anmeldung&lt;/h2&gt;
+&lt;ol&gt;&lt;li&gt;Anmeldung im Tool bis 30.04.2028&lt;/li&gt;&lt;li&gt;Beitrag überweisen bis 07.05.2028&lt;/li&gt;&lt;/ol&gt;
+&lt;blockquote&gt;Wir achten aufeinander, auf die Natur und auf die Burg, die uns zu Gast hat.&lt;/blockquote&gt;
+&lt;p&gt;Die &lt;a href=&quot;#&quot;&gt;Anfahrt mit Bahn und Bus&lt;/a&gt; findet ihr hier. Fragen an Wanda: &lt;a href=&quot;#&quot;&gt;wanda@example.org&lt;/a&gt; oder &lt;a href=&quot;#&quot;&gt;0000 000000&lt;/a&gt;.&lt;/p&gt;</textarea>
+<p class="satz">Ohne JavaScript siehst du die Formatierung als Zeichen.</p></div></section>
+<div class="knoepfe"><span class="btn zart">Abbrechen</span><div class="rechts"><span class="btn zart">Zurück</span><span class="btn">Weiter</span></div></div></main></div>
+<p class="ansicht-titel" id="a9">Ansicht 9: Am Handy, Dialog mit Bildschirmtastatur</p><p class="notiz">Am Handy füllt der Dialog den Bildschirm; die Knopfleiste bricht in Zeilen um, jeder Knopf mindestens 36 Pixel groß. Wortvorschläge und Autokorrektur funktionieren (E5).</p>
+<div class="handy-rahmen"><div class="dialog" role="dialog" aria-label="Einladungstext bearbeiten"><span class="zu" title="Schließen"><svg class="ic"><use href="#i-schliessen"/></svg></span>
+<h3>Einladungstext bearbeiten</h3><p class="satz">Pfingstlager 2028</p>
+<div class="ed fokus"><div class="leiste-ed" role="toolbar" aria-label="Formatierung"><div class="gruppe"><span class="kn" title="Fett" aria-label="Fett" aria-pressed="false">B</span><span class="kn k-i" title="Kursiv" aria-label="Kursiv" aria-pressed="false">I</span><span class="kn k-s" title="Durchgestrichen" aria-label="Durchgestrichen" aria-pressed="false">S</span><span class="kn" title="Link" aria-label="Link" aria-pressed="false"><svg class="ic"><use href="#i-link"/></svg></span></div><div class="gruppe"><span class="kn k-h" title="Überschrift" aria-label="Überschrift" aria-pressed="false">Ü</span><span class="kn" title="Zitat" aria-label="Zitat" aria-pressed="false"><svg class="ic"><use href="#i-zitat"/></svg></span><span class="kn an" title="Aufzählung" aria-label="Aufzählung" aria-pressed="true"><svg class="ic"><use href="#i-liste"/></svg></span><span class="kn" title="Nummerierte Liste" aria-label="Nummerierte Liste" aria-pressed="false"><svg class="ic"><use href="#i-nummer"/></svg></span></div><div class="gruppe"><span class="kn" title="Rückgängig" aria-label="Rückgängig" aria-pressed="false"><svg class="ic"><use href="#i-zurueck"/></svg></span><span class="kn" title="Wiederholen" aria-label="Wiederholen" aria-pressed="false"><svg class="ic"><use href="#i-vor"/></svg></span></div></div><div class="ed-text" role="textbox" aria-multiline="true" aria-label="Einladungstext"><h2>Packliste</h2><ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Iso<span class="cursor"></span></li></ul></div></div><p class="zahl">652/10.000</p>
+<div class="dialog-knoepfe"><span class="btn zart">Abbrechen</span><span class="btn">Speichern</span></div></div>
+<div class="tastatur"><div class="vorschlaege"><span>Isomatte</span><span>Iso</span><span>Isolierung</span></div><div class="tasten"></div></div></div>
+<div style="height:60px"></div>
+</body>
+</html>

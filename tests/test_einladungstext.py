@@ -39,12 +39,13 @@ CHANGED = ("Der Einladungstext von Pfingstlager 2028 wurde inzwischen von jemand
 NONE_YET = "Noch kein Einladungstext."
 WITHOUT_SCRIPT = "Ohne JavaScript siehst du die Formatierung als Zeichen."
 TOO_LONG = "Der Einladungstext ist zu lang: höchstens 10.000 Zeichen, jetzt %s."
-# Wie Trix den Text aus E1 speichert: Absätze als div, Überschrift (eine Stufe), Aufzählung und ein Link.
+# Wie Trix den Text aus E1 speichert: Absätze als div, Überschrift (eine Stufe, als h3 unter der Überschrift der Kachel),
+# Aufzählung und ein Link.
 E1_TEXT = ("<div>Liebe Walhallerinnen und Walhaller, liebe Eltern,</div>"
            "<div>zu Pfingsten fahren wir gemeinsam ins <strong>Pfingstlager 2028</strong> auf die Burg. Wir freuen uns "
            "auf vier Tage mit Hajk, Singerunde, Geländespiel und Lagerfeuer – und vor allem auf euch! Bitte lest den "
            "Text ganz durch, bevor ihr euch anmeldet.</div>"
-           "<h2>Packliste</h2>"
+           "<h3>Packliste</h3>"
            "<ul><li>Kluft und Halstuch</li><li>Schlafsack (warm!) und Isomatte</li>"
            "<li>Regenjacke und <em>eingelaufene</em> feste Schuhe</li></ul>"
            '<div>Die <a href="https://example.org/anfahrt">Anfahrt</a> findet ihr hier.</div>')
@@ -238,7 +239,7 @@ def test_e1_wanda_schreibt_in_schritt_2_und_die_zusammenfassung_zeigt_die_ersten
 
     assert response.status_code == 302
     assert response.url == summary_address(entwurf)
-    assert "<h2>Packliste</h2>" in stored(entwurf)
+    assert "<h3>Packliste</h3>" in stored(entwurf)
     assert f'<a href="https://example.org/anfahrt" {LINK_ATTRS}>Anfahrt</a>' in stored(entwurf)
     page = client.get(response.url)
     root = _tree(page)
@@ -298,7 +299,7 @@ def test_e3_stift_der_kachel_oeffnet_den_breiten_dialog_mit_dem_ganzen_text(org,
 
 @pytest.mark.rechtematrix("VA-02")
 def test_e4_alle_erlaubten_formatierungen_bleiben_und_links_oeffnen_in_neuem_fenster(org, pfingstlager):
-    text = ("<div><strong>fett</strong> <em>kursiv</em> <del>durch</del></div><h2>Packliste</h2>"
+    text = ("<div><strong>fett</strong> <em>kursiv</em> <del>durch</del></div><h3>Packliste</h3>"
             "<blockquote>Zitat</blockquote><ul><li>Punkt</li></ul><ol><li>Nummer</li></ol>"
             '<div><a href="https://example.org/a">sicher</a> <a href="http://example.org/b">alt</a> '
             '<a href="mailto:wanda@example.org">Mail</a> <a href="tel:+490000000000">Telefon</a></div>')
@@ -306,7 +307,7 @@ def test_e4_alle_erlaubten_formatierungen_bleiben_und_links_oeffnen_in_neuem_fen
     save_dialog(client_for(org.wanda), pfingstlager, text)
 
     saved = stored(pfingstlager)
-    for part in ("<strong>fett</strong>", "<em>kursiv</em>", "<del>durch</del>", "<h2>Packliste</h2>",
+    for part in ("<strong>fett</strong>", "<em>kursiv</em>", "<del>durch</del>", "<h3>Packliste</h3>",
                  "<blockquote>Zitat</blockquote>", "<ul><li>Punkt</li></ul>", "<ol><li>Nummer</li></ol>",
                  f'<a href="https://example.org/a" {LINK_ATTRS}>sicher</a>',
                  f'<a href="http://example.org/b" {LINK_ATTRS}>alt</a>',
@@ -505,7 +506,7 @@ def test_g2_grunddaten_aus_einem_zweiten_fenster_aendern_den_einladungstext_nich
 
 @pytest.mark.rechtematrix("VA-02")
 @pytest.mark.parametrize("empty", ["   ", "<div><br></div><div><br></div>", "<div>&nbsp; &nbsp;</div>",
-                                   "<strong> </strong><em></em><ul><li></li></ul>", "\n\n<h2> </h2>\n"])
+                                   "<strong> </strong><em></em><ul><li></li></ul>", "\n\n<h3> </h3>\n"])
 def test_g3_nur_leerraum_oder_formatierung_ohne_inhalt_gilt_als_leer(org, pfingstlager, empty):
     client = client_for(org.wanda)
 
@@ -677,7 +678,7 @@ def test_katalog_zeigt_den_editor_und_die_breite_form_des_dialogs(settings, org)
     root = _tree(response)
 
     entry = _one(_by_tag(root, "section", aria_labelledby="h-editor"))
-    assert _text(_one(_by_tag(entry, "h2"))) == "Editor"
+    assert [_text(heading) for heading in _by_tag(entry, "h2")] == ["Editor"]
     assert "#358" in _visible_text(entry)
     assert _one(_all(entry, lambda e: "a-editor" in _classes(e)))
     dialog = _one(_by_tag(root, "section", aria_labelledby="h-dialog"))

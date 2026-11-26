@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Seit #359 unter dem Kopf die Zeile „Zustand“ (Ansicht 6): links die Zustandsmarke mit ihrem Satz, rechts der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“). „Einladung ansehen“ (#362) und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Darunter der Abschnitt „Anmeldungen“. #}
+  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Seit #359 unter dem Kopf die Zeile „Zustand“ (Ansicht 6): links die Zustandsmarke mit ihrem Satz, rechts der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“). „Einladung ansehen“ (#362) und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Seit #358 unter den Kacheln die Kachel „Einladungstext“ über die ganze Breite (Zielbild von #356, Ansicht 6; docs/zielbilder/einladungstext.html, Ansicht 5). Darunter der Abschnitt „Anmeldungen“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ head_line }}</p></div>
   <section class="a-flaeche a-zustand" aria-label="{{ state_label }}">
@@ -16,6 +16,7 @@
       {% include "core/_kalenderblaetter.html" %}
     </section>
   </div>
+  {% include "core/_einladungstext.html" %}
   {# Abschnitt „Anmeldungen“ (#101, Probe in P2, kein Zielbild): je Anmeldung die Ansprechperson als Link zur Anmeldung und dahinter die Namen der angemeldeten Personen, die älteste zuerst; unverändert seit #101, auf der Leitungsseite unter den Kacheln (#356, Vorausblick auf P4). Anmelden geht hier nicht (AN-06). #}
   <section class="a-flaeche" aria-labelledby="h-anmeldungen">
     {% include "core/_flaechenkopf.html" with symbol="personen" title=registrations_title heading_id="h-anmeldungen" %}
@@ -32,6 +33,12 @@
     {% include "core/_dialog_auf.html" %}
     {% if dialog.error %}{% meldung "error" text=dialog.error live=True %}{% endif %}
     <p>{{ dialog.text }}</p>
+    {% include "core/_dialog_zu.html" %}
+  {% elif dialog.invitation_form %}
+    {# Dialog „Einladungstext bearbeiten“ (#358, Zielbild docs/zielbilder/einladungstext.html, Ansichten 6, 7 und 9): breite Form des Baustein „Dialog“ mit dem Baustein „Editor“; hat inzwischen jemand anderes gespeichert, steht der Hinweis als Warnung darüber (G2). #}
+    {% include "core/_dialog_auf.html" %}
+    {% if dialog.conflict %}{% meldung "warning" text=dialog.conflict live=True %}{% endif %}
+    {% editor dialog.invitation_form.invitation_text %}
     {% include "core/_dialog_zu.html" %}
   {% elif dialog %}
     {# Dialog des Stifts „… bearbeiten“: eigene Adresse, kommt offen vom Server; dieselben Felder wie beim Erstellen, seit #163 mit dem „Adressfeld“. Hat inzwischen jemand gespeichert, steht der Satz dazu oben (AG7). #}

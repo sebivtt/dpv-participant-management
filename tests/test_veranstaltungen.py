@@ -267,8 +267,10 @@ def test_v2_fiete_vera_und_tom_legen_ebenso_eine_veranstaltung_an(org):
 def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     client = client_for(org.finn)
     root = page_tree(org.finn, event_address(probelager))
-    # Seit #379 statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“.
-    edit = _one(_all(root, lambda e: "a-stift" in _classes(e)))
+    # Seit #379 statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“; seit #358 hat auch die Kachel
+    # „Einladungstext“ einen.
+    tile = _one(_by_tag(root, "section", aria_labelledby="h-grunddaten"))
+    edit = _one(_all(tile, lambda e: "a-stift" in _classes(e)))
     assert _attr(edit, "href") == edit_address(probelager)
     assert _text(_one(_all(edit, lambda e: "sr-nur" in _classes(e)))) == "Grunddaten bearbeiten"
 

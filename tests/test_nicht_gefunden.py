@@ -50,6 +50,10 @@ NO_ACCESS_TEXT = "Dafür fehlt dir die Berechtigung."
 # Der Formularschutz, der bei jeder Antwort anders aussieht (siehe oben), und seit #100 die Kennung des Formulars
 # „Veranstaltung erstellen“ gegen den Doppelklick (VG8): Sie ist bei jedem Öffnen neu und verrät nichts über Einträge.
 CSRF_VALUE = re.compile(rb'(name="(?:csrfmiddlewaretoken|creation_key)" value=")[^"]*"')
+# Seit #358 auf Seiten mit Editor der Schlüssel je Aufruf für die Gestaltung von Trix (Sicherheitsrichtlinie): Er ist bei
+# jeder Antwort neu, wie der Formularschutz, und verrät nichts über Einträge.
+NONCE_IN_PAGE = re.compile(rb'(name="trix-csp-nonce" content=")[^"]*"')
+NONCE_IN_POLICY = re.compile(r"'nonce-[^']*'")
 
 
 def client_for(user) -> Client:
@@ -59,9 +63,11 @@ def client_for(user) -> Client:
 
 
 def answer(response) -> tuple:
-    """Alles, was beim Browser ankommt: Statuscode, Inhalt und Kopfzeilen; nur Formularschutz und Kennung des Formulars sind gleichgesetzt."""
-    content = CSRF_VALUE.sub(rb'\1..."', response.content)
-    return response.status_code, content, sorted(response.headers.items())
+    """Alles, was beim Browser ankommt: Statuscode, Inhalt und Kopfzeilen; nur Formularschutz, Kennung des Formulars und
+    seit #358 der Schlüssel der Sicherheitsrichtlinie sind gleichgesetzt."""
+    content = NONCE_IN_PAGE.sub(rb'\1..."', CSRF_VALUE.sub(rb'\1..."', response.content))
+    headers = [(name, NONCE_IN_POLICY.sub("'nonce-...'", value)) for name, value in response.headers.items()]
+    return response.status_code, content, sorted(headers)
 
 
 def answers(user, address: str, form: dict | None = None) -> list[tuple]:

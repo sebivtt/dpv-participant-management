@@ -127,6 +127,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Der Schlüssel je Aufruf für die Gestaltung von Trix auf Seiten mit Editor (#358, base.html).
+                "django.template.context_processors.csp",
                 "core.navigation.navigation",
                 "core.navigation.support",
             ],
@@ -240,6 +242,10 @@ SECURE_CSP = {
     "frame-ancestors": ["'none'"],
     "form-action": ["'self'", f"{KEYCLOAK_REALM_URL}/"] if KEYCLOAK_REALM_URL else ["'self'"],
 }
+
+# Seit #358 eine schmale Ausnahme nur auf Seiten mit dem Baustein „Editor“: Trix legt beim Start seine
+# eigene Gestaltung in die Seite; dort ist Gestaltung mit einem Schlüssel je Aufruf erlaubt
+# (`with_editor()` in core/views.py, docs/entscheidungen.md, Eintrag zu #358). Hier ändert sich nichts.
 
 # Link „Noch kein Konto? Registrieren“ (#5); nur der ausdrückliche Wert 0 blendet ihn aus.
 REGISTRATION_LINK_ENABLED = os.environ.get("REGISTRATION_LINK_ENABLED", "1") != "0"

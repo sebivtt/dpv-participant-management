@@ -618,7 +618,8 @@ def test_der_katalog_zeigt_die_fortschrittsanzeige_und_den_dialog_mit_zwei_knoep
     assert _visible_text(_one(_all(entry, lambda e: "a-baustein-seiten" in _classes(e)))) == (
         "Genutzt auf: Veranstaltungen")
     steps = _one(_all(entry, lambda e: e.name == "ol" and "a-schritte" in _classes(e)))
-    assert [_attr(step, "aria-current") for step in _by_tag(steps, "li")] == [None, "step"]
+    # Seit #358 drei Schritte; im Katalog ist Schritt 2 „Einladungstext“ der aktuelle.
+    assert [_attr(step, "aria-current") for step in _by_tag(steps, "li")] == [None, "step", None]
 
     dialog = _one(_by_tag(root, "section", aria_labelledby="h-dialog"))
     assert "#380" in _visible_text(_one(_all(dialog, lambda e: "a-baustein-herkunft" in _classes(e))))

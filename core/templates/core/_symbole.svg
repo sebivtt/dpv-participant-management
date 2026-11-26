@@ -25,4 +25,11 @@
   <symbol id="i-angekuendigt" viewBox="0 0 24 24"><path d="M4 10v4a1 1 0 0 0 1 1h2l7 4V5L7 9H5a1 1 0 0 0-1 1zM17.5 9a4 4 0 0 1 0 6"/></symbol>
   <symbol id="i-laeuft" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z"/></symbol>
   <symbol id="i-beendet" viewBox="0 0 24 24"><path d="M5.5 21V4M5.5 4.5h11l-2.5 4 2.5 4h-11"/></symbol>
+  <!-- Knopfleiste des Editors (#358), nach dem Zielbild docs/zielbilder/einladungstext.html. -->
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-zitat" viewBox="0 0 24 24"><path d="M5 17c0-4 1-7 4-9M5 17h4v-4H5M13 17c0-4 1-7 4-9M13 17h4v-4h-4"/></symbol>
+  <symbol id="i-aufzaehlung" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-nummeriert" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 4.5h1.5V9M3.5 9h3M3.5 14.5c0-1 .8-1.5 1.6-1.5s1.6.5 1.6 1.4c0 1.4-3.2 2.4-3.2 4.1h3.3"/></symbol>
+  <symbol id="i-rueckgaengig" viewBox="0 0 24 24"><path d="M9 5 4 10l5 5"/><path d="M4 10h10a6 6 0 0 1 0 12h-3"/></symbol>
+  <symbol id="i-wiederholen" viewBox="0 0 24 24"><path d="m15 5 5 5-5 5"/><path d="M20 10H10a6 6 0 0 0 0 12h3"/></symbol>
 </svg>

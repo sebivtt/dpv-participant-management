@@ -744,3 +744,57 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
 @media (max-width: 700px) {
   .a-adressfeld-plz-ort, .a-adressfeld-land { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Baustein „Editor“ (#358, core/_editor.html, Zielbild docs/zielbilder/einladungstext.html): ein weißer Rahmen um
+   Knopfleiste und Text, mit Fokus dunkelblau wie ein Textfeld, mit Fehler rot. Die Knopfleiste in drei Gruppen mit
+   feinen Trennlinien, die letzte rechts; jeder Knopf 36 Pixel, an der Schreibmarke Geltendes zart blau. */
+.a-editor { margin-bottom: 1rem; }
+.a-editor-rahmen { border: 1px solid #b8c3d0; border-radius: var(--radius-klein); background: var(--flaeche); overflow: hidden; }
+.a-editor-rahmen:focus-within { border-color: var(--dpv); box-shadow: 0 0 0 .25rem rgba(26, 75, 126, .25); }
+/* Steht der Fokus im Text, trägt der Rahmen den Fokusrahmen wie jedes Feld mit der Tastatur (#78). */
+.a-editor-rahmen:has(trix-editor:focus-visible) { outline: 3px solid var(--fokus); outline-offset: 2px; }
+.a-editor.ist-fehler .a-editor-rahmen { border-color: var(--bs-form-invalid-border-color); }
+.a-editor-leiste { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-bottom: 1px solid var(--linie); background: var(--grund); }
+.a-editor-gruppe { display: flex; flex-wrap: wrap; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--linie); }
+.a-editor-gruppe:last-child { margin-left: auto; padding-right: 0; margin-right: 0; border-right: 0; }
+.a-editor-knopf { width: 36px; height: 36px; display: inline-grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--text); font: inherit; font-weight: 800; line-height: 1; }
+.a-editor-knopf:hover { background: var(--flaeche); border-color: var(--linie); }
+.a-editor-knopf[aria-pressed="true"] { background: var(--dpv-hauch); color: var(--dpv); border-color: #c9d6e5; }
+.a-editor-knopf[aria-disabled="true"] { color: #6b7685; background: transparent; border-color: transparent; cursor: default; }
+.a-editor-knopf:focus-visible { outline: 3px solid var(--fokus); outline-offset: 1px; }
+.a-editor-knopf .ic { width: 20px; height: 20px; }
+.a-editor-knopf.ist-kursiv { font-style: italic; font-family: Georgia, serif; }
+.a-editor-knopf.ist-durch { text-decoration: line-through; }
+.a-editor-knopf.ist-wort { font-size: .95rem; }
+/* Feld „Adresse“ für einen Link unter der Knopfleiste (Zielbild, Ansicht 2); Trix zeigt es nur, wenn „Link“ gedrückt ist. */
+trix-toolbar .a-editor-link[data-trix-active] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid var(--linie); background: var(--flaeche); }
+.a-editor-link-name { margin: 0; color: var(--text-leise); font-weight: 700; }
+.a-editor-link .form-control { flex: 1 1 240px; width: auto; }
+.a-editor-link-fehler { display: none; flex-basis: 100%; margin: 0; color: var(--bs-form-invalid-color); font-size: .875rem; }
+.a-editor-link .trix-validate { border-color: var(--bs-form-invalid-border-color); }
+.a-editor-link .trix-validate ~ .a-editor-link-fehler { display: block; }
+/* Feste Höhe zwischen den 220 und 380 Pixeln des Zielbilds, damit nichts nachrutscht, wenn Trix den Text einsetzt;
+   längerer Text rollt im Editor. */
+trix-editor.a-editor-text { display: block; height: 300px; overflow: auto; padding: 14px 16px; outline: none; overflow-wrap: anywhere; }
+/* Ohne Skript: das Textfeld mit der Formatierung als Zeichen (Zielbild, Ansicht 8). */
+.a-editor-roh { min-height: 220px; font: .92rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.a-editor-ohne-skript { margin: 6px 0 0; color: var(--text-leise); font-size: .9rem; }
+/* Formatierter Text im Editor und wie Zusammenfassung und Kachel ihn zeigen. */
+:is(trix-editor, .a-formatiert) h3 { margin: 14px 0 6px; font-size: 1.15rem; font-weight: 800; }
+:is(trix-editor, .a-formatiert) :is(div, p, ul, ol, blockquote) { margin: 0 0 10px; }
+:is(trix-editor, .a-formatiert) :is(ul, ol) { padding-left: 1.4em; }
+:is(trix-editor, .a-formatiert) blockquote { padding: 4px 12px; border-left: 3px solid #9fb3c8; color: var(--text-leise); }
+:is(trix-editor, .a-formatiert) a { color: var(--dpv); }
+:is(trix-editor, .a-formatiert) > :first-child { margin-top: 0; }
+.a-formatiert { overflow-wrap: anywhere; }
+.a-formatiert > :last-child { margin-bottom: 0; }
+.a-einladungstext { margin-bottom: 20px; }
+/* Breite Form des Dialogs (#358, N2): bis etwa 860 Pixel, am Handy bildschirmfüllend; nur der Dialog rollt. */
+dialog.a-dialog.ist-breit { width: min(860px, calc(100% - 32px)); }
+dialog.a-dialog.ist-breit.ist-vorschau { max-width: 860px; }
+@media (max-width: 700px) {
+  dialog.a-dialog.ist-breit:not(.ist-vorschau) { width: 100%; max-width: 100%; height: 100%; max-height: 100%; border: 0; border-radius: 0; }
+  .a-editor-leiste { gap: 2px; }
+  .a-editor-gruppe { padding-right: 3px; }
+  .ist-breit trix-editor.a-editor-text { height: auto; min-height: 260px; }
+}

@@ -13,12 +13,14 @@ in die Seite, sonst würde der Test rot. Die Regeln selbst prüft tests/test_ein
 Nummern sind erfunden.
 """
 
+import re
+
 from playwright.sync_api import Page, expect
 
 from events.models import Event
 from rauchtests.conftest import BASE, expect_modal, login, run_axe
 from rauchtests.test_organisation import _no_side_scroll
-from rauchtests.test_rauchtest import _all_visible, _stations_to_element
+from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
 from rauchtests.test_veroeffentlichen import _pfingstlager
 
@@ -26,6 +28,8 @@ LIST = f"{BASE}/veranstaltungen/"
 EDITOR = "trix-editor"
 TOOLBAR = ".a-editor [role=toolbar]"
 COUNTER = ".a-editor .a-zeichenzahl"
+# Sichtbar „708/10.000“; Vorleseprogramme hören im versteckten Teil „708 von 10.000 Zeichen“ (#215).
+COUNT = f"{COUNTER} [aria-hidden=true]"
 STEP_SUBMIT = 'form#f-schritt .a-schritt-rechts button[type="submit"]'
 SAVED = "Der Einladungstext von Pfingstlager 2028 ist gespeichert."
 BUTTONS = [["Fett", "Kursiv", "Durchgestrichen", "Link"], ["Überschrift", "Zitat", "Aufzählung", "Nummerierte Liste"],
@@ -62,10 +66,6 @@ def _editor_bereit(page: Page) -> None:
     expect(page.locator(EDITOR)).to_have_accessible_name("Einladungstext")
 
 
-def _zahl(page: Page) -> str:
-    return page.locator(COUNTER).inner_text()
-
-
 def _schritt_2(page: Page) -> None:
     """Legt das Pfingstlager mit Schritt 1 an und steht danach in Schritt 2 „Einladungstext“."""
     page.goto(f"{LIST}erstellen/")
@@ -75,6 +75,15 @@ def _schritt_2(page: Page) -> None:
     page.locator(STEP_SUBMIT).click()
     page.wait_for_url(f"{LIST}*/anlegen/einladungstext/")
     expect(page.locator("ol.a-schritte li[aria-current='step']")).to_have_text("Schritt 2 Einladungstext")
+
+
+def _gezeichnet(page: Page) -> None:
+    """Wartet, bis der Browser zweimal gezeichnet hat; so ist auch Trix mit dem eben Getippten fertig.
+
+    Ein Kürzel wie Cmd/Strg+B, das Trix noch vor diesem Zeichnen bekommt, setzt Trix danach wieder zurück; eine Person
+    tippt nie so schnell, der Test schon.
+    """
+    page.evaluate("() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))")
 
 
 def _gespeichert() -> str:
@@ -90,7 +99,8 @@ def test_e1_am_pc_mit_der_maus_schreiben_formatieren_und_einen_link_setzen(pc):
     _schritt_2(pc)
     _editor_bereit(pc)
     _knopfleiste(pc)
-    expect(pc.locator(COUNTER)).to_be_hidden()
+    # Mit Skript steht die Zahl der Zeichen da, wie beim Textfeld (#215); ohne Skript nicht (E6).
+    expect(pc.locator(COUNT)).to_have_text("0/10.000")
     _no_side_scroll(pc)
     assert run_axe(pc) == []
 
@@ -116,13 +126,14 @@ def test_e1_am_pc_mit_der_maus_schreiben_formatieren_und_einen_link_setzen(pc):
     expect(address).to_be_visible()
     address.fill("https://example.org/anfahrt")
     pc.get_by_role("button", name="Link setzen").click()
-    pc.keyboard.press("End")
+    # Pfeil rechts setzt die Schreibmarke hinter den Link, in jedem Browser (Ende tut das in WebKit am Mac nicht).
+    pc.keyboard.press("ArrowRight")
     pc.keyboard.type(" steht hier.")
 
     # Die Zahl der Zeichen läuft beim Tippen mit, ohne Formatierung gezählt (#215).
     text = "Packliste" + "Kluft und Halstuch" + "Schlafsack" + "Die Anfahrt steht hier."
     expect(pc.locator(COUNTER)).to_be_visible()
-    expect(pc.locator(COUNTER)).to_have_text(f"{len(text)}/10.000")
+    expect(pc.locator(COUNT)).to_have_text(f"{len(text)}/10.000")
     expect(pc.locator(COUNTER)).not_to_have_class("ist-zu-lang")
     _no_side_scroll(pc)
     assert run_axe(pc) == []
@@ -130,15 +141,16 @@ def test_e1_am_pc_mit_der_maus_schreiben_formatieren_und_einen_link_setzen(pc):
     pc.locator(STEP_SUBMIT).click()
     pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
     section = pc.locator('[aria-labelledby="h-einladungstext"]')
-    expect(section.locator("h2", has_text="Packliste")).to_be_visible()
+    expect(section.locator("h3", has_text="Packliste")).to_be_visible()
     expect(section.locator("li")).to_have_text(["Kluft und Halstuch", "Schlafsack"])
     link = section.get_by_role("link", name="Anfahrt")
     expect(link).to_have_attribute("href", "https://example.org/anfahrt")
     expect(link).to_have_attribute("target", "_blank")
-    expect(section.locator("strong")).to_have_text("Anfahrt")
+    # Was danach an derselben Stelle getippt ist, bleibt fett wie das Wort davor (so arbeitet jeder Editor).
+    expect(section.locator("strong").first).to_contain_text("Anfahrt")
     _no_side_scroll(pc)
     assert run_axe(pc) == []
-    assert "<h2>Packliste</h2>" in _gespeichert()
+    assert "<h3>Packliste</h3>" in _gespeichert()
 
 
 # ---------- E5: nur mit der Tastatur ----------
@@ -149,8 +161,9 @@ def _nur_mit_der_tastatur(page: Page) -> None:
     _erika_in_den_falken()
     _schritt_2(page)
     _editor_bereit(page)
+    tab = _tab_key(page)
 
-    # Die Knopfleiste ist ein Halt der Tab-Taste; danach kommt der Editor.
+    # Die Knopfleiste ist ein Halt der Tab-Taste; darin wechseln Pfeile, Pos1 und Ende; danach kommt der Editor.
     stations = _stations_to_element(page, f"{TOOLBAR} button", steps=40)
     _all_visible(stations)
     expect(page.locator(f"{TOOLBAR} button").first).to_be_focused()
@@ -162,36 +175,40 @@ def _nur_mit_der_tastatur(page: Page) -> None:
     expect(_knopf(page, "Fett")).to_be_focused()
     _all_visible(_stations_to_element(page, EDITOR, steps=3))
 
-    page.keyboard.type("Hajk mit ")
-    page.keyboard.press("ControlOrMeta+b")
-    page.keyboard.type("Rucksack")
-    page.keyboard.press("ControlOrMeta+b")
-    page.keyboard.press("Enter")
-    # Aufzählung über die Knopfleiste mit der Tastatur: Shift+Tab zurück, Pfeile, Enter; dann weiter im Editor.
-    page.keyboard.press("Shift+Tab")
-    expect(page.locator(f"{TOOLBAR} button[tabindex='0']")).to_be_focused()
+    # Aufzählung über die Knopfleiste: zurück mit Shift+Tab, Pfeile, Enter; danach geht es im Text weiter.
+    page.keyboard.press(f"Shift+{tab}")
+    expect(_knopf(page, "Fett")).to_be_focused()
+    passed = []
     for _ in range(8):
-        if page.evaluate("() => document.activeElement.getAttribute('aria-label')") == "Aufzählung":
+        passed.append(page.evaluate("() => document.activeElement.getAttribute('aria-label')"))
+        if passed[-1] == "Aufzählung":
             break
         page.keyboard.press("ArrowRight")
-    expect(_knopf(page, "Aufzählung")).to_be_focused()
+    assert passed[-1] == "Aufzählung", passed
     page.keyboard.press("Enter")
     expect(page.locator(EDITOR)).to_be_focused()
     expect(_knopf(page, "Aufzählung")).to_have_attribute("aria-pressed", "true")
     page.keyboard.type("Karte")
     page.keyboard.press("Enter")
-    page.keyboard.type("Kompass")
+    # Wie eine Person: erst weiter, wenn der neue Punkt zu sehen ist (Trix zeichnet ihn kurz danach).
+    expect(page.locator(f"{EDITOR} li")).to_have_count(2)
+    page.keyboard.type("Kompass mit ")
+    expect(page.locator('input[name="invitation_text"]')).to_have_value(re.compile("Kompass mit"))
+    _gezeichnet(page)
+    page.keyboard.press("ControlOrMeta+b")
+    expect(_knopf(page, "Fett")).to_have_attribute("aria-pressed", "true")
+    page.keyboard.type("Rucksack")
+    expect(page.locator('input[name="invitation_text"]')).to_have_value(re.compile("Rucksack"))
     # Tab in einem Listenpunkt rückt nicht ein, sondern führt aus dem Editor hinaus zum nächsten Halt.
-    page.keyboard.press("Tab")
+    page.keyboard.press(tab)
     expect(page.locator(EDITOR)).not_to_be_focused()
 
-    expect(page.locator(COUNTER)).to_have_text(f"{len('Hajk mit RucksackKarteKompass')}/10.000")
+    expect(page.locator(COUNT)).to_have_text(f"{len('KarteKompass mit Rucksack')}/10.000")
     _all_visible(_stations_to_element(page, STEP_SUBMIT, steps=10))
     page.keyboard.press("Enter")
     page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
-    saved = _gespeichert()
-    assert "<strong>Rucksack</strong>" in saved
-    assert "<ul><li>Karte</li><li>Kompass</li></ul>" in saved
+    # Ein Leerzeichen vor einer Formatierung speichert Trix als geschütztes Leerzeichen; sichtbar ist es dasselbe.
+    assert "<ul><li>Karte</li><li>Kompass mit <strong>Rucksack</strong></li></ul>" in _gespeichert().replace("\xa0", " ")
 
 
 def test_e5_am_pc_nur_mit_der_tastatur(pc):
@@ -209,8 +226,10 @@ def _wie_am_handy(page: Page, first: str, composed: str, replaced: str, last: st
     """Tippt wie ein Handy: ein Wort erst als Zusammensetzung, dann per Wortvorschlag ersetzt, danach weiter."""
     page.keyboard.type(first)
     page.keyboard.insert_text(composed)
-    for _ in range(len(composed)):
-        page.keyboard.press("Shift+ArrowLeft")
+    # Der Wortvorschlag ersetzt das angefangene Wort: Der Browser markiert es und setzt das Wort ein.
+    page.locator(EDITOR).evaluate(
+        "(element, length) => { const [, end] = element.editor.getSelectedRange();"
+        " element.editor.setSelectedRange([end - length, end]); }", len(composed))
     page.keyboard.insert_text(replaced)
     page.keyboard.type(last)
 
@@ -281,12 +300,22 @@ def test_g7_e7_am_pc_breiter_dialog_escape_aendert_nichts_und_eingefuegtes_aus_w
             '<table><tr><td>Kluft</td><td>Halstuch</td></tr></table>')
     pc.locator(EDITOR).click()
     pc.keyboard.press("ControlOrMeta+a")
-    pc.locator(EDITOR).evaluate("(element, html) => element.editor.insertHTML(html)", word)
+    # Wie Einfügen aus der Zwischenablage: ein Ereignis „paste“ mit dem HTML aus Word.
+    pc.locator(EDITOR).evaluate(
+        """(element, html) => {
+            const data = new DataTransfer();
+            data.setData('text/html', html);
+            data.setData('text/plain', 'Packliste Kluft Halstuch');
+            element.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true}));
+        }""", word)
+    expect(pc.locator(EDITOR)).to_contain_text("Halstuch")
     _dialog(pc).get_by_role("button", name="Speichern").click()
     pc.wait_for_url(f"{LIST}{entry.key}/")
     expect(pc.get_by_text(SAVED)).to_be_visible()
     entry.refresh_from_db()
-    for kept in ("<strong>Packliste</strong>", "Kluft", "Halstuch"):
+    # Trix setzt hinter den Absatz aus Word einen Zeilenumbruch; die Formatierung „fett“ bleibt.
+    assert re.search(r"<strong>Packliste(<br>)?</strong>", entry.invitation_text), entry.invitation_text
+    for kept in ("Kluft", "Halstuch"):
         assert kept in entry.invitation_text, kept
     for gone in ("style", "class", "table", "span"):
         assert gone not in entry.invitation_text, gone
@@ -302,10 +331,10 @@ def test_g1_die_zahl_wird_ueber_10000_rot_und_der_text_bleibt_im_editor(pc):
     pc.goto(f"{LIST}{entry.key}/einladungstext/")
     pc.locator(EDITOR).click()
     pc.locator(EDITOR).evaluate("element => element.editor.insertString('a'.repeat(10000))")
-    expect(pc.locator(COUNTER)).to_have_text("10.000/10.000")
+    expect(pc.locator(COUNT)).to_have_text("10.000/10.000")
     expect(pc.locator(COUNTER)).not_to_have_class("ist-zu-lang")
     pc.keyboard.type("b")
-    expect(pc.locator(COUNTER)).to_have_text("10.001/10.000")
+    expect(pc.locator(COUNT)).to_have_text("10.001/10.000")
     expect(pc.locator(COUNTER)).to_have_class("a-zeichenzahl ist-zu-lang")
     # Nichts wird abgeschnitten.
     assert pc.locator(EDITOR).evaluate("element => element.editor.getDocument().toString().length") == 10_002
@@ -314,7 +343,7 @@ def test_g1_die_zahl_wird_ueber_10000_rot_und_der_text_bleibt_im_editor(pc):
     pc.wait_for_url(f"{LIST}{entry.key}/einladungstext/")
     expect(_dialog(pc).locator(".a-editor .invalid-feedback")).to_have_text(
         "Der Einladungstext ist zu lang: höchstens 10.000 Zeichen, jetzt 10.001.")
-    expect(pc.locator(COUNTER)).to_have_text("10.001/10.000")
+    expect(pc.locator(COUNT)).to_have_text("10.001/10.000")
     entry.refresh_from_db()
     assert entry.invitation_text == ""
 
@@ -331,7 +360,8 @@ def _ohne_skript(page: Page) -> None:
     page.locator('[aria-labelledby="h-einladungstext"]').get_by_role("link", name="Einladungstext bearbeiten").click()
     page.wait_for_url(f"{LIST}{entry.key}/einladungstext/")
 
-    field = page.get_by_label("Einladungstext", exact=True)
+    field = page.locator('textarea[name="invitation_text"]')
+    expect(field).to_have_accessible_name("Einladungstext")
     expect(field).to_have_value("<div>Die Anfahrt steht unten.</div>")
     expect(page.get_by_text("Ohne JavaScript siehst du die Formatierung als Zeichen.")).to_be_visible()
     expect(page.locator(COUNTER)).to_be_hidden()

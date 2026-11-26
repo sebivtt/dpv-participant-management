@@ -223,6 +223,18 @@
     {% include "core/_dialog_auf.html" with dialog=examples.cancel_dialog preview=True %}
     <p>{{ examples.cancel_dialog.text }}</p>
     {% include "core/_dialog_zu.html" with dialog=examples.cancel_dialog preview=True %}
+    {# Die breite Form (#358) wie im Dialog „Einladungstext bearbeiten“; den Editor darin zeigt sein eigener Eintrag. #}
+    {% include "core/_dialog_auf.html" with dialog=examples.wide_dialog preview=True %}
+    <p>{% translate "Hier steht der Editor mit dem ganzen Einladungstext." %}</p>
+    {% include "core/_dialog_zu.html" with dialog=examples.wide_dialog preview=True %}
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-editor">
+    {% include "core/_katalogeintrag.html" with block=blocks.editor %}
+    <form class="a-flaeche a-formular" id="katalog-editor" novalidate data-nur-ansicht>
+      {% editor examples.invitation_form.invitation_text %}
+    </form>
+    {% include "core/_einladungstext.html" with invitation=examples.invitation level=3 %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-auswahl">

@@ -14,8 +14,9 @@ from accounts.models import SCOUT_NAME_MAX_LENGTH
 from core import address_texts
 from core.countries import COUNTRIES
 from core.models import CITY_MAX_LENGTH, GERMANY, POSTAL_CODE_MAX_LENGTH, STATES, STREET_MAX_LENGTH
+from events import invitation
 from events import texts as event_texts
-from events.models import LOCATION_MAX_LENGTH
+from events.models import INVITATION_MAX_LENGTH, LOCATION_MAX_LENGTH
 from events.models import NAME_MAX_LENGTH as EVENT_NAME_MAX_LENGTH
 from persons import texts as person_texts
 from persons.models import NAME_MAX_LENGTH
@@ -555,3 +556,54 @@ class EventForm(AddressForm):
             self.data.pop(name)
         self.add_error("end", forms.ValidationError(event_texts.DURATION_QUESTION % {"count": days},
                                                     code="duration"))
+
+
+# Das Formular eines Schritts beim Anlegen (#380); so heißt es in `core/views.py` (STEP_FORM).
+STEP_FORM_ID = "f-schritt"
+
+
+def german_number(count: int) -> str:
+    """Eine Zahl mit Punkt als Tausendertrennzeichen, wie im Zielbild: „10.001“ (#358)."""
+    return f"{count:,}".replace(",", ".")
+
+
+class InvitationForm(forms.Form):
+    """Der Einladungstext in Schritt 2 beim Anlegen und im Dialog „Einladungstext bearbeiten“ (#358, VER-05).
+
+    Freiwillig (Frage 4). Bereinigt wird schon beim Annehmen (`events.invitation.clean()`, Frage 6): Was das Formular
+    zurückgibt und im Editor wieder zeigt, ist immer der bereinigte Text, auch wenn es mit einem Fehler stehen bleibt;
+    so kommt Eingeschleustes nie zurück auf die Seite (V1). Höchstens 10.000 sichtbare Zeichen; die Formatierung zählt
+    nicht, und abgeschnitten wird nichts (Frage 5, G1). Ohne Skript ist das Feld ein Textfeld mit der Formatierung
+    als Zeichen (E6); mit Skript setzt app.js den Editor davor (Baustein „Editor“). `form_id` ist das Formular, zu
+    dem das Feld über sein Attribut „form“ gehört.
+    """
+
+    invitation_text = forms.CharField(
+        label=event_texts.INVITATION,
+        required=False,
+        strip=False,
+        widget=forms.Textarea(attrs={
+            # Ein Fließtext: Großbuchstabe am Satzanfang, Autokorrektur und Wortvorschläge wie in einer Mail.
+            "rows": 12,
+            "autocapitalize": "sentences",
+            "spellcheck": "true",
+            "data-hoechstens": INVITATION_MAX_LENGTH,
+        }),
+    )
+
+    def __init__(self, data=None, *args, form_id: str = STEP_FORM_ID, **kwargs):
+        if data is not None:
+            data = data.copy()
+            data["invitation_text"] = invitation.clean(data.get("invitation_text", ""))
+        super().__init__(data, *args, **kwargs)
+        self.fields["invitation_text"].widget.attrs["form"] = form_id
+
+    def clean_invitation_text(self) -> str:
+        text = invitation.clean(self.cleaned_data.get("invitation_text", ""))
+        count = invitation.visible_length(text)
+        if count > INVITATION_MAX_LENGTH:
+            raise forms.ValidationError(
+                event_texts.INVITATION_TOO_LONG % {"limit": german_number(INVITATION_MAX_LENGTH),
+                                                   "count": german_number(count)},
+                code="too_long")
+        return text
