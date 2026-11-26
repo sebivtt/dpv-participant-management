@@ -295,8 +295,8 @@ def test_v4_finn_verliert_die_zuordnung_und_leitet_seine_veranstaltung_weiter(or
     assert create_button(org.finn) is None
     assert listed(org.finn) == [("Probelager 2027", "15.05.2027 bis 17.05.2027")]
     # Ohne Zuordnung auch kein Ersatztext für den Knopf: nur die Überschrift und die Veranstaltung.
-    # Seit #379 heißt die Fläche „Von mir geleitet“.
-    assert _visible_text(section) == "Von mir geleitet Probelager 2027 15.05.2027 bis 17.05.2027"
+    # Seit #379 heißt die Fläche „Von mir geleitet“; seit #359 trägt die Zeile ihre Zustandsmarke „Entwurf“.
+    assert _visible_text(section) == "Von mir geleitet Probelager 2027 15.05.2027 bis 17.05.2027 Entwurf"
     assert client_for(org.finn).get(event_address(probelager)).status_code == 200
     open_edit(org.finn, probelager)
     assert save(org.finn, probelager, end="2027-05-18").status_code == 302

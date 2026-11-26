@@ -257,7 +257,8 @@ def test_a4_wanda_legt_das_stammesthing_ohne_ort_an_und_landet_auf_der_leitungss
 
 @pytest.mark.rechtematrix("VA-02")
 def test_a5_die_liste_von_mir_geleitet_nach_beginn_mit_zeitraum_und_ort(org, pfingstlager):
-    assert rows(org.wanda) == ["Pfingstlager 2028 02.06.2028 bis 05.06.2028"]
+    # Seit #359 trägt jede Zeile rechts ihre Zustandsmarke, hier „Entwurf“.
+    assert rows(org.wanda) == ["Pfingstlager 2028 02.06.2028 bis 05.06.2028 Entwurf"]
     Event.objects.filter(pk=pfingstlager.pk).update(start_time=time(18, 0), end_time=time(12, 0),
                                                     location="Burg Ludwigstein")
     event_of(org.wanda, "Stammesthing Walhall", date(2028, 1, 14), date(2028, 1, 16))
@@ -266,8 +267,8 @@ def test_a5_die_liste_von_mir_geleitet_nach_beginn_mit_zeitraum_und_ort(org, pfi
     section = _one(_by_tag(page_tree(org.wanda, LIST), "section", aria_labelledby="h-veranstaltungen"))
     assert _visible_text(_one(_by_tag(section, "h2"))) == TITLE
     assert rows(org.wanda) == [
-        "Stammesthing Walhall 14.01.2028 bis 16.01.2028",
-        "Pfingstlager 2028 02.06.2028, 18:00 bis 05.06.2028, 12:00 · Burg Ludwigstein",
+        "Stammesthing Walhall 14.01.2028 bis 16.01.2028 Entwurf",
+        "Pfingstlager 2028 02.06.2028, 18:00 bis 05.06.2028, 12:00 · Burg Ludwigstein Entwurf",
     ]
     assert row_link(org.wanda, "Stammesthing Walhall") == event_address(Event.objects.get(name="Stammesthing Walhall"))
     # Ohne eigene Veranstaltung steht der Satz.

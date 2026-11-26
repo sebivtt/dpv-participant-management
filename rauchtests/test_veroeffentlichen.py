@@ -7,7 +7,8 @@ in der Zukunft, und Keycloak prüft die Zeit seiner Anmeldung selbst. Geprüft w
 Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“) öffnet mit Leertaste, Enter, Klick oder Tippen die
 Rückfrage, auch ohne Skript; Escape schließt sie, ohne dass sich etwas ändert (Z3); nach dem Bestätigen steht die
 Marke „Angekündigt“ und der Schalter hat wieder den Fokus; nichts steht seitlich über, der Fokus ist zu sehen, und
-die Seiten bestehen die Prüfung auf Barrierefreiheit. Die Regeln selbst prüft tests/test_veroeffentlichen.py. Alle
+die Seiten bestehen die Prüfung auf Barrierefreiheit (nur mit Skript: axe läuft selbst als Skript und kommt ohne nie zu
+Ende, wie in den übrigen Rauchtests ohne Skript). Die Regeln selbst prüft tests/test_veroeffentlichen.py. Alle
 Namen sind erfunden; „Burg Ludwigstein“ stammt aus dem Zielbild (#356).
 """
 
@@ -36,34 +37,38 @@ def _pfingstlager() -> Event:
     return found
 
 
-def _leitungsseite(page: Page, entry: Event) -> None:
+def _leitungsseite(page: Page, entry: Event, axe: bool = True) -> None:
     page.goto(f"{LIST}{entry.key}/")
     expect(page.locator(MARK)).to_have_text("Entwurf")
     expect(page.locator(SENTENCE)).to_have_text("Nur die Leitung sieht die Veranstaltung.")
     switch = page.get_by_role("switch", name="Veröffentlicht")
     expect(switch).to_have_attribute("aria-checked", "false")
     _no_side_scroll(page)
-    assert run_axe(page) == []
+    if axe:
+        assert run_axe(page) == []
 
 
-def _rueckfrage(page: Page, entry: Event, title: str, path: str) -> None:
+def _rueckfrage(page: Page, entry: Event, title: str, path: str, axe: bool = True) -> None:
     page.wait_for_url(f"{LIST}{entry.key}/{path}/")
     dialog = _dialog(page)
     expect(dialog).to_be_visible()
     expect(dialog.locator("h2")).to_have_text(title)
     _no_side_scroll(page)
-    assert run_axe(page) == []
+    if axe:
+        assert run_axe(page) == []
 
 
-def _angekuendigt(page: Page, entry: Event) -> None:
+def _angekuendigt(page: Page, entry: Event, axe: bool = True) -> None:
     page.wait_for_url(f"{LIST}{entry.key}/*")
-    expect(page.locator(".a-kurz")).to_contain_text("Pfingstlager 2028 ist veröffentlicht.")
+    # Ohne Skript bleibt die kurze Meldung fest oben stehen (#186); deshalb nach dem Text, nicht nach dem Bereich.
+    expect(page.get_by_text("Pfingstlager 2028 ist veröffentlicht.")).to_be_visible()
     expect(page.locator(MARK)).to_have_text("Angekündigt")
     expect(page.locator(SENTENCE)).to_have_text("Die Veranstaltung ist veröffentlicht.")
     expect(page.get_by_role("switch", name="Veröffentlicht")).to_have_attribute("aria-checked", "true")
     _no_side_scroll(page)
-    page.wait_for_function("() => document.getAnimations().every(animation => animation.playState !== 'running')")
-    assert run_axe(page) == []
+    if axe:
+        page.wait_for_function("() => document.getAnimations().every(animation => animation.playState !== 'running')")
+        assert run_axe(page) == []
 
 
 def _nur_mit_der_tastatur(page: Page, key: str) -> None:
@@ -114,24 +119,23 @@ def _ohne_skript(page: Page) -> None:
     login(page)
     _erika_in_den_falken()
     entry = _pfingstlager()
-    _leitungsseite(page, entry)
+    _leitungsseite(page, entry, axe=False)
 
     page.get_by_role("switch", name="Veröffentlicht").click()
-    _rueckfrage(page, entry, "Pfingstlager 2028 veröffentlichen?", "veroeffentlichen")
+    _rueckfrage(page, entry, "Pfingstlager 2028 veröffentlichen?", "veroeffentlichen", axe=False)
     page.get_by_role("link", name="Abbrechen").click()
     page.wait_for_url(f"{LIST}{entry.key}/*")
     expect(page.locator(MARK)).to_have_text("Entwurf")
 
     page.get_by_role("switch", name="Veröffentlicht").click()
-    _rueckfrage(page, entry, "Pfingstlager 2028 veröffentlichen?", "veroeffentlichen")
+    _rueckfrage(page, entry, "Pfingstlager 2028 veröffentlichen?", "veroeffentlichen", axe=False)
     page.get_by_role("button", name="Veröffentlichen").click()
-    _angekuendigt(page, entry)
+    _angekuendigt(page, entry, axe=False)
 
     page.goto(LIST)
     row = page.locator(".a-va-zeile", has_text="Pfingstlager 2028")
     expect(row.locator(".a-kennmarke")).to_have_text("Angekündigt")
     _no_side_scroll(page)
-    assert run_axe(page) == []
 
 
 def test_am_pc_ohne_skript_mit_der_maus(pc_ohne_skript):
