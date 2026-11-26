@@ -253,9 +253,12 @@
       }
       event.preventDefault();
       event.stopImmediatePropagation();
+      // Nur in den Tags selbst, damit sichtbarer Text wie „style=casual“ bleibt (Befund G2).
       editor.editor.insertHTML(html
         .replace(/<style[\s\S]*?<\/style\s*>/gi, "")
-        .replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, ""));
+        .replace(/<[^>]*>/g, function (tag) {
+          return tag.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+        }));
     }, true);
     // Tab rückt in Listen nicht ein: Der Browser führt wie überall zum nächsten Halt (Trix hört danach).
     editor.addEventListener("keydown", function (event) {

@@ -7,6 +7,7 @@ des Editors, Zellen einer Tabelle und weitere Überschriften bleiben als Text ge
 Adresse werden zu Text (G4). Was dabei herauskommt, ist dasselbe, wenn man es noch einmal bereinigt.
 """
 
+import re
 from html import escape
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
@@ -35,6 +36,9 @@ PASSED = KEPT | set(RENAMED) | CELLS | {"table", "thead", "tbody", "tfoot"}
 REMOVED_WITH_CONTENT = frozenset({"script", "style", "iframe", "noscript", "template", "object", "embed", "svg", "math",
                                   "title", "textarea", "select"})
 VOID = frozenset({"br"})
+# Höchstens so viele Formatierungen ineinander; tiefer bleibt nur der Text (Befund M1 der unabhängigen Prüfung: ohne
+# Grenze brachen Bereinigen und Kürzen bei tiefer Verschachtelung ab). Der Editor verschachtelt nie so tief.
+MAX_DEPTH = 20
 
 
 def _allowed_link(address: str | None) -> bool:
@@ -63,6 +67,10 @@ class _Rebuild(HTMLParser):
             self.out.append("<br>")
             return
         emitted = None
+        depth = sum(1 for _tag, kept in self.open if kept)
+        if depth >= MAX_DEPTH:
+            self.open.append((tag, None))
+            return
         if name == "a":
             address = dict(attrs).get("href")
             if _allowed_link(address):
@@ -206,7 +214,8 @@ class _Excerpt:
         self.ended_inline = False
 
     def text(self, data: str) -> str:
-        visible = _visible(data)
+        # Zeilen, die ohne Skript getippt sind, trennt beim Kürzen ein Leerzeichen, wie der Browser sie zeigt (Befund G1).
+        visible = re.sub(r"\r?\n", " ", data)
         if len(visible) <= self.left:
             self.left -= len(visible)
             return data
