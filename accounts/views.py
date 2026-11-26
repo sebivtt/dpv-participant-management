@@ -135,6 +135,12 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
     gleichzeitig (Doppelklick, zwei Tabs), legt die zweite sonst ein Konto ohne Verknüpfung
     an und endet mit einem Fehler. So wird sie ganz zurückgenommen und führt zur Login-Seite;
     der nächste Klick auf „Anmelden“ findet das Konto der ersten.
+
+    Kam die erste aus einem anderen Tab desselben Browsers, hat sie die gemeinsame Sitzung
+    schon durch eine neue ersetzt, und der Browser ist angemeldet (#416). Dann geht es ohne
+    Hinweis zur Startseite, und die alte Sitzung bleibt unangetastet: Speichern ginge nicht
+    mehr (Django zeigte „Ungültige Anfrage“), und ein neues Sitzungs-Cookie ersetzte das
+    des angemeldeten Tabs.
     """
     try:
         with transaction.atomic():
@@ -143,6 +149,11 @@ def keycloak_callback(request: HttpRequest, provider_id: str) -> HttpResponse:
     except SocialApp.DoesNotExist as error:
         raise Http404 from error
     except IntegrityError:
+        if not request.session.exists(request.session.session_key):
+            logger.warning("Login nicht abgeschlossen: ein anderer Tab desselben Browsers war schneller")
+            # Ohne request.session lässt Djangos SessionMiddleware Sitzung und Cookie in Ruhe.
+            del request.session
+            return redirect(settings.LOGIN_REDIRECT_URL)
         logger.warning("Login nicht abgeschlossen: gleichzeitiger Login mit demselben Konto")
         messages.error(request, texts.LOGIN_CANCELLED)
         return redirect("account_login")
