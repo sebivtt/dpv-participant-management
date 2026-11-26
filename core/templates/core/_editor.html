@@ -24,10 +24,12 @@
       <div class="a-editor-link" data-trix-dialog="href" data-trix-dialog-attribute="href">
         <label class="a-editor-link-name" for="{{ link_id }}">{% translate "Adresse" %}</label>
         <input type="url" name="href" id="{{ link_id }}" class="form-control" pattern="(?:[Hh][Tt][Tt][Pp][Ss]?|[Mm][Aa][Ii][Ll][Tt][Oo]|[Tt][Ee][Ll]):.+" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="{{ link_id }}-fehler" data-trix-input data-trix-validate-href required>
-        <button type="button" class="btn btn-primary" data-trix-method="setAttribute">{% translate "Link setzen" %}</button>
-        <button type="button" class="btn btn-zart" data-trix-method="removeAttribute" data-mit-link>{% translate "Link entfernen" %}</button>
-        <button type="button" class="btn btn-zart" data-trix-method="hideDialog" data-ohne-link>{% translate "Verwerfen" %}</button>
         <p class="a-editor-link-fehler" id="{{ link_id }}-fehler">{% translate "Bitte gib eine Adresse mit https, http, mailto oder tel ein." %}</p>
+        <div class="a-editor-link-knoepfe">
+          <button type="button" class="btn btn-primary" data-trix-method="setAttribute">{% translate "Link setzen" %}</button>
+          <button type="button" class="btn btn-zart" data-trix-method="removeAttribute" data-mit-link>{% translate "Link entfernen" %}</button>
+          <button type="button" class="btn btn-zart" data-trix-method="hideDialog" data-ohne-link>{% translate "Verwerfen" %}</button>
+        </div>
       </div>
     </div>
   </template>

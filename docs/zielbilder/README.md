@@ -259,7 +259,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 5. **Fehler bei einer anderen Adresse für einen Link:** Erlaubt Trix eine Adresse im Feld „Adresse“ nicht, wird das Feld rot und darunter steht „Bitte gib eine Adresse mit https, http, mailto oder tel ein.“; das Zielbild zeigt diesen Fall nicht.
 6. **Ohne JavaScript** steht im Textfeld die Formatierung, wie der Editor sie speichert: Absätze als `<div>` statt `<p>`, durchgestrichen als `<del>` statt `<s>`, die Überschrift als `<h3>` statt `<h2>`; von Hand eingegebenes `<p>`, `<s>` und `<h2>` geht ebenso.
 7. **Satz „Ohne JavaScript …“ grau** in der Art eines Hinweises unter dem Feld und mit ihm verknüpft, wie die Zeile unter einem Suchfeld.
-8. **Feld für einen Link schwebt unter dem gewählten Text** (Vorschau, Sebastian, 26.11.2026: „Ansonsten würde ich hier gerne dieses Feld genau unter dem gewählten Text haben wollen, dass über allem anderen schwebt“), im Aussehen wie die Knöpfe beim Fahrtennamen, statt als Leiste unter der Knopfleiste (Ansicht 2); darin „Link setzen“ und „Verwerfen“, bei einem schon gesetzten Link „Link entfernen“ statt „Verwerfen“.
+8. **Feld für einen Link schwebt unter dem gewählten Text** (Vorschau, Sebastian, 26.11.2026: „Ansonsten würde ich hier gerne dieses Feld genau unter dem gewählten Text haben wollen, dass über allem anderen schwebt“), im Aussehen wie die Knöpfe beim Fahrtennamen, statt als Leiste unter der Knopfleiste (Ansicht 2); darin rechtsbündig „Link setzen“ und „Verwerfen“ (Runde 2: „Die Buttons für das Link hinzufügen etc. bitte rechtsbündig.“), bei einem schon gesetzten Link „Link entfernen“ statt „Verwerfen“.
 
 ## Adressfeld
 

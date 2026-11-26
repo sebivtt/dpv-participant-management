@@ -770,6 +770,8 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
    anderen, im Aussehen wie die Knöpfe beim Fahrtennamen (Baustein „Feld zum Antippen“). Trix zeigt es nur, wenn „Link“
    gedrückt ist; die Stelle setzt app.js. Am Handy so breit wie der Editor. */
 trix-toolbar .a-editor-link[data-trix-active] { position: absolute; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: min(440px, 100%); padding: 10px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); box-shadow: 0 10px 24px rgba(27, 37, 50, .12); }
+/* Die Knöpfe rechtsbündig (Vorschau, Runde 2, Sebastian, 26.11.2026). */
+.a-editor-link-knoepfe { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
 .a-editor-link .btn { min-height: 40px; padding: 8px 13px; font-size: .9rem; }
 .a-editor-link [hidden] { display: none; }
 .a-editor-link-name { margin: 0; color: var(--text-leise); font-weight: 700; }
