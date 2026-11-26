@@ -66,6 +66,30 @@ def _editor_bereit(page: Page) -> None:
     expect(page.locator(EDITOR)).to_have_accessible_name("Einladungstext")
 
 
+LINK_FIELD = ".a-editor-link"
+
+
+def _link_feld(page: Page):
+    """Das Feld „Adresse“ für einen Link: schwebt direkt unter dem gewählten Text, über allem anderen, und zeigt ohne
+    Link „Link setzen“ und „Verwerfen“ (Vorschau, Sebastian, 26.11.2026)."""
+    field = page.locator(LINK_FIELD)
+    expect(field).to_be_visible()
+    expect(field.locator("button:visible")).to_have_text(["Link setzen", "Verwerfen"])
+    selection = page.locator(EDITOR).evaluate(
+        "element => { const [start, end] = element.editor.getSelectedRange();"
+        " const a = element.editor.getClientRectAtPosition(start), b = element.editor.getClientRectAtPosition(end);"
+        " return {bottom: Math.max(a.bottom, b.bottom), left: a.left}; }")
+    box = field.bounding_box()
+    editor = page.locator(EDITOR).bounding_box()
+    assert selection["bottom"] <= box["y"] <= selection["bottom"] + 16, (selection, box)
+    assert editor["x"] - 1 <= box["x"] and box["x"] + box["width"] <= editor["x"] + editor["width"] + 1, (editor, box)
+    # Über allem anderen: An seiner Mitte liegt das Feld selbst, nicht der Text darunter.
+    middle = page.evaluate("([x, y]) => document.elementFromPoint(x, y).closest('.a-editor-link') !== null",
+                           [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2])
+    assert middle
+    return field.get_by_label("Adresse", exact=True)
+
+
 def _schritt_2(page: Page) -> None:
     """Legt das Pfingstlager mit Schritt 1 an und steht danach in Schritt 2 „Einladungstext“."""
     page.goto(f"{LIST}erstellen/")
@@ -121,13 +145,31 @@ def test_e1_am_pc_mit_der_maus_schreiben_formatieren_und_einen_link_setzen(pc):
     _knopf(pc, "Fett").click()
     for _ in range(len("Anfahrt")):
         pc.keyboard.press("Shift+ArrowLeft")
+    # Vorschau (Sebastian, 26.11.2026): Das Feld schwebt genau unter dem gewählten Text über allem anderen, wie die
+    # Knöpfe beim Fahrtennamen; ohne Link darin „Link setzen“ und „Verwerfen“.
     _knopf(pc, "Link").click()
-    address = pc.get_by_label("Adresse", exact=True)
+    address = _link_feld(pc)
     expect(address).to_be_visible()
-    address.fill("https://example.org/anfahrt")
-    pc.get_by_role("button", name="Link setzen").click()
-    # Pfeil rechts setzt die Schreibmarke hinter den Link, in jedem Browser (Ende tut das in WebKit am Mac nicht).
-    pc.keyboard.press("ArrowRight")
+    address.fill("https://example.org/falsch")
+    pc.locator(LINK_FIELD).get_by_role("button", name="Verwerfen").click()
+    expect(pc.locator(LINK_FIELD)).to_be_hidden()
+    expect(pc.locator(f"{EDITOR} a")).to_have_count(0)
+
+    _knopf(pc, "Link").click()
+    _link_feld(pc).fill("https://example.org/anfahrt")
+    pc.locator(LINK_FIELD).get_by_role("button", name="Link setzen").click()
+    expect(pc.locator(LINK_FIELD)).to_be_hidden()
+    expect(pc.locator(f"{EDITOR} a")).to_have_attribute("href", "https://example.org/anfahrt")
+    # Mit Link darin statt „Verwerfen“ „Link entfernen“; Escape schließt das Feld, ohne etwas zu ändern.
+    _knopf(pc, "Link").click()
+    expect(pc.locator(f"{LINK_FIELD} button:visible")).to_have_text(["Link setzen", "Link entfernen"])
+    pc.keyboard.press("Escape")
+    expect(pc.locator(LINK_FIELD)).to_be_hidden()
+    expect(pc.locator(f"{EDITOR} a")).to_have_count(1)
+    # Weiter am Ende des Texts.
+    pc.locator(EDITOR).evaluate(
+        "element => { element.focus(); const end = element.editor.getDocument().getLength() - 1;"
+        " element.editor.setSelectedRange([end, end]); }")
     pc.keyboard.type(" steht hier.")
 
     # Die Zahl der Zeichen läuft beim Tippen mit, ohne Formatierung gezählt (#215).
