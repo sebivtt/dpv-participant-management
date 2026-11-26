@@ -1183,6 +1183,12 @@ def event_edit(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, dialog)
 
 
+@checks_rights(*EVENT_ROWS)
+def event_edit_invitation(request: HttpRequest, event: str) -> HttpResponse:
+    """Dialog „Einladungstext bearbeiten“ (#358); Gerüst für die Tests."""
+    raise Http404
+
+
 def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
     """Die Rückfrage des Schalters „Veröffentlicht“ (#359, Ansichten 6b und 6d; Baustein „Dialog“).
 
@@ -1361,6 +1367,12 @@ def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
     else:
         raise Http404
     return _create_page(request, 1, entry=entry, form=form, hidden=[("version", version)], conflict=conflict)
+
+
+@checks_rights(*EVENT_CREATE_ROWS)
+def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
+    """Schritt 2 „Einladungstext“ beim Anlegen (#358); Gerüst für die Tests."""
+    raise Http404
 
 
 @checks_rights(*EVENT_CREATE_ROWS)

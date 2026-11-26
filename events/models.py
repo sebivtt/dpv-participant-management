@@ -1,5 +1,5 @@
 """Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379, Adresse des Orts seit #163, Zustand und
-„Veröffentlicht“ seit #359) und Anmeldungen (#101, ANM-01, ANM-02)."""
+„Veröffentlicht“ seit #359, Einladungstext seit #358) und Anmeldungen (#101, ANM-01, ANM-02)."""
 
 from datetime import datetime, time, timedelta
 
@@ -23,6 +23,8 @@ from units.models import Unit
 NAME_MAX_LENGTH = 100
 # Höchstens 100 Zeichen für den Ort, ebenso ohne die Leerzeichen am Rand (#379, VER-04).
 LOCATION_MAX_LENGTH = 100
+# Höchstens 10.000 Zeichen sichtbarer Text im Einladungstext, ohne Formatierung gezählt (#358, Frage 5).
+INVITATION_MAX_LENGTH = 10_000
 # Die Angaben, die „Veranstaltung erstellen“ anlegt und der Stift der Kachel „Grunddaten“ ändert (#100, #379), seit #163
 # mit der Adresse des Orts.
 EDITABLE_FIELDS = ("name", "start", "start_time", "end", "end_time", "location", *ADDRESS_FIELDS)
@@ -70,6 +72,13 @@ class Event(PostalAddress):
     # Veranstaltung ist ein Entwurf, bis ihre Leitung sie veröffentlicht, auch alle aus P2 (ZG1). Setzt nur
     # `Rights.set_published()`, nie ein Formular der Grunddaten.
     published = models.BooleanField(default=False, editable=False)
+    # Einladungstext (#358, VER-05): freiwillig, leer heißt „Noch kein Einladungstext.“, auch bei Veranstaltungen von
+    # vor #358 (G6). Gespeichert wird nur, was `events.invitation.clean()` übrig lässt; das setzt nur
+    # `Rights.edit_invitation()`, nie ein Formular der Grunddaten.
+    invitation_text = models.TextField(blank=True, default="", editable=False)
+    # Eigener Stand für gleichzeitiges Speichern des Einladungstexts (#358, G2), getrennt vom Stand der Grunddaten:
+    # Wer in einem zweiten Fenster die Grunddaten ändert, ändert den Einladungstext nicht.
+    invitation_version = models.PositiveIntegerField(default=1, editable=False)
 
     class Meta:
         constraints = [
