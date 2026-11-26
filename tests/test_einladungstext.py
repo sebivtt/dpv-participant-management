@@ -609,6 +609,50 @@ def test_g8_waehrend_das_lager_laeuft_aendert_wanda_den_text(org, pfingstlager, 
     assert short_notices(client.get(response.url)) == [SAVED]
 
 
+# ---------- Befunde der unabhängigen Prüfung ----------
+
+
+@pytest.mark.rechtematrix("VA-02")
+@pytest.mark.parametrize("tag, depth", [("ul><li", 600), ("blockquote", 2_000)])
+def test_tief_verschachtelter_text_legt_keine_seite_lahm(org, pfingstlager, tag, depth):
+    """Befund M1: Ohne Grenze brachen Bereinigen und Kürzen bei tiefer Verschachtelung mit einem Serverfehler ab, und
+    die Leitungsseite blieb danach dauerhaft kaputt. Der Text bleibt, nur die Verschachtelung nicht."""
+    client = client_for(org.wanda)
+    closing = "".join(f"</{part}>" for part in reversed(tag.split("><")))
+    text = f"<{tag}>" * depth + "Wort " * 100 + closing * depth
+
+    assert save_dialog(client, pfingstlager, text).status_code == 302
+
+    assert "Wort Wort" in stored(pfingstlager)
+    for address in (event_address(pfingstlager), dialog_address(pfingstlager)):
+        response = client.get(address)
+        assert response.status_code == 200, address
+    assert "Wort" in shown_text(_tree(client.get(event_address(pfingstlager))))
+
+
+def test_kuerzen_trennt_zeilen_ohne_skript_mit_einem_leerzeichen():
+    """Befund G1: Ohne Skript getippte Zeilen klebten in der gekürzten Fassung aneinander."""
+    shown = str(invitation.excerpt("Liebe Eltern,\r\nzu Pfingsten " + "wort " * 80))
+
+    assert shown.startswith("Liebe Eltern, zu Pfingsten")
+
+
+@pytest.mark.rechtematrix("VA-02")
+def test_doppelklick_auf_speichern_und_weiter_gilt_als_gespeichert(org, pfingstlager, entwurf):
+    """Befund G3: Derselbe Text zweimal mit demselben Stand (Doppelklick) ist gespeichert, ohne Warnung (#391)."""
+    client = client_for(org.wanda)
+    old = str(Event.objects.get(pk=pfingstlager.pk).invitation_version)
+
+    first = save_dialog(client, pfingstlager, "<div>A</div>", old)
+    second = save_dialog(client, pfingstlager, "<div>A</div>", old)
+
+    assert (first.status_code, second.status_code) == (302, 302)
+    assert stored(pfingstlager) == "<div>A</div>"
+    old = str(Event.objects.get(pk=entwurf.pk).invitation_version)
+    assert save_step(client, entwurf, "<div>B</div>", old).url == summary_address(entwurf)
+    assert save_step(client, entwurf, "<div>B</div>", old).url == summary_address(entwurf)
+
+
 # ---------- Sicherheitsrichtlinie (#278, Frage 1) ----------
 
 

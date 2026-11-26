@@ -343,8 +343,9 @@ def test_g7_e7_am_pc_breiter_dialog_escape_aendert_nichts_und_eingefuegtes_aus_w
 
     # E7: Eingefügtes aus Word behält nur die erlaubten Formatierungen; kein Text geht verloren.
     pc.goto(address)
+    # Befund G2: Text, der wie eine Gestaltungsangabe aussieht („style=casual“), bleibt.
     word = ('<p class="MsoNormal" style="font-family:Calibri"><span style="color:#C00000"><b>Packliste</b></span></p>'
-            '<table><tr><td>Kluft</td><td>Halstuch</td></tr></table>')
+            '<table><tr><td>Kluft</td><td>Halstuch</td></tr></table><p>Kleidung: style=casual</p>')
     pc.locator(EDITOR).click()
     pc.keyboard.press("ControlOrMeta+a")
     # Wie Einfügen aus der Zwischenablage: ein Ereignis „paste“ mit dem HTML aus Word.
@@ -365,7 +366,7 @@ def test_g7_e7_am_pc_breiter_dialog_escape_aendert_nichts_und_eingefuegtes_aus_w
     entry.refresh_from_db()
     # Trix setzt hinter den Absatz aus Word einen Zeilenumbruch; die Formatierung „fett“ bleibt.
     assert re.search(r"<strong>Packliste(<br>)?</strong>", entry.invitation_text), entry.invitation_text
-    for kept in ("Kluft", "Halstuch"):
+    for kept in ("Kluft", "Halstuch", "Kleidung: style=casual"):
         assert kept in entry.invitation_text, kept
     for gone in ("style", "class", "table", "span"):
         assert gone not in entry.invitation_text, gone
@@ -453,3 +454,30 @@ def test_zeichnet_trix_neu_bleiben_fokus_und_seite_wo_sie_sind(pc):
 
     expect(pc.locator(STEP_SUBMIT)).to_be_focused()
     assert pc.evaluate("scrollY") == before
+
+
+def test_escape_im_feld_fuer_einen_link_laesst_den_dialog_offen(pc):
+    """Befund G4: Escape im Feld „Adresse“ schließt nur dieses Feld, nicht den Dialog „Einladungstext bearbeiten“;
+    der ungespeicherte Text bleibt im Editor."""
+    login(pc)
+    _erika_in_den_falken()
+    entry = _pfingstlager()
+    Event.objects.filter(pk=entry.pk).update(invitation_text="<div>Die Anfahrt findet ihr hier.</div>")
+    address = f"{LIST}{entry.key}/einladungstext/"
+    pc.goto(address)
+    pc.locator(EDITOR).click()
+    pc.keyboard.type("Neu: ")
+    pc.locator(EDITOR).evaluate(
+        "element => { const t = element.editor.getDocument().toString(); const i = t.indexOf('Anfahrt');"
+        " element.editor.setSelectedRange([i, i + 7]); }")
+    _knopf(pc, "Link").click()
+    _link_feld(pc).fill("https://example.org/anfahrt")
+
+    pc.keyboard.press("Escape")
+
+    expect(pc.locator(LINK_FIELD)).to_be_hidden()
+    _gezeichnet(pc)
+    assert pc.url == address
+    expect(_dialog(pc)).to_be_visible()
+    expect(pc.locator(EDITOR)).to_contain_text("Neu:")
+    expect(pc.locator(f"{EDITOR} a")).to_have_count(0)
