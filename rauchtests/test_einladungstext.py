@@ -87,6 +87,9 @@ def _link_feld(page: Page):
     middle = page.evaluate("([x, y]) => document.elementFromPoint(x, y).closest('.a-editor-link') !== null",
                            [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2])
     assert middle
+    # Die Knöpfe stehen rechtsbündig (Vorschau, Runde 2, Sebastian, 26.11.2026).
+    last = field.locator("button:visible").last.bounding_box()
+    assert abs((box["x"] + box["width"]) - (last["x"] + last["width"])) <= 12, (box, last)
     return field.get_by_label("Adresse", exact=True)
 
 
