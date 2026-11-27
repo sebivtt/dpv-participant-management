@@ -84,8 +84,8 @@ def test_e1_leitung_findet_organisation_auch_in_der_liste(walhall):
 
     root = _page(erika)
 
-    # Seit #100 steht für alle mit Zuordnung auch „Veranstaltungen“ in der Liste.
-    assert _labels(_bottom(root)) == _labels(_drawer(root)) == ["Startseite", "Organisation", "Veranstaltungen"]
+    # Seit #100 steht für alle mit Zuordnung auch „Veranstaltungen“ in der Liste, seit #381 auch „Kreise“.
+    assert _labels(_bottom(root)) == _labels(_drawer(root)) == ["Startseite", "Organisation", "Veranstaltungen", "Kreise"]
     link = [a for a in _by_tag(_bottom(root), "a") if _visible_text(a) == "Organisation"]
     assert _attr(_one(link), "href") == "/organisation/"
 
@@ -98,7 +98,8 @@ def test_v1_ohne_leitung_fehlt_organisation_auch_in_der_liste(walhall):
 
     root = _page(max_)
 
-    assert _labels(_bottom(root)) == ["Startseite", "Veranstaltungen"]
+    # Seit #381 mit Zuordnung auch „Kreise“.
+    assert _labels(_bottom(root)) == ["Startseite", "Veranstaltungen", "Kreise"]
     client = Client()
     client.force_login(max_)
     assert client.get("/organisation/").status_code == 403
@@ -115,8 +116,8 @@ def test_g2_rolle_endet_punkt_fehlt_ab_dem_naechsten_klick(walhall):
 
     lead.delete(by=BY)
 
-    # Die Mitgliedschaft bleibt; mit ihr „Veranstaltungen“ (#100).
-    assert _labels(_bottom(_tree(client.get("/")))) == ["Startseite", "Veranstaltungen"]
+    # Die Mitgliedschaft bleibt; mit ihr „Veranstaltungen“ (#100) und „Kreise“ (#381).
+    assert _labels(_bottom(_tree(client.get("/")))) == ["Startseite", "Veranstaltungen", "Kreise"]
 
 
 # Unverändert: Login- und Fehlerseiten haben kein Menü und deshalb auch keine Liste

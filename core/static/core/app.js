@@ -90,7 +90,8 @@
     }
   }
 
-  document.querySelectorAll("input[data-hoechstens]").forEach(function (input) {
+  // Seit #381 auch im mehrzeiligen Textfeld (Beschreibung eines Kreises); das Feld des Editors zählt der Editor selbst.
+  document.querySelectorAll("input[data-hoechstens], .a-textfeld textarea[data-hoechstens]").forEach(function (input) {
     var counter = document.getElementById(input.id + "-zahl");
     if (!counter) {
       return;

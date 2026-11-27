@@ -21,12 +21,14 @@ from access.rights import SUGGESTION_MIN, SUPPORT_REASONS, WILDCARDS, Rights, un
 from accounts import texts as account_texts
 from accounts.forms import ScoutNameForm
 from accounts.keycloak_abgleich import trimmed
+from circles import texts as circle_texts
 from core import address_search, address_texts, sections
 from core.countries import COUNTRIES
 from core.forms import (
     PLACE_PARTS,
     AccountSearchForm,
     AddressForm,
+    CircleForm,
     DeadlinesForm,
     EventForm,
     FederationSearchForm,
@@ -100,16 +102,23 @@ def _notices(request: HttpRequest) -> dict:
 
 
 # Zeigt nur die angemeldete Person selbst (BER-01, Grund 1), nie eine andere.
-@checks_rights("EP-01", "EP-02")
+@checks_rights("EP-01", "EP-02", "KR-04")
 def start(request: HttpRequest) -> HttpResponse:
     """Startseite nach dem Login: Begrüßung mit dem Vornamen aus Keycloak (#5, ORG-03).
 
     Nur mit Login erreichbar und zeigt nur die Daten der angemeldeten Person selbst. Fehlt
     in Keycloak der Vor- oder Nachname, steht dort ein Hinweis, ihn im DPV-Konto zu ergänzen;
     ohne Mitgliedschaft und ohne Rolle der Hinweis, dass die Person noch keiner Organisation
-    zugeordnet ist (#9). Name und Mail stehen seit #96 auf „Mein Profil“, nicht mehr hier.
+    zugeordnet ist (#9). Name und Mail stehen seit #96 auf „Mein Profil“, nicht mehr hier. Seit #381 steht je offene
+    Einladung in einen Kreis ein Hinweis mit Link zur Seite „Kreise“; das ist die Benachrichtigung nach GRP-02, eine
+    Mail gibt es dazu nicht (#141 F1, F14). Ohne Zuordnung gibt es keinen (KR-02).
     """
-    return render(request, "core/start.html", _notices(request))
+    circle_hints = [{"text": circle_texts.START_TEXT % {"name": entry["by"], "circle": entry["circle_name"]}}
+                    for entry in request.rights.own_invitations()]
+    return render(request, "core/start.html", {**_notices(request), "circle_hints": circle_hints,
+                                                "circle_hint_title": circle_texts.START_TITLE,
+                                                "circle_hint_link": circle_texts.START_LINK,
+                                                "circles_href": reverse("circles")})
 
 
 # Die Adresse hat keine Kennung: Die Seite zeigt immer die angemeldete Person und liest nichts
@@ -2212,21 +2221,22 @@ def _tile(role: Role, label=None) -> dict:
 # tests/test_bausteinkatalog.py an den Vorlagen.
 BUILDING_BLOCKS = {
     "meldungen": {
-        "name": _("Meldungen"), "template": "core/_meldung.html", "issues": [165],
+        "name": _("Meldungen"), "template": "core/_meldung.html", "issues": [165, 381],
         "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
                      "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
-                     "geklappt hat."),
+                     "geklappt hat. Rechts neben dem Text darf ein zarter Knopf stehen, etwa „Zur Einladung“ (letztes Beispiel)."),
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "textfeld": {
-        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190, 215],
+        "name": _("Textfeld"), "template": "core/_textfeld.html", "issues": [111, 190, 215, 381],
         "purpose": _("Eine Eingabe mit Beschriftung, bei Pflichtfeldern „(Pflicht)“, und dem Fehler rot direkt "
                      "darunter; jedes Formular bindet es ein, statt sein Feld selbst zu schreiben. Das Feld zum "
                      "Antippen nutzt dieselbe Eingabe und denselben Fehler. Als Suchfeld steht der Knopf zum "
                      "Abschicken rechts daneben und ein Satz darunter. Hat das Feld eine fachliche Grenze, "
                      "steht beim Tippen rechts darunter die Zahl der Zeichen, etwa „12/30“, rot mit Meldung, "
-                     "sobald der Text zu lang ist."),
-        "pages": [_("Organisation"), _("Veranstaltungen")],
+                     "sobald der Text zu lang ist. Für längeren Text gibt es eine mehrzeilige Form mit derselben "
+                     "Zahl der Zeichen, etwa die Beschreibung eines Kreises (letztes Beispiel)."),
+        "pages": [_("Organisation"), _("Veranstaltungen"), _("Kreise")],
     },
     "datumsfeld": {
         "name": _("Datumsfeld"), "template": "core/_datumsfeld.html", "issues": [117, 379],
@@ -2244,7 +2254,7 @@ BUILDING_BLOCKS = {
                      "unten über dem Inhalt, mit Schatten und ×, und verschwindet nach rund 6 Sekunden. Was einen "
                      "Zustand beschreibt, steht fest auf der Seite; eine Fehlermeldung steht fest an der Stelle "
                      "der Handlung."),
-        "pages": [_("Mein Profil"), _("Veranstaltungen")],
+        "pages": [_("Mein Profil"), _("Veranstaltungen"), _("Kreise")],
     },
     "antippfeld": {
         "name": _("Feld zum Antippen"), "template": "core/_antippfeld.html", "issues": [180, 207, 215],
@@ -2270,7 +2280,7 @@ BUILDING_BLOCKS = {
                      "stehen, etwa „Gruppenleitung benennen“ oder „Person aufnehmen“; am Handy zeigt er nur das Plus. Der Titel darf ein Link sein, etwa der eigene Bund "
                      "auf der Seite „Verband“. Hinter dem Titel darf klein und grau eine Zahl stehen, etwa "
                      "„4 Personen“."),
-        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen"), _("Kreise")],
     },
     "rollenkachel": {
         "name": _("Rollenkachel"), "template": "core/_rollenkachel.html", "issues": [161, 189, 94, 219],
@@ -2305,7 +2315,7 @@ BUILDING_BLOCKS = {
                      "die Marke „verwaltet“ statt der Mail und rechts „Bearbeiten“. Eine angezeigte Leitungsrolle "
                      "einer verwalteten Person hat einen grauen Kreis und hinter dem Namen „ohne Konto, nur "
                      "Anzeige“; im Abschnitt „Personen“ steht sie als Rolle mit „(nur Anzeige)“."),
-        "pages": [_("Organisation")],
+        "pages": [_("Organisation"), _("Kreise")],
     },
     "knopfentfernen": {
         "name": _("Knopf „Entfernen“"), "template": "core/_knopf_entfernen.html", "issues": [191, 286],
@@ -2338,6 +2348,28 @@ BUILDING_BLOCKS = {
                      "Ring einer Organisation, oder auf der Zusammenfassung beim Anlegen den Schritt mit diesen "
                      "Angaben. Er steht nur, wo man bearbeiten darf."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
+    },
+    "eintragoeffnen": {
+        "name": _("Eintrag zum Öffnen"), "template": "core/_eintrag_oeffnen.html", "issues": [381],
+        "purpose": _("Eine weiße Zeile mit feinem Rand, die ganz ein Link ist: links ein Symbol im zart blauen Kreis, "
+                     "daneben fett der Titel und klein und grau eine Zeile darunter, rechts eine Marke und der Pfeil "
+                     "„›“. Anklickbares ist weiß mit Rand, nie grau. Unter „Meine Kreise“ mit der Zahl der Mitglieder "
+                     "und der Marke „Verwaltend“; für spätere Listen wiederverwendbar."),
+        "pages": [_("Kreise")],
+    },
+    "einladung": {
+        "name": _("Einladung"), "template": "core/_einladung.html", "issues": [381],
+        "purpose": _("Ein weißer Kasten mit feinem Rand für eine Anfrage zum Annehmen oder Ablehnen: fett der "
+                     "Titel, darunter grau, wer einlädt, und, wo es eine gibt, die Beschreibung; rechts „Ablehnen“ und "
+                     "„Annehmen“. Für Einladungen in einen Kreis, später auch für andere Anfragen."),
+        "pages": [_("Kreise")],
+    },
+    "zurueckzeile": {
+        "name": _("Zurück-Zeile über dem Seitenkopf"), "template": "core/_zurueckzeile.html", "issues": [381],
+        "purpose": _("Klein und grau über der Überschrift einer Unterseite: fett der Link zur Seite darüber, etwa "
+                     "„Kreise“, dahinter „›“ und der Name der Seite selbst. Sieht aus wie die Zeile im Kopf der Seite "
+                     "„Organisation“."),
+        "pages": [_("Kreise")],
     },
     "veranstaltungszeile": {
         "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379, 359, 360],
@@ -2435,7 +2467,7 @@ BUILDING_BLOCKS = {
                      "(fünftes Beispiel); geschlossen wird er dann mit × und Escape (#380). In der breiten Form ist er "
                      "bis etwa 860 Pixel breit und am Handy bildschirmfüllend, etwa für den Editor im Dialog "
                      "„Einladungstext bearbeiten“ (sechstes Beispiel, #358)."),
-        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Mein Profil"), _("Organisation"), _("Veranstaltungen"), _("Kreise")],
     },
     "editor": {
         "name": _("Editor"), "template": "core/_editor.html", "issues": [358],
@@ -2469,7 +2501,7 @@ BUILDING_BLOCKS = {
                      "dass die Rolle nur angezeigt wird und keine Rechte gibt. In der Form „Ort“ (Adresssuche, "
                      "letztes Beispiel) steht das Ortssymbol statt des Kreises, die Bezeichnung und darunter die "
                      "Adresse, rechts „Übernehmen“."),
-        "pages": [_("Organisation"), _("Veranstaltungen")],
+        "pages": [_("Organisation"), _("Veranstaltungen"), _("Kreise")],
     },
     "profilkreis": {
         "name": _("Profilkreis"), "template": "core/_profilkreis.html", "issues": [7, 13],
@@ -2725,6 +2757,33 @@ def _event_examples() -> dict:
     }
 
 
+def _circle_examples() -> dict:
+    """Erfundene Beispiele für die Bausteine der Kreise (#381): Meldung mit Link, mehrzeiliges Textfeld, Eintrag zum
+    Öffnen, Einladung und Zurück-Zeile, wie im Zielbild docs/zielbilder/kreise.html."""
+    count = circle_texts.MEMBER_COUNT
+    return {
+        "circle_hint": {"title": circle_texts.START_TITLE, "link": circle_texts.START_LINK,
+                        "text": circle_texts.START_TEXT % {"name": "Rabe (Tom Probst)",
+                                                            "circle": "Planungsteam Vorbereitungstreffen"}},
+        "circle_form": CircleForm(initial={"description": "Wir planen das Vorbereitungstreffen des DPV im Frühjahr "
+                                                          "2028."}, auto_id="katalog_kreis_%s"),
+        "circle_entries": [
+            {"href": "#h-eintragoeffnen", "symbol": "kreis", "title": "Planungsteam Vorbereitungstreffen",
+             "line": count % {"count": 3}, "mark": circle_texts.MANAGING},
+            {"href": "#h-eintragoeffnen", "symbol": "kreis", "title": "Singekreis Boreas", "line": count % {"count": 1},
+             "mark": ""},
+        ],
+        "circle_invitations": [
+            {"title": "Planungsteam Vorbereitungstreffen", "by_line": circle_texts.INVITES_YOU % {"name": "Rabe (Tom Probst)"},
+             "text": "Wir planen das Vorbereitungstreffen des DPV im Frühjahr 2028.", "accept_action": "#h-einladung",
+             "decline_action": "#h-einladung"},
+            {"title": "Arbeitskreis Bundesfahrt", "by_line": circle_texts.INVITES_YOU % {"name": "Möwe (Svea Beispiel)"},
+             "text": "", "accept_action": "#h-einladung", "decline_action": "#h-einladung"},
+        ],
+        "circle_back": {"href": "#h-zurueckzeile", "label": circle_texts.NAV, "current": "Planungsteam Vorbereitungstreffen"},
+    }
+
+
 @without_personal_data("Bausteinkatalog: nur erfundene Beispiele (#176).")
 @with_editor
 def building_blocks(request: HttpRequest) -> HttpResponse:
@@ -2762,6 +2821,8 @@ def building_blocks(request: HttpRequest) -> HttpResponse:
                         "Leitung Meute Wölfe ist benannt.", "Leitung Sippe Biber ist benannt."],
         # Seite „Organisation“ (#189), erfunden wie in den Szenarien; nichts kommt aus der Datenbank.
         **_organisation_examples(),
+        # Kreise (#381), erfunden wie im Zielbild; nichts aus der Datenbank.
+        **_circle_examples(),
         # Der Profilkreis liest nur den kurzen Namen; hier erfunden, nicht der der angemeldeten Person.
         "named": {"short_name": "Kim"},
         "unnamed": {"short_name": ""},

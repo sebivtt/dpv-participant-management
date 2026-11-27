@@ -293,3 +293,22 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 8. **Eigene Fläche „Ort“** (Vorschau, Sebastian, 18.11.2026, „Eigene Fläche“): Die Bezeichnung steht nicht über der Linie wie im Zielbild, sondern zusammen mit der Adresse in einer eigenen Fläche „Ort“ mit Ortssymbol und heißt „Bezeichnung“;  Im Dialog des Stifts ist es ein eigener Abschnitt „Ort“.
 9. **Dichter als im Zielbild nötig** (Vorschau: „Die Felder der Suche sind insgesamt sehr weit auseinander“): die Zahl der Zeichen unter ihrem Feld in derselben Zeile wie die Beschriftung des Felds darunter (Runde 3: „sodass sich die zählung und der Titel des darunterliegenden Feldes eine Zeile teilen“), kleinere Abstände.
 10. **Ganze Trefferzeile** (Vorschau: „wenn ich auf die Adresszeile klicken kann um die adresse zu übernehmen“): Ein Klick irgendwo in die Zeile übernimmt; mit der Tastatur weiter über „Übernehmen“.
+
+## Kreise
+
+- **Datei:** [`kreise.html`](kreise.html)
+- **Stand:** 17.11.2026, Entwurf Fassung 4 aus der Klärung von #141 nach Sebastians Anmerkungen zu den Fassungen 1 bis 3; Sebastian: „Passt. So übernehmen bitte“ ([Kommentar „Zielbild (17.11.2026)“](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-6951024403), Datei unverändert daraus), eingespielt mit #381.
+- **Prüfsumme (SHA-256):** `99cc6465246f36f0f433d569d0e600a8ebc790d6d8f36d5559f0fa789cef36c9`
+- **Inhalt der Datei:** nur erfundene Personen (Tom, Svea, Wilma, Anton, Finn, Wanda, Otto) mit Mails unter „example.org“. Nichts von fremden Servern; die einzige Adresse ist der Namensraum von SVG. Band, Hinweiskasten und „Zum Ausprobieren“ gehören nicht zur Seite.
+- **Orientierung, keine Anforderung.** Geklärt in #381 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-6951072934), N1 und N2; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-6945396247)). Es zeigt Teil A (#381: Startseite, „Kreise“, Seite eines Kreises, „Kreis anlegen“, „Person einladen“, „Zurücknehmen“) und Teil B (#382: Bearbeiten, Verwalten geben und wegnehmen, Entfernen, Verlassen, Auflösen, Austreten). Der gelb gestrichelte Platz „Öffentliche Kreise“ kommt erst mit #364 (P9).
+
+### Abweichungen vom Zielbild (#381)
+
+1. **„Offene Einladungen“ ohne die graue Zeile „eingeladen von …“** (Sebastian, 27.11.2026, U2: „Ohne die Zeile“): Der Baustein „Person in einer Liste“ hat dafür keinen Platz; die Zeile zeigt Name, Fahrtenname und „Zurücknehmen“.
+2. **Beschriftungen wie im Baustein „Textfeld“:** „Name (Pflicht)“ und „Beschreibung“ ohne „(freiwillig)“; die Zahl der Zeichen als „12/60“ rechts unter dem Feld statt „12 von 60 Zeichen“ (vorgelesen wird „12 von 60 Zeichen“).
+3. **„Kein Konto gefunden …“ als Warnung** wie im Dialog „Person mit Konto aufnehmen“, statt als Information.
+4. **Die Marke „Verwaltend“** im Aussehen der Rollenmarke von „Person in einer Liste“, auch im Baustein „Eintrag zum Öffnen“.
+5. **Abstände zwischen den Flächen** von 20 Pixeln wie zwischen den Kacheln einer Veranstaltung (Vorschau, Sebastian, 27.11.2026: „kein Abstand zwischen den Blöcken“).
+6. **„Zur Einladung“ als zarter Knopf** rechtsbündig im Hinweis der Startseite (Runde 3: „rechtsbündig im Feld“) statt als Link im Text (Vorschau, Sebastian, 27.11.2026: „wäre cool, wenn das ein Button wäre“).
+7. **Einladung ohne blauen Streifen links** (Vorschau, Sebastian, 27.11.2026: „der Blau sonderrand links kann weg“).
+8. **Eingeladene sehen die Seite des Kreises** mit Name und Beschreibung im Kopf und darunter die Fläche „Einladung“ mit „Ablehnen“ und „Annehmen“ wie auf der Seite „Kreise“, statt der Überschrift „Einladung“; Mitglieder sehen sie weiter nicht (Vorschau, Sebastian, 27.11.2026).

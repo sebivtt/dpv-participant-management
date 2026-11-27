@@ -42,7 +42,8 @@ LIVE_ROLES = {"info": "status", "success": "status", "warning": "alert", "error"
 
 
 @register.inclusion_tag("core/_meldung.html")
-def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bool = False, element_id: str = "") -> dict:
+def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bool = False, element_id: str = "",
+            link_href: str = "", link_label: str = "") -> dict:
     """Meldung einer der vier Arten (#165, docs/gestaltung.md): Info, Warnung, Fehler, Erfolg.
 
     `title` steht fett als eigene Zeile über `text`. Ein passenderes Symbol als das der Art
@@ -51,7 +52,9 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
     nach einer Handlung (Login-Seite); fest auf einer Seite stehende werden nicht ungefragt
     angesagt. Eine unbekannte Art, etwa eine eigene Stufe einer Django-Meldung, erscheint als
     Information, statt die Seite mit einem Serverfehler zu sperren. `element_id` gibt der Meldung
-    eine Kennung, etwa um sie mit einem Feld zu verknüpfen.
+    eine Kennung, etwa um sie mit einem Feld zu verknüpfen. Mit `link_href` und `link_label` steht rechts neben dem Text
+    ein zarter Knopf, etwa „Zur Einladung“ beim Hinweis auf eine Einladung in einen Kreis (#381, Sebastian, 27.11.2026:
+    „Meldung erweitern“; bei der Vorschau ein Knopf statt eines Links im Text, rechtsbündig).
     """
     kind = kind if kind in MESSAGE_KINDS else "info"
     css_class, icon_name, prefix = MESSAGE_KINDS[kind]
@@ -63,6 +66,8 @@ def meldung(kind: str, text: str = "", title: str = "", icon: str = "", live: bo
         "title": title,
         "text": text,
         "element_id": element_id,
+        "link_href": link_href,
+        "link_label": link_label,
     }
 
 

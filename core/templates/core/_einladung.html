@@ -1,0 +1,13 @@
+{% load i18n layout %}{# Einladung (#381, Nachklärung N2; Zielbild docs/zielbilder/kreise.html): ein weißer Kasten mit feinem Rand für eine Anfrage (ohne den blauen Streifen links des Zielbilds, Vorschau, Sebastian, 27.11.2026) zum Annehmen oder Ablehnen. Links das Symbol im zart blauen Kreis, daneben fett der Titel, darunter grau, wer einlädt („… lädt dich ein.“), und, wo es eine gibt, die Beschreibung; rechts „Ablehnen“ (zart) und „Annehmen“ (dunkelblau), je ein Formular an seine Adresse. Zuerst für Einladungen in einen Kreis; für spätere Anfragen wiederverwendbar (etwa #140, #187). invitation: title, by_line, text, accept_action, decline_action. Mit preview=True schicken die Knöpfe im Bausteinkatalog nichts ab. #}
+<div class="a-einladung">
+  <span class="a-eintrag-ic" aria-hidden="true">{% icon "kreis" %}</span>
+  <div class="a-einladung-wer">
+    <strong>{{ invitation.title }}</strong>
+    <span class="a-eintrag-zeile">{{ invitation.by_line }}</span>
+    {% if invitation.text %}<p class="a-einladung-text">{{ invitation.text }}</p>{% endif %}
+  </div>
+  <div class="a-einladung-knoepfe">
+    <form method="post" action="{{ invitation.decline_action }}"{% if preview %} data-nur-ansicht{% endif %}>{% csrf_token %}<button type="submit" class="btn btn-zart">{% translate "Ablehnen" %}<span class="sr-nur">: {{ invitation.title }}</span></button></form>
+    <form method="post" action="{{ invitation.accept_action }}"{% if preview %} data-nur-ansicht{% endif %}>{% csrf_token %}<button type="submit" class="btn btn-primary">{% translate "Annehmen" %}<span class="sr-nur">: {{ invitation.title }}</span></button></form>
+  </div>
+</div>

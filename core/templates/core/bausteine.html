@@ -21,6 +21,8 @@
     {% meldung "error" text=hint %}
     {% translate "Deine Anmeldung zum Herbstlager ist eingegangen." as hint %}
     {% meldung "success" text=hint %}
+    {# Mit Knopf rechts neben dem Text (#381): der Hinweis der Startseite auf eine Einladung in einen Kreis. #}
+    {% meldung "info" title=examples.circle_hint.title text=examples.circle_hint.text icon="mail" link_href="#h-meldungen" link_label=examples.circle_hint.link %}
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-textfeld">
@@ -29,6 +31,10 @@
       {% textfeld pattern_form.name %}
       {% textfeld pattern_form.place %}
       <button type="submit" class="btn btn-primary">{% translate "Speichern" %}</button>
+    </form>
+    {# Mehrzeilig mit Zahl der Zeichen (#381): die Beschreibung eines Kreises. #}
+    <form class="a-flaeche a-formular" novalidate data-nur-ansicht>
+      {% textfeld examples.circle_form.description %}
     </form>
   </section>
 
@@ -170,6 +176,21 @@
   <section class="a-abschnitt a-baustein" aria-labelledby="h-veranstaltungszeile">
     {% include "core/_katalogeintrag.html" with block=blocks.veranstaltungszeile %}
     <div class="a-flaeche"><ul class="a-va-zeilen">{% for row in examples.event_rows %}{% include "core/_veranstaltungszeile.html" %}{% endfor %}</ul></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-eintragoeffnen">
+    {% include "core/_katalogeintrag.html" with block=blocks.eintragoeffnen %}
+    <div class="a-flaeche"><ul class="a-eintraege">{% for entry in examples.circle_entries %}{% include "core/_eintrag_oeffnen.html" %}{% endfor %}</ul></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-einladung">
+    {% include "core/_katalogeintrag.html" with block=blocks.einladung %}
+    <div class="a-flaeche"><div class="a-einladungen">{% for invitation in examples.circle_invitations %}{% include "core/_einladung.html" with preview=True %}{% endfor %}</div></div>
+  </section>
+
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-zurueckzeile">
+    {% include "core/_katalogeintrag.html" with block=blocks.zurueckzeile %}
+    <div class="a-flaeche"><div class="a-kopf">{% include "core/_zurueckzeile.html" with back=examples.circle_back %}<h1>{{ examples.circle_back.current }}</h1></div></div>
   </section>
 
   <section class="a-abschnitt a-baustein" aria-labelledby="h-kalenderblaetter">

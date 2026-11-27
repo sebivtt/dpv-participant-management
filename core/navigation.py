@@ -17,6 +17,7 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from access.rights import SUPPORT_EXPIRED_SESSION_KEY, unit_label
+from circles import texts as circle_texts
 from events import texts as event_texts
 from roles import texts as role_texts
 
@@ -40,6 +41,8 @@ NAV_ITEMS = [
     NavItem("organisation", _("Organisation"), "organisation", lambda request: request.rights.sees_menu()),
     # Mit Zuordnung immer, ohne nur, solange die Person eine Veranstaltung leitet (#100); die Seiten prüfen selbst.
     NavItem("events", event_texts.NAV, "kalender", lambda request: request.rights.sees_events()),
+    # Nur mit Zuordnung (#381, BER-03, KR-02); die Seiten prüfen selbst.
+    NavItem("circles", circle_texts.NAV, "kreis", lambda request: request.rights.may_use_circles()),
 ]
 
 
