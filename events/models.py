@@ -158,7 +158,7 @@ class Event(PostalAddress):
         if now < self.begins_at():
             if self.registration_opens and now < day_begins(self.registration_opens):
                 return self.Status.ANNOUNCED
-            if self.registration_closes and now >= day_ends(self.registration_closes):
+            if self.registration_closed(now):
                 return self.Status.CLOSED
             return self.Status.OPEN
         if now < self.ends_at():
@@ -179,11 +179,11 @@ class Event(PostalAddress):
 
     def changes_closed(self, now: datetime) -> bool:
         """Ist der Änderungsschluss zum Zeitpunkt `now` vorbei? Er gilt bis zum Ende seines Tags (#360, Frage 1)."""
-        return self.changes_close is not None and now >= day_ends(self.changes_close)
+        return self.changes_close is not None and day_of(now) > self.changes_close
 
     def registration_closed(self, now: datetime) -> bool:
         """Ist der Anmeldeschluss zum Zeitpunkt `now` vorbei? Er gilt bis zum Ende seines Tags (#360, Frage 1)."""
-        return self.registration_closes is not None and now >= day_ends(self.registration_closes)
+        return self.registration_closes is not None and day_of(now) > self.registration_closes
 
     def latest_deadline(self) -> date | None:
         """Die späteste eingetragene Frist; vor ihr darf der Beginn nicht liegen (#360, FG4)."""
@@ -199,9 +199,14 @@ def day_begins(day: date) -> datetime:
     return timezone.make_aware(datetime.combine(day, time(0, 0)))
 
 
-def day_ends(day: date) -> datetime:
-    """0:00 des Tags danach in der Zeit des Tools: bis davor gelten Anmeldeschluss und Änderungsschluss (#360)."""
-    return day_begins(day + timedelta(days=1))
+def day_of(now: datetime) -> date:
+    """Der Tag von `now` in der Zeit des Tools (Deutschland), auch in der Sommerzeit.
+
+    Anmeldeschluss und Änderungsschluss gelten bis zum Ende ihres Tags, sind also vorbei, sobald dieser Tag vor heute
+    liegt (#360). Verglichen wird Tag mit Tag, nie „Tag danach“ gerechnet: Sonst bräche eine Frist am 31.12.9999 die
+    Seiten mit einem Serverfehler ab (Befund M1 der unabhängigen Prüfung).
+    """
+    return timezone.localtime(now).date()
 
 
 def deadline_problems(start: date, values: dict) -> dict[str, str]:
