@@ -842,7 +842,10 @@ dialog.a-dialog.ist-breit.ist-vorschau { max-width: 860px; }
 .a-einladung-knoepfe form { margin: 0; }
 
 /* Flächen untereinander (#381, Vorschau): derselbe Abstand wie zwischen den Kacheln einer Veranstaltung (.a-kacheln). */
-.a-meldung-knopf { margin: 8px 0 0; }
+/* Knopf einer Meldung (#381, Vorschau): rechtsbündig neben dem Text, damit die Meldung flach bleibt; am Handy
+   rückt er bei Platzmangel unter den Text. */
+.a-meldung:has(.a-meldung-knopf) { flex-wrap: wrap; }
+.a-meldung-knopf { flex: none; align-self: center; margin-left: auto; }
 .a-flaechen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 
 /* Mehrzeiliges Textfeld (#381, „Textfeld erweitern“): so hoch wie ein paar Zeilen, nur senkrecht größer zu ziehen. */

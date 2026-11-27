@@ -2224,7 +2224,7 @@ BUILDING_BLOCKS = {
         "name": _("Meldungen"), "template": "core/_meldung.html", "issues": [165, 381],
         "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
                      "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
-                     "geklappt hat. Unter dem Text darf ein zarter Knopf stehen, etwa „Zur Einladung“ (letztes Beispiel)."),
+                     "geklappt hat. Rechts neben dem Text darf ein zarter Knopf stehen, etwa „Zur Einladung“ (letztes Beispiel)."),
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "textfeld": {
