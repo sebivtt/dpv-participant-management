@@ -267,6 +267,26 @@ def test_f2_die_naechste_frist_zaehlt_die_tage_morgen_und_heute(org, pfingstlage
         "Änderungsschluss So, 07.05.2028 · in 5 Tagen · bis dahin Nachmelden"]
 
 
+def test_f2_vergangene_fristen_sind_in_der_zeitleiste_als_vorbei_markiert(org, pfingstlager, monkeypatch):
+    """Vorschau, Sebastian, 27.11.2026: Vorbei und bevorstehend sind in der Zeitleiste zu unterscheiden; eine vergangene
+    Frist hat einen grünen Punkt mit Haken, Vorleseprogramme hören „vorbei“."""
+    published(pfingstlager)
+    at(monkeypatch, 2028, 5, 2, 9, 0)
+    root = _tree(client_for(org.wanda).get(event_address(pfingstlager)))
+    found = _one(_all(deadline_tile(root), lambda e: "a-zeitleiste" in _classes(e)))
+
+    past = [("ist-vorbei" in _classes(entry), [_text(note) for note in _all(entry, lambda e: "sr-nur" in _classes(e))])
+            for entry in _by_tag(found, "li")]
+    assert past == [(True, ["vorbei"]), (True, ["vorbei"]), (False, []), (False, [])]
+    # Ohne Tag ist nichts vorbei, auch wenn „Heute“ dahinter steht.
+    entry = lager(org, registration_closes=date(2028, 4, 30))
+    entry.name = "Sommerfahrt 2028"
+    entry.save()
+    found = _one(_all(deadline_tile(_tree(client_for(org.wanda).get(event_address(entry)))),
+                      lambda e: "a-zeitleiste" in _classes(e)))
+    assert ["ist-vorbei" in _classes(item) for item in _by_tag(found, "li")] == [False, True, False, False]
+
+
 @pytest.mark.rechtematrix("VA-02")
 def test_f3_nachmeldephase_wanda_verschiebt_den_anmeldeschluss(org, pfingstlager, monkeypatch):
     published(pfingstlager)
