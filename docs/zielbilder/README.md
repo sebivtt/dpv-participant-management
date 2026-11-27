@@ -308,3 +308,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 2. **Beschriftungen wie im Baustein „Textfeld“:** „Name (Pflicht)“ und „Beschreibung“ ohne „(freiwillig)“; die Zahl der Zeichen als „12/60“ rechts unter dem Feld statt „12 von 60 Zeichen“ (vorgelesen wird „12 von 60 Zeichen“).
 3. **„Kein Konto gefunden …“ als Warnung** wie im Dialog „Person mit Konto aufnehmen“, statt als Information.
 4. **Die Marke „Verwaltend“** im Aussehen der Rollenmarke von „Person in einer Liste“, auch im Baustein „Eintrag zum Öffnen“.
+5. **Abstände zwischen den Flächen** von 20 Pixeln wie zwischen den Kacheln einer Veranstaltung (Vorschau, Sebastian, 27.11.2026: „kein Abstand zwischen den Blöcken“).
+6. **„Zur Einladung“ als zarter Knopf** unter dem Hinweis der Startseite statt als Link im Text (Vorschau, Sebastian, 27.11.2026: „wäre cool, wenn das ein Button wäre“).
+7. **Einladung ohne blauen Streifen links** (Vorschau, Sebastian, 27.11.2026: „der Blau sonderrand links kann weg“).
+8. **Eingeladene sehen die Seite des Kreises** mit Name und Beschreibung im Kopf und darunter die Fläche „Einladung“ mit „Ablehnen“ und „Annehmen“ wie auf der Seite „Kreise“, statt der Überschrift „Einladung“; Mitglieder sehen sie weiter nicht (Vorschau, Sebastian, 27.11.2026).

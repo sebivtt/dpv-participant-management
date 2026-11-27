@@ -2224,7 +2224,7 @@ BUILDING_BLOCKS = {
         "name": _("Meldungen"), "template": "core/_meldung.html", "issues": [165, 381],
         "purpose": _("Sagt in einer von vier Arten, was los ist: Information, wenn nichts zu tun ist; Warnung, "
                      "wenn man selbst etwas tun muss; Fehler, wenn etwas nicht geklappt hat; Erfolg, wenn es "
-                     "geklappt hat. Am Ende des Textes darf ein Link stehen, etwa „Zur Einladung“ (letztes Beispiel)."),
+                     "geklappt hat. Unter dem Text darf ein zarter Knopf stehen, etwa „Zur Einladung“ (letztes Beispiel)."),
         "pages": [_("Login-Seite"), _("Startseite"), _("Mein Profil"), _("Organisation"), _("Veranstaltungen")],
     },
     "textfeld": {
@@ -2359,7 +2359,7 @@ BUILDING_BLOCKS = {
     },
     "einladung": {
         "name": _("Einladung"), "template": "core/_einladung.html", "issues": [381],
-        "purpose": _("Ein weißer Kasten mit blauem Streifen links für eine Anfrage zum Annehmen oder Ablehnen: fett der "
+        "purpose": _("Ein weißer Kasten mit feinem Rand für eine Anfrage zum Annehmen oder Ablehnen: fett der "
                      "Titel, darunter grau, wer einlädt, und, wo es eine gibt, die Beschreibung; rechts „Ablehnen“ und "
                      "„Annehmen“. Für Einladungen in einen Kreis, später auch für andere Anfragen."),
         "pages": [_("Kreise")],

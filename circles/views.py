@@ -110,7 +110,8 @@ def circle_create(request: HttpRequest) -> HttpResponse:
 
 def _circle_page(request: HttpRequest, circle: str, dialog: dict | None = None) -> HttpResponse:
     """Die Seite eines Kreises: für Mitglieder mit Mitgliedern, für Verwaltende mit „Offene Einladungen“ und
-    „Person einladen“, für Eingeladene nur die Einladung (KR-03, KR-04, AV5)."""
+    „Person einladen“, für Eingeladene mit Name, Beschreibung und der Fläche „Einladung“, ohne Mitglieder (KR-03,
+    KR-04, AV5)."""
     rights = request.rights
     found, membership = rights.circle(circle)
     back = {"href": reverse("circles"), "label": texts.NAV, "current": found.name}
@@ -119,9 +120,10 @@ def _circle_page(request: HttpRequest, circle: str, dialog: dict | None = None) 
         if invitation is None:
             # Die Einladung ist gerade verschwunden, etwa zurückgenommen: wie ein Kreis, den es nicht gibt.
             raise Http404
+        # Die Beschreibung steht schon im Seitenkopf, deshalb nicht noch einmal in der Einladung (Vorschau, 27.11.2026).
         return render(request, "core/kreis.html", {
-            "circle": found, "back": back, "title": texts.INVITATION_TITLE,
-            "invitation": _invitation_block(invitation), "invited_hint": texts.INVITED_HINT})
+            "circle": found, "back": back, "title": found.name, "invitation_title": texts.INVITATION_TITLE,
+            "invitation": {**_invitation_block(invitation), "text": ""}, "invited_hint": texts.INVITED_HINT})
     members = [_person(row) for row in rights.circle_members(found, membership)]
     pending = [_person(row, remove_href=reverse("circle_withdraw", args=[found.key, row["key"]]),
                        remove_label=texts.WITHDRAW_BUTTON) for row in rights.circle_invitations(found, membership)]

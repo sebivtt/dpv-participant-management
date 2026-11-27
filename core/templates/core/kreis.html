@@ -2,15 +2,16 @@
 {% load i18n layout %}
 {% block title %}{{ title }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Seite eines Kreises (#381, Zielbild docs/zielbilder/kreise.html; #141 F4, F10): darüber die Zurück-Zeile „Kreise ›“, dann der Seitenkopf mit Name und Beschreibung. Mitglieder sehen „Mitglieder“ mit Name, Fahrtenname und der Marke „Verwaltend“ (Baustein „Person in einer Liste“, ohne Mail). Verwaltende sehen dazu „Person einladen“ und „Offene Einladungen“ mit „Zurücknehmen“; ohne die graue Zeile „eingeladen von …“ des Zielbilds (Sebastian, 27.11.2026, U2). Wer eingeladen ist, sieht unter dieser Adresse nur die Einladung (AV5). „Bearbeiten“ und die übrigen Handlungen bringt #382. #}
+  {# Seite eines Kreises (#381, Zielbild docs/zielbilder/kreise.html; #141 F4, F10): darüber die Zurück-Zeile „Kreise ›“, dann der Seitenkopf mit Name und Beschreibung. Mitglieder sehen „Mitglieder“ mit Name, Fahrtenname und der Marke „Verwaltend“ (Baustein „Person in einer Liste“, ohne Mail). Verwaltende sehen dazu „Person einladen“ und „Offene Einladungen“ mit „Zurücknehmen“; ohne die graue Zeile „eingeladen von …“ des Zielbilds (Sebastian, 27.11.2026, U2). Wer eingeladen ist, sieht unter dieser Adresse die Seite des Kreises mit Name und Beschreibung und darunter nur die Fläche „Einladung“ zum Annehmen oder Ablehnen, keine Mitglieder (AV5; Vorschau, Sebastian, 27.11.2026). „Bearbeiten“ und die übrigen Handlungen bringt #382. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf">
     {% include "core/_zurueckzeile.html" %}
     <h1>{{ title }}</h1>
-    {% if not invitation and circle.description %}<p>{{ circle.description }}</p>{% endif %}
+    {% if circle.description %}<p>{{ circle.description }}</p>{% endif %}
   </div>
   {% if invitation %}
-    <section class="a-flaeche" aria-label="{{ title }}">
+    <section class="a-flaeche" aria-labelledby="h-einladung">
+      {% include "core/_flaechenkopf.html" with symbol="mail" title=invitation_title heading_id="h-einladung" %}
       {% include "core/_einladung.html" %}
       <p class="a-leise">{{ invited_hint }}</p>
     </section>

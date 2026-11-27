@@ -832,15 +832,17 @@ dialog.a-dialog.ist-breit.ist-vorschau { max-width: 860px; }
 .a-eintrag-marke { flex: none; margin: 0; background: var(--dpv-hauch); }
 .a-eintrag-pfeil { flex: none; color: var(--text-leise); font-size: 1.3rem; line-height: 1; }
 
-/* Einladung (#381, Nachklärung N2): weißer Kasten mit blauem Streifen links, rechts „Ablehnen“ und „Annehmen“. */
+/* Einladung (#381, Nachklärung N2): weißer Kasten mit feinem Rand, rechts „Ablehnen“ und „Annehmen“; ohne den blauen
+   Streifen links des Zielbilds (Vorschau, Sebastian, 27.11.2026). */
 .a-einladungen { display: grid; gap: 8px; }
-.a-einladung { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border: 1px solid var(--linie); border-left: 4px solid var(--dpv); border-radius: var(--radius-klein); background: var(--flaeche); }
+.a-einladung { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border: 1px solid var(--linie); border-radius: var(--radius-klein); background: var(--flaeche); }
 .a-einladung-wer { flex: 1 1 260px; min-width: 0; }
 .a-einladung-text { margin: 6px 0 0; overflow-wrap: anywhere; white-space: pre-line; }
 .a-einladung-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .a-einladung-knoepfe form { margin: 0; }
 
 /* Flächen untereinander (#381, Vorschau): derselbe Abstand wie zwischen den Kacheln einer Veranstaltung (.a-kacheln). */
+.a-meldung-knopf { margin: 8px 0 0; }
 .a-flaechen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 
 /* Mehrzeiliges Textfeld (#381, „Textfeld erweitern“): so hoch wie ein paar Zeilen, nur senkrecht größer zu ziehen. */
