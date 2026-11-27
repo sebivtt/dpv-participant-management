@@ -776,6 +776,18 @@ def test_ag2_zwei_einladungen_gleichzeitig_ergeben_eine():
     assert invited_to(circle) == {"anton.testmann"}
 
 
+def test_kreis_anlegen_antwortet_ohne_uhrzeit_in_den_kopfzeilen(org):
+    """Lauf auf GitHub für 9179830: „Expires“ mit der Uhrzeit ließ den Vergleich echter mit erfundenen Kennungen in
+    tests/test_nicht_gefunden.py an einer Sekundengrenze scheitern. Wie bei „Veranstaltung erstellen“: nie zwischenspeichern,
+    aber ohne Uhrzeit."""
+    client = client_for(org.tom)
+    _found, creation_key = open_create(org.tom, client=client)
+    for response in (client.get(CREATE), client.post(CREATE, {"name": "", "creation_key": creation_key})):
+        assert response.status_code == 200
+        assert "Expires" not in response.headers
+        assert "no-store" in response.headers["Cache-Control"]
+
+
 # ---------- Wer den Menüpunkt hat, Listen ohne Abfragen je Eintrag ----------
 
 
