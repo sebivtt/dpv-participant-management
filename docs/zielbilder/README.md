@@ -250,7 +250,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 2. **Schritt 3 nur mit „Fristen“:** Teilnahme- und Benachrichtigungskreis (Ansicht 4) bringen #361 und #151; im Abschnitt „Anmeldung“ der Zusammenfassung fehlen sie ebenso. Was fehlt, fehlt ganz, ohne Platzhalter.
 3. **Zusammenfassung wie die übrigen Abschnitte:** die Fläche „Anmeldung“ mit „Überschrift einer Fläche“ und Kalendersymbol wie „Grunddaten“ und „Einladungstext“; fehlende Fristen „nicht festgelegt“, auch einzeln („nicht festgelegt bis 30.04.2028“).
 4. **Symbol statt Punkt** in den neuen Zustandsmarken wie in #359, Nr. 1: „Anmeldung offen“ offenes Schloss, „Geschlossen“ Schloss; die Farben wie im Zielbild.
-5. **„Heute“ wandert mit:** Im Zielbild steht „Heute“ am 05.01.2028 oben; in der Kachel steht es immer vor der nächsten Frist ab heute, sonst hinter der letzten eingetragenen. Fristen ohne Tag zeigen grau, was dann gilt.
+5. **„Heute“ wandert mit:** Im Zielbild steht „Heute“ am 05.01.2028 oben; in der Kachel steht es immer vor der nächsten Frist ab heute, sonst hinter der letzten eingetragenen. Fristen ohne Tag zeigen grau, was dann gilt. Vergangene Fristen haben einen grünen Punkt mit weißem Haken, den das Zielbild nicht zeigt (Vorschau, Sebastian, 27.11.2026).
 6. **Ohne Fettdruck** in der Rückfrage (6b): „Die Anmeldung öffnet am 01.02.2028 und läuft bis 30.04.2028.“ steht als schlichter Satz, wie die übrigen Sätze der Rückfragen.
 7. **Dialog „Anmeldung bearbeiten“** mit eigener Adresse, den das Zielbild nicht zeigt; darin dieselben Felder wie in Schritt 3. Vorleseprogramme hören am Stift „Anmeldung bearbeiten“, auf der Zusammenfassung „Anmeldung ändern“.
 

@@ -1103,7 +1103,8 @@ def deadline_timeline(entry, today) -> list[dict]:
 
     Je Frist der Name und der Tag mit Wochentag („Di, 01.02.2028“), ohne Frist der Satz, was dann gilt. An der nächsten
     Frist ab heute steht, wann sie ist; am Änderungsschluss „bis dahin Nachmelden“. „Heute“ steht vor der nächsten
-    Frist ab heute, sonst hinter der letzten eingetragenen, ganz ohne Fristen oben.
+    Frist ab heute, sonst hinter der letzten eingetragenen, ganz ohne Fristen oben. Eine Frist vor heute ist vorbei
+    (Vorschau, Sebastian, 27.11.2026: abgeschlossen und bevorstehend unterscheiden).
     """
     specs = ((event_texts.REGISTRATION_OPENS, entry.registration_opens, event_texts.OPENS_NOT_SET, False),
              (event_texts.REGISTRATION_CLOSES, entry.registration_closes, event_texts.CLOSES_NOT_SET, False),
@@ -1121,7 +1122,7 @@ def deadline_timeline(entry, today) -> list[dict]:
         if late:
             notes.append(event_texts.UNTIL_THEN_LATE)
         items.append({"title": title, "day": f"{dateformat.format(day, 'D')}, {_date(day)}",
-                      "datetime": day.isoformat(), "notes": notes})
+                      "datetime": day.isoformat(), "notes": notes, "past": day < today})
     dated = [index for index, day in enumerate(days) if day is not None]
     upcoming = [index for index in dated if days[index] >= today]
     position = upcoming[0] if upcoming else (dated[-1] + 1 if dated else 0)
@@ -2364,7 +2365,8 @@ BUILDING_BLOCKS = {
         "purpose": _("Tage untereinander, etwa die Fristen der Anmeldung: je ein dunkelblau umrandeter Punkt, ein feiner "
                      "Strich zum nächsten, daneben fett der Name und darunter der Tag mit Wochentag, grau dahinter, was "
                      "dazu gilt, etwa „· in 27 Tagen“. „Heute“ hat einen sonnengelben Punkt ohne Text darauf und steht "
-                     "vor der nächsten Frist. Ohne Tag steht grau, was dann gilt (zweites Beispiel)."),
+                     "vor der nächsten Frist; ein vergangener Tag hat einen grünen Punkt mit weißem Haken. Ohne Tag steht grau, "
+                     "was dann gilt (zweites Beispiel)."),
         "pages": [_("Veranstaltungen")],
     },
     "fortschritt": {
@@ -2690,7 +2692,7 @@ def _event_examples() -> dict:
     shown_at = timezone.make_aware(datetime(2028, 1, 5, 12, 0))
     rows = ((thing, status.OPEN), (falken, status.CLOSED), (camp, status.DRAFT), (meeting, status.ANNOUNCED),
             (long_name, status.RUNNING))
-    # Zeitleiste (#360) wie in Ansicht 6 des Zielbilds am 05.01.2028, dazu ohne Fristen.
+    # Zeitleiste (#360) wie in Ansicht 6 des Zielbilds am 05.01.2028.
     planned = Event(name=camp.name, start=camp.start, end=camp.end, registration_opens=date(2028, 2, 1),
                     registration_closes=date(2028, 4, 30), changes_close=date(2028, 5, 7))
     return {
@@ -2698,7 +2700,8 @@ def _event_examples() -> dict:
                         "href": "#h-veranstaltungszeile", "mark": state_mark(shown),
                         "note": row_note(entry, shown, shown_at),
                         "draft": shown == status.DRAFT, "grey": shown in GREY_STATES} for entry, shown in rows],
-        "timelines": [deadline_timeline(planned, shown_at.date()), deadline_timeline(thing, shown_at.date())],
+        # Dazu die Sippenaktion mit vergangenem Anmeldeschluss (grün mit Haken) und ohne Anmeldestart.
+        "timelines": [deadline_timeline(planned, shown_at.date()), deadline_timeline(falken, shown_at.date())],
         # Zustandsmarken (#359) im Eintrag „Marke“, nach den Marken an Organisationen und Personen.
         "state_marks": [state_mark(shown) for shown in status],
         # Schalter mit Rückfrage (#359): aus, an, an und gesperrt (ab Beginn), aus und gesperrt (Beginn vorbei).

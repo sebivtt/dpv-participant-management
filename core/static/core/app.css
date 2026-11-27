@@ -672,6 +672,9 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
 .a-zeitleiste li:not(:last-child)::before { content: ""; position: absolute; top: 16px; bottom: -14px; left: 6px; width: 2px; background: var(--linie); }
 .a-zeitleiste-punkt { position: relative; z-index: 1; flex: none; width: 14px; height: 14px; margin-top: 4px; border: 2px solid var(--dpv); border-radius: 50%; background: var(--flaeche); }
 .a-zeitleiste .ist-heute .a-zeitleiste-punkt { border-color: var(--akzent); background: var(--akzent); }
+/* Vorbei (Vorschau, 27.11.2026): grüner Punkt mit weißem Haken. */
+.a-zeitleiste .ist-vorbei .a-zeitleiste-punkt { display: grid; place-items: center; border-color: var(--ok-text); background: var(--ok-text); color: #fff; }
+.a-zeitleiste-punkt .ic { width: 10px; height: 10px; stroke-width: 3.5; }
 .a-zeitleiste li > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
 .a-zeitleiste .a-leise { font-size: inherit; }
 /* Abschnitt „Anmeldung“ der Zusammenfassung (#360, Ansicht 5): Beschriftung links, Wert rechts, am Handy untereinander. */
