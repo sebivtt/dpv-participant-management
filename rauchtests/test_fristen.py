@@ -122,10 +122,8 @@ def _ohne_skript(page: Page) -> None:
     _no_side_scroll(page)
     page.locator(STEP_SUBMIT).click()
     page.wait_for_url(f"{LIST}{entry.key}/anlegen/zusammenfassung/")
-    opens, closes, changes = _fristen()
-    summary = page.locator('section[aria-labelledby="h-anmeldung"] dd')
-    expect(summary).to_have_text([f"{_tag(opens)} bis {_tag(closes)}", _tag(changes)])
-    _no_side_scroll(page)
+    # Die Zusammenfassung zeigt dieselbe Zeitleiste wie die Kachel der Leitungsseite (Vorschau, 27.11.2026).
+    _zeitleiste(page)
 
     # Der Stift der Kachel öffnet ohne Skript den Dialog als eigene Seite; ein Fehler steht am Feld.
     page.locator(STEP_SUBMIT).click()

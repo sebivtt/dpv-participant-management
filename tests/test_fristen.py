@@ -160,12 +160,6 @@ def publish_lines(user, entry) -> list[str]:
     return [_visible_text(line) for line in _by_tag(body, "p")]
 
 
-def summary_section(root) -> dict[str, str]:
-    """Der Abschnitt „Anmeldung“ der Zusammenfassung: je Beschriftung der Wert."""
-    found = _one(_by_tag(root, "section", aria_labelledby="h-anmeldung"))
-    terms, values = _by_tag(found, "dt"), _by_tag(found, "dd")
-    assert len(terms) == len(values)
-    return {_visible_text(term): _visible_text(value) for term, value in zip(terms, values, strict=True)}
 
 
 # ---------- Erlaubt ----------
@@ -193,7 +187,10 @@ def test_f1_wanda_traegt_in_schritt_3_die_fristen_ein(org):
     assert done.status_code == 302 and done.url == summary_address(entwurf)
     assert stored(entwurf) == tuple(PFINGSTEN.values())
     summary = _tree(client.get(summary_address(entwurf)))
-    assert summary_section(summary) == {"Anmeldung": "01.02.2028 bis 30.04.2028", "Änderungsschluss": "07.05.2028"}
+    # Seit der Vorschau (Sebastian, 27.11.2026) zeigt die Zusammenfassung die Fristen als Zeitleiste wie die Kachel
+    # der Leitungsseite, statt „Anmeldung 01.02.2028 bis 30.04.2028“ und „Änderungsschluss 07.05.2028“.
+    assert timeline(summary) == ["Heute 05.01.2028", "Anmeldestart Di, 01.02.2028 · in 27 Tagen",
+                                 "Anmeldeschluss So, 30.04.2028", "Änderungsschluss So, 07.05.2028 · bis dahin Nachmelden"]
     pencil = _one(_all(_one(_by_tag(summary, "section", aria_labelledby="h-anmeldung")),
                        lambda e: "a-stift" in _classes(e)))
     assert _attr(pencil, "href") == step_address(entwurf)
@@ -342,15 +339,19 @@ def test_f4_ohne_fristen_offen_vom_veroeffentlichen_bis_zum_beginn(org):
     assert notes(org.wanda)["Sippenaktion Falken"] == (OPEN, "bis zum Beginn")
 
 
-def test_f4_die_zusammenfassung_nennt_fehlende_fristen_nicht_festgelegt(org):
+def test_f4_die_zusammenfassung_zeigt_fehlende_fristen_wie_die_kachel(org):
+    """Zusammenfassung und Kachel der Leitungsseite zeigen dieselbe Zeitleiste (Vorschau, Sebastian, 27.11.2026)."""
     entwurf = entwurf_im_ablauf(org)
-    summary = _tree(client_for(org.wanda).get(summary_address(entwurf)))
-    assert summary_section(summary) == {"Anmeldung": "nicht festgelegt", "Änderungsschluss": "nicht festgelegt"}
+    client = client_for(org.wanda)
+    summary = _tree(client.get(summary_address(entwurf)))
+    assert timeline(summary) == [
+        "Heute 05.01.2028", "Anmeldestart nicht festgelegt, öffnet mit dem Veröffentlichen",
+        "Anmeldeschluss nicht festgelegt, offen bis zum Beginn",
+        "Änderungsschluss nicht festgelegt, Nachmelden bis zum Beginn"]
 
     Event.objects.filter(pk=entwurf.pk).update(registration_closes=date(2028, 4, 30))
-    summary = _tree(client_for(org.wanda).get(summary_address(entwurf)))
-    assert summary_section(summary) == {"Anmeldung": "nicht festgelegt bis 30.04.2028",
-                                        "Änderungsschluss": "nicht festgelegt"}
+    summary = _tree(client.get(summary_address(entwurf)))
+    assert timeline(summary) == timeline(_tree(client.get(event_address(entwurf))))
 
 
 def test_f5_nur_anmeldeschluss(org, monkeypatch):
