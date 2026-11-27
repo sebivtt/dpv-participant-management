@@ -1532,8 +1532,8 @@ def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden:
     (B5). Schritt 2 „Einladungstext“ (#358) zeigt den Editor mit `form` (`InvitationForm`); „Zurück“ führt zu
     Schritt 1, „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“. Schritt 3 „Anmeldung“ (#360) zeigt die Gruppe
     „Fristen“ mit `form` (`DeadlinesForm`); „Zurück“ führt zu Schritt 2. Schritt 4 „Zusammenfassung“ zeigt die
-    Grunddaten wie die Kachel der Leitungsseite, darunter den Einladungstext und die Anmeldung, je mit dem Stift zu
-    ihrem Schritt; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 3 (#29, Frage 4).
+    Grunddaten wie die Kachel der Leitungsseite, daneben die Anmeldung und darunter den Einladungstext, je mit dem
+    Stift zu ihrem Schritt; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 3 (#29, Frage 4).
     In Schritt 1 steht unter dem Ort das Adressfeld (#163); `found` ist das Ergebnis von „Adresse suchen“. Das Formular
     geht immer an die Adresse des Schritts, auch wenn die Seite von der Suche kommt. `conflict` ist der Satz, wenn
     inzwischen ein zweites Fenster gespeichert hat: in Schritt 1 als Fehler (#379, AG7), in Schritt 2 als Warnung (G2).
@@ -2365,7 +2365,8 @@ BUILDING_BLOCKS = {
         "purpose": _("Tage untereinander, etwa die Fristen der Anmeldung: je ein dunkelblau umrandeter Punkt, ein feiner "
                      "Strich zum nächsten, daneben fett der Name und darunter der Tag mit Wochentag, grau dahinter, was "
                      "dazu gilt, etwa „· in 27 Tagen“. „Heute“ hat einen sonnengelben Punkt ohne Text darauf und steht "
-                     "vor der nächsten Frist; ein vergangener Tag hat einen grünen Punkt mit weißem Haken. Ohne Tag steht grau, "
+                     "vor der nächsten Frist; ein vergangener Tag hat einen zart grünen Punkt mit "
+                     "dunkelgrünem Haken. Ohne Tag steht grau, "
                      "was dann gilt (zweites Beispiel)."),
         "pages": [_("Veranstaltungen")],
     },

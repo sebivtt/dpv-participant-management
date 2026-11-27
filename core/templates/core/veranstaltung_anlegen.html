@@ -43,14 +43,14 @@
           {% include "core/_flaechenkopf.html" with symbol="kalender" title=basics_title heading_id="h-grunddaten" %}
           {% include "core/_kalenderblaetter.html" %}
         </section>
+        {# Abschnitt „Anmeldung“ (#360, Zielbild Ansicht 5, seit der Vorschau neben „Grunddaten“ wie auf der Leitungsseite): Zeitraum der Anmeldung und Änderungsschluss, fehlende Fristen „nicht festgelegt“; der Stift führt zu Schritt 3. #}
+        <section class="a-flaeche a-kachel" aria-labelledby="h-anmeldung">
+          {% include "core/_stift.html" with href=signup_href label=signup_change %}
+          {% include "core/_flaechenkopf.html" with symbol="kalender" title=signup_title heading_id="h-anmeldung" %}
+          <dl class="a-angaben">{% for line in signup_summary %}<dt>{{ line.term }}</dt><dd>{{ line.value }}</dd>{% endfor %}</dl>
+        </section>
       </div>
       {% include "core/_einladungstext.html" %}
-      {# Abschnitt „Anmeldung“ (#360, Zielbild Ansicht 5): Zeitraum der Anmeldung und Änderungsschluss, fehlende Fristen „nicht festgelegt“; der Stift führt zu Schritt 3. #}
-      <section class="a-flaeche a-kachel" aria-labelledby="h-anmeldung">
-        {% include "core/_stift.html" with href=signup_href label=signup_change %}
-        {% include "core/_flaechenkopf.html" with symbol="kalender" title=signup_title heading_id="h-anmeldung" %}
-        <dl class="a-angaben">{% for line in signup_summary %}<dt>{{ line.term }}</dt><dd>{{ line.value }}</dd>{% endfor %}</dl>
-      </section>
     {% endif %}
     <div class="a-schritt-knoepfe">
       <a class="btn btn-zart" href="{{ cancel_href }}">{{ cancel_label }}</a>
