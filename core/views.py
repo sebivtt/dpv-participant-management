@@ -1131,18 +1131,6 @@ def deadline_timeline(entry, today) -> list[dict]:
     return items
 
 
-def signup_summary(entry) -> list[dict]:
-    """Der Abschnitt „Anmeldung“ der Zusammenfassung beim Anlegen (#360, Ansicht 5): Zeitraum und Änderungsschluss."""
-    opens, closes = entry.registration_opens, entry.registration_closes
-    not_set = str(event_texts.NOT_SET)
-    shown = not_set
-    if opens or closes:
-        shown = str(event_texts.PERIOD % {"start": _date(opens) if opens else not_set,
-                                          "end": _date(closes) if closes else not_set})
-    return [{"term": event_texts.SIGNUP, "value": shown},
-            {"term": event_texts.CHANGES_CLOSE, "value": _date(entry.changes_close) if entry.changes_close else not_set}]
-
-
 def state_sentence(entry, state: Event.Status, now) -> str:
     """Der Satz unter der Zustandsmarke auf der Leitungsseite (#359, Frage 5), seit #360 mit dem Satz zur Anmeldung."""
     if state == Event.Status.DRAFT:
@@ -1583,7 +1571,7 @@ def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden:
             "basics_title": event_texts.BASICS, "basics_change": event_texts.BASICS_CHANGE, "basics_href": basics,
             "invitation": invitation_tile(entry, step_two, event_texts.INVITATION_CHANGE),
             "signup_title": event_texts.SIGNUP, "signup_change": event_texts.SIGNUP_CHANGE, "signup_href": step_three,
-            "signup_summary": signup_summary(entry),
+            "timeline": deadline_timeline(entry, timezone.localdate()),
             "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": step_three,
             "submit_label": event_texts.SAVE_EVENT,
         })

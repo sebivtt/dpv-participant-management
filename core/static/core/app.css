@@ -677,11 +677,6 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
 .a-zeitleiste-punkt .ic { width: 10px; height: 10px; stroke-width: 3.5; }
 .a-zeitleiste li > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
 .a-zeitleiste .a-leise { font-size: inherit; }
-/* Abschnitt „Anmeldung“ der Zusammenfassung (#360, Ansicht 5): Beschriftung links, Wert rechts, am Handy untereinander. */
-.a-angaben { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; }
-.a-angaben dt { color: var(--text-leise); font-weight: 400; }
-.a-angaben dd { margin: 0; overflow-wrap: anywhere; }
-@media (max-width: 420px) { .a-angaben { grid-template-columns: 1fr; gap: 2px; } .a-angaben dd { margin-bottom: 6px; } }
 
 /* Zeile „Zustand“ der Leitungsseite (#359, Zielbild Ansicht 6): links Zustandsmarke und Satz, rechts der Schalter
    „Veröffentlicht“; schmal untereinander. */

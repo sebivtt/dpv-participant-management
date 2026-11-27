@@ -126,7 +126,7 @@ ALREADY_WITHDRAWN = gettext_lazy("%(event)s ist schon nicht mehr veröffentlicht
 ALREADY_BEGUN = gettext_lazy("Die Veranstaltung hat schon begonnen. Die Veröffentlichung lässt sich nicht mehr "
                              "zurücknehmen.")
 
-# Fristen (#360): Schritt 3 „Anmeldung“, Abschnitt der Zusammenfassung, Kachel „Anmeldung“ mit Zeitleiste und Dialog
+# Fristen (#360): Schritt 3 „Anmeldung“, Kachel „Anmeldung“ mit Zeitleiste (auch in der Zusammenfassung) und Dialog
 SIGNUP = gettext_lazy("Anmeldung")
 SIGNUP_CHANGE = gettext_lazy("Anmeldung ändern")
 SIGNUP_EDIT = gettext_lazy("Anmeldung bearbeiten")
@@ -143,8 +143,6 @@ CLOSES_AFTER_START = gettext_lazy("Der Anmeldeschluss liegt nach dem Beginn.")
 CHANGES_AFTER_START = gettext_lazy("Der Änderungsschluss liegt nach dem Beginn.")
 START_BEFORE_DEADLINE = gettext_lazy("Der Beginn liegt vor einer Frist der Anmeldung. Ändere zuerst die Fristen.")
 DEADLINES_SAVED = gettext_lazy("Die Fristen von %(event)s sind gespeichert.")
-# Zusammenfassung: „Anmeldung 01.02.2028 bis 30.04.2028“, eine fehlende Frist „nicht festgelegt“.
-NOT_SET = gettext_lazy("nicht festgelegt")
 # Zeitleiste der Kachel: „Heute“, an der nächsten künftigen Frist „in 27 Tagen“, „morgen“ oder „heute“.
 TODAY = gettext_lazy("Heute")
 IN_DAYS = gettext_lazy("in %(count)s Tagen")
