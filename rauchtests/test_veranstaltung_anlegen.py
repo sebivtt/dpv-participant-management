@@ -94,9 +94,11 @@ def test_am_pc_nur_mit_der_tastatur_durch_den_ganzen_ablauf(pc):
     _zu(pc, SUBMIT, steps=22)
     _zusammenfassung(pc)
 
-    # B2: „Zurück“ führt über Schritt 2 (#358) zu Schritt 1 mit allen Eingaben; ein geänderter Ort kommt in der
-    # Zusammenfassung an.
+    # B2: „Zurück“ führt über Schritt 3 (#360) und Schritt 2 (#358) zu Schritt 1 mit allen Eingaben; ein geänderter
+    # Ort kommt in der Zusammenfassung an.
     _zu(pc, BACK)
+    pc.wait_for_url(f"{LIST}*/anlegen/anmeldung/")
+    _zu(pc, BACK, steps=40)
     pc.wait_for_url(f"{LIST}*/anlegen/einladungstext/")
     _zu(pc, BACK, steps=40)
     pc.wait_for_url(f"{LIST}*/anlegen/")
