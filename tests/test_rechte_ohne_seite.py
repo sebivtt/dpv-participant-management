@@ -32,6 +32,7 @@ from django.test import Client
 from django.utils import timezone
 
 from access.rights import Rights
+from circles.models import Circle, CircleInvitation, CircleMember
 from events.models import Event, Registration
 from persons.models import DisplayedLead, ManagedPerson
 from roles.models import AdminAccess, Role, RoleChange
@@ -413,12 +414,19 @@ def test_seite_mit_kennung_die_eine_nummer_zeigt_macht_die_suche_rot(org):
 
 # Was vorne in einer Adresse mit zwei Kennungen steht, etwa die Organisation in
 # „organisation/<key:unit>/entfernen/<key:role>/“: die Organisation des Eintrags dahinter, sonst die erste Organisation
-# aus `entries`. Die letzte Kennung ist jeder Eintrag jeder Art der Reihe nach.
-LEADING_KEYS = {"unit": Unit}
+# aus `entries`. Die letzte Kennung ist jeder Eintrag jeder Art der Reihe nach. Seit #381 ebenso der Kreis in
+# „kreise/<key:circle>/einladungen/<key:invitation>/zuruecknehmen/“: der Kreis der Einladung, sonst der erste Kreis.
+LEADING_KEYS = {"unit": Unit, "circle": Circle}
 
 
 def unit_of(entry, default: Unit) -> Unit:
-    """Die Organisation, zu der ein Eintrag gehört: bei einer Person mit Konto ihre Mitgliedschaft."""
+    """Die Organisation, zu der ein Eintrag gehört: bei einer Person mit Konto ihre Mitgliedschaft.
+
+    Ist `default` ein Kreis (#381), ist es der Kreis des Eintrags, etwa einer Einladung, sonst `default`.
+    """
+    if isinstance(default, Circle):
+        found = getattr(entry, "circle", None)
+        return found if isinstance(found, Circle) else default
     if isinstance(entry, User):
         member = Role.objects.filter(user=entry, kind=R.MEMBER).first()
         return member.unit if member else default
@@ -454,7 +462,18 @@ def entries(org) -> dict:
     AdminAccess.objects.create(at=timezone.now(), actor_id=org.admin.pk, actor_name="Ada Admin",
                                action=AdminAccess.Action.STARTED, detail=AdminAccess.Detail.DEBUGGING,
                                unit_id=org.falken.pk, unit_kind=Unit.Kind.GROUP, unit_name=OLD_ACCESS_NAME)
+    # Kreise (#381): Erika verwaltet das Planungsteam, in das Wilma eingeladen ist, und ist selbst in Fietes
+    # Singekreis eingeladen; so findet jede Adresse der Kreise einen Eintrag.
+    planning = Circle.objects.create(name="Planungsteam")
+    managing = CircleMember.objects.create(circle=planning, user=org.erika, manages=True)
+    singing = Circle.objects.create(name="Singekreis")
+    CircleMember.objects.create(circle=singing, user=fiete, manages=True)
+    to_wilma = CircleInvitation.objects.create(circle=planning, user=wilma, invited_by=org.erika)
+    to_erika = CircleInvitation.objects.create(circle=singing, user=org.erika, invited_by=fiete)
     return {
+        Circle: [planning, singing],
+        CircleMember: [managing],
+        CircleInvitation: [to_wilma, to_erika],
         User: [fiete, wilma],
         Unit: [org.falken, org.walhall, org.boreas, org.dpv],
         Role: [lead, Role.objects.get(user=org.federation_lead, kind=R.FEDERATION_LEAD)],

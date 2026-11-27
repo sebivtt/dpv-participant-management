@@ -289,6 +289,10 @@ PERSONAL_MODELS = {
     # Anmeldungen mit Ansprechperson und den angemeldeten Personen (#101).
     "Registration",
     "RegisteredPerson",
+    # Kreise mit ihren Mitgliedern und offenen Einladungen (#381).
+    "Circle",
+    "CircleMember",
+    "CircleInvitation",
 }
 # Wo Lesen an der zentralen Stelle vorbei erlaubt ist, mit Begründung.
 ALLOWED_FILES = {

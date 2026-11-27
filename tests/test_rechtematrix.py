@@ -48,6 +48,7 @@ SECTIONS = [
     "Einheiten",
     "Leitungen und Rollen",
     "Veranstaltungen und Anmeldungen",
+    "Kreise",
     "Gesundheitsangaben",
     "Support-Zugang der Admins",
     "Protokolle",

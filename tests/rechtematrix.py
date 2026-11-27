@@ -56,6 +56,10 @@ SCOPE_WORDS = (
     "Verbandsebene",
     "eigene Veranstaltung",
     "eigene Anmeldung",
+    # Kreise (#381)
+    "eigener Kreis",
+    "verwalteter Kreis",
+    "eigene Einladung",
     "nur sich selbst",
     "ja",
     "–",
