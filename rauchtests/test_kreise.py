@@ -185,3 +185,21 @@ def test_am_handy_nur_mit_der_tastatur_annehmen_und_anlegen_mit_autokorrektur(ha
     expect(handy.locator("h1")).to_have_text("Planungsteam Herbst")
     _no_side_scroll(handy)
     assert run_axe(handy) == []
+
+
+def test_am_pc_steht_zur_einladung_rechts_in_der_meldung(pc):
+    """Vorschau, Sebastian, 27.11.2026: Der Knopf steht rechtsbündig neben dem Text, damit die Meldung flacher ist."""
+    login(pc)
+    erika, svea = _erika_und_svea()
+    circle = Circle.objects.create(name="Singekreis Walhall")
+    CircleMember.objects.create(circle=circle, user=svea, manages=True)
+    CircleInvitation.objects.create(circle=circle, user=erika, invited_by=svea)
+    pc.goto(f"{BASE}/")
+
+    hint = pc.locator(".a-meldung", has_text="Einladung in einen Kreis")
+    box, text, button = (locator.bounding_box() for locator in (
+        hint, hint.locator(".a-meldung-text"), hint.get_by_role("link", name="Zur Einladung")))
+    assert box["x"] + box["width"] - (button["x"] + button["width"]) <= 16, (box, button)
+    assert button["x"] >= text["x"] + text["width"] - 1, (text, button)
+    assert button["y"] < text["y"] + text["height"], (text, button)
+    assert run_axe(pc) == []
