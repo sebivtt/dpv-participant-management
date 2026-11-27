@@ -49,6 +49,18 @@ def _erika_und_svea() -> tuple:
     return erika, svea
 
 
+def _abstaende(page: Page) -> list[int]:
+    """Die senkrechten Abstände zwischen aufeinanderfolgenden Flächen der Seite, in Pixeln (Vorschau, Sebastian, 27.11.2026)."""
+    return page.evaluate("""() => {
+        const flaechen = [...document.querySelectorAll("main .a-flaeche")].filter(e => e.offsetParent && !e.closest("dialog"));
+        const found = [];
+        for (let i = 1; i < flaechen.length; i++) {
+            found.push(Math.round(flaechen[i].getBoundingClientRect().top - flaechen[i - 1].getBoundingClientRect().bottom));
+        }
+        return found;
+    }""")
+
+
 def _dialog(page: Page):
     return page.locator("dialog.a-dialog")
 
@@ -64,6 +76,8 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_einladen(pc):
     pc.wait_for_url(LIST)
     expect(pc.locator("h1")).to_have_text("Kreise")
     expect(pc.locator('[aria-labelledby="h-einladungen"]')).to_contain_text("Du hast keine offenen Einladungen.")
+    # Zwischen „Einladungen“ und „Meine Kreise“ derselbe Abstand wie zwischen den Kacheln einer Veranstaltung.
+    assert _abstaende(pc) == [20]
     assert run_axe(pc) == []
 
     stations = _stations_to_element(pc, CREATE_BUTTON, steps=20)
@@ -102,6 +116,7 @@ def test_am_pc_nur_mit_der_tastatur_anlegen_und_einladen(pc):
     pc.keyboard.press("Enter")
     expect(pc.locator(".a-kurz")).to_contain_text("Möwe (Svea Beispiel) ist eingeladen.")
     expect(pc.locator('[aria-labelledby="h-offene-einladungen"]')).to_contain_text("Möwe (Svea Beispiel)")
+    assert _abstaende(pc) == [20]
 
 
 def test_am_pc_zu_lange_beschreibung_rot_mit_meldung_vom_tool(pc):
@@ -137,6 +152,7 @@ def test_am_handy_nur_mit_der_tastatur_annehmen_und_anlegen_mit_autokorrektur(ha
     handy.keyboard.press("Enter")
     handy.wait_for_url(LIST)
     _no_side_scroll(handy)
+    assert _abstaende(handy) == [20]
     assert run_axe(handy) == []
     stations = _stations_to_element(handy, '.a-einladung button.btn-primary', steps=20)
     _all_visible(stations)
