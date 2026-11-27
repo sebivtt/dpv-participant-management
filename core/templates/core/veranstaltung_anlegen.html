@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{{ title }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Anlegen einer Veranstaltung in Schritten (#380, Zielbild docs/zielbilder/veranstaltung.html, Ansichten 2, 5 und 5b; Abweichungen in docs/zielbilder/README.md). Oben der Kopf: „Veranstaltung erstellen“, für einen gespeicherten Entwurf sein Name mit „Entwurf · Veranstaltung erstellen“. Darunter die Fortschrittsanzeige. Schritt 1 „Grunddaten“ zeigt die Felder aus #379 (Baustein „Textfeld“ und „Datumsfeld“ mit Uhrzeit, bei der Nachfrage zur Dauer der „Schalter“), darunter seit #163 das „Adressfeld“ mit „Adresse suchen“; Schritt 2 „Zusammenfassung“ die Grunddaten wie die Kachel der Leitungsseite (Baustein „Kalenderblätter“, Sebastian am 17.11.2026 statt der Liste aus dem Zielbild), mit dem Stift zurück zu Schritt 1. Unten links „Abbrechen“, rechts ab dem zweiten Schritt „Zurück“ und der Hauptknopf („Weiter“, „Veranstaltung speichern“). Ohne Skript bedienbar: jeder Schritt und der Dialog „Anlegen abbrechen?“ haben eine eigene Adresse. #}
+  {# Anlegen einer Veranstaltung in Schritten (#380, Zielbild docs/zielbilder/veranstaltung.html, Ansichten 2, 5 und 5b; Abweichungen in docs/zielbilder/README.md). Oben der Kopf: „Veranstaltung erstellen“, für einen gespeicherten Entwurf sein Name mit „Entwurf · Veranstaltung erstellen“. Darunter die Fortschrittsanzeige. Schritt 1 „Grunddaten“ zeigt die Felder aus #379 (Baustein „Textfeld“ und „Datumsfeld“ mit Uhrzeit, bei der Nachfrage zur Dauer der „Schalter“), darunter seit #163 das „Adressfeld“ mit „Adresse suchen“; Seit #358 Schritt 2 „Einladungstext“ mit dem Baustein „Editor“ (Zielbild docs/zielbilder/einladungstext.html, Ansichten 1 bis 3 und 8); hat inzwischen ein zweites Fenster gespeichert, steht die Warnung darüber (G2). Schritt 3 „Zusammenfassung“ die Grunddaten wie die Kachel der Leitungsseite (Baustein „Kalenderblätter“, Sebastian am 17.11.2026 statt der Liste aus dem Zielbild), mit dem Stift zurück zu Schritt 1, darunter den Abschnitt „Einladungstext“ mit den ersten höchstens 300 Zeichen und dem Stift zu Schritt 2 (Ansicht 4). Unten links „Abbrechen“, rechts ab dem zweiten Schritt „Zurück“ und der Hauptknopf („Weiter“, „Veranstaltung speichern“). Ohne Skript bedienbar: jeder Schritt und der Dialog „Anlegen abbrechen?“ haben eine eigene Adresse. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{{ title }}</h1>{% if head_line %}<p>{{ head_line }}</p>{% endif %}</div>
   {% include "core/_fortschritt.html" %}
@@ -22,6 +22,12 @@
         {% textfeld event_form.location %}
         {% adressfeld event_form address %}
       </section>
+    {% elif step == 2 %}
+      <section class="a-flaeche" aria-labelledby="h-schritt">
+        <h2 class="sr-nur" id="h-schritt">{{ steps.1.name }}</h2>
+        {% if conflict %}{% meldung "warning" text=conflict live=True %}{% endif %}
+        {% editor invitation_form.invitation_text %}
+      </section>
     {% else %}
       <div class="a-kacheln">
         <section class="a-flaeche a-kachel" aria-labelledby="h-grunddaten">
@@ -30,6 +36,7 @@
           {% include "core/_kalenderblaetter.html" %}
         </section>
       </div>
+      {% include "core/_einladungstext.html" %}
     {% endif %}
     <div class="a-schritt-knoepfe">
       <a class="btn btn-zart" href="{{ cancel_href }}">{{ cancel_label }}</a>

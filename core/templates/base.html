@@ -7,7 +7,9 @@
   <title>{% block title %}{% translate "DPV Anmeldetool" %}{% endblock %}</title>
   <link rel="stylesheet" href="{% static "core/bootstrap/bootstrap.min.css" %}">
   <link rel="stylesheet" href="{% static "core/app.css" %}">
-  <script src="{% static "core/app.js" %}" defer></script>
+  {% if editor_page %}{# Seiten mit dem Baustein „Editor“ (#358): Trix vom eigenen Server, vor app.js, das ihn einrichtet. Trix legt seine Gestaltung mit dem Schlüssel dieser Antwort in die Seite; nur diese Seiten erlauben das (with_editor() in core/views.py). #}<meta name="trix-csp-nonce" content="{{ csp_nonce }}">
+  <script src="{% static "core/trix/trix.umd.min.js" %}" defer></script>
+  {% endif %}  <script src="{% static "core/app.js" %}" defer></script>
 </head>
 <body>
   {% include "core/_symbole.svg" %}

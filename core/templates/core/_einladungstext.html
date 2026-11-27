@@ -1,0 +1,6 @@
+{# Abschnitt „Einladungstext“ (#358, Zielbild docs/zielbilder/einladungstext.html, Ansichten 4 und 5): eine Fläche mit „Überschrift einer Fläche“ und dem Stift oben rechts, darin die ersten höchstens 300 Zeichen mit Formatierung, an einer Wortgrenze gekürzt und mit „…“, oder „Noch kein Einladungstext.“. Auf der Leitungsseite als Kachel über die ganze Breite unter den übrigen Kacheln, mit dem Stift zum Dialog „Einladungstext bearbeiten“; auf der Zusammenfassung beim Anlegen mit dem Stift zu Schritt 2. invitation: title, excerpt (bereinigt aus events/invitation.py), none_yet, edit_href und edit_label; gebaut von invitation_tile() in core/views.py. Mit level=3 steht die Überschrift eine Ebene tiefer, im Bausteinkatalog unter dem Namen des Eintrags; Überschriften im Text sind immer h3. #}
+<section class="a-flaeche a-kachel a-einladungstext" aria-labelledby="h-einladungstext">
+  {% include "core/_stift.html" with href=invitation.edit_href label=invitation.edit_label %}
+  {% include "core/_flaechenkopf.html" with symbol="info" title=invitation.title heading_id="h-einladungstext" level=level %}
+  {% if invitation.excerpt %}<div class="a-formatiert">{{ invitation.excerpt }}</div>{% else %}<p class="a-leer-satz">{{ invitation.none_yet }}</p>{% endif %}
+</section>

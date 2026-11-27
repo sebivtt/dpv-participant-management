@@ -211,7 +211,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 #379 baut Ansicht 1 nur mit „Von mir geleitet“ und von Ansicht 6 den Kopf und die Kachel „Grunddaten“; dazu Uhrzeiten und Ort im Dialog „Veranstaltung erstellen“.
 
 1. **Plus weiß** (E1 aus #356): „Veranstaltung erstellen“ ist der Knopf der „Überschrift einer Fläche“ mit weißem Plus, wie im Zielbild; die frühere Regel „Sonnengelb für das Symbol von ‚Veranstaltung erstellen‘“ in `docs/gestaltung.md` gilt nicht mehr (`docs/entscheidungen.md`, 17.11.2026, #379).
-2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359, seit dem 26.11.2026 gebaut, Abschnitt unten), „Für mich ausgeschrieben“ (#362), „Einladung ansehen“ auf der Leitungsseite (#362; Zustand und „Veröffentlicht“ seit dem 26.11.2026 gebaut, #359), die übrigen Kacheln (#358, #360, #361, #151, #357), die Adresse unter dem Ort (#163, seit dem 18.11.2026 gebaut, Abschnitt „Adressfeld“). Was fehlt, fehlt ganz, ohne Platzhalter.
+2. **Noch nicht gebaut, kommt mit seinem Issue:** Zustandsmarken, gestrichelte und graue Zeilen (#359, seit dem 26.11.2026 gebaut, Abschnitt unten), „Für mich ausgeschrieben“ (#362), „Einladung ansehen“ auf der Leitungsseite (#362; Zustand und „Veröffentlicht“ seit dem 26.11.2026 gebaut, #359), die übrigen Kacheln (#358, seit dem 26.11.2026 gebaut, Abschnitt „Einladungstext“; #360, #361, #151, #357), die Adresse unter dem Ort (#163, seit dem 18.11.2026 gebaut, Abschnitt „Adressfeld“). Was fehlt, fehlt ganz, ohne Platzhalter.
 3. **Kachel allein:** Solange „Grunddaten“ die einzige Kachel ist, steht sie am PC in der linken Spalte, rechts bleibt frei; schmal steht sie über die ganze Breite.
 4. **Bausteine statt nachgebautem Aussehen:** die Zeilen der Liste als neuer Baustein „Veranstaltung in einer Liste“, die Kachel als Fläche mit „Überschrift einer Fläche“ und „Bearbeiten-Symbol“, Beginn und Ende als neuer Baustein „Kalenderblätter“, die Felder im Dialog als „Textfeld“ und „Datumsfeld“ mit Uhrzeit (Sebastian, 17.11.2026, [Kommentar in #379](https://github.com/sebivtt/dpv-participant-management/issues/379#issuecomment-6956297747)). Der Stift öffnet einen Dialog mit eigener Adresse, den das Zielbild nicht zeigt.
 5. **Vorleseprogramme** hören vor den Kalenderblättern „Beginn:“ und „Ende:“ und vor dem Ort „Ort:“; sichtbar ist das nicht.
@@ -224,7 +224,7 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 
 #380 baut die Ansichten 2 (Schritt 1 „Grunddaten“), 5 (Zusammenfassung) und 5b (Dialog „Anlegen abbrechen?“).
 
-1. **Zwei Schritte statt vier:** „Schritt 1 Grunddaten · Schritt 2 Zusammenfassung“; „Einladungstext“ und „Anmeldung“ (Ansichten 3 und 4) bringen ihre Issues (#358, #360, #361, #151) und fügen sich dazwischen ein. Die Zusammenfassung zeigt deshalb nur die Grunddaten.
+1. **Zwei Schritte statt vier:** „Schritt 1 Grunddaten · Schritt 2 Zusammenfassung“; „Einladungstext“ und „Anmeldung“ (Ansichten 3 und 4) bringen ihre Issues (#358, #360, #361, #151) und fügen sich dazwischen ein. Die Zusammenfassung zeigt deshalb nur die Grunddaten. Seit dem 26.11.2026 ist „Einladungstext“ Schritt 2 und die Zusammenfassung Schritt 3 mit dem Einladungstext unter den Grunddaten (#358, Abschnitt „Einladungstext“).
 2. **„Zurück“ auch auf der Zusammenfassung** (Frage 4 aus #29, `docs/entscheidungen.md`, 17.11.2026, #380, Nr. 2), blau umrandet zwischen „Abbrechen“ und „Veranstaltung speichern“.
 3. **Grunddaten als Kalenderblätter** wie in der Kachel der Leitungsseite statt der Liste mit Name, Zeitraum und Ort (Sebastian, 17.11.2026: „Kalenderblätter“); der Name steht oben im Kopf.
 4. **Beschriftung „Ort“** (seit #163 „Bezeichnung“ in einer eigenen Fläche „Ort“, Abschnitt „Adressfeld“) ohne „(freiwillig)“, wie in #379 (Sebastian, 17.11.2026: „Nur „Ort““); kein Satz zu den vorausgefüllten Uhrzeiten (wie #379, Nr. 8); keine Adresse unter dem Ort (#163; seit dem 18.11.2026 gebaut, Abschnitt „Adressfeld“).
@@ -241,6 +241,25 @@ Alle folgen daraus, dass die Seite die Bausteine aus dem Bausteinkatalog einbind
 3. **Noch nicht gebaut, kommt mit seinem Issue:** „Einladung ansehen“ (#362); in Satz und Rückfrage der Teilnahmekreis (#361) und der Beginn der Anmeldung (#360), daher „Die Veranstaltung ist veröffentlicht.“ statt „Sichtbar für Stamm Walhall. …“ (6c) und „Danach sieht der Teilnahmekreis die Einladung.“ ohne Namen und ohne zweiten Satz (6b); „Anmeldung offen“, „Geschlossen“ und die Frist unter der Marke (#360). Was fehlt, fehlt ganz, ohne Platzhalter.
 4. **Ohne Hinweis auf P4** in der Rückfrage „… zurücknehmen?“: Der graue Satz „Was mit bestehenden Anmeldungen geschieht, kommt mit P4 (#366).“ ist eine Notiz des Zielbilds, kein Text des Tools.
 5. **Fehler in der Rückfrage:** Lehnt der Server ab (Beginn vorbei, schon begonnen), bleibt die Rückfrage offen und zeigt den Satz als Fehlermeldung oben; das Zielbild zeigt diesen Fall nicht.
+
+## Einladungstext
+
+- **Datei:** [`einladungstext.html`](einladungstext.html)
+- **Stand:** 17.11.2026, der grobe Entwurf 2 aus der Klärung von #358 (`grober-entwurf-einladungstext-2.html`), nach Sebastians Anmerkung zu Entwurf 1 (Zahl der Zeichen); Sebastian: „Perfekt - passt genau so!“ ([Kommentar „Zielbild (17.11.2026)“](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6950910175), Datei unverändert daraus), eingespielt mit #358.
+- **Prüfsumme (SHA-256):** `ca32a675f7265f55d64aa2fe4e6746a669a1824caa63f66b168ed7ae2412d468`
+- **Inhalt der Datei:** nur erfundene Personen, Adressen und Nummern (Wanda, „wanda@example.org“, „0000 000000“ …); „Burg Ludwigstein“ wie im Zielbild „Veranstaltung“. Nichts von fremden Servern, kein Skript, Systemschrift, die Symbole stehen in der Datei.
+- **Orientierung, keine Anforderung.** Geklärt in #358 ([Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036238), N1 und N2; [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036732)). Es zeigt den Baustein „Editor“ und den Einladungstext: 1 Schritt 2, 2 Link setzen, 3 zu lang, 4 Zusammenfassung, 5 Kachel, 6 Dialog, 7 gleichzeitig geändert, 8 ohne JavaScript, 9 am Handy. Für die umgebenden Seiten gilt das Zielbild „Veranstaltung“.
+
+### Abweichungen vom Zielbild (#358)
+
+1. **Beschriftung ohne „(freiwillig)“** (N1: „Wie die Regel“): nur „Einladungstext“, wie jedes freiwillige Feld.
+2. **Meldung nach dem Speichern als kurze Meldung** (#186) unten statt der blauen Zeile oben (Nachklärung, „Folgt aus geltenden Regeln“).
+3. **Hinweis „inzwischen geändert“** im Baustein „Meldungen“, Art Warnung (#165), mit Symbol und vorgelesenem „Warnung:“, statt des gelben Kastens ohne Symbol (Ansicht 7).
+4. **Drei Schritte statt vier:** „Schritt 3 Anmeldung“ kommt mit seinem Issue (#360); bis dahin ist die Zusammenfassung Schritt 3. Die Zusammenfassung zeigt den Abschnitt „Einladungstext“ als Fläche mit Info-Symbol wie die Kachel der Leitungsseite und unter den Grunddaten aus #380.
+5. **Fehler bei einer anderen Adresse für einen Link:** Erlaubt Trix eine Adresse im Feld „Adresse“ nicht, wird das Feld rot und darunter steht „Bitte gib eine Adresse mit https, http, mailto oder tel ein.“; das Zielbild zeigt diesen Fall nicht.
+6. **Ohne JavaScript** steht im Textfeld die Formatierung, wie der Editor sie speichert: Absätze als `<div>` statt `<p>`, durchgestrichen als `<del>` statt `<s>`, die Überschrift als `<h3>` statt `<h2>`; von Hand eingegebenes `<p>`, `<s>` und `<h2>` geht ebenso.
+7. **Satz „Ohne JavaScript …“ grau** in der Art eines Hinweises unter dem Feld und mit ihm verknüpft, wie die Zeile unter einem Suchfeld.
+8. **Feld für einen Link schwebt unter dem gewählten Text** (Vorschau, Sebastian, 26.11.2026: „Ansonsten würde ich hier gerne dieses Feld genau unter dem gewählten Text haben wollen, dass über allem anderen schwebt“), im Aussehen wie die Knöpfe beim Fahrtennamen, statt als Leiste unter der Knopfleiste (Ansicht 2); darin rechtsbündig „Link setzen“ und „Verwerfen“ (Runde 2: „Die Buttons für das Link hinzufügen etc. bitte rechtsbündig.“), bei einem schon gesetzten Link „Link entfernen“ statt „Verwerfen“.
 
 ## Adressfeld
 

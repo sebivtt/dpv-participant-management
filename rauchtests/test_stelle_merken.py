@@ -19,7 +19,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from persons.models import ManagedPerson
-from rauchtests.conftest import BASE, login, wait_for_page_below
+from rauchtests.conftest import BASE, login, ueber_schritt_einladungstext, wait_for_page_below
 from roles.models import Role
 from tests.test_rollen import give, person, unit
 from units.models import Unit
@@ -305,7 +305,7 @@ def test_neue_veranstaltung_beginnt_oben(pc, monkeypatch):
     step.locator('input[name="end"]').fill("2027-05-17")
     # Seit #163 steht davor im Adressfeld „Adresse suchen“; gemeint ist „Weiter“.
     step.locator('.a-schritt-rechts button[type="submit"]').click()
-    pc.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc)
     pc.get_by_role("button", name="Veranstaltung speichern").click()
 
     pc.wait_for_url(f"{BASE}/veranstaltungen/*/")

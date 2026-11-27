@@ -12,7 +12,8 @@ Was #379 an Seiten und Dialog geändert hat (Leitungsseite, Stift statt „Bearb
 prüft `tests/test_grunddaten.py`; hier sind nur die Hilfen und die Erwartungen nachgezogen, die sich dadurch
 geändert haben. Ebenso seit #380: „Veranstaltung erstellen“ ist kein Dialog mehr, sondern Schritt 1 eines Ablaufs;
 „Weiter“ führt zur Zusammenfassung, und erst „Veranstaltung speichern“ dort zur Leitungsseite
-(`tests/test_veranstaltung_anlegen.py`).
+(`tests/test_veranstaltung_anlegen.py`); seit #358 liegt dazwischen Schritt 2 „Einladungstext“
+(`tests/test_einladungstext.py`).
 """
 
 from datetime import date
@@ -125,8 +126,13 @@ def open_create(user, client=None):
 
 
 def summary_address(entry) -> str:
-    """Die Zusammenfassung beim Anlegen, wohin „Weiter“ seit #380 führt."""
+    """Die Zusammenfassung beim Anlegen, seit #380 nach Schritt 1, seit #358 nach Schritt 2 „Einladungstext“."""
     return f"{event_address(entry)}anlegen/zusammenfassung/"
+
+
+def invitation_step_address(entry) -> str:
+    """Schritt 2 „Einladungstext“ beim Anlegen, wohin „Weiter“ in Schritt 1 seit #358 führt."""
+    return f"{event_address(entry)}anlegen/einladungstext/"
 
 
 def create(user, client=None, **values):
@@ -231,8 +237,9 @@ def test_v1_finn_legt_probelager_2027_an_und_leitet_es(org):
     assert (created.name, created.start, created.end) == ("Probelager 2027", date(2027, 5, 15), date(2027, 5, 17))
     assert leads_of(created) == {"finn.falke"}
     assert response.status_code == 302
-    assert response.url == summary_address(created)
-    response = client.post(response.url)
+    # Seit #358 führt „Weiter“ zu Schritt 2 „Einladungstext“; die Zusammenfassung kommt danach.
+    assert response.url == invitation_step_address(created)
+    response = client.post(summary_address(created))
     assert response.url == event_address(created)
     page = client.get(response.url)
     assert short_notices(page) == ["Probelager 2027 ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung."]
@@ -260,8 +267,10 @@ def test_v2_fiete_vera_und_tom_legen_ebenso_eine_veranstaltung_an(org):
 def test_v3_finn_aendert_das_ende_auf_den_18_mai(org, probelager):
     client = client_for(org.finn)
     root = page_tree(org.finn, event_address(probelager))
-    # Seit #379 statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“.
-    edit = _one(_all(root, lambda e: "a-stift" in _classes(e)))
+    # Seit #379 statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“; seit #358 hat auch die Kachel
+    # „Einladungstext“ einen.
+    tile = _one(_by_tag(root, "section", aria_labelledby="h-grunddaten"))
+    edit = _one(_all(tile, lambda e: "a-stift" in _classes(e)))
     assert _attr(edit, "href") == edit_address(probelager)
     assert _text(_one(_all(edit, lambda e: "sr-nur" in _classes(e)))) == "Grunddaten bearbeiten"
 
@@ -564,7 +573,7 @@ def test_vg8_doppelklick_auf_anlegen_legt_sie_nur_einmal_an(org):
 
     assert (first.status_code, second.status_code) == (302, 302)
     assert Event.objects.count() == 1
-    assert second.url == summary_address(Event.objects.get())
+    assert second.url == invitation_step_address(Event.objects.get())
 
 
 def test_vg8_eine_kennung_in_falscher_form_legt_nichts_an(org):

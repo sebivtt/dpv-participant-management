@@ -55,6 +55,7 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
+from events import invitation
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
 from events.models import Event, RegisteredPerson, Registration
@@ -1217,6 +1218,34 @@ class Rights:
             entry.version += 1
             entry.save()
         return True, entry, str(event_texts.SAVED % {"event": entry.name})
+
+    def edit_invitation(self, key, text: str, version) -> tuple[bool, Event, str]:
+        """Speichert den Einladungstext einer eigenen Veranstaltung; gibt zurück, ob es geklappt hat, sie und die Meldung.
+
+        Teil von VA-02 seit #358: nur die Veranstaltungsleitung, auch ohne Zuordnung wie bei den Grunddaten (V4 aus
+        #100) und auch, während die Veranstaltung läuft (G8); alle anderen „nicht gefunden“ (VA-03). Gespeichert wird
+        nur der bereinigte Text (`events.invitation.clean()`), gleich, woher er kommt. `version` ist der Stand des
+        Einladungstexts beim Öffnen; hat inzwischen jemand anderes gespeichert, auch in einem zweiten Fenster, wird
+        nichts überschrieben: „nicht geklappt“ mit der Veranstaltung, wie sie jetzt ist, und dem Satz aus G2. Bringt
+        das ältere Fenster genau den gespeicherten Text, gilt das als gespeichert (#391). Gesperrt sind das eigene
+        Konto und die Veranstaltung, wie bei `edit_event()`.
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        text = invitation.clean(text)
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            entry = fresh.entry(fresh.events().select_for_update(), key)
+            names = {"event": entry.name}
+            if str(entry.invitation_version) != str(version):
+                if entry.invitation_text == text:
+                    return True, entry, str(event_texts.INVITATION_SAVED % names)
+                return False, entry, str(event_texts.INVITATION_CHANGED_MEANWHILE % names)
+            entry.invitation_text = text
+            entry.invitation_version += 1
+            entry.save(update_fields=["invitation_text", "invitation_version"])
+        return True, entry, str(event_texts.INVITATION_SAVED % names)
 
     # Veröffentlichen (#359, VA-08, VER-07, VER-08)
     #

@@ -19,7 +19,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, focus_visible, login, run_axe
+from rauchtests.conftest import BASE, focus_visible, login, run_axe, ueber_schritt_einladungstext
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _type_like_a_phone
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
@@ -89,7 +89,7 @@ def test_am_pc_nur_mit_der_tastatur_suchen_uebernehmen_und_speichern(pc, osm):
     _uebernommen(pc)
     _zu(pc, NEXT, steps=15)
 
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc)
     expect(pc.locator(f"{TILE} .a-kalender-ort .a-ort-zeile")).to_have_text(
         ["Burg Ludwigstein", "Burgweg 1", "99999 Musterhausen"])
     _no_side_scroll(pc)
@@ -158,7 +158,7 @@ def test_am_handy_nur_mit_der_tastatur_wie_mit_autokorrektur(handy, osm):
     # Enter im Namen speichert wie „Weiter“; in PLZ und den übrigen Feldern der Suche sucht Enter seit #410 (BA3).
     handy.locator('input[name="postal_code"]').fill("99999")
     handy.get_by_label("Name").press("Enter")
-    handy.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(handy)
     expect(handy.locator(f"{TILE} .a-kalender-ort .a-ort-zeile")).to_have_text(
         ["Burg Ludwigstein", "Burgweg 1a", "99999 Musterhausen"])
     assert Event.objects.get().latitude is None
@@ -275,7 +275,7 @@ def test_ohne_skript_suchen_und_uebernehmen(pc_ohne_skript, osm):
     page.locator(TAKE).first.click()
     expect(page.locator('input[name="city"]')).to_have_value("Musterhausen")
     page.locator(NEXT).click()
-    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(page)
     assert get_user_model().objects.filter(username="erika.testfrau").exists()
     assert Event.objects.get().city == "Musterhausen"
 
@@ -367,7 +367,7 @@ def _im_dialog_des_stifts(page: Page) -> None:
     """Legt das Pfingstlager mit Burg Ludwigstein, ohne Adresse, an und öffnet den Dialog des Stifts."""
     _wanda_in_schritt_1(page)
     page.locator(NEXT).click()
-    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(page)
     page.locator(NEXT).click()
     page.wait_for_url(f"{LIST}*/")
     page.goto(f"{page.url}bearbeiten/")
@@ -418,7 +418,7 @@ def test_ba3_enter_anderswo_ist_weiter(pc, osm, field):
 
     pc.locator(f'{STEP} [name="{field}"]').press("Enter")
 
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc)
     assert osm.calls == []
 
 
@@ -629,7 +629,7 @@ def test_bg4_bg5_leeren_geht_auch_ohne_openstreetmap_und_nimmt_die_koordinaten_m
     pc.locator('select[name="state"]').select_option("HE")
     pc.locator(NEXT).click()
 
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc)
     entry = Event.objects.get()
     assert (entry.city, entry.latitude) == ("Musterhausen", None)
 
@@ -667,7 +667,7 @@ def test_ba8_ohne_skript_leeren_und_uebernehmen_bleiben_beim_adressfeld(pc_ohne_
     expect(page.locator(CLEAR)).to_be_hidden()
 
     page.locator('input[name="location"]').press("Enter")
-    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(page)
 
 
 def test_ba9_am_handy_sucht_die_eingabetaste_und_leeren_geht_mit_der_tastatur(handy, osm):

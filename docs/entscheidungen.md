@@ -63,6 +63,29 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 | Enter im Adressfeld | 24.11.2026, #410, Nr. 1 | 18.11.2026, #163, „Technische Wahl“, Nr. 1 (nur der Satz, dass Enter so weiter wie „Weiter“ oder „Speichern“ speichert) |
 | Prüfung der Datumsfelder im Browser | 24.11.2026, #411, Nr. 1 bis 4 | 17.11.2026, #379, „Technische Wahl“, Nr. 2 (nur der Satz „der Browser prüft die Felder nicht selbst“, für die drei Prüfungen von Beginn, Ende und Dauer beim Verlassen eines Felds) |
 | Form der Rechtematrix | 24.11.2026, #139, Nr. 1 bis 5 | 23.10.2026, #87, Nr. 1 (nur die Form der Zeilen: Kennung, wer, Daten, Aktion, erlaubt oder verboten, Quelle und Stand je Zeile) |
+| Eingebettete Gestaltung auf Seiten mit Editor | 26.11.2026, #358, Nr. 2 | 14.11.2026, #278, Nr. 1 (nur für die Gestaltung, die Trix beim Start auf Seiten mit dem Baustein „Editor“ in die Seite legt, mit Schlüssel je Aufruf) |
+
+---
+
+## 2026-11-26 · Einladungstext mit dem Editor Trix, beim Speichern mit nh3 bereinigt (#358, VER-05)
+
+**Entscheidung** (Sebastian; Klärung von #358 am 17.11.2026, [Stand der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6945415280), Fragen 1 bis 11, [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036238), N1 und N2; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036732) von #358):
+
+1. **Trix als Editor** (Frage 1), vom eigenen Server, als neuer Baustein „Editor“ im Bausteinkatalog; verglichen waren Trix, Quill 2, Tiptap, Lexical, ein eigener Editor und ein Textfeld mit Zeichen. Knöpfe nach Frage 2, ohne Code, Anhänge und Bilder.
+2. **Schmale Ausnahme von der Sicherheitsrichtlinie** (Frage 1): Trix legt beim Start seine eigene Gestaltung als Element in die Seite. Dafür dürfen nur Seiten mit dem Baustein „Editor“ Gestaltung mit einem Schlüssel zeigen, den jede Antwort neu bekommt. Ersetzt den Eintrag vom 14.11.2026 (#278), Nr. 1, nur für diese Gestaltung; alle anderen Seiten und alles andere bleiben unverändert streng.
+3. **Breite Form des Dialogs** (N2: „Dialog erweitern“) statt eines neuen Bausteins; Beschriftung nur „Einladungstext“ (N1: „Wie die Regel“).
+
+**Technische Wahl** (KI):
+
+1. **Was Trix an der Quelle braucht** (Text von #358, „Sicherheitsrichtlinie“): Geprüft in `trix.umd.js` 2.1.19. Trix legt zwei Elemente `<style>` an (`installDefaultCSSForTagName`) und liest den Schlüssel aus der Angabe `trix-csp-nonce` im Kopf der Seite; sonst setzt es Gestaltung nur über das Skript an einzelnen Elementen, was die Richtlinie nicht betrifft, lädt nichts nach und führt keinen Code aus Texten aus. Mehr als diese Ausnahme braucht es also nicht. Umgesetzt mit Djangos eigenem Schlüssel je Aufruf (`CSP.NONCE`, `request.csp_nonce`): `with_editor()` in `core/views.py` setzt für die Seiten mit Editor `style-src 'self' 'nonce-…'`; der Schlüssel steht nur in der Antwort, wenn die Seite ihn nutzt.
+2. **Trix ohne Build-Schritt:** die fertige Datei `trix.umd.min.js` aus dem Paket trix 2.1.19 von npm, unverändert unter `core/static/core/trix/` mit Lizenz (MIT, mit der EUPL-1.2 verträglich), geladen nur auf Seiten mit Editor (`base.html`). Gepflegt von 37signals; ein Test prüft Fassung und Prüfsumme. Ein Paket mit Build-Schritt wäre nötig gewesen für Tiptap oder Lexical (Frage 1).
+3. **nh3 zum Bereinigen** (Abschlusskriterium P3): `nh3` (Python, Lizenz MIT, gepflegt, nutzt die Bibliothek ammonia) in `pyproject.toml`. `events/invitation.py` lässt erst nh3 genau die Formatierungen des Editors durch und baut das Ergebnis dann aus dieser kurzen Liste neu auf: Gleichbedeutendes wie `<b>` aus Word wird zur Formatierung des Editors, Zellen einer Tabelle und weitere Überschriften bleiben getrennter Text, Links ohne https, http, mailto oder tel werden Text; jeder Link bekommt `target="_blank" rel="noopener noreferrer"`. Bereinigt wird beim Speichern (`InvitationForm`, `Rights.edit_invitation()`) und beim Zeigen der ersten Zeilen noch einmal.
+4. **Überschrift als h3:** Die eine Stufe Überschrift speichert Trix als `<h3>` (`Trix.config.blockAttributes.heading1.tagName`), weil der Text immer unter einer Überschrift der Ebene 2 steht, etwa „Einladungstext“ in der Kachel; aussehen tut sie wie im Zielbild.
+5. **Eigener Stand des Einladungstexts** (`invitation_version`) für gleichzeitiges Speichern (G2), getrennt vom Stand der Grunddaten, damit Grunddaten aus einem zweiten Fenster den Text nicht als „inzwischen geändert“ melden; gleicher Text bei älterem Stand gilt als gespeichert (#391).
+6. **Zahl der Zeichen wie der Server:** sichtbarer Text ohne Formatierung und ohne Zeilenumbrüche, je Unicode-Zeichen (`visible_length()`, im Browser aus `getDocument().toString()` von Trix).
+7. **Bedienung mit der Tastatur:** Die Knopfleiste ist ein Halt der Tab-Taste mit Pfeilen darin; Enter und Leertaste lösen in Trix dasselbe aus wie die Maus, danach geht es mit derselben Auswahl im Text weiter. Tab im Text rückt in Listen nicht ein, sondern führt hinaus, damit niemand im Editor festhängt.
+
+**Umsetzung:** `events/models.py` (Felder `invitation_text`, `invitation_version`, Migration `0007_einladungstext`), `events/invitation.py`, `events/texts.py`, `core/forms.py` (`InvitationForm`), `access/rights.py` (`edit_invitation()`), `core/views.py`, `config/urls.py`, `config/settings.py` (Schlüssel je Aufruf in den Vorlagen), `core/templates/base.html`, neu `core/_editor.html` und `core/_einladungstext.html`, `_dialog_auf.html`, `veranstaltung.html`, `veranstaltung_anlegen.html`, `bausteine.html`, `_symbole.svg`, `core/templatetags/layout.py` (`editor`), `core/static/core/app.js` und `app.css`, `core/static/core/trix/`, `docs/rechtematrix.md` (VA-02, VA-03, VA-06), `docs/gestaltung.md`, `docs/zielbilder/`.
 
 ---
 

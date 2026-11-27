@@ -3,7 +3,8 @@
 Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026, für Anmeldungen aus den Szenarien zu #101 vom
 15.11.2026, für Uhrzeiten, Ort, Prüfungen und Leitungsseite aus dem Text von #379 und seinen Szenarien vom
 17.11.2026, für das Anlegen in Schritten aus dem Text von #380 und seinen Szenarien vom 17.11.2026, für Zustand und
-Veröffentlichen aus dem Text von #359 und seinen Szenarien vom 17.11.2026.
+Veröffentlichen aus dem Text von #359 und seinen Szenarien vom 17.11.2026, für den Einladungstext aus dem Text von #358,
+seiner Nachklärung und seinen Szenarien vom 17.11.2026 (Fassung nach dem Zielbild).
 """
 
 from django.utils.translation import gettext_lazy, ngettext_lazy
@@ -72,6 +73,19 @@ CANCEL_TEXT_KEEP = gettext_lazy("%(event)s ist als Entwurf gespeichert. Du kanns
                                 "Leitungsseite weitermachen.")
 DELETE_DRAFT = gettext_lazy("Entwurf löschen")
 SAVE_DRAFT = gettext_lazy("Entwurf speichern")
+
+# Einladungstext (#358): Schritt 2, Abschnitt der Zusammenfassung, Kachel und Dialog des Stifts
+INVITATION = gettext_lazy("Einladungstext")
+INVITATION_CHANGE = gettext_lazy("Einladungstext ändern")
+INVITATION_EDIT = gettext_lazy("Einladungstext bearbeiten")
+NO_INVITATION = gettext_lazy("Noch kein Einladungstext.")
+# Am Feld, mit der Zahl in deutscher Schreibweise („10.001“); der Text bleibt im Editor (G1).
+INVITATION_TOO_LONG = gettext_lazy("Der Einladungstext ist zu lang: höchstens %(limit)s Zeichen, jetzt %(count)s.")
+INVITATION_SAVED = gettext_lazy("Der Einladungstext von %(event)s ist gespeichert.")
+# Gleichzeitiges Speichern (G2), nach dem Muster bei verwalteten Personen, um den Satz zum eigenen Text ergänzt.
+INVITATION_CHANGED_MEANWHILE = gettext_lazy(
+    "Der Einladungstext von %(event)s wurde inzwischen von jemand anderem geändert. Dein Text steht unten noch im "
+    "Editor und ist nicht gespeichert. Bitte prüfe ihn und speichere erneut.")
 
 # Kurze Meldungen (#186). Nach „Veranstaltung speichern“ und „Entwurf speichern“ derselbe Satz (#380).
 SAVED_AS_DRAFT = gettext_lazy("%(event)s ist als Entwurf gespeichert. Nur die Leitung sieht die Veranstaltung.")

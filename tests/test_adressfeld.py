@@ -43,6 +43,7 @@ from tests.test_veranstaltungen import (
     edit_address,
     event_address,
     event_of,
+    summary_address,
 )
 
 pytestmark = pytest.mark.django_db
@@ -281,7 +282,8 @@ def test_a1_wanda_findet_die_burg_ueber_die_bezeichnung_und_uebernimmt_den_treff
     assert saved_address(created()) == {"street": "Burgweg 1", "postal_code": "99999", "city": "Musterhausen",
                                         "state": "HE", "country": "DE", "latitude": Decimal("51.3260000"),
                                         "longitude": Decimal("9.9040000")}
-    summary = _tree(client.get(response["Location"]))
+    # Seit #358 führt „Weiter“ zu Schritt 2 „Einladungstext“; die Adresse zeigt danach die Zusammenfassung.
+    summary = _tree(client.get(summary_address(created())))
     assert place_lines(summary) == ["Burg Ludwigstein", "Burgweg 1", "99999 Musterhausen"]
 
 
@@ -297,7 +299,9 @@ def test_a1_die_zusammenfassung_und_die_leitungsseite_zeigen_die_adresse_mit_ort
     """Kachel mehrzeilig mit dem Ortssymbol statt des Gebäudes (Nachklärung Z2), Kopf der Leitungsseite in einer Zeile."""
     client = client_for(org.wanda)
     root = _tree(take(client, _tree(search_in_step_one(client))))
-    summary = client.get(weiter(client, root)["Location"])
+    assert weiter(client, root).status_code == 302
+    # Seit #358 liegt Schritt 2 „Einladungstext“ vor der Zusammenfassung.
+    summary = client.get(summary_address(Event.objects.get()))
     summary_root = _tree(summary)
 
     assert place_icon(summary_root) == "#i-ort"

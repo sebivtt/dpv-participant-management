@@ -134,6 +134,315 @@
     counter.hidden = false;
   });
 
+  // Editor (#358, Baustein „Editor“, core/_editor.html): Der Server liefert ein Textfeld mit der Formatierung als
+  // Zeichen. Gibt es Trix (vom eigenen Server, nur auf Seiten mit Editor), setzt das Skript an seine Stelle die
+  // Knopfleiste aus der Vorlage und Trix; den Text schickt ein verstecktes Feld mit demselben Namen. Die Überschrift
+  // ist h3 (der Text steht unter einer Überschrift der Ebene 2), Anhänge und Bilder nimmt der Editor nicht an.
+  // Die Knopfleiste ist ein Halt der Tab-Taste, darin wechseln Pfeile, Pos1 und Ende; Enter und Leertaste drücken
+  // einen Knopf, danach geht es im Text weiter. Tab im Text rückt nie ein, sondern führt hinaus (nur mit Tastatur
+  // bedienbar, E5). Die Zahl der Zeichen zählt wie der Server (`visible_length()` in events/invitation.py): ohne
+  // Formatierung und Zeilenumbrüche, je Unicode-Zeichen; über der Grenze wird sie rot, abgeschnitten wird nichts.
+  var editors = document.querySelectorAll("[data-editor]");
+  if (editors.length && window.Trix && window.customElements) {
+    window.Trix.config.blockAttributes.heading1.tagName = "h3";
+    document.addEventListener("trix-file-accept", function (event) {
+      event.preventDefault();
+    });
+    document.addEventListener("trix-attachment-add", function (event) {
+      event.attachment.remove();
+    });
+
+  }
+
+  function editorButtons(toolbar) {
+    return Array.from(toolbar.querySelectorAll(".a-editor-leiste button"));
+  }
+
+  function editorSetStop(toolbar, button) {
+    editorButtons(toolbar).forEach(function (each) {
+      each.tabIndex = each === button ? 0 : -1;
+    });
+  }
+
+  // Trix sperrt Knöpfe, die gerade nichts tun können (etwa „Rückgängig“ ohne Änderung), über `disabled`. Ein
+  // gesperrter Knopf verlöre dabei den Fokus, und mit der Tastatur stünde man nirgends. Deshalb heißt „gesperrt“ hier
+  // `aria-disabled`: Der Knopf bleibt erreichbar, Vorleseprogramme sagen „nicht verfügbar“, und er tut nichts.
+  function editorKeepFocusable(button) {
+    Object.defineProperty(button, "disabled", {
+      configurable: true,
+      get: function () { return button.getAttribute("aria-disabled") === "true"; },
+      set: function (locked) {
+        if (locked) {
+          button.setAttribute("aria-disabled", "true");
+        } else {
+          button.removeAttribute("aria-disabled");
+        }
+      },
+    });
+  }
+
+  function editorKeepStop(toolbar) {
+    var buttons = editorButtons(toolbar);
+    if (!buttons.some(function (each) { return each.tabIndex === 0; })) {
+      editorSetStop(toolbar, buttons[0]);
+    }
+    buttons.forEach(function (each) {
+      if (each.hasAttribute("data-trix-attribute")) {
+        each.setAttribute("aria-pressed", each.classList.contains("trix-active") ? "true" : "false");
+      }
+    });
+  }
+
+  editors.forEach(function (box) {
+    var textarea = box.querySelector("textarea");
+    var template = box.querySelector("template[data-editor-leiste]");
+    if (!window.Trix || !window.customElements || !textarea || !template) {
+      return;
+    }
+    var id = textarea.id;
+    var label = box.querySelector("label[for='" + id + "']");
+    var counter = document.getElementById(id + "-zahl");
+    var limit = parseInt(textarea.getAttribute("data-hoechstens"), 10);
+    var value = document.createElement("input");
+    value.type = "hidden";
+    value.name = textarea.name;
+    value.id = id + "-wert";
+    value.value = textarea.value;
+    if (textarea.hasAttribute("form")) {
+      value.setAttribute("form", textarea.getAttribute("form"));
+    }
+    var toolbar = document.createElement("trix-toolbar");
+    toolbar.id = id + "-leiste";
+    toolbar.appendChild(template.content.cloneNode(true));
+    editorButtons(toolbar).forEach(editorKeepFocusable);
+    // Ein gesperrter Knopf tut nichts, auch nicht mit Maus oder Tippen.
+    toolbar.addEventListener("mousedown", function (event) {
+      var button = event.target.closest(".a-editor-leiste button");
+      if (button && button.getAttribute("aria-disabled") === "true") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    var editor = document.createElement("trix-editor");
+    editor.id = id;
+    editor.className = "a-editor-text";
+    editor.setAttribute("input", value.id);
+    editor.setAttribute("toolbar", toolbar.id);
+    editor.setAttribute("aria-labelledby", label.id);
+    editor.setAttribute("spellcheck", "true");
+    editor.setAttribute("autocapitalize", "sentences");
+    var described = (textarea.getAttribute("aria-describedby") || "").split(" ").filter(function (each) {
+      return each && each !== id + "-ohne-skript";
+    });
+    if (described.length) {
+      editor.setAttribute("aria-describedby", described.join(" "));
+    }
+    if (textarea.getAttribute("aria-invalid") === "true") {
+      editor.setAttribute("aria-invalid", "true");
+    }
+    // Eingefügtes aus Word u. Ä. bringt eingebettete Gestaltung mit (Elemente <style>, Angaben style=…). Trix verwirft
+    // sie, liest sie aber erst ein, und das meldet der Browser als Verstoß gegen die Sicherheitsrichtlinie. Deshalb
+    // übernimmt das Skript eingefügtes HTML selbst: ohne Gestaltung an Trix, das daraus wie beim Einfügen nur
+    // die eigenen Formatierungen macht. Text, Links und Dateien fügt Trix weiter selbst ein; den Rest bereinigt der
+    // Server (E7).
+    editor.addEventListener("paste", function (event) {
+      var data = event.clipboardData;
+      var html = data ? data.getData("text/html") : "";
+      if (!html || data.getData("URL") || !editor.editor) {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      // Nur in den Tags selbst, damit sichtbarer Text wie „style=casual“ bleibt (Befund G2).
+      editor.editor.insertHTML(html
+        .replace(/<style[\s\S]*?<\/style\s*>/gi, "")
+        .replace(/<[^>]*>/g, function (tag) {
+          return tag.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+        }));
+    }, true);
+    // Tab rückt in Listen nicht ein: Der Browser führt wie überall zum nächsten Halt (Trix hört danach).
+    editor.addEventListener("keydown", function (event) {
+      if (event.key === "Tab") {
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    var frame = document.createElement("div");
+    frame.className = "a-editor-rahmen";
+    frame.appendChild(toolbar);
+    frame.appendChild(editor);
+    textarea.before(value, frame);
+    textarea.remove();
+    var hint = document.getElementById(id + "-ohne-skript");
+    if (hint) {
+      hint.remove();
+    }
+
+    function count() {
+      var text = editor.editor ? editor.editor.getDocument().toString() : "";
+      return Array.from(text.replace(/[\r\n]/g, "")).length;
+    }
+
+    function update() {
+      if (!counter) {
+        return;
+      }
+      var shown = count();
+      var number = shown.toLocaleString("de-DE");
+      counter.querySelector("[aria-hidden]").textContent = number + "/" + counter.getAttribute("data-hoechstens-text");
+      counter.querySelector(".sr-nur").textContent = counter.getAttribute("data-vorlesen").replace("{anzahl}", number);
+      counter.classList.toggle("ist-zu-lang", shown > limit);
+      counter.hidden = false;
+    }
+
+    editor.addEventListener("trix-initialize", function () {
+      editorKeepStop(toolbar);
+      update();
+      // Trix setzt nach jedem Zeichnen die Schreibmarke im Text, auch wenn der Fokus woanders ist. Chrome holt den
+      // Fokus dann in den Text und rollt die Seite dorthin, etwa kurz nach dem Laden oder aus der Knopfleiste. Die
+      // Schreibmarke setzt Trix deshalb nur, solange der Fokus im Text ist oder das Feld für einen Link offen ist oder
+      // sich gerade schließt; sonst merkt es sich die Stelle nur.
+      var manager = editor.editorController && editor.editorController.selectionManager;
+      if (manager && typeof manager.setLocationRange === "function") {
+        var setLocationRange = manager.setLocationRange.bind(manager);
+        manager.setLocationRange = function (locationRange) {
+          var active = document.activeElement;
+          if (linkOpen || (active && editor.contains(active))) {
+            return setLocationRange(locationRange);
+          }
+          if (typeof manager.updateCurrentLocationRange === "function") {
+            manager.updateCurrentLocationRange(locationRange);
+          }
+        };
+      }
+    });
+    // Die Zahl steht gleich da, nicht erst, wenn Trix fertig ist; sonst rutschte die Seite darunter nach.
+    if (counter) {
+      counter.querySelector("[aria-hidden]").textContent = "0/" + counter.getAttribute("data-hoechstens-text");
+      counter.hidden = false;
+    }
+    editor.addEventListener("trix-change", update);
+
+    // Feld „Adresse“ für einen Link (Vorschau, Sebastian, 26.11.2026): Es schwebt direkt unter dem gewählten Text über
+    // allem anderen, wie die Knöpfe beim Fahrtennamen. Ohne Link darin „Link setzen“ und „Verwerfen“, mit Link
+    // „Link setzen“ und „Link entfernen“. Trix öffnet und schließt es; das Skript stellt es nur an seinen Platz.
+    var linkField = toolbar.querySelector(".a-editor-link");
+    function placeLink() {
+      if (!linkField || !linkField.hasAttribute("data-trix-active")) {
+        return;
+      }
+      var range = editor.editor.getSelectedRange();
+      var start = editor.editor.getClientRectAtPosition(range[0]);
+      var end = editor.editor.getClientRectAtPosition(range[1]) || start;
+      var area = frame.getBoundingClientRect();
+      var box = editor.getBoundingClientRect();
+      if (!start) {
+        start = end = { left: box.left, bottom: box.top };
+      }
+      var bottom = Math.min(Math.max(start.bottom, end.bottom), box.bottom);
+      var width = linkField.offsetWidth;
+      var left = Math.min(Math.max(start.left - area.left, 0), Math.max(area.width - width, 0));
+      linkField.style.left = left + "px";
+      linkField.style.top = (Math.max(bottom, box.top) - area.top + 6) + "px";
+    }
+    var linkOpen = false;
+    editor.addEventListener("trix-toolbar-dialog-hide", function () {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          linkOpen = false;
+        });
+      });
+    });
+    editor.addEventListener("trix-toolbar-dialog-show", function () {
+      linkOpen = true;
+      var linked = editor.editor.attributeIsActive("href");
+      linkField.querySelector("[data-mit-link]").hidden = !linked;
+      linkField.querySelector("[data-ohne-link]").hidden = linked;
+      placeLink();
+    });
+    editor.addEventListener("scroll", placeLink);
+    window.addEventListener("resize", placeLink);
+    new MutationObserver(function () {
+      editorKeepStop(toolbar);
+    }).observe(toolbar, { subtree: true, attributes: true, attributeFilter: ["class"] });
+
+    // Trix setzt nach dem Zeichnen die Schreibmarke neu; Chrome holt dabei den Fokus in den Text, auch wenn er gerade
+    // in der Knopfleiste steht. Nur wer selbst in den Text geht (Tab, Klick, Tippen, ein Knopf), soll dort landen;
+    // sonst kommt der Fokus auf den Knopf zurück, auf dem er war.
+    var inToolbar = null;
+    var leaving = false;
+    toolbar.addEventListener("focusin", function (event) {
+      if (event.target.matches(".a-editor-leiste button")) {
+        editorSetStop(toolbar, event.target);
+        inToolbar = event.target;
+        leaving = false;
+      }
+    });
+    toolbar.addEventListener("focusout", function (event) {
+      if (!event.relatedTarget || !toolbar.contains(event.relatedTarget)) {
+        if (event.relatedTarget !== editor || leaving) {
+          inToolbar = null;
+        }
+      }
+    });
+    editor.addEventListener("focus", function () {
+      var back = inToolbar;
+      inToolbar = null;
+      if (back && !leaving) {
+        back.focus();
+      }
+      leaving = false;
+    });
+    document.addEventListener("pointerdown", function (event) {
+      if (editor.contains(event.target)) {
+        leaving = true;
+      }
+    }, true);
+    toolbar.addEventListener("keydown", function (event) {
+      var button = event.target.closest(".a-editor-leiste button");
+      if (!button) {
+        return;
+      }
+      if (event.key === "Tab") {
+        leaving = true;
+        return;
+      }
+      var buttons = editorButtons(toolbar);
+      var at = buttons.indexOf(button);
+      var next = null;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        next = buttons[(at + 1) % buttons.length];
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        next = buttons[(at - 1 + buttons.length) % buttons.length];
+      } else if (event.key === "Home") {
+        next = buttons[0];
+      } else if (event.key === "End") {
+        next = buttons[buttons.length - 1];
+      } else if (event.key === "Enter" || event.key === " ") {
+        // Trix reagiert nur auf das Drücken der Maus; mit der Tastatur löst das Skript dasselbe aus und kehrt danach
+        // mit derselben Auswahl in den Text zurück. „Link“ öffnet das Feld „Adresse“, das dann den Fokus hat.
+        event.preventDefault();
+        if (button.getAttribute("aria-disabled") === "true") {
+          return;
+        }
+        var range = editor.editor.getSelectedRange();
+        button.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+        if (button.getAttribute("data-trix-action") !== "link") {
+          leaving = true;
+          editor.focus();
+          if (button.hasAttribute("data-trix-attribute")) {
+            editor.editor.setSelectedRange(range);
+          }
+        }
+        return;
+      }
+      if (next) {
+        event.preventDefault();
+        editorSetStop(toolbar, next);
+        next.focus();
+      }
+    });
+  });
+
   // Feld zum Antippen (#180, Zielbild „Mein Profil“): In Ruhe zeigt es den gespeicherten Wert
   // wie eine Angabe; Antippen öffnet die Eingabe mit „Verwerfen“ und „Speichern“. Gespeichert
   // wird wie ohne Skript mit dem Formular, also nur mit „Speichern“ oder Enter. Verwerfen geht

@@ -142,6 +142,46 @@ def textfeld(field, button: str = "", help_text: str = "") -> dict:
     return context
 
 
+@register.inclusion_tag("core/_editor.html")
+def editor(field) -> dict:
+    """Baustein „Editor“ (#358, Zielbild docs/zielbilder/einladungstext.html) für formatierten Text, bisher nur den
+    Einladungstext.
+
+    Der Server liefert ein Textfeld mit der Formatierung als Zeichen und dem Satz „Ohne JavaScript siehst du die
+    Formatierung als Zeichen.“ (E6). Mit Skript setzt core/static/core/app.js an seine Stelle Trix mit der Knopfleiste
+    aus diesem Baustein (die Vorlage `data-editor-leiste`), schreibt beim Tippen die Zahl der Zeichen und nimmt den
+    Satz weg. Beschriftung und Fehler stehen wie beim Textfeld; die Grenze legt das Formular mit `data-hoechstens`
+    fest. Die Seite braucht dazu Trix und die schmale Ausnahme der Sicherheitsrichtlinie (`with_editor()` in
+    core/views.py, `editor_page` in base.html).
+    """
+    error_id = f"{field.auto_id}-fehler"
+    hint_id = f"{field.auto_id}-ohne-skript"
+    counter_id = f"{field.auto_id}-zahl"
+    limit = int(field.field.widget.attrs["data-hoechstens"])
+    shown_limit = f"{limit:,}".replace(",", ".")
+    attrs = {"class": "form-control a-editor-roh"}
+    if field.errors:
+        attrs = {"class": "form-control a-editor-roh is-invalid", "aria-invalid": "true"}
+    attrs["aria-describedby"] = " ".join(filter(None, [error_id if field.errors else "", hint_id, counter_id]))
+    counter = format_html(
+        '<p class="a-zeichenzahl" id="{}" data-vorlesen="{}" data-hoechstens-text="{}" hidden>'
+        '<span aria-hidden="true"></span><span class="sr-nur"></span></p>',
+        counter_id,
+        gettext_lazy("{anzahl} von %(hoechstens)s Zeichen") % {"hoechstens": shown_limit},
+        shown_limit,
+    )
+    return {
+        "field": field,
+        "widget": field.as_widget(attrs=attrs),
+        "errors": field.errors,
+        "error_id": error_id,
+        "hint_id": hint_id,
+        "label_id": f"{field.auto_id}-beschriftung",
+        "link_id": f"{field.auto_id}-adresse",
+        "counter": counter,
+    }
+
+
 @register.inclusion_tag("core/_datumsfeld.html")
 def datumsfeld(field, time=None) -> dict:
     """Baustein „Datumsfeld“ (#117, N3): das Datumsfeld des Browsers mit Beschriftung und Fehler am Feld.

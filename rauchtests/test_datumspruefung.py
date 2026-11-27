@@ -17,7 +17,7 @@ from django.utils import timezone
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, expect_modal, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, ueber_schritt_einladungstext
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
@@ -162,7 +162,7 @@ def test_ca4_ca5_nachfrage_zur_dauer_mit_schalter_und_weiter(pc):
     expect(_error(pc, "end")).to_have_count(0)
     expect(switch).to_be_checked()
     pc.locator(NEXT).click()
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    ueber_schritt_einladungstext(pc)
     assert Event.objects.get(name="Pfingstlager 2028").end == date(2028, 7, 1)
 
 

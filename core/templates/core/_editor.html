@@ -1,0 +1,40 @@
+{% load i18n layout %}{# Baustein „Editor“ (#358, Zielbild docs/zielbilder/einladungstext.html): ein Feld für formatierten Text mit Beschriftung, Knopfleiste, Zahl der Zeichen und Fehler am Feld, eingebunden mit {% editor form.feld %} (core/templatetags/layout.py). Ohne Skript ein Textfeld mit der Formatierung als Zeichen und dem Satz darunter (E6). Mit Skript setzt core/static/core/app.js („Editor“) Trix an seine Stelle: oben die Knopfleiste aus der Vorlage unten in drei Gruppen (fett, kursiv, durchgestrichen, Link · Überschrift, Zitat, Aufzählung, nummerierte Liste · Rückgängig, Wiederholen), je Knopf mindestens 36 Pixel und mit Beschriftung für Vorleseprogramme; „Link“ öffnet direkt unter dem gewählten Text, über allem anderen schwebend, das Feld „Adresse“ mit „Link setzen“ und „Verwerfen“, bei einem schon gesetzten Link „Link entfernen“ statt „Verwerfen“ (Vorschau, Sebastian, 26.11.2026); Escape schließt es ohne Änderung. Die Knopfleiste ist ein Halt der Tab-Taste, darin wechseln die Pfeiltasten. Rechts darunter beim Tippen die Zahl der Zeichen wie beim Textfeld (#215), gezählt ohne Formatierung, rot über der Grenze. Kein Code, keine Anhänge, keine Bilder. #}
+<div class="a-editor{% if errors %} ist-fehler{% endif %}" data-editor>
+  <label class="form-label" id="{{ label_id }}" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  <template data-editor-leiste>
+    <div class="a-editor-leiste" role="toolbar" aria-label="{% translate "Formatierung" %}">
+      <div class="a-editor-gruppe" role="group" aria-label="{% translate "Schrift und Link" %}">
+        <button type="button" class="a-editor-knopf ist-fett" data-trix-attribute="bold" data-trix-key="b" aria-label="{% translate "Fett" %}" title="{% translate "Fett" %}"><span aria-hidden="true">{% translate "B" context "Knopf Fett im Editor" %}</span></button>
+        <button type="button" class="a-editor-knopf ist-kursiv" data-trix-attribute="italic" data-trix-key="i" aria-label="{% translate "Kursiv" %}" title="{% translate "Kursiv" %}"><span aria-hidden="true">{% translate "I" context "Knopf Kursiv im Editor" %}</span></button>
+        <button type="button" class="a-editor-knopf ist-durch" data-trix-attribute="strike" aria-label="{% translate "Durchgestrichen" %}" title="{% translate "Durchgestrichen" %}"><span aria-hidden="true">{% translate "S" context "Knopf Durchgestrichen im Editor" %}</span></button>
+        <button type="button" class="a-editor-knopf" data-trix-attribute="href" data-trix-action="link" data-trix-key="k" aria-label="{% translate "Link" %}" title="{% translate "Link" %}">{% icon "link" %}</button>
+      </div>
+      <div class="a-editor-gruppe" role="group" aria-label="{% translate "Absatz" %}">
+        <button type="button" class="a-editor-knopf ist-wort" data-trix-attribute="heading1" aria-label="{% translate "Überschrift" %}" title="{% translate "Überschrift" %}"><span aria-hidden="true">{% translate "Ü" context "Knopf Überschrift im Editor" %}</span></button>
+        <button type="button" class="a-editor-knopf" data-trix-attribute="quote" aria-label="{% translate "Zitat" %}" title="{% translate "Zitat" %}">{% icon "zitat" %}</button>
+        <button type="button" class="a-editor-knopf" data-trix-attribute="bullet" aria-label="{% translate "Aufzählung" %}" title="{% translate "Aufzählung" %}">{% icon "aufzaehlung" %}</button>
+        <button type="button" class="a-editor-knopf" data-trix-attribute="number" aria-label="{% translate "Nummerierte Liste" %}" title="{% translate "Nummerierte Liste" %}">{% icon "nummeriert" %}</button>
+      </div>
+      <div class="a-editor-gruppe" role="group" aria-label="{% translate "Verlauf" %}">
+        <button type="button" class="a-editor-knopf" data-trix-action="undo" data-trix-key="z" aria-label="{% translate "Rückgängig" %}" title="{% translate "Rückgängig" %}">{% icon "rueckgaengig" %}</button>
+        <button type="button" class="a-editor-knopf" data-trix-action="redo" data-trix-key="shift+z" aria-label="{% translate "Wiederholen" %}" title="{% translate "Wiederholen" %}">{% icon "wiederholen" %}</button>
+      </div>
+    </div>
+    <div class="a-editor-dialoge" data-trix-dialogs>
+      <div class="a-editor-link" data-trix-dialog="href" data-trix-dialog-attribute="href">
+        <label class="a-editor-link-name" for="{{ link_id }}">{% translate "Adresse" %}</label>
+        <input type="url" name="href" id="{{ link_id }}" class="form-control" pattern="(?:[Hh][Tt][Tt][Pp][Ss]?|[Mm][Aa][Ii][Ll][Tt][Oo]|[Tt][Ee][Ll]):.+" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="{{ link_id }}-fehler" data-trix-input data-trix-validate-href required>
+        <p class="a-editor-link-fehler" id="{{ link_id }}-fehler">{% translate "Bitte gib eine Adresse mit https, http, mailto oder tel ein." %}</p>
+        <div class="a-editor-link-knoepfe">
+          <button type="button" class="btn btn-primary" data-trix-method="setAttribute">{% translate "Link setzen" %}</button>
+          <button type="button" class="btn btn-zart" data-trix-method="removeAttribute" data-mit-link>{% translate "Link entfernen" %}</button>
+          <button type="button" class="btn btn-zart" data-trix-method="hideDialog" data-ohne-link>{% translate "Verwerfen" %}</button>
+        </div>
+      </div>
+    </div>
+  </template>
+  {{ widget }}
+  <p class="a-editor-ohne-skript" id="{{ hint_id }}">{% translate "Ohne JavaScript siehst du die Formatierung als Zeichen." %}</p>
+  {{ counter }}
+  {% if errors %}<div class="invalid-feedback" id="{{ error_id }}">{{ errors|join:" " }}</div>{% endif %}
+</div>
