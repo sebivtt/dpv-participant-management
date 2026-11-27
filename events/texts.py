@@ -4,7 +4,8 @@ Wortlaute aus dem Text von #100 und den Szenarien vom 30.10.2026, für Anmeldung
 15.11.2026, für Uhrzeiten, Ort, Prüfungen und Leitungsseite aus dem Text von #379 und seinen Szenarien vom
 17.11.2026, für das Anlegen in Schritten aus dem Text von #380 und seinen Szenarien vom 17.11.2026, für Zustand und
 Veröffentlichen aus dem Text von #359 und seinen Szenarien vom 17.11.2026, für den Einladungstext aus dem Text von #358,
-seiner Nachklärung und seinen Szenarien vom 17.11.2026 (Fassung nach dem Zielbild).
+seiner Nachklärung und seinen Szenarien vom 17.11.2026 (Fassung nach dem Zielbild), für die Fristen aus dem Text von
+#360 und seinen Szenarien vom 17.11.2026.
 """
 
 from django.utils.translation import gettext_lazy, ngettext_lazy
@@ -124,6 +125,54 @@ ALREADY_WITHDRAWN = gettext_lazy("%(event)s ist schon nicht mehr veröffentlicht
 # Ablehnung beim Zurücknehmen ab Beginn (Frage 3, ZG4); beim Veröffentlichen mit Beginn vor heute START_PASSED.
 ALREADY_BEGUN = gettext_lazy("Die Veranstaltung hat schon begonnen. Die Veröffentlichung lässt sich nicht mehr "
                              "zurücknehmen.")
+
+# Fristen (#360): Schritt 3 „Anmeldung“, Abschnitt der Zusammenfassung, Kachel „Anmeldung“ mit Zeitleiste und Dialog
+SIGNUP = gettext_lazy("Anmeldung")
+SIGNUP_CHANGE = gettext_lazy("Anmeldung ändern")
+SIGNUP_EDIT = gettext_lazy("Anmeldung bearbeiten")
+DEADLINES = gettext_lazy("Fristen")
+REGISTRATION_OPENS = gettext_lazy("Anmeldestart")
+REGISTRATION_CLOSES = gettext_lazy("Anmeldeschluss")
+CHANGES_CLOSE = gettext_lazy("Änderungsschluss")
+# Fehler am Feld (Fragen 3 bis 5); im Stift „Grunddaten“ der Fehler am Beginn (FG4).
+CLOSES_BEFORE_OPENS = gettext_lazy("Der Anmeldeschluss liegt vor dem Anmeldestart.")
+CHANGES_BEFORE_CLOSES = gettext_lazy("Der Änderungsschluss liegt vor dem Anmeldeschluss.")
+CHANGES_WITHOUT_CLOSES = gettext_lazy("Trag zuerst einen Anmeldeschluss ein.")
+OPENS_AFTER_START = gettext_lazy("Der Anmeldestart liegt nach dem Beginn.")
+CLOSES_AFTER_START = gettext_lazy("Der Anmeldeschluss liegt nach dem Beginn.")
+CHANGES_AFTER_START = gettext_lazy("Der Änderungsschluss liegt nach dem Beginn.")
+START_BEFORE_DEADLINE = gettext_lazy("Der Beginn liegt vor einer Frist der Anmeldung. Ändere zuerst die Fristen.")
+DEADLINES_SAVED = gettext_lazy("Die Fristen von %(event)s sind gespeichert.")
+# Zusammenfassung: „Anmeldung 01.02.2028 bis 30.04.2028“, eine fehlende Frist „nicht festgelegt“.
+NOT_SET = gettext_lazy("nicht festgelegt")
+# Zeitleiste der Kachel: „Heute“, an der nächsten künftigen Frist „in 27 Tagen“, „morgen“ oder „heute“.
+TODAY = gettext_lazy("Heute")
+IN_DAYS = gettext_lazy("in %(count)s Tagen")
+TOMORROW = gettext_lazy("morgen")
+TODAY_SMALL = gettext_lazy("heute")
+UNTIL_THEN_LATE = gettext_lazy("bis dahin Nachmelden")
+OPENS_NOT_SET = gettext_lazy("nicht festgelegt, öffnet mit dem Veröffentlichen")
+CLOSES_NOT_SET = gettext_lazy("nicht festgelegt, offen bis zum Beginn")
+CHANGES_NOT_SET = gettext_lazy("nicht festgelegt, Nachmelden bis zum Beginn")
+# Satz unter der Marke auf der Leitungsseite, nach IS_PUBLISHED.
+SIGNUP_OPENS_ON = gettext_lazy("Die Anmeldung öffnet am %(day)s.")
+SIGNUP_RUNS_UNTIL = gettext_lazy("Die Anmeldung läuft bis %(day)s.")
+SIGNUP_RUNS_UNTIL_START = gettext_lazy("Die Anmeldung läuft bis zum Beginn.")
+SIGNUP_CLOSED_LATE_UNTIL = gettext_lazy("Die Anmeldung ist geschlossen. Nachmelden und Ändern bis %(day)s.")
+SIGNUP_CLOSED_LATE_UNTIL_START = gettext_lazy("Die Anmeldung ist geschlossen. Nachmelden und Ändern bis zum Beginn.")
+SIGNUP_CLOSED = gettext_lazy("Die Anmeldung ist geschlossen.")
+# Klein unter der Marke in der Liste „Von mir geleitet“; nach dem Änderungsschluss nichts.
+NOTE_FROM = gettext_lazy("Anmeldung ab %(day)s")
+NOTE_UNTIL = gettext_lazy("bis %(day)s")
+NOTE_UNTIL_START = gettext_lazy("bis zum Beginn")
+NOTE_LATE_UNTIL = gettext_lazy("Nachmelden bis %(day)s")
+NOTE_LATE_UNTIL_START = gettext_lazy("Nachmelden bis zum Beginn")
+# Zusätzlicher Satz in der Rückfrage „… veröffentlichen?“ (#359, Ansicht 6b).
+PUBLISH_OPENS_ON = gettext_lazy("Die Anmeldung öffnet am %(opens)s und läuft bis %(closes)s.")
+PUBLISH_OPENS_ON_UNTIL_START = gettext_lazy("Die Anmeldung öffnet am %(opens)s und läuft bis zum Beginn.")
+PUBLISH_OPENS_NOW = gettext_lazy("Die Anmeldung öffnet sofort und läuft bis %(closes)s.")
+PUBLISH_OPENS_NOW_UNTIL_START = gettext_lazy("Die Anmeldung öffnet sofort und läuft bis zum Beginn.")
+PUBLISH_ALREADY_CLOSED = gettext_lazy("Die Anmeldung ist schon geschlossen.")
 
 # Anmeldungen (#101): Abschnitt auf der Seite der Veranstaltung und Seite der Anmeldung
 REGISTRATIONS = gettext_lazy("Anmeldungen")

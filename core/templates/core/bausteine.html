@@ -177,6 +177,11 @@
     <div class="a-kacheln">{% for calendar in examples.calendars %}<div class="a-flaeche">{% include "core/_kalenderblaetter.html" %}</div>{% endfor %}</div>
   </section>
 
+  <section class="a-abschnitt a-baustein" aria-labelledby="h-zeitleiste">
+    {% include "core/_katalogeintrag.html" with block=blocks.zeitleiste %}
+    <div class="a-kacheln">{% for timeline in examples.timelines %}<div class="a-flaeche">{% include "core/_zeitleiste.html" %}</div>{% endfor %}</div>
+  </section>
+
   <section class="a-abschnitt a-baustein" aria-labelledby="h-fortschritt">
     {% include "core/_katalogeintrag.html" with block=blocks.fortschritt %}
     {% include "core/_fortschritt.html" with steps=examples.steps %}

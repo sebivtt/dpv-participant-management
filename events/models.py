@@ -1,7 +1,7 @@
 """Datenmodell der Veranstaltungen (#100, TEAM-01; Uhrzeiten und Ort seit #379, Adresse des Orts seit #163, Zustand und
-„Veröffentlicht“ seit #359, Einladungstext seit #358) und Anmeldungen (#101, ANM-01, ANM-02)."""
+„Veröffentlicht“ seit #359, Einladungstext seit #358, Fristen seit #360) und Anmeldungen (#101, ANM-01, ANM-02)."""
 
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -28,6 +28,9 @@ INVITATION_MAX_LENGTH = 10_000
 # Die Angaben, die „Veranstaltung erstellen“ anlegt und der Stift der Kachel „Grunddaten“ ändert (#100, #379), seit #163
 # mit der Adresse des Orts.
 EDITABLE_FIELDS = ("name", "start", "start_time", "end", "end_time", "location", *ADDRESS_FIELDS)
+# Die Fristen der Anmeldung (#360, VER-09), in dieser Reihenfolge; sie setzt der Stift der Kachel „Anmeldung“ und
+# Schritt 3 beim Anlegen, nie ein Formular der Grunddaten.
+DEADLINE_FIELDS = ("registration_opens", "registration_closes", "changes_close")
 # Kopierte Namen: so lang wie bei Konten (Django: 150), damit jede Kopie passt; verwaltete Personen haben höchstens 50.
 PERSON_NAME_MAX_LENGTH = 150
 
@@ -98,6 +101,18 @@ class Event(PostalAddress):
                 | Q(end_time__gte=F("start_time")),
                 name="event_end_time_not_before_start_time"),
             models.CheckConstraint(condition=Q(location=Trim("location")), name="event_location_trimmed"),
+            # Fristen (#360, VER-09): Anmeldestart ≤ Anmeldeschluss ≤ Änderungsschluss, ein Änderungsschluss nur mit
+            # Anmeldeschluss, jede spätestens am Tag des Beginns (Frage 4); gleicher Tag ist erlaubt.
+            models.CheckConstraint(
+                condition=Q(registration_opens__isnull=True) | Q(registration_closes__isnull=True)
+                | Q(registration_closes__gte=F("registration_opens")),
+                name="event_registration_closes_not_before_opens"),
+            models.CheckConstraint(
+                condition=Q(changes_close__isnull=True)
+                | (Q(registration_closes__isnull=False) & Q(changes_close__gte=F("registration_closes"))),
+                name="event_changes_close_after_registration_closes"),
+            *[models.CheckConstraint(condition=Q(**{f"{name}__isnull": True}) | Q(**{f"{name}__lte": F("start")}),
+                                     name=f"event_{name}_not_after_start") for name in DEADLINE_FIELDS],
             *address_constraints("event"),
         ]
 
@@ -130,15 +145,22 @@ class Event(PostalAddress):
         return timezone.make_aware(datetime.combine(self.end, self.end_time))
 
     def status_at(self, now: datetime) -> "Event.Status":
-        """Der Zustand zum Zeitpunkt `now` (#359): aus „Veröffentlicht“, Beginn und Ende.
+        """Der Zustand zum Zeitpunkt `now` (#359, seit #360 mit den Fristen): aus „Veröffentlicht“, Fristen, Beginn und Ende.
 
-        Nicht veröffentlicht ist sie ein Entwurf, auch wenn der Zeitraum vorbei ist (Frage 4); veröffentlicht vor dem
-        Beginn „Angekündigt“, ab Beginn bis vor dem Ende „Läuft“, ab dem Ende „Beendet“.
+        Nicht veröffentlicht ist sie ein Entwurf, auch wenn der Zeitraum vorbei ist (#359, Frage 4); Fristen ändern daran
+        nichts. Veröffentlicht vor dem Beginn ist sie „Angekündigt“, solange der Anmeldestart in der Zukunft liegt,
+        „Geschlossen“ nach dem Anmeldeschluss und sonst „Anmeldung offen“: ohne Anmeldestart ab dem Veröffentlichen,
+        ohne Anmeldeschluss bis zum Beginn (#360, Fragen 2, 3 und 3a). Ab Beginn bis vor dem Ende „Läuft“, ab dem Ende
+        „Beendet“. Ein verschobener Anmeldeschluss öffnet die Anmeldung so von selbst wieder (VER-09).
         """
         if not self.published:
             return self.Status.DRAFT
         if now < self.begins_at():
-            return self.Status.ANNOUNCED
+            if self.registration_opens and now < day_begins(self.registration_opens):
+                return self.Status.ANNOUNCED
+            if self.registration_closes and now >= day_ends(self.registration_closes):
+                return self.Status.CLOSED
+            return self.Status.OPEN
         if now < self.ends_at():
             return self.Status.RUNNING
         return self.Status.ENDED
@@ -155,9 +177,55 @@ class Event(PostalAddress):
         """
         return self.start < timezone.localtime(now).date()
 
+    def changes_closed(self, now: datetime) -> bool:
+        """Ist der Änderungsschluss zum Zeitpunkt `now` vorbei? Er gilt bis zum Ende seines Tags (#360, Frage 1)."""
+        return self.changes_close is not None and now >= day_ends(self.changes_close)
+
+    def registration_closed(self, now: datetime) -> bool:
+        """Ist der Anmeldeschluss zum Zeitpunkt `now` vorbei? Er gilt bis zum Ende seines Tags (#360, Frage 1)."""
+        return self.registration_closes is not None and now >= day_ends(self.registration_closes)
+
+    def latest_deadline(self) -> date | None:
+        """Die späteste eingetragene Frist; vor ihr darf der Beginn nicht liegen (#360, FG4)."""
+        return max(filter(None, (getattr(self, name) for name in DEADLINE_FIELDS)), default=None)
+
     def has_begun(self, now: datetime) -> bool:
         """Hat sie zum Zeitpunkt `now` schon begonnen? Dann lässt sich die Veröffentlichung nicht zurücknehmen (Frage 3)."""
         return now >= self.begins_at()
+
+
+def day_begins(day: date) -> datetime:
+    """0:00 eines Tags in der Zeit des Tools (Deutschland), auch in der Sommerzeit: ab dann gilt ein Anmeldestart (#360)."""
+    return timezone.make_aware(datetime.combine(day, time(0, 0)))
+
+
+def day_ends(day: date) -> datetime:
+    """0:00 des Tags danach in der Zeit des Tools: bis davor gelten Anmeldeschluss und Änderungsschluss (#360)."""
+    return day_begins(day + timedelta(days=1))
+
+
+def deadline_problems(start: date, values: dict) -> dict[str, str]:
+    """Was an den Fristen in `values` nicht stimmt, je Feld der Satz dazu; leer, wenn alles passt (#360, Fragen 3 bis 5).
+
+    Jede Frist ist freiwillig. Der Anmeldeschluss liegt nicht vor dem Anmeldestart, der Änderungsschluss nicht vor dem
+    Anmeldeschluss und nur mit ihm (VER-09); gleicher Tag ist erlaubt. Jede Frist liegt spätestens am Tag des Beginns
+    `start`. Fristen in der Vergangenheit sind erlaubt (Frage 5). Dieselbe Prüfung nutzen das Formular und, unter
+    Sperre der Veranstaltung, `Rights.edit_deadlines()`; die Datenbank setzt dieselben Regeln durch.
+    """
+    opens, closes, changes = (values.get(name) for name in DEADLINE_FIELDS)
+    problems = {}
+    after_start = (texts.OPENS_AFTER_START, texts.CLOSES_AFTER_START, texts.CHANGES_AFTER_START)
+    for name, value, text in zip(DEADLINE_FIELDS, (opens, closes, changes), after_start, strict=True):
+        if value is not None and value > start:
+            problems[name] = str(text)
+    if opens and closes and closes < opens and "registration_closes" not in problems:
+        problems["registration_closes"] = str(texts.CLOSES_BEFORE_OPENS)
+    if changes and "changes_close" not in problems:
+        if closes is None:
+            problems["changes_close"] = str(texts.CHANGES_WITHOUT_CLOSES)
+        elif changes < closes:
+            problems["changes_close"] = str(texts.CHANGES_BEFORE_CLOSES)
+    return problems
 
 
 class Registration(models.Model):
