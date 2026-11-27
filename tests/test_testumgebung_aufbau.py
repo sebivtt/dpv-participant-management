@@ -175,6 +175,8 @@ def test_ins_abbild_kommt_nur_was_ausdruecklich_erlaubt_ist():
         "core",
         "persons",
         "events",
+        # Kreise (#381).
+        "circles",
         "docker",
         "units",
         "roles",
