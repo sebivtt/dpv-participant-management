@@ -162,7 +162,9 @@ class CircleForm(forms.Form):
         return value
 
     def clean_description(self) -> str:
-        value = self.cleaned_data["description"]
+        # Browser schicken Zeilenumbrüche als zwei Zeichen; gezählt und gespeichert wird einer, wie beim Tippen
+        # (unabhängige Prüfung, M1).
+        value = self.cleaned_data["description"].replace("\r\n", "\n").replace("\r", "\n")
         if len(value) > CIRCLE_DESCRIPTION_MAX_LENGTH:
             raise forms.ValidationError(circle_texts.DESCRIPTION_TOO_LONG, code="max_length")
         return value

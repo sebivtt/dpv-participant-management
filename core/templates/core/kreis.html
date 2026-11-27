@@ -7,7 +7,7 @@
   <div class="a-kopf">
     {% include "core/_zurueckzeile.html" %}
     <h1>{{ title }}</h1>
-    {% if circle.description %}<p>{{ circle.description }}</p>{% endif %}
+    {% if circle.description %}<p class="a-kopf-absaetze">{{ circle.description }}</p>{% endif %}
   </div>
   {% if invitation %}
     <section class="a-flaeche" aria-labelledby="h-einladung">

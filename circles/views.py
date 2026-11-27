@@ -50,11 +50,31 @@ def _invitation_block(entry: dict) -> dict:
             "decline_action": reverse("circle_decline", args=[entry["key"]])}
 
 
+# Welche eigenen Einladungen eine Seite zuletzt gezeigt hat, je mit dem Kreis (unabhängige Prüfung, M2; Sebastian,
+# 27.11.2026: „Satz statt ‚nicht gefunden‘“). So erkennt „Annehmen“ oder „Ablehnen“ eine eigene Einladung, die es
+# inzwischen nicht mehr gibt, ohne dass eine fremde Kennung etwas verrät: Sie stand nie hier und bleibt „nicht gefunden“.
+SHOWN_INVITATIONS = "kreise_einladungen"
+SHOWN_MOST = 50
+
+
+def _remember_shown(request: HttpRequest, invitations: list[dict]) -> None:
+    """Merkt sich in der Sitzung die gezeigten eigenen Einladungen, höchstens `SHOWN_MOST`, die neuesten zuletzt."""
+    if not invitations:
+        return
+    shown = dict(request.session.get(SHOWN_INVITATIONS, {}))
+    for entry in invitations:
+        shown.pop(entry["key"], None)
+        shown[entry["key"]] = entry["circle_key"]
+    request.session[SHOWN_INVITATIONS] = dict(list(shown.items())[-SHOWN_MOST:])
+
+
 def _circles_page(request: HttpRequest, dialog: dict | None = None) -> HttpResponse:
     """Die Seite „Kreise“: oben „Einladungen“, immer da, darunter „Meine Kreise“ mit „Kreis anlegen“ (#141 F10)."""
     rights = request.rights
     rights.require_section(rights.may_use_circles())
-    invitations = [_invitation_block(entry) for entry in rights.own_invitations()]
+    own = rights.own_invitations()
+    _remember_shown(request, own)
+    invitations = [_invitation_block(entry) for entry in own]
     entries = [{"href": reverse("circle_page", args=[entry.key]), "symbol": "kreis", "title": entry.name,
                 "line": texts.MEMBER_COUNT % {"count": entry.member_count},
                 "mark": texts.MANAGING if entry.managed else ""} for entry in rights.own_circles()]
@@ -120,6 +140,7 @@ def _circle_page(request: HttpRequest, circle: str, dialog: dict | None = None) 
         if invitation is None:
             # Die Einladung ist gerade verschwunden, etwa zurückgenommen: wie ein Kreis, den es nicht gibt.
             raise Http404
+        _remember_shown(request, [invitation])
         # Die Beschreibung steht schon im Seitenkopf, deshalb nicht noch einmal in der Einladung (Vorschau, 27.11.2026).
         return render(request, "core/kreis.html", {
             "circle": found, "back": back, "title": found.name, "invitation_title": texts.INVITATION_TITLE,
@@ -236,7 +257,10 @@ def _answer(request: HttpRequest, invitation: str, accept: bool) -> HttpResponse
     „Diese Einladung gibt es nicht mehr.“ (AG4).
     """
     rights = request.rights
-    rights.invitation(invitation)
+    try:
+        rights.invitation(invitation)
+    except Http404:
+        return _answer_gone(request, invitation)
     if request.method != "POST":
         if request.method not in READING:
             raise Http404
@@ -247,6 +271,24 @@ def _answer(request: HttpRequest, invitation: str, accept: bool) -> HttpResponse
         return redirect("circles")
     messages.success(request, text)
     return redirect("circle_page", circle=found.key) if accept else redirect("circles")
+
+
+def _answer_gone(request: HttpRequest, invitation: str) -> HttpResponse:
+    """Eine eigene Einladung, die es nicht mehr gibt: nach dem Doppelklick auf „Annehmen“ die Seite des Kreises, sonst
+    „Kreise“ mit „Diese Einladung gibt es nicht mehr.“ (AG4). Eine Kennung, die nie als eigene gezeigt wurde, bleibt
+    „nicht gefunden“ (AV6), lesend jede.
+    """
+    circle = request.session.get(SHOWN_INVITATIONS, {}).get(invitation) if request.method == "POST" else None
+    if circle is None:
+        raise Http404
+    try:
+        _found, membership = request.rights.circle(circle)
+    except Http404:
+        membership = None
+    if membership is not None:
+        return redirect("circle_page", circle=circle)
+    messages.warning(request, texts.GONE)
+    return redirect("circles")
 
 
 @checks_rights(*ANSWER_ROWS)

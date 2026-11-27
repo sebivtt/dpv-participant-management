@@ -2064,7 +2064,7 @@ class Rights:
         assigned = set(Role.objects.filter(user_id__in=ids, kind__in=ASSIGNMENT).values_list("user_id", flat=True))
         found = []
         for user in users:
-            short = user.scout_name or user.first_name or user.username
+            short = _short_name(user)
             if user.pk == self.user.pk:
                 found.append(str(circle_texts.YOURSELF))
             elif user.pk in members:
@@ -2094,6 +2094,10 @@ class Rights:
             me = self._lock_with(target.pk)
             fresh = Rights(me)
             circle = fresh.managed_circle(key)
+            # Unter der Sperre frisch: ein inzwischen gesperrtes Konto wird nicht eingeladen (unabhängige Prüfung, G1).
+            target = _findable_accounts().filter(pk=target.pk).first()
+            if target is None:
+                return False, str(circle_texts.NO_ACCOUNT)
             refusal = fresh._invite_refusals(circle, [target])[0]
             if refusal:
                 return False, refusal
@@ -2101,7 +2105,7 @@ class Rights:
                 with transaction.atomic():
                     CircleInvitation.objects.create(circle=circle, user=target, invited_by=me)
             except IntegrityError:
-                return False, str(circle_texts.ALREADY_INVITED % {"name": target.scout_name or target.first_name})
+                return False, str(circle_texts.ALREADY_INVITED % {"name": _short_name(target)})
         return True, str(circle_texts.INVITED % {"name": _person_name(target)})
 
     def withdrawal(self, key, invitation_key) -> tuple[Circle, dict]:
@@ -2470,6 +2474,11 @@ def _person_fields(user) -> dict:
 def _person_name(user) -> str:
     """Der volle Name einer Person wie auf jeder Seite, ohne Namen der Benutzername (#111, #189 A12)."""
     return display_name(user.first_name, user.last_name, user.scout_name) or user.username
+
+
+def _short_name(user) -> str:
+    """Wie eine Person in kurzen Sätzen heißt, etwa „Möwe ist schon Mitglied.“: Fahrtenname, Vorname oder Benutzername."""
+    return user.scout_name or user.first_name or user.username
 
 
 def _name_order(row: dict) -> tuple:

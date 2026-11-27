@@ -846,6 +846,8 @@ dialog.a-dialog.ist-breit.ist-vorschau { max-width: 860px; }
    rückt er bei Platzmangel unter den Text. */
 .a-meldung:has(.a-meldung-knopf) { flex-wrap: wrap; }
 .a-meldung-knopf { flex: none; align-self: center; margin-left: auto; }
+/* Beschreibung eines Kreises im Seitenkopf mit ihren Zeilenumbrüchen (unabhängige Prüfung, G3). */
+.a-kopf .a-kopf-absaetze { white-space: pre-line; }
 .a-flaechen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 
 /* Mehrzeiliges Textfeld (#381, „Textfeld erweitern“): so hoch wie ein paar Zeilen, nur senkrecht größer zu ziehen. */
