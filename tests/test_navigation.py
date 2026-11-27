@@ -37,7 +37,8 @@ START = "Startseite"
 PROFILE = "Mein Profil"
 
 # Die Bereiche: Anfang der Adresse und was dort hervorgehoben ist (Text von #266, „Erwartetes Verhalten“).
-AREAS = {"/organisation/": ORGANISATION, "/veranstaltungen/": EVENTS, "/profil/": PROFILE}
+# Seit #381 auch „Kreise“.
+AREAS = {"/organisation/": ORGANISATION, "/veranstaltungen/": EVENTS, "/profil/": PROFILE, "/kreise/": "Kreise"}
 
 
 def highlighted(root) -> set[str]:
@@ -228,7 +229,7 @@ def marked_for(address: str) -> set[str]:
     """Was die Navigation auf `address` hervorhebt, für eine Person, die jeden Navigationspunkt sieht."""
     request = RequestFactory().get(address)
     request.user = SimpleNamespace(is_authenticated=True)
-    request.rights = SimpleNamespace(sees_menu=lambda: True, sees_events=lambda: True)
+    request.rights = SimpleNamespace(sees_menu=lambda: True, sees_events=lambda: True, may_use_circles=lambda: True)
     # Wie bei einer echten Anfrage; die Hervorhebung bis #266 las den Namen der Adresse von hier.
     request.resolver_match = resolve(address)
     context = navigation(request)

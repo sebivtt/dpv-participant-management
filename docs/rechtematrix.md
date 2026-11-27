@@ -59,8 +59,8 @@ Erster Entwurf für P2 vom 23.10.2026 (#87), seit #139 als Raster mit Rollen als
 - **Verbandsebene:** Bundesleitungen, Verbandsleitungen und Mitglieder des DPV-Veranstaltungsteams
 - **eigene Veranstaltung:** die Veranstaltungen, die die Person leitet
 - **eigene Anmeldung:** die Anmeldungen, die die Person abgegeben hat
-- **eigener Kreis:** die Kreise, in denen die Person Mitglied ist, auch als Verwaltende (#381)
-- **verwalteter Kreis:** die Kreise, die die Person verwaltet (#381)
+- **Mitglied im Kreis:** in den Kreisen, in denen die Person Mitglied ist, auch als Verwaltende (#381)
+- **Verwaltende im Kreis:** in den Kreisen, die die Person verwaltet (#381)
 - **eigene Einladung:** die offenen Einladungen an die Person in einen Kreis (#381)
 - **nur sich selbst:** nur die eigene Person, das eigene Profil oder die eigene Rolle
 - **ja:** ohne Einschränkung der Reichweite
@@ -546,10 +546,10 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 | Recht | GL | StL | RL | BL | Mitgl. | o. Zuord. | VL | DPV-VT | Admin | Kennungen |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Kreis anlegen; wer anlegt, verwaltet ihn | ja | ja | ja | ja | ja | – | ja | ja | – | KR-01, KR-02 |
-| Kreis ansehen: Name, Beschreibung, Mitglieder und Verwaltende mit Name und Fahrtenname | eigener Kreis | eigener Kreis | eigener Kreis | eigener Kreis | eigener Kreis | – | eigener Kreis | eigener Kreis | – | KR-03, KR-05, KR-10 |
+| Kreis ansehen: Name, Beschreibung, Mitglieder und Verwaltende mit Name und Fahrtenname | Mitglied im Kreis | Mitglied im Kreis | Mitglied im Kreis | Mitglied im Kreis | Mitglied im Kreis | – | Mitglied im Kreis | Mitglied im Kreis | – | KR-03, KR-05, KR-10 |
 | Einladung ansehen (Name und Beschreibung des Kreises, wer einlädt), annehmen, ablehnen | eigene Einladung | eigene Einladung | eigene Einladung | eigene Einladung | eigene Einladung | – | eigene Einladung | eigene Einladung | – | KR-04, KR-09 |
-| Konten finden über die genaue bestätigte Mail oder den genauen Benutzernamen, um sie einzuladen | verwalteter Kreis¹ | verwalteter Kreis¹ | verwalteter Kreis¹ | verwalteter Kreis¹ | verwalteter Kreis¹ | – | verwalteter Kreis¹ | verwalteter Kreis¹ | – | KR-06, KR-07, PK-14 |
-| Person einladen, offene Einladungen ansehen, Einladung zurücknehmen | verwalteter Kreis | verwalteter Kreis | verwalteter Kreis | verwalteter Kreis | verwalteter Kreis | – | verwalteter Kreis | verwalteter Kreis | – | KR-07, KR-08 |
+| Konten finden über die genaue bestätigte Mail oder den genauen Benutzernamen, um sie einzuladen | Verwaltende im Kreis¹ | Verwaltende im Kreis¹ | Verwaltende im Kreis¹ | Verwaltende im Kreis¹ | Verwaltende im Kreis¹ | – | Verwaltende im Kreis¹ | Verwaltende im Kreis¹ | – | KR-06, KR-07, PK-14 |
+| Person einladen, offene Einladungen ansehen, Einladung zurücknehmen | Verwaltende im Kreis | Verwaltende im Kreis | Verwaltende im Kreis | Verwaltende im Kreis | Verwaltende im Kreis | – | Verwaltende im Kreis | Verwaltende im Kreis | – | KR-07, KR-08 |
 
 ¹ Höchstens 20 Suchen je Person und Stunde, zusammengezählt mit den Suchen als Leitung oder Verbandsleitung (PK-24).
 
@@ -562,7 +562,7 @@ Fehlt einer Einheit eine Leitung mit Konto, hat die Leitung darüber dort die Re
 | --- | --- | --- | --- |
 | KR-01 | Wer eine Zuordnung hat (wie VA-01), auch ohne Leitungsrolle: Menüpunkt und Seite „Kreise“ (oben „Einladungen“, darunter „Meine Kreise“), Kreis anlegen mit Name (Pflicht, höchstens 60 Zeichen, darf mehrfach vorkommen) und freiwilliger Beschreibung (höchstens 500 Zeichen, reiner Text), Leerzeichen am Rand entfernt; doppelt abgeschickt entsteht ein Kreis; wer anlegt, ist erstes Mitglied und verwaltet den Kreis; der Kreis ist privat; keine Obergrenze für Mitglieder oder Kreise: erlaubt | GRP-01, GRP-02, BER-03, #141 (F10, F11), #381 | gebaut (#381) |
 | KR-02 | Konto ohne Zuordnung, auch als Admin, auch im Support-Zugang: Menüpunkt „Kreise“ (fehlt), Seite „Kreise“ („kein Zugriff“), Kreis anlegen (auch mit abgeschicktem Formular), eingeladen werden (statt „Einladen“ der Satz „‹Name› gehört noch keiner Organisation an und kann deshalb noch nicht eingeladen werden.“), eine Einladung annehmen (auch wenn die Zuordnung erst nach der Einladung endet): verboten | BER-03, #141 (F3, F10), #381 | gebaut (#381) |
-| KR-03 | Mitglieder und Verwaltende: eigener Kreis: Seite mit Name, Beschreibung und allen Mitgliedern und Verwaltenden mit Name, Fahrtenname und Marke „Verwaltend“, ansehen: erlaubt | GRP-02, BER-01 (Grund für Kreise), #141 (F4), #381 | gebaut (#381) |
+| KR-03 | Mitglieder und Verwaltende: Mitglied im Kreis: Seite mit Name, Beschreibung und allen Mitgliedern und Verwaltenden mit Name, Fahrtenname und Marke „Verwaltend“, ansehen: erlaubt | GRP-02, BER-01 (Grund für Kreise), #141 (F4), #381 | gebaut (#381) |
 | KR-04 | Eingeladene: offene Einladung an sich selbst: Name und Beschreibung des Kreises und wer einlädt, auf der Seite „Kreise“, unter der Adresse des Kreises und als Hinweis mit Link auf der Startseite (die Benachrichtigung nach GRP-02; eine Mail gibt es in P3 nicht), ansehen: erlaubt; Mitglieder und offene Einladungen des Kreises sehen sie nicht, eine fremde Einladung sieht niemand | GRP-02, #141 (F1, F4, F14), #381 | gebaut (#381) |
 | KR-05 | Alle, die weder Mitglied noch eingeladen sind: Leitungen der Mitglieder, Verbandsleitung, DPV-Veranstaltungsteam, Admins (auch im Support-Zugang), Konto ohne Zuordnung: Kreis, ansehen, auch über die Adresse: verboten, „nicht gefunden“; er erscheint bei ihnen nirgends | GRP-02, #141 (F9), #381 | gebaut (#381) |
 | KR-06 | Verwaltende eines Kreises: im Dialog „Person einladen“ jedes Konto, das sich schon einmal angemeldet hat, finden über die genaue bestätigte Mail oder den genauen Benutzernamen, mit denselben Regeln wie PK-13 (ein Suchbegriff mit @ zählt nur als Mail, eine unbestätigte Mail und ein Teil einer Mail finden nichts); der Treffer zeigt nur Name und Fahrtenname, nie die Organisation und nie „schon woanders Mitglied“; Suchlimit nach PK-24, zusammengezählt mit den Suchen als Leitung: erlaubt | PK-13, PK-24, #141 (F2), #381 | gebaut (#381) |
