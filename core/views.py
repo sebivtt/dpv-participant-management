@@ -1013,8 +1013,8 @@ def calendar_sheets(entry) -> dict:
 
 
 # Zustandsmarke (#359, Baustein „Marke“): je Zustand das Symbol (#356 N3); die Farbe kommt aus der Art (app.css).
-STATE_SYMBOLS = {Event.Status.DRAFT: "entwurf", Event.Status.ANNOUNCED: "angekuendigt", Event.Status.RUNNING: "laeuft",
-                 Event.Status.ENDED: "beendet"}
+STATE_SYMBOLS = {Event.Status.DRAFT: "entwurf", Event.Status.ANNOUNCED: "angekuendigt", Event.Status.OPEN: "offen",
+                 Event.Status.CLOSED: "schloss", Event.Status.RUNNING: "laeuft", Event.Status.ENDED: "beendet"}
 # Zeilen der Liste (#356 Nr. 1, Ansicht 1): Entwürfe gestrichelt, „noch nicht oder nicht mehr offen“ grau.
 GREY_STATES = (Event.Status.ANNOUNCED, Event.Status.ENDED)
 # Wohin die Rückfragen zurückführen: zum Schalter, der wieder den Fokus bekommt (Muster „Zurück aus einem Dialog“, #117).
@@ -1280,6 +1280,13 @@ def event_edit_invitation(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, _invitation_dialog(entry, form, version, conflict))
 
 
+@checks_rights(*EVENT_ROWS)
+def event_edit_deadlines(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#360): Dialog des Stifts der Kachel „Anmeldung“."""
+    request.rights.event(event)
+    raise Http404
+
+
 def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
     """Die Rückfrage des Schalters „Veröffentlicht“ (#359, Ansichten 6b und 6d; Baustein „Dialog“).
 
@@ -1507,6 +1514,13 @@ def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
         raise Http404
     return _create_page(request, INVITATION_STEP, entry=entry, form=form,
                         hidden=[("invitation_version", version)], conflict=conflict)
+
+
+@checks_rights(*EVENT_CREATE_ROWS)
+def event_create_registration(request: HttpRequest, event: str) -> HttpResponse:
+    """Gerüst (#360): Schritt 3 „Anmeldung“ beim Anlegen."""
+    _draft(request, event)
+    raise Http404
 
 
 @checks_rights(*EVENT_CREATE_ROWS)

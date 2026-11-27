@@ -98,6 +98,8 @@ CHANGED_MEANWHILE = gettext_lazy("%(event)s wurde inzwischen geändert. Bitte pr
 # Zustand und Veröffentlichen (#359): Zustandsmarke (#356 N2), Satz darunter (Frage 5), Schalter und Rückfragen
 STATE_DRAFT = gettext_lazy("Entwurf")
 STATE_ANNOUNCED = gettext_lazy("Angekündigt")
+STATE_OPEN = gettext_lazy("Anmeldung offen")
+STATE_CLOSED = gettext_lazy("Geschlossen")
 STATE_RUNNING = gettext_lazy("Läuft")
 STATE_ENDED = gettext_lazy("Beendet")
 STATE_LABEL = gettext_lazy("Zustand")

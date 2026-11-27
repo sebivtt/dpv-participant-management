@@ -1247,6 +1247,10 @@ class Rights:
             entry.save(update_fields=["invitation_text", "invitation_version"])
         return True, entry, str(event_texts.INVITATION_SAVED % names)
 
+    def edit_deadlines(self, key, values: dict, version) -> tuple[bool, Event, str]:
+        """Gerüst (#360): speichert die Fristen einer eigenen Veranstaltung."""
+        raise NotImplementedError
+
     # Veröffentlichen (#359, VA-08, VER-07, VER-08)
     #
     # Jede Veranstaltungsleitung darf die eigene Veranstaltung veröffentlichen und die Veröffentlichung zurücknehmen

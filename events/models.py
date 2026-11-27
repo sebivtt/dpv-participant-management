@@ -79,6 +79,14 @@ class Event(PostalAddress):
     # Eigener Stand für gleichzeitiges Speichern des Einladungstexts (#358, G2), getrennt vom Stand der Grunddaten:
     # Wer in einem zweiten Fenster die Grunddaten ändert, ändert den Einladungstext nicht.
     invitation_version = models.PositiveIntegerField(default=1, editable=False)
+    # Fristen der Anmeldung (#360, VER-09): je ein Tag, freiwillig, jede einzeln; leer heißt, die Anmeldung öffnet mit
+    # dem Veröffentlichen, läuft bis zum Beginn, Nachmelden und Ändern gehen bis zum Beginn. Veranstaltungen von vor
+    # #360 haben keine (FG8). Setzt nur `Rights.edit_deadlines()`, nie ein Formular der Grunddaten.
+    registration_opens = models.DateField(null=True, blank=True, editable=False)
+    registration_closes = models.DateField(null=True, blank=True, editable=False)
+    changes_close = models.DateField(null=True, blank=True, editable=False)
+    # Eigener Stand für gleichzeitiges Speichern der Fristen (#360, FG7), getrennt von Grunddaten und Einladungstext.
+    deadlines_version = models.PositiveIntegerField(default=1, editable=False)
 
     class Meta:
         constraints = [
@@ -101,6 +109,8 @@ class Event(PostalAddress):
 
         DRAFT = "entwurf", texts.STATE_DRAFT
         ANNOUNCED = "angekuendigt", texts.STATE_ANNOUNCED
+        OPEN = "offen", texts.STATE_OPEN
+        CLOSED = "geschlossen", texts.STATE_CLOSED
         RUNNING = "laeuft", texts.STATE_RUNNING
         ENDED = "beendet", texts.STATE_ENDED
 
