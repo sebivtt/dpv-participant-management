@@ -15,6 +15,7 @@
       <p class="a-leise">{{ invited_hint }}</p>
     </section>
   {% else %}
+    <div class="a-flaechen">
     <section class="a-flaeche" aria-labelledby="h-mitglieder">
       {% if manages %}
         {% include "core/_flaechenkopf.html" with symbol="personen" title=members_title heading_id="h-mitglieder" count=members_count action_href=invite_href action_label=invite_label action_id="person-einladen" %}
@@ -34,6 +35,7 @@
         <p class="a-leise">{{ only_managers }}</p>
       </section>
     {% endif %}
+    </div>
   {% endif %}
   {% if dialog %}
     {% include "core/_dialog_auf.html" %}

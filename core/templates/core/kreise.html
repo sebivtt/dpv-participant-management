@@ -5,6 +5,7 @@
   {# Seite „Kreise“ (#381, Zielbild docs/zielbilder/kreise.html; #141 F10): Seitenkopf wie auf „Mein Profil“. Oben „Einladungen“, immer da, je offene Einladung der Baustein „Einladung“, ohne Einladung der Satz; darunter „Meine Kreise“ mit „Kreis anlegen“ und je Kreis der Baustein „Eintrag zum Öffnen“ mit der Zahl der Mitglieder und der Marke „Verwaltend“, ohne Kreis der Satz. Der Abschnitt „Öffentliche Kreise“ kommt erst mit #364 (P9). Mit offenem Dialog „Kreis anlegen“ (eigene Adresse) darüber die Felder „Name“ und „Beschreibung“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{% translate "Kreise" %}</h1></div>
+  <div class="a-flaechen">
   <section class="a-flaeche" aria-labelledby="h-einladungen">
     {% include "core/_flaechenkopf.html" with symbol="mail" title=invitations_title heading_id="h-einladungen" count=invitations_count %}
     {% if invitations %}
@@ -21,6 +22,7 @@
       <p class="a-leer-satz">{{ none_yet }}</p>
     {% endif %}
   </section>
+  </div>
   {% if dialog %}
     {% include "core/_dialog_auf.html" %}
     {% textfeld dialog.circle_form.name %}

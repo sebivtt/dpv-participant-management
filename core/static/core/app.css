@@ -840,5 +840,8 @@ dialog.a-dialog.ist-breit.ist-vorschau { max-width: 860px; }
 .a-einladung-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .a-einladung-knoepfe form { margin: 0; }
 
+/* Flächen untereinander (#381, Vorschau): derselbe Abstand wie zwischen den Kacheln einer Veranstaltung (.a-kacheln). */
+.a-flaechen { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+
 /* Mehrzeiliges Textfeld (#381, „Textfeld erweitern“): so hoch wie ein paar Zeilen, nur senkrecht größer zu ziehen. */
 .a-textfeld textarea.form-control { min-height: 6.5rem; resize: vertical; }
