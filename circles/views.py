@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import cache_control
 
 from access.addresses import checks_rights
 from access.keys import is_key, new_key
@@ -96,7 +96,8 @@ def circles(request: HttpRequest) -> HttpResponse:
 
 
 @checks_rights(*CIRCLE_ROWS)
-@never_cache
+# Wie bei „Veranstaltung erstellen“ (core/views.py): nie zwischenspeichern, aber ohne „Expires“ mit der Uhrzeit.
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 def circle_create(request: HttpRequest) -> HttpResponse:
     """Dialog „Kreis anlegen“ zeigen und den Kreis anlegen (KR-01, GRP-01).
 
