@@ -1,4 +1,4 @@
-"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95), die Angaben einer verwalteten Person (#117) und einer Veranstaltung (#100, #379), die Adresse aus dem Baustein „Adressfeld“ (#163)."""
+"""Formulare der App „core“: das Beispielformular des Bausteinkatalogs (#176), die Suche beim Benennen (#190) und Aufnehmen (#285), der Name beim Anlegen und Bearbeiten einer Organisation (#95), die Angaben einer verwalteten Person (#117) und einer Veranstaltung (#100, #379), die Adresse aus dem Baustein „Adressfeld“ (#163), Name und Beschreibung eines Kreises (#381)."""
 
 import re
 from datetime import date, time
@@ -11,6 +11,9 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.keycloak_abgleich import trimmed
 from accounts.models import SCOUT_NAME_MAX_LENGTH
+from circles import texts as circle_texts
+from circles.models import DESCRIPTION_MAX_LENGTH as CIRCLE_DESCRIPTION_MAX_LENGTH
+from circles.models import NAME_MAX_LENGTH as CIRCLE_NAME_MAX_LENGTH
 from core import address_texts
 from core.countries import COUNTRIES
 from core.models import CITY_MAX_LENGTH, GERMANY, POSTAL_CODE_MAX_LENGTH, STATES, STREET_MAX_LENGTH
@@ -112,6 +115,56 @@ class UnitNameForm(forms.Form):
         value = self.cleaned_data["name"]
         if len(value) > UNIT_NAME_MAX_LENGTH:
             raise forms.ValidationError(unit_texts.NAME_TOO_LONG, code="max_length")
+        return value
+
+
+class CircleForm(forms.Form):
+    """Name und Beschreibung im Dialog „Kreis anlegen“ (#381, #141 F11): Name Pflicht, höchstens 60 Zeichen;
+    Beschreibung freiwillig, höchstens 500 Zeichen, reiner Text.
+
+    Leerzeichen am Rand entfernt das Formular, gezählt wird danach. Die Länge prüft erst der Server, wie beim Namen
+    einer Organisation: Ein `maxlength` schnitte beim Einfügen still ab. Die Felder gehören über ihr Attribut „form“ zum
+    Formular des Knopfs im Dialog. Mehr nimmt das Formular nicht an; wer den Kreis verwaltet, kommt aus der Anmeldung.
+    """
+
+    name = forms.CharField(
+        label=circle_texts.NAME_LABEL,
+        error_messages={"required": circle_texts.NAME_EMPTY},
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "sentences",
+                "autofocus": True,
+                "form": "f-dialog",
+                "data-hoechstens": CIRCLE_NAME_MAX_LENGTH,
+                "data-zu-lang": circle_texts.NAME_TOO_LONG,
+            }
+        ),
+    )
+    description = forms.CharField(
+        label=circle_texts.DESCRIPTION_LABEL,
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "autocapitalize": "sentences",
+                "form": "f-dialog",
+                "data-hoechstens": CIRCLE_DESCRIPTION_MAX_LENGTH,
+                "data-zu-lang": circle_texts.DESCRIPTION_TOO_LONG,
+            }
+        ),
+    )
+
+    def clean_name(self) -> str:
+        value = self.cleaned_data["name"]
+        if len(value) > CIRCLE_NAME_MAX_LENGTH:
+            raise forms.ValidationError(circle_texts.NAME_TOO_LONG, code="max_length")
+        return value
+
+    def clean_description(self) -> str:
+        value = self.cleaned_data["description"]
+        if len(value) > CIRCLE_DESCRIPTION_MAX_LENGTH:
+            raise forms.ValidationError(circle_texts.DESCRIPTION_TOO_LONG, code="max_length")
         return value
 
 

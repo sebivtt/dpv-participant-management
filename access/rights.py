@@ -36,6 +36,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import (
     BooleanField,
     CharField,
+    Count,
     Exists,
     ExpressionWrapper,
     F,
@@ -55,6 +56,8 @@ from django.utils.functional import SimpleLazyObject
 
 from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
+from circles import texts as circle_texts
+from circles.models import Circle, CircleInvitation, CircleMember
 from events import invitation
 from events import texts as event_texts
 from events.models import DEADLINE_FIELDS, deadline_problems
@@ -492,18 +495,10 @@ class Rights:
         Organisation, wenn er außerhalb des eigenen Bereichs liegt (PK-16). Das Suchlimit zählt
         `count_search()`, nicht diese Stelle.
         """
-        text = text.strip()
         # Admins ohne Support-Zugang und ohne Leitungsrolle suchen nicht (SZ-06); im Zugang wie die Leitung (#92).
-        if not (self.sees_organisation() or self.is_federation_lead()) or not text or set(text) <= WILDCARDS:
+        if not (self.sees_organisation() or self.is_federation_lead()):
             return []
-        accounts = get_user_model().objects.filter(is_active=True, last_login__isnull=False)
-        if "@" in text:
-            confirmed = EmailAddress.objects.filter(user=OuterRef("pk"), email__iexact=text, verified=True)
-            found = accounts.filter(Exists(confirmed))
-        else:
-            found = accounts.filter(username__iexact=text)
-        found = found.order_by("username")
-        return self._hits(list(found[:SUGGESTION_MOST]))
+        return self._hits(_exact_accounts(text))
 
     def _hits(self, users: list) -> list[dict]:
         """Was Vorschläge und Treffer zeigen dürfen: Kennung, Namen und wo die Person Mitglied ist (PK-16).
@@ -1961,27 +1956,234 @@ class Rights:
             role.delete(by=me)
         return True
 
-    # Kreise (#381): leeres Gerüst; bis sie gebaut sind, ist alles verboten.
+    # Kreise (#381, GRP-01, GRP-02; Rechtematrix, Abschnitt „Kreise“)
+    #
+    # Rechte an einem Kreis entstehen nur aus der Mitgliedschaft im Kreis, aus seiner Verwaltung und aus einer offenen
+    # Einladung, nie aus Rollen in Organisationen: Leitungen der Mitglieder, Verbandsleitung und Admins, auch im
+    # Support-Zugang, sehen einen fremden Kreis nicht (KR-05, #141 F9). Alles braucht eine Zuordnung (BER-03, KR-02);
+    # ohne ist der Bereich „kein Zugriff“, an Adressen mit Kennung „nicht gefunden“. Was über Personen sichtbar ist, ist
+    # nur Name und Fahrtenname (BER-01, Grund für Kreise; KR-03).
 
-    def create_circle(self, values: dict, creation_key):
-        """Kreis anlegen (Gerüst): verboten."""
-        raise PermissionDenied
+    def may_use_circles(self) -> bool:
+        """Menüpunkt und Bereich „Kreise“: nur mit Zuordnung (BER-03, KR-01, KR-02); ein Support-Zugang zählt nicht."""
+        return self.has_assignment()
+
+    def _circle_ids(self, manages: bool = False) -> QuerySet:
+        """Die Nummern der Kreise, in denen die Person Mitglied ist, mit `manages` nur die, die sie verwaltet."""
+        memberships = CircleMember.objects.filter(user_id=self.user.pk)
+        if manages:
+            memberships = memberships.filter(manages=True)
+        return memberships.values("circle_id")
+
+    def own_circles(self) -> list[Circle]:
+        """Die Kreise der Person für „Meine Kreise“, nach Name, mit `member_count` und `managed` (KR-03).
+
+        Ohne Zuordnung keine. Die Zahl der Mitglieder kommt in derselben Abfrage, damit die Liste nicht mit den
+        Kreisen wächst (`CONTRIBUTING.md`, Abschnitt 5).
+        """
+        if not self.may_use_circles():
+            return []
+        managed = CircleMember.objects.filter(circle=OuterRef("pk"), user_id=self.user.pk, manages=True)
+        found = (Circle.objects.filter(pk__in=self._circle_ids())
+                 .annotate(member_count=Count("members"), managed=Exists(managed)))
+        return sorted(found, key=lambda entry: (alphabetical(entry.name), entry.created_at))
+
+    def own_invitations(self) -> list[dict]:
+        """Die offenen Einladungen an die Person, die älteste zuerst: Kreis mit Name und Beschreibung, wer einlädt (KR-04).
+
+        Mehr erfährt eine eingeladene Person über den Kreis nicht, auch nicht, wer schon Mitglied ist (#141 F4).
+        Ohne Zuordnung keine; die Startseite von Konten ohne Zuordnung bleibt, wie sie ist.
+        """
+        if not self.may_use_circles():
+            return []
+        found = (CircleInvitation.objects.filter(user_id=self.user.pk).select_related("circle", "invited_by")
+                 .order_by("invited_at", "pk"))
+        return [{"key": entry.key, "circle_key": entry.circle.key, "circle_name": entry.circle.name,
+                 "description": entry.circle.description, "by": _person_name(entry.invited_by)} for entry in found]
+
+    def circle(self, key) -> tuple[Circle, "CircleMember | None"]:
+        """Ein Kreis über seine Kennung für seine Seite, mit der eigenen Mitgliedschaft (KR-03, KR-04, KR-05).
+
+        Mitglieder bekommen ihre Mitgliedschaft dazu, Eingeladene None: Sie sehen nur die Einladung. Alle anderen
+        bekommen „nicht gefunden“ wie bei einem Kreis, den es nicht gibt (#64).
+        """
+        self.require_section(self.may_use_circles())
+        invited = CircleInvitation.objects.filter(user_id=self.user.pk).values("circle_id")
+        found = self.entry(Circle.objects.filter(Q(pk__in=self._circle_ids()) | Q(pk__in=invited)), key)
+        return found, CircleMember.objects.filter(circle=found, user_id=self.user.pk).first()
+
+    def invitation_to(self, circle: Circle) -> dict | None:
+        """Die offene Einladung der Person in diesen Kreis, wie in `own_invitations()`; sonst None."""
+        return next((entry for entry in self.own_invitations() if entry["circle_key"] == circle.key), None)
+
+    def circle_members(self, circle: Circle, membership: "CircleMember | None") -> list[dict]:
+        """Mitglieder und Verwaltende mit Name und Fahrtenname, die Verwaltenden zuerst, dann nach Nachname (KR-03).
+
+        Nur für Mitglieder (`membership`), sonst leer: Eingeladene sehen keine Mitglieder (KR-04, AV5). Nie die Mail,
+        nie die Organisation (#141 F4).
+        """
+        if membership is None or membership.circle_id != circle.pk:
+            return []
+        found = CircleMember.objects.filter(circle=circle).select_related("user")
+        rows = [{**_person_fields(entry.user), "manages": entry.manages, "is_self": entry.user_id == self.user.pk}
+                for entry in found]
+        return sorted(rows, key=lambda row: (not row["manages"], *_name_order(row)))
+
+    def circle_invitations(self, circle: Circle, membership: "CircleMember | None") -> list[dict]:
+        """Die offenen Einladungen des Kreises mit Name und Fahrtenname, nur für Verwaltende (KR-08); sonst leer."""
+        if membership is None or membership.circle_id != circle.pk or not membership.manages:
+            return []
+        found = CircleInvitation.objects.filter(circle=circle).select_related("user")
+        rows = [{**_person_fields(entry.user), "key": entry.key} for entry in found]
+        return sorted(rows, key=_name_order)
+
+    def managed_circle(self, key) -> Circle:
+        """Ein Kreis, den die Person verwaltet, über seine Kennung; sonst „nicht gefunden“ (KR-07), auch für Mitglieder."""
+        self.require_section(self.may_use_circles())
+        return self.entry(Circle.objects.filter(pk__in=self._circle_ids(manages=True)), key)
+
+    def find_for_circle(self, circle: Circle, text: str) -> list[dict]:
+        """Konten für „Person einladen“ über die genaue bestätigte Mail oder den genauen Benutzernamen (KR-06, PK-13).
+
+        Nur für Verwaltende des Kreises, sonst leer. Der Treffer zeigt Name und Fahrtenname, nie die Organisation und
+        nie, ob die Person woanders Mitglied ist (#141 F2). `refusal` ist der Satz statt des Knopfs „Einladen“: bei
+        sich selbst, schon Mitglied, schon eingeladen oder ohne Zuordnung (#141 F3, F12); leer heißt einladbar. Das
+        Suchlimit zählt `count_search()`, zusammen mit den Suchen als Leitung (PK-24).
+        """
+        if not self.may_use_circles() or not self._circle_ids(manages=True).filter(circle_id=circle.pk).exists():
+            return []
+        users = _exact_accounts(text)
+        return [{**_person_fields(user), "key": user.key, "refusal": refusal}
+                for user, refusal in zip(users, self._invite_refusals(circle, users), strict=True)]
+
+    def _invite_refusals(self, circle: Circle, users: list) -> list[str]:
+        """Je Konto der Satz, warum es nicht eingeladen werden kann, oder leer (AG1, AV2); drei Abfragen für alle."""
+        ids = [user.pk for user in users]
+        members = set(CircleMember.objects.filter(circle=circle, user_id__in=ids).values_list("user_id", flat=True))
+        invited = set(CircleInvitation.objects.filter(circle=circle, user_id__in=ids).values_list("user_id", flat=True))
+        assigned = set(Role.objects.filter(user_id__in=ids, kind__in=ASSIGNMENT).values_list("user_id", flat=True))
+        found = []
+        for user in users:
+            short = user.scout_name or user.first_name or user.username
+            if user.pk == self.user.pk:
+                found.append(str(circle_texts.YOURSELF))
+            elif user.pk in members:
+                found.append(str(circle_texts.ALREADY_MEMBER % {"name": short}))
+            elif user.pk in invited:
+                found.append(str(circle_texts.ALREADY_INVITED % {"name": short}))
+            elif user.pk not in assigned:
+                found.append(str(circle_texts.NO_ASSIGNMENT % {"name": _person_name(user)}))
+            else:
+                found.append("")
+        return found
 
     def invite(self, key, person_key) -> tuple[bool, str]:
-        """Person in einen Kreis einladen (Gerüst): verboten."""
-        raise PermissionDenied
+        """Lädt ein Konto in einen Kreis ein, den die Person verwaltet; gibt zurück, ob es geklappt hat, und die Meldung.
+
+        Eingeladen wird nur ein Konto, das auch die Suche fände, mit Zuordnung, das noch nicht Mitglied und noch nicht
+        eingeladen ist, und nie man selbst (KR-08, AV2, AG1), auch mit einem manipulierten Formular. Beide Konten sind
+        bis zum Ende gesperrt und alles wird darunter frisch geprüft: Endet gleichzeitig die Verwaltung, die eigene
+        Zuordnung oder die der eingeladenen Person, wird niemand eingeladen. Zweimal gleichzeitig abgeschickt bleibt
+        es bei einer Einladung.
+        """
+        circle = self.managed_circle(key)
+        target = _findable_accounts().filter(key=person_key).first() if is_key(person_key) else None
+        if target is None:
+            return False, str(circle_texts.NO_ACCOUNT)
+        with transaction.atomic():
+            me = self._lock_with(target.pk)
+            fresh = Rights(me)
+            circle = fresh.managed_circle(key)
+            refusal = fresh._invite_refusals(circle, [target])[0]
+            if refusal:
+                return False, refusal
+            try:
+                with transaction.atomic():
+                    CircleInvitation.objects.create(circle=circle, user=target, invited_by=me)
+            except IntegrityError:
+                return False, str(circle_texts.ALREADY_INVITED % {"name": target.scout_name or target.first_name})
+        return True, str(circle_texts.INVITED % {"name": _person_name(target)})
+
+    def withdrawal(self, key, invitation_key) -> tuple[Circle, dict]:
+        """Kreis und Einladung für „Zurücknehmen“, nur für Verwaltende des Kreises; sonst „nicht gefunden“ (KR-08)."""
+        circle = self.managed_circle(key)
+        entry = self.entry(CircleInvitation.objects.filter(circle=circle).select_related("user"), invitation_key)
+        return circle, {**_person_fields(entry.user), "key": entry.key}
 
     def withdraw(self, key, invitation_key) -> str:
-        """Einladung zurücknehmen (Gerüst): verboten."""
-        raise PermissionDenied
+        """Nimmt eine offene Einladung zurück (KR-08, A6); gibt die Meldung zurück.
 
-    def invitation(self, invitation_key):
-        """Eigene Einladung (Gerüst): nicht gefunden."""
-        raise Http404
+        Frisch geprüft unter der Sperre des eigenen Kontos. Nimmt die Person die Einladung gerade an, gewinnt, wer
+        die Einladung zuerst sperrt: Danach ist sie Mitglied, und hier heißt es „Diese Einladung gibt es nicht mehr.“,
+        oder sie bekommt diesen Satz beim Annehmen (AG4).
+        """
+        self.withdrawal(key, invitation_key)
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            circle = fresh.managed_circle(key)
+            entry = (CircleInvitation.objects.select_for_update().filter(circle=circle, key=invitation_key)
+                     .select_related("user").first())
+            if entry is None:
+                return str(circle_texts.GONE)
+            name = _person_name(entry.user)
+            entry.delete()
+        return str(circle_texts.WITHDRAWN % {"name": name})
 
-    def answer_invitation(self, invitation_key, accept: bool):
-        """Einladung annehmen oder ablehnen (Gerüst): verboten."""
-        raise PermissionDenied
+    def invitation(self, invitation_key) -> CircleInvitation:
+        """Eine Einladung an die Person selbst über ihre Kennung; eine fremde ist „nicht gefunden“ (KR-09, AV6)."""
+        self.require_section(self.may_use_circles())
+        return self.entry(CircleInvitation.objects.filter(user_id=self.user.pk), invitation_key)
+
+    def answer_invitation(self, invitation_key, accept: bool) -> tuple[Circle | None, str]:
+        """Nimmt eine eigene Einladung an oder lehnt sie ab (KR-09, A3, A5); gibt den Kreis und die Meldung zurück.
+
+        Erst mit „Annehmen“ ist die Person Mitglied (GRP-02). Der Server prüft unter der Sperre des eigenen Kontos,
+        dass die Einladung noch besteht (AG4; mit dem Kreis verschwindet auch sie) und die Person eine Zuordnung
+        hat (AG5; ohne „kein Zugriff“). Gibt es die Einladung nicht mehr, ist der Kreis None und die Meldung
+        „Diese Einladung gibt es nicht mehr.“ Ablehnen ist still: Die Einladung verschwindet, auch bei den
+        Verwaltenden, und erneutes Einladen geht (#141 F12).
+        """
+        self.invitation(invitation_key)
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            fresh.require_section(fresh.may_use_circles())
+            entry = (CircleInvitation.objects.select_for_update().filter(user_id=me.pk, key=invitation_key)
+                     .select_related("circle").first())
+            if entry is None:
+                return None, str(circle_texts.GONE)
+            circle = entry.circle
+            entry.delete()
+            if not accept:
+                return circle, str(circle_texts.DECLINED % {"circle": circle.name})
+            CircleMember.objects.create(circle=circle, user=me)
+        return circle, str(circle_texts.ACCEPTED % {"circle": circle.name})
+
+    def create_circle(self, values: dict, creation_key) -> Circle:
+        """Legt einen Kreis an; die Person ist danach sein erstes Mitglied und verwaltet ihn (KR-01, GRP-01).
+
+        `values` sind die geprüften Angaben aus `CircleForm`. Ohne Zuordnung „kein Zugriff“ (KR-02), frisch geprüft
+        unter der Sperre des eigenen Kontos. `creation_key` ist die Kennung des Formulars: Wird es zweimal
+        abgeschickt, auch gleichzeitig, bleibt es bei einem Kreis, und die zweite Antwort gibt denselben zurück
+        (AG3). Gehört die Kennung zu einem Kreis, in dem die Person nicht Mitglied ist, oder hat sie die falsche Form,
+        ist das „nicht gefunden“.
+        """
+        self.require_section(self.may_use_circles())
+        if not is_key(creation_key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            fresh.require_section(fresh.may_use_circles())
+            before = Circle.objects.filter(creation_key=creation_key).first()
+            if before is None:
+                before = Circle.objects.create(creation_key=creation_key, name=values["name"],
+                                               description=values["description"])
+                CircleMember.objects.create(circle=before, user=me, manages=True)
+            elif not fresh._circle_ids().filter(circle_id=before.pk).exists():
+                raise Http404
+        return before
 
     # Support-Zugang der Admins (#92, BER-02)
 
@@ -2257,6 +2459,46 @@ def _displayed_off_path_sentence(person: ManagedPerson, leads: list[DisplayedLea
     roles = [str(unit_texts.ROLE_OF % {"role": lead.get_kind_display(), "unit": unit_label(lead.unit)}) for lead in leads]
     text = unit_texts.RING_CHANGE_ROLE_BLOCKS if len(roles) == 1 else unit_texts.RING_CHANGE_ROLES_BLOCK
     return str(text % {"person": person.display_name, "roles": listed(roles), "unit": unit_label(person.unit)})
+
+
+def _person_fields(user) -> dict:
+    """Was ein Kreis über eine Person zeigt: Vorname, Nachname, Fahrtenname und Benutzername, nie Mail oder Organisation (KR-03)."""
+    return {"first_name": user.first_name, "last_name": user.last_name, "scout_name": user.scout_name,
+            "username": user.username}
+
+
+def _person_name(user) -> str:
+    """Der volle Name einer Person wie auf jeder Seite, ohne Namen der Benutzername (#111, #189 A12)."""
+    return display_name(user.first_name, user.last_name, user.scout_name) or user.username
+
+
+def _name_order(row: dict) -> tuple:
+    """Personen nach Nachname, dann Vorname; ohne Namen am Ende, nach dem Benutzernamen (wie bei Leitungen)."""
+    return (not row["last_name"], alphabetical(row["last_name"]), alphabetical(row["first_name"]), row["username"])
+
+
+def _findable_accounts() -> QuerySet:
+    """Konten, die eine Suche über die genaue Mail oder den Benutzernamen finden kann: aktiv und schon einmal angemeldet (PK-13, BV11)."""
+    return get_user_model().objects.filter(is_active=True, last_login__isnull=False)
+
+
+def _exact_accounts(text: str) -> list:
+    """Höchstens `SUGGESTION_MOST` Konten mit genau dieser bestätigten Mail oder genau diesem Benutzernamen (PK-13).
+
+    Die Regeln stehen bei `Rights.find_accounts()`; hier ohne die Frage, wer suchen darf, damit Leitungen und
+    Verwaltende eines Kreises (#381, KR-06) dieselbe Suche haben. Leer, nur aus Platzhaltern oder nur aus
+    Leerzeichen findet der Text nichts (PK-15).
+    """
+    text = text.strip()
+    if not text or set(text) <= WILDCARDS:
+        return []
+    accounts = _findable_accounts()
+    if "@" in text:
+        confirmed = EmailAddress.objects.filter(user=OuterRef("pk"), email__iexact=text, verified=True)
+        found = accounts.filter(Exists(confirmed))
+    else:
+        found = accounts.filter(username__iexact=text)
+    return list(found.order_by("username")[:SUGGESTION_MOST])
 
 
 def _with_persons(registrations: QuerySet) -> QuerySet:

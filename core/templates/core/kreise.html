@@ -1,0 +1,30 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{% translate "Kreise" %} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Seite „Kreise“ (#381, Zielbild docs/zielbilder/kreise.html; #141 F10): Seitenkopf wie auf „Mein Profil“. Oben „Einladungen“, immer da, je offene Einladung der Baustein „Einladung“, ohne Einladung der Satz; darunter „Meine Kreise“ mit „Kreis anlegen“ und je Kreis der Baustein „Eintrag zum Öffnen“ mit der Zahl der Mitglieder und der Marke „Verwaltend“, ohne Kreis der Satz. Der Abschnitt „Öffentliche Kreise“ kommt erst mit #364 (P9). Mit offenem Dialog „Kreis anlegen“ (eigene Adresse) darüber die Felder „Name“ und „Beschreibung“. #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <div class="a-kopf"><h1>{% translate "Kreise" %}</h1></div>
+  <section class="a-flaeche" aria-labelledby="h-einladungen">
+    {% include "core/_flaechenkopf.html" with symbol="mail" title=invitations_title heading_id="h-einladungen" count=invitations_count %}
+    {% if invitations %}
+      <div class="a-einladungen">{% for invitation in invitations %}{% include "core/_einladung.html" %}{% endfor %}</div>
+    {% else %}
+      <p class="a-leer-satz">{{ no_invitations }}</p>
+    {% endif %}
+  </section>
+  <section class="a-flaeche" aria-labelledby="h-meine-kreise">
+    {% include "core/_flaechenkopf.html" with symbol="kreis" title=circles_title heading_id="h-meine-kreise" count=circles_count action_href=create_href action_label=create_label action_id="kreis-anlegen" %}
+    {% if entries %}
+      <ul class="a-eintraege">{% for entry in entries %}{% include "core/_eintrag_oeffnen.html" %}{% endfor %}</ul>
+    {% else %}
+      <p class="a-leer-satz">{{ none_yet }}</p>
+    {% endif %}
+  </section>
+  {% if dialog %}
+    {% include "core/_dialog_auf.html" %}
+    {% textfeld dialog.circle_form.name %}
+    {% textfeld dialog.circle_form.description %}
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+{% endblock %}

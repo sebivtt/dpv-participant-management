@@ -1,0 +1,51 @@
+{% extends "base_app.html" %}
+{% load i18n layout %}
+{% block title %}{{ title }} · {% translate "DPV Anmeldetool" %}{% endblock %}
+{% block content %}
+  {# Seite eines Kreises (#381, Zielbild docs/zielbilder/kreise.html; #141 F4, F10): darüber die Zurück-Zeile „Kreise ›“, dann der Seitenkopf mit Name und Beschreibung. Mitglieder sehen „Mitglieder“ mit Name, Fahrtenname und der Marke „Verwaltend“ (Baustein „Person in einer Liste“, ohne Mail). Verwaltende sehen dazu „Person einladen“ und „Offene Einladungen“ mit „Zurücknehmen“; ohne die graue Zeile „eingeladen von …“ des Zielbilds (Sebastian, 27.11.2026, U2). Wer eingeladen ist, sieht unter dieser Adresse nur die Einladung (AV5). „Bearbeiten“ und die übrigen Handlungen bringt #382. #}
+  {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
+  <div class="a-kopf">
+    {% include "core/_zurueckzeile.html" %}
+    <h1>{{ title }}</h1>
+    {% if not invitation and circle.description %}<p>{{ circle.description }}</p>{% endif %}
+  </div>
+  {% if invitation %}
+    <section class="a-flaeche" aria-label="{{ title }}">
+      {% include "core/_einladung.html" %}
+      <p class="a-leise">{{ invited_hint }}</p>
+    </section>
+  {% else %}
+    <section class="a-flaeche" aria-labelledby="h-mitglieder">
+      {% if manages %}
+        {% include "core/_flaechenkopf.html" with symbol="personen" title=members_title heading_id="h-mitglieder" count=members_count action_href=invite_href action_label=invite_label action_id="person-einladen" %}
+      {% else %}
+        {% include "core/_flaechenkopf.html" with symbol="personen" title=members_title heading_id="h-mitglieder" count=members_count %}
+      {% endif %}
+      <ul class="a-leitungen">{% for lead in members %}{% include "core/_leitung.html" %}{% endfor %}</ul>
+    </section>
+    {% if manages %}
+      <section class="a-flaeche" aria-labelledby="h-offene-einladungen">
+        {% include "core/_flaechenkopf.html" with symbol="mail" title=pending_title heading_id="h-offene-einladungen" count=pending_count %}
+        {% if pending %}
+          <ul class="a-leitungen">{% for lead in pending %}{% include "core/_leitung.html" %}{% endfor %}</ul>
+        {% else %}
+          <p class="a-leer-satz">{{ no_pending }}</p>
+        {% endif %}
+        <p class="a-leise">{{ only_managers }}</p>
+      </section>
+    {% endif %}
+  {% endif %}
+  {% if dialog %}
+    {% include "core/_dialog_auf.html" %}
+    {% if dialog.search_action %}
+      <form class="a-suche" method="post" action="{{ dialog.search_action }}" novalidate>
+        {% csrf_token %}
+        {% translate "Suchen" as search_button %}
+        {% textfeld dialog.form.suche button=search_button help_text=dialog.help_text %}
+      </form>
+      <div class="a-treffer-bereich" data-treffer>{% include "core/_treffer.html" with hits=dialog.hits hits_title=dialog.hits_title appoint_action=dialog.appoint_action action_label=dialog.action_label notice=dialog.notice %}</div>
+    {% endif %}
+    {% for line in dialog.lines %}<p>{{ line }}</p>{% endfor %}
+    {% include "core/_dialog_zu.html" %}
+  {% endif %}
+{% endblock %}

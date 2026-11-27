@@ -17,4 +17,6 @@
     {% translate "Wende dich an die Leitung deiner Gruppe oder deines Stammes, damit sie dich aufnimmt." as hint %}
     {% meldung "warning" title=title text=hint %}
   {% endif %}
+  {# Je offene Einladung in einen Kreis ein Hinweis mit Link zur Seite „Kreise“ (#381, GRP-02; Baustein „Meldungen“ mit Link). #}
+  {% for hint in circle_hints %}{% meldung "info" title=circle_hint_title text=hint.text icon="mail" link_href=circles_href link_label=circle_hint_link %}{% endfor %}
 {% endblock %}

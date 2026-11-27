@@ -67,6 +67,26 @@ Nur Themen, bei denen ein Eintrag einen älteren ganz oder teilweise ersetzt, je
 
 ---
 
+## 2026-11-27 · Kreise: anlegen, einladen und beitreten (#381, Teil A von #141)
+
+**Entscheidung** (Sebastian; Klärung von #141 am 17.11.2026, [Protokoll](https://github.com/sebivtt/dpv-participant-management/issues/141#issuecomment-6945384116), Fragen 1 bis 14, Zusammenfassung bestätigt: „Stimmt so“; [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-6951072934), N1 und N2; [Bausteine bei der Umsetzung](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-7215338086), U1 bis U4; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/381#issuecomment-6945396247) von #381):
+
+1. **Einladung mit Zusage** (F1): Erst mit „Annehmen“ ist eine Person Mitglied eines Kreises; vorher sieht sie nur Name und Beschreibung des Kreises und wer einlädt. Benachrichtigt wird im Tool mit einem Hinweis auf der Startseite, eine Mail gibt es in P3 nicht. GRP-02 ist in `docs/anforderungen.md` entsprechend angepasst, mit Sebastians Zustimmung aus der Zusammenfassung der Klärung.
+2. **Neuer Grund in BER-01** (F4): Name und Fahrtenname innerhalb eines Kreises (Grund 8), sonst nichts; offene Einladungen sehen nur Verwaltende.
+3. **Ausnahme bei PK-14** (F2): Verwaltende eines Kreises finden Konten über die genaue bestätigte Mail oder den genauen Benutzernamen wie Leitungen (PK-13), mit demselben Suchlimit, zusammengezählt; der Treffer zeigt nur Name und Fahrtenname.
+4. **Neue Bausteine** „Eintrag zum Öffnen“ (N1), „Einladung“ (N2) und „Zurück-Zeile über dem Seitenkopf“ (U3); „Meldungen“ bekommt einen freiwilligen Link am Ende (U1), „Textfeld“ eine mehrzeilige Form (U4). Die graue Zeile „eingeladen von …“ unter „Offene Einladungen“ entfällt (U2).
+
+**Technische Wahl** (KI):
+
+1. **Eigene App `circles`** mit drei Tabellen: `Circle` (Kreis), `CircleMember` (Mitglied, mit `manages` für „verwaltet“) und `CircleInvitation` (Einladung, mit `invited_by` für „wer einlädt“). Begriffe im Code: Kreis `circle`, Verwaltende `manages`/„managed circle“, Einladung `invitation` (`CONTRIBUTING.md`, Abschnitt 1). Die Datenbank sorgt dafür, dass eine Person je Kreis höchstens einmal Mitglied und höchstens einmal eingeladen ist; Ablehnen und Zurücknehmen löschen die Einladung, deshalb geht erneutes Einladen.
+2. **Rechte nur aus dem Kreis:** Die Rechteprüfung (`access/rights.py`, Abschnitt „Kreise“) fragt nur Mitgliedschaft, Verwaltung und Einladung im Kreis und die eigene Zuordnung, nie Rollen in Organisationen und nie einen Support-Zugang. Darum sehen Leitungen, Verbandsleitung und Admins einen fremden Kreis nicht (KR-05).
+3. **Gleichzeitige Anfragen:** Anlegen, Einladen, Zurücknehmen und Annehmen sperren das eigene Konto (Einladen auch das eingeladene) und prüfen darunter frisch; Annehmen und Zurücknehmen sperren zusätzlich die Einladung, sodass genau eins gewinnt (AG4). Das Formular „Kreis anlegen“ hat eine eigene Kennung gegen Doppelklicks (AG3).
+4. **Annehmen und Ablehnen über die Kennung der Einladung** in der Adresse: Eine fremde oder schon verschwundene Einladung ist „nicht gefunden“ (AV6); verschwindet sie erst zwischen Prüfung und Sperre, steht „Diese Einladung gibt es nicht mehr.“ auf der Seite „Kreise“.
+
+**Umsetzung:** neu `circles/` (`models.py`, Migration `0001_kreise`, `texts.py`, `views.py`), `access/rights.py` (Abschnitt „Kreise“, gemeinsame Suche `_exact_accounts()`), `core/forms.py` (`CircleForm`), `config/urls.py`, `config/settings.py`, `core/navigation.py`, `core/views.py` (Startseite, Bausteinkatalog), Vorlagen `core/kreise.html`, `core/kreis.html`, neu `core/_eintrag_oeffnen.html`, `core/_einladung.html`, `core/_zurueckzeile.html`, erweitert `core/_meldung.html`, `core/templatetags/layout.py`, `core/static/core/app.js` und `app.css`, `core/_symbole.svg` (Symbol „kreis“); `docs/anforderungen.md` (GRP-02, BER-01, Glossar), `docs/rechtematrix.md` (Abschnitt „Kreise“, PK-14, PK-24, Tabellen), `docs/gestaltung.md`, `docs/zielbilder/kreise.html`; Tests in `tests/test_kreise.py` und `rauchtests/test_kreise.py`.
+
+---
+
 ## 2026-11-26 · Einladungstext mit dem Editor Trix, beim Speichern mit nh3 bereinigt (#358, VER-05)
 
 **Entscheidung** (Sebastian; Klärung von #358 am 17.11.2026, [Stand der Klärung](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6945415280), Fragen 1 bis 11, [Nachklärung nach dem Zielbild](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036238), N1 und N2; maßgeblich sind Text und [Szenarien](https://github.com/sebivtt/dpv-participant-management/issues/358#issuecomment-6951036732) von #358):
