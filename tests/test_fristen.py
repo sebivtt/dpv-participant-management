@@ -211,6 +211,18 @@ def test_f1_wanda_traegt_in_schritt_3_die_fristen_ein(org):
     assert page_state(org.wanda, entwurf) == (DRAFT, ONLY_LEADS)
 
 
+def test_f1_in_der_zusammenfassung_steht_anmeldung_neben_grunddaten(org):
+    """Vorschau, Sebastian, 27.11.2026 („Neben Grunddaten“): wie auf der Leitungsseite; darunter der Einladungstext."""
+    entwurf = entwurf_im_ablauf(org, **PFINGSTEN)
+    root = _tree(client_for(org.wanda).get(summary_address(entwurf)))
+    tiles = _one(_all(root, lambda e: "a-kacheln" in _classes(e)))
+
+    assert [_attr(section, "aria-labelledby") for section in _by_tag(tiles, "section")] == ["h-grunddaten",
+                                                                                          "h-anmeldung"]
+    sections = [_attr(section, "aria-labelledby") for section in _by_tag(root, "section")]
+    assert sections.index("h-anmeldung") < sections.index("h-einladungstext")
+
+
 def test_f1_zurueck_in_schritt_3_fuehrt_zu_schritt_2_und_abbrechen_zur_rueckfrage(org):
     entwurf = entwurf_im_ablauf(org)
     root = _tree(client_for(org.wanda).get(step_address(entwurf)))
