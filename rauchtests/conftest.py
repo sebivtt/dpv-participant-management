@@ -511,21 +511,37 @@ def login(page: Page, account=ERIKA) -> None:
 
 
 def ueber_schritt_einladungstext(page: Page, keyboard: bool = False) -> None:
-    """Seit #358 liegt beim Anlegen zwischen Schritt 1 „Grunddaten“ und der Zusammenfassung Schritt 2 „Einladungstext“.
+    """Seit #358 liegt beim Anlegen zwischen Schritt 1 „Grunddaten“ und der Zusammenfassung Schritt 2 „Einladungstext“,
+    seit #360 danach Schritt 3 „Anmeldung“.
 
-    Wartet auf Schritt 2 und geht mit leerem Text weiter (freiwillig, E2), mit der Maus oder, mit `keyboard`, nur mit
-    der Tastatur; danach steht die Zusammenfassung da. Für Rauchtests, die Schritt 2 nicht selbst prüfen.
+    Wartet auf Schritt 2 und geht mit leerem Text weiter (freiwillig, E2), dann über Schritt 3 ohne Fristen
+    (freiwillig, #360 F4), mit der Maus oder, mit `keyboard`, nur mit der Tastatur; danach steht die Zusammenfassung da.
+    Für Rauchtests, die diese Schritte nicht selbst prüfen.
     """
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/einladungstext/")
+    weiter_im_schritt(page, keyboard)
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/anmeldung/")
+    weiter_im_schritt(page, keyboard)
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
+
+
+def ueber_schritt_anmeldung(page: Page, keyboard: bool = False) -> None:
+    """Seit #360: wartet auf Schritt 3 „Anmeldung“ und geht ohne Fristen weiter; danach steht die Zusammenfassung da."""
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/anmeldung/")
+    weiter_im_schritt(page, keyboard)
+    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
+
+
+def weiter_im_schritt(page: Page, keyboard: bool = False) -> None:
+    """Klickt in einem Schritt beim Anlegen auf „Weiter“, mit `keyboard` nur mit der Tastatur."""
     from rauchtests.test_rauchtest import _all_visible, _stations_to_element
 
-    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/einladungstext/")
     submit = 'form#f-schritt .a-schritt-rechts button[type="submit"]'
     if keyboard:
         _all_visible(_stations_to_element(page, submit, steps=40))
         page.keyboard.press("Enter")
     else:
         page.locator(submit).click()
-    page.wait_for_url(f"{BASE}/veranstaltungen/*/anlegen/zusammenfassung/")
 
 
 # Wartezeit der Seite, bevor eine kurze Meldung in ihren Bereich wandert (SHORT_DELAY in core/static/core/app.js)

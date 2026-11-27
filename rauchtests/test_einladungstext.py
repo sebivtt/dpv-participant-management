@@ -18,7 +18,7 @@ import re
 from playwright.sync_api import Page, expect
 
 from events.models import Event
-from rauchtests.conftest import BASE, expect_modal, login, run_axe
+from rauchtests.conftest import BASE, expect_modal, login, run_axe, ueber_schritt_anmeldung
 from rauchtests.test_organisation import _no_side_scroll
 from rauchtests.test_rauchtest import _all_visible, _stations_to_element, _tab_key
 from rauchtests.test_veranstaltungen import _dialog, _erika_in_den_falken
@@ -184,7 +184,8 @@ def test_e1_am_pc_mit_der_maus_schreiben_formatieren_und_einen_link_setzen(pc):
     assert run_axe(pc) == []
 
     pc.locator(STEP_SUBMIT).click()
-    pc.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    # Seit #360 folgt Schritt 3 „Anmeldung“ vor der Zusammenfassung.
+    ueber_schritt_anmeldung(pc)
     section = pc.locator('[aria-labelledby="h-einladungstext"]')
     expect(section.locator("h3", has_text="Packliste")).to_be_visible()
     expect(section.locator("li")).to_have_text(["Kluft und Halstuch", "Schlafsack"])
@@ -251,7 +252,7 @@ def _nur_mit_der_tastatur(page: Page) -> None:
     expect(page.locator(COUNT)).to_have_text(f"{len('KarteKompass mit Rucksack')}/10.000")
     _all_visible(_stations_to_element(page, STEP_SUBMIT, steps=10))
     page.keyboard.press("Enter")
-    page.wait_for_url(f"{LIST}*/anlegen/zusammenfassung/")
+    page.wait_for_url(f"{LIST}*/anlegen/anmeldung/")
     # Ein Leerzeichen vor einer Formatierung speichert Trix als geschütztes Leerzeichen; sichtbar ist es dasselbe.
     assert "<ul><li>Karte</li><li>Kompass mit <strong>Rucksack</strong></li></ul>" in _gespeichert().replace("\xa0", " ")
 

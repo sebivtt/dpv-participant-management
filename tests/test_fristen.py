@@ -405,7 +405,7 @@ def test_f10_wanda_leert_den_anmeldeschluss(org, monkeypatch):
 # ---------- Verboten ----------
 
 
-@pytest.mark.rechtematrix("VA-03")
+@pytest.mark.rechtematrix("VA-02", "VA-03")
 @pytest.mark.wie_nicht_vorhanden("veranstaltungen/<key:event>/anmeldung/")
 def test_fv1_andere_schicken_fristen_an_den_stift_und_finden_nichts(org, pfingstlager):
     for user in (org.finn, org.vera, org.tom, org.otto, org.max, org.fiete):
@@ -454,6 +454,7 @@ def test_fv1_fiete_tauscht_die_kennung_gegen_die_des_pfingstlagers_und_findet_ni
     assert stored(entwurf) == (None, None, None)
 
 
+@pytest.mark.rechtematrix("VA-03")
 def test_fv1_gegenprobe_wanda_speichert_weiter(org, pfingstlager):
     assert save_dialog(client_for(org.wanda), pfingstlager, registration_closes="2028-05-05").status_code == 302
     assert stored(pfingstlager)[1] == date(2028, 5, 5)

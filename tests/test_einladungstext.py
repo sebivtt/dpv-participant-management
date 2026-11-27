@@ -111,6 +111,11 @@ def summary_address(entry) -> str:
     return f"{event_address(entry)}anlegen/zusammenfassung/"
 
 
+def signup_step_address(entry) -> str:
+    """Schritt 3 „Anmeldung“ (seit #360), wohin „Weiter“ in Schritt 2 führt."""
+    return f"{event_address(entry)}anlegen/anmeldung/"
+
+
 def cancel_address(entry) -> str:
     return f"{event_address(entry)}anlegen/abbrechen/"
 
@@ -222,8 +227,9 @@ def test_e1_wanda_schreibt_in_schritt_2_und_die_zusammenfassung_zeigt_die_ersten
 
     root = _tree(client.get(step_address(entwurf)))
 
+    # Seit #360 steht zwischen Einladungstext und Zusammenfassung Schritt 3 „Anmeldung“.
     assert progress(root) == [("Schritt 1 Grunddaten", False), ("Schritt 2 Einladungstext", True),
-                              ("Schritt 3 Zusammenfassung", False)]
+                              ("Schritt 3 Anmeldung", False), ("Schritt 4 Zusammenfassung", False)]
     block = editor(root)
     # Beschriftung nur „Einladungstext“, ohne Zusatz (Nachklärung N1).
     labels = [_visible_text(label) for label in _by_tag(block, "label")]
@@ -238,12 +244,13 @@ def test_e1_wanda_schreibt_in_schritt_2_und_die_zusammenfassung_zeigt_die_ersten
     response = save_step(client, entwurf, E1_TEXT)
 
     assert response.status_code == 302
-    assert response.url == summary_address(entwurf)
+    # Seit #360 führt „Weiter“ zu Schritt 3 „Anmeldung“; die Zusammenfassung ist Schritt 4.
+    assert response.url == signup_step_address(entwurf)
     assert "<h3>Packliste</h3>" in stored(entwurf)
     assert f'<a href="https://example.org/anfahrt" {LINK_ATTRS}>Anfahrt</a>' in stored(entwurf)
-    page = client.get(response.url)
+    page = client.get(summary_address(entwurf))
     root = _tree(page)
-    assert progress(root)[2] == ("Schritt 3 Zusammenfassung", True)
+    assert progress(root)[3] == ("Schritt 4 Zusammenfassung", True)
     assert pencil(root) == (step_address(entwurf), "Einladungstext ändern")
     html = tile_html(page)
     assert "<strong>Pfingstlager 2028</strong>" in html
@@ -257,7 +264,7 @@ def test_e2_leer_weiter_und_zusammenfassung_und_kachel_sagen_noch_kein_einladung
 
     response = save_step(client, entwurf, "")
 
-    assert response.url == summary_address(entwurf)
+    assert response.url == signup_step_address(entwurf)
     assert stored(entwurf) == ""
     assert shown_text(_tree(client.get(summary_address(entwurf)))) == NONE_YET
     client.post(summary_address(entwurf))
@@ -586,11 +593,13 @@ def test_g7_zurueck_aus_schritt_2_und_wieder_weiter_der_gespeicherte_text_ist_no
     save_step(client, entwurf, "<div>Gespeichert</div>")
 
     assert step_buttons(_tree(client.get(step_address(entwurf))))["Zurück"] == basics_address(entwurf)
-    assert step_buttons(_tree(client.get(summary_address(entwurf))))["Zurück"] == step_address(entwurf)
+    # Seit #360 führt „Zurück“ in der Zusammenfassung zu Schritt 3 „Anmeldung“ und von dort zu Schritt 2.
+    assert step_buttons(_tree(client.get(summary_address(entwurf))))["Zurück"] == signup_step_address(entwurf)
+    assert step_buttons(_tree(client.get(signup_step_address(entwurf))))["Zurück"] == step_address(entwurf)
     root = _tree(client.get(step_address(entwurf)))
 
     assert editor_text(root) == "<div>Gespeichert</div>"
-    assert save_step(client, entwurf, editor_text(root), version_of(root)).url == summary_address(entwurf)
+    assert save_step(client, entwurf, editor_text(root), version_of(root)).url == signup_step_address(entwurf)
     assert stored(entwurf) == "<div>Gespeichert</div>"
 
 
@@ -649,8 +658,8 @@ def test_doppelklick_auf_speichern_und_weiter_gilt_als_gespeichert(org, pfingstl
     assert (first.status_code, second.status_code) == (302, 302)
     assert stored(pfingstlager) == "<div>A</div>"
     old = str(Event.objects.get(pk=entwurf.pk).invitation_version)
-    assert save_step(client, entwurf, "<div>B</div>", old).url == summary_address(entwurf)
-    assert save_step(client, entwurf, "<div>B</div>", old).url == summary_address(entwurf)
+    assert save_step(client, entwurf, "<div>B</div>", old).url == signup_step_address(entwurf)
+    assert save_step(client, entwurf, "<div>B</div>", old).url == signup_step_address(entwurf)
 
 
 # ---------- Sicherheitsrichtlinie (#278, Frage 1) ----------
