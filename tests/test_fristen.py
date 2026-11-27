@@ -623,6 +623,42 @@ def test_fg5_mitternacht_in_deutscher_zeit_auch_in_der_sommerzeit(org, pfingstla
     assert page_state(org.wanda, pfingstlager)[0] == OPEN
 
 
+def test_fg5_grenzen_des_aenderungsschlusses_und_der_zeitleiste(org, pfingstlager, monkeypatch):
+    """Befund G1 der unabhängigen Prüfung: Der Änderungsschluss gilt bis zum Ende seines Tags, und die Zeitleiste
+    rechnet „Heute“ und „vorbei“ in deutscher Zeit, auch in der Sommerzeit."""
+    published(pfingstlager)
+    late = f"{IS_PUBLISHED} Die Anmeldung ist geschlossen. Nachmelden und Ändern bis 07.05.2028."
+
+    moment = timezone.make_aware(datetime(2028, 5, 7, 23, 59, 59))
+    monkeypatch.setattr(timezone, "now", lambda: moment)
+    assert page_state(org.wanda, pfingstlager) == (CLOSED, late)
+    at(monkeypatch, 2028, 5, 8, 0, 0)
+    assert page_state(org.wanda, pfingstlager) == (CLOSED, f"{IS_PUBLISHED} Die Anmeldung ist geschlossen.")
+
+    # 30.04., 22:30 Weltzeit ist in Deutschland schon der 01.05.: „Heute“ steht hinter dem Anmeldeschluss, der vorbei ist.
+    world = datetime(2028, 4, 30, 22, 30, tzinfo=UTC)
+    monkeypatch.setattr(timezone, "now", lambda: world)
+    root = _tree(client_for(org.wanda).get(event_address(pfingstlager)))
+    assert timeline(root)[1:3] == ["Anmeldeschluss So, 30.04.2028", "Heute 01.05.2028"]
+    found = _one(_all(deadline_tile(root), lambda e: "a-zeitleiste" in _classes(e)))
+    assert ["ist-vorbei" in _classes(entry) for entry in _by_tag(found, "li")][:2] == [True, True]
+
+
+def test_eine_frist_am_letzten_moeglichen_tag_bringt_keine_seite_zum_absturz(org):
+    """Befund M1 der unabhängigen Prüfung: Fristen am 31.12.9999 rechnen nicht über das letzte Datum hinaus."""
+    last = date(9999, 12, 31)
+    entry = event_of(org.wanda, "Fernes Lager", last, last)
+    entry.start_time, entry.end_time = time(18, 0), time(20, 0)
+    entry.registration_closes = entry.changes_close = last
+    entry.published = True
+    entry.save()
+    client = client_for(org.wanda)
+
+    for address in (LIST, event_address(entry), dialog_address(entry), publish_address(entry)):
+        assert client.get(address).status_code == 200, address
+    assert page_state(org.wanda, entry, client=client) == (OPEN, f"{IS_PUBLISHED} Die Anmeldung läuft bis 31.12.9999.")
+
+
 def test_fg6_schluss_schon_vorbei_beim_veroeffentlichen(org):
     entry = lager(org, registration_closes=date(2028, 1, 3))
 
