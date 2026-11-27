@@ -16,7 +16,7 @@ from core.countries import COUNTRIES
 from core.models import CITY_MAX_LENGTH, GERMANY, POSTAL_CODE_MAX_LENGTH, STATES, STREET_MAX_LENGTH
 from events import invitation
 from events import texts as event_texts
-from events.models import INVITATION_MAX_LENGTH, LOCATION_MAX_LENGTH
+from events.models import DEADLINE_FIELDS, INVITATION_MAX_LENGTH, LOCATION_MAX_LENGTH, deadline_problems
 from events.models import NAME_MAX_LENGTH as EVENT_NAME_MAX_LENGTH
 from persons import texts as person_texts
 from persons.models import NAME_MAX_LENGTH
@@ -401,6 +401,7 @@ class EventForm(AddressForm):
     - Der Beginn liegt nicht vor dem heutigen Tag; heute ist zu jeder Uhrzeit erlaubt. Geprüft wird nur, wenn
       der Beginn (Tag oder Uhrzeit) eingegeben oder geändert wird; bei einer laufenden Veranstaltung blockiert
       das Ändern von Name oder Ende nicht (AG1, AG2).
+    - Der Beginn liegt nicht vor einer Frist der Anmeldung (#360, FG4).
     - Ab 29 Tagen, gezählt wie in der Kachel, fragt es nach, ob die Dauer stimmt, wenn Beginn oder Ende
       eingegeben oder geändert werden (AG4). Bestätigt ist erst, wenn „Ja, die Dauer stimmt“ für genau diese
       Zahl an Tagen angetippt ist; nach einer anderen Dauer kommt die Frage neu, mit Schalter auf „aus“.
@@ -525,6 +526,10 @@ class EventForm(AddressForm):
         start, end = cleaned.get("start"), cleaned.get("end")
         if start is not None and start < timezone.localdate() and self._changed("start", "start_time"):
             self.add_error("start", forms.ValidationError(event_texts.START_IN_PAST, code="in_past"))
+        # Der Beginn liegt nie vor einer Frist der Anmeldung (#360, FG4); erst die Fristen ändern, dann den Beginn.
+        latest = self.before.latest_deadline() if self.before is not None else None
+        if start is not None and latest is not None and start < latest and "start" not in self.errors:
+            self.add_error("start", forms.ValidationError(event_texts.START_BEFORE_DEADLINE, code="before_deadline"))
         if start is None or end is None:
             return cleaned
         start_time, end_time = cleaned.get("start_time"), cleaned.get("end_time")
@@ -607,3 +612,48 @@ class InvitationForm(forms.Form):
                                                    "count": german_number(count)},
                 code="too_long")
         return text
+
+
+def _deadline(label) -> forms.DateField:
+    """Eine Frist der Anmeldung: freiwillig, nur ein Tag, im Baustein „Datumsfeld“ (#360, Fragen 1 bis 3)."""
+    return forms.DateField(
+        label=label,
+        required=False,
+        input_formats=["%Y-%m-%d"],
+        error_messages={"invalid": event_texts.DATE_INVALID},
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date", "autocomplete": "off"}),
+    )
+
+
+class DeadlinesForm(forms.Form):
+    """Die Fristen in Schritt 3 „Anmeldung“ beim Anlegen und im Dialog „Anmeldung bearbeiten“ (#360, VER-09).
+
+    Anmeldestart, Anmeldeschluss und Änderungsschluss, je ein Tag ohne Uhrzeit, jede freiwillig und einzeln. Die
+    Regeln stehen an einem Ort, `events.models.deadline_problems()`: Reihenfolge, Änderungsschluss nur mit
+    Anmeldeschluss, jede spätestens am Tag des Beginns `start`; die Fehler stehen am Feld. Fristen in der Vergangenheit
+    sind erlaubt. `form_id` ist das Formular, zu dem die Felder über ihr Attribut „form“ gehören.
+    """
+
+    registration_opens = _deadline(event_texts.REGISTRATION_OPENS)
+    registration_closes = _deadline(event_texts.REGISTRATION_CLOSES)
+    changes_close = _deadline(event_texts.CHANGES_CLOSE)
+
+    def __init__(self, *args, start: date, form_id: str = STEP_FORM_ID, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.start = start
+        for field in self.fields.values():
+            field.widget.attrs["form"] = form_id
+
+    @classmethod
+    def of(cls, entry, form_id: str) -> "DeadlinesForm":
+        """Das Formular mit den gespeicherten Fristen einer Veranstaltung."""
+        return cls(initial={name: getattr(entry, name) for name in DEADLINE_FIELDS}, start=entry.start,
+                   form_id=form_id)
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        if self.errors:
+            return cleaned
+        for name, text in deadline_problems(self.start, cleaned).items():
+            self.add_error(name, forms.ValidationError(text, code="deadline"))
+        return cleaned

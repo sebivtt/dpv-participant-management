@@ -17,9 +17,11 @@ from core.views import (
     event_create_cancel,
     event_create_delete,
     event_create_invitation,
+    event_create_registration,
     event_create_summary,
     event_edit,
     event_edit_address,
+    event_edit_deadlines,
     event_edit_invitation,
     event_page,
     event_publish,
@@ -124,6 +126,8 @@ urlpatterns = [
     path("veranstaltungen/<key:event>/bearbeiten/", event_edit, name="event_edit"),
     # Einladungstext (#358): der Dialog des Stifts der Kachel „Einladungstext“.
     path("veranstaltungen/<key:event>/einladungstext/", event_edit_invitation, name="event_edit_invitation"),
+    # Fristen (#360): der Dialog des Stifts der Kachel „Anmeldung“.
+    path("veranstaltungen/<key:event>/anmeldung/", event_edit_deadlines, name="event_edit_deadlines"),
     # Adresse suchen (#163, VA-07): je Formular mit Adressfeld eine eigene Adresse; sie nimmt das ganze Formular an und
     # zeigt dieselbe Seite mit den Treffern, damit es auch ohne Skript geht. Der Suchtext steht nie in der Adresse.
     path("veranstaltungen/erstellen/adresse-suchen/", event_create_address, name="event_create_address"),
@@ -134,6 +138,7 @@ urlpatterns = [
     path("veranstaltungen/<key:event>/anlegen/adresse-suchen/", event_create_basics_address,
          name="event_create_basics_address"),
     path("veranstaltungen/<key:event>/anlegen/einladungstext/", event_create_invitation, name="event_create_invitation"),
+    path("veranstaltungen/<key:event>/anlegen/anmeldung/", event_create_registration, name="event_create_registration"),
     path("veranstaltungen/<key:event>/anlegen/zusammenfassung/", event_create_summary, name="event_create_summary"),
     path("veranstaltungen/<key:event>/anlegen/abbrechen/", event_create_cancel, name="event_create_cancel"),
     path("veranstaltungen/<key:event>/anlegen/loeschen/", event_create_delete, name="event_create_delete"),

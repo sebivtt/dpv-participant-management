@@ -54,7 +54,7 @@ def _schritt_1(page: Page, steps: int) -> None:
     page.wait_for_url(f"{LIST}erstellen/")
     expect(page.locator("h1")).to_have_text("Veranstaltung erstellen")
     expect(page.locator(STEPS)).to_have_text(["Schritt 1 Grunddaten", "Schritt 2 Einladungstext",
-                                              "Schritt 3 Zusammenfassung"])
+                                              "Schritt 3 Anmeldung", "Schritt 4 Zusammenfassung"])
     expect(page.locator(f"{STEPS}[aria-current='step']")).to_have_text("Schritt 1 Grunddaten")
     expect(page.get_by_label("Name")).to_be_focused()
     _no_side_scroll(page)
@@ -79,7 +79,7 @@ def _ausfuellen(page: Page, phone: bool) -> None:
 def _zusammenfassung(page: Page) -> None:
     ueber_schritt_einladungstext(page, keyboard=True)
     expect(page.locator("h1")).to_have_text("Pfingstlager 2028")
-    expect(page.locator(f"{STEPS}[aria-current='step']")).to_have_text("Schritt 3 Zusammenfassung")
+    expect(page.locator(f"{STEPS}[aria-current='step']")).to_have_text("Schritt 4 Zusammenfassung")
     expect(page.locator('[aria-labelledby="h-grunddaten"] .a-kalenderblatt')).to_have_text(
         ["Beginn: Fr 02 Jun 2028 18:00", "Ende: Mo 05 Jun 2028 12:00"])
     _no_side_scroll(page)
@@ -94,9 +94,11 @@ def test_am_pc_nur_mit_der_tastatur_durch_den_ganzen_ablauf(pc):
     _zu(pc, SUBMIT, steps=22)
     _zusammenfassung(pc)
 
-    # B2: „Zurück“ führt über Schritt 2 (#358) zu Schritt 1 mit allen Eingaben; ein geänderter Ort kommt in der
-    # Zusammenfassung an.
+    # B2: „Zurück“ führt über Schritt 3 (#360) und Schritt 2 (#358) zu Schritt 1 mit allen Eingaben; ein geänderter
+    # Ort kommt in der Zusammenfassung an.
     _zu(pc, BACK)
+    pc.wait_for_url(f"{LIST}*/anlegen/anmeldung/")
+    _zu(pc, BACK, steps=40)
     pc.wait_for_url(f"{LIST}*/anlegen/einladungstext/")
     _zu(pc, BACK, steps=40)
     pc.wait_for_url(f"{LIST}*/anlegen/")

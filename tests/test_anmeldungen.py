@@ -545,15 +545,17 @@ def test_u1_die_seite_der_veranstaltung_bleibt_und_bekommt_nur_den_abschnitt(org
     assert "15.05.2027 bis 17.05.2027" in _visible_text(main)
     # Seit #379 ist die Seite die Leitungsseite: statt des Knopfs „Bearbeiten“ der Stift der Kachel „Grunddaten“,
     # und vor dem Abschnitt „Anmeldungen“ steht diese Kachel.
-    # Seit #358 hat auch die Kachel „Einladungstext“ einen Stift.
+    # Seit #358 hat auch die Kachel „Einladungstext“ einen Stift, seit #360 die Kachel „Anmeldung“.
     edit = _all(main, lambda e: "a-stift" in _classes(e))
     assert [_attr(link, "href") for link in edit] == [f"{event_address(org.probelager)}bearbeiten/",
+                                                      f"{event_address(org.probelager)}anmeldung/",
                                                       f"{event_address(org.probelager)}einladungstext/"]
     surfaces = [section for section in _by_tag(main, "section") if "a-flaeche" in _classes(section)]
     # Seit #359 steht unter dem Kopf zuerst die Fläche „Zustand“ (ohne Überschrift, mit Namen für Vorleseprogramme),
-    # seit #358 vor dem Abschnitt „Anmeldungen“ die Kachel „Einladungstext“.
+    # seit #358 vor dem Abschnitt „Anmeldungen“ die Kachel „Einladungstext“, seit #360 neben „Grunddaten“ die Kachel
+    # „Anmeldung“.
     assert [_attr(section, "aria-labelledby") or _attr(section, "aria-label") for section in surfaces] == [
-        "Zustand", "h-grunddaten", "h-einladungstext", SECTION]
+        "Zustand", "h-grunddaten", "h-anmeldung", "h-einladungstext", SECTION]
     for user in (org.wanda, org.fiete, org.vera, org.max):
         assert client_for(user).get(event_address(org.probelager)).status_code == 404, user.username
 

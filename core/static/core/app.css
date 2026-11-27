@@ -234,6 +234,9 @@ a.a-knoten:hover { border-color: var(--dpv); color: var(--text); }
 .a-kennmarke.ist-angekuendigt { background: var(--dpv-hauch); color: var(--dpv); }
 .a-kennmarke.ist-laeuft { background: var(--dpv); color: #fff; }
 .a-kennmarke.ist-beendet { background: var(--zu-grund); color: var(--zu-text); }
+/* Seit #360: „Anmeldung offen“ zart grün mit offenem Schloss, „Geschlossen“ zart gelblich mit Schloss (Zielbild, Ansicht 1). */
+.a-kennmarke.ist-offen { background: var(--ok-grund); color: var(--ok-text); }
+.a-kennmarke.ist-geschlossen { background: var(--warte-grund); color: var(--warte-text); }
 /* Seite „Verband“ (#94): die Überschrift „Bünde“ über den Flächen der einzelnen Bünde. */
 .a-buende-titel { margin: 40px 0 20px; }
 /* Kopf der Seite: Pfad nach oben, Name, Art; die Marke rechts */
@@ -662,6 +665,18 @@ a.a-schalter:focus-visible { outline: 3px solid var(--dpv); outline-offset: 3px;
 .a-va-zeile.ist-entwurf { border: 2px dashed var(--entwurf-rand); }
 .a-va-zeile.ist-grau { border-color: var(--grund); background: var(--grund); }
 .a-va-zeile-rechts { display: grid; justify-items: end; gap: 4px; text-align: right; }
+.a-va-zeile-frist { color: var(--text-leise); font-size: .85rem; }
+/* Zeitleiste (#360, Zielbild Ansicht 6): Punkte mit Strich untereinander; „Heute“ sonnengelb, ohne Text auf dem Gelb. */
+.a-zeitleiste { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.a-zeitleiste li { position: relative; display: flex; align-items: flex-start; gap: 12px; }
+.a-zeitleiste li:not(:last-child)::before { content: ""; position: absolute; top: 16px; bottom: -14px; left: 6px; width: 2px; background: var(--linie); }
+.a-zeitleiste-punkt { position: relative; z-index: 1; flex: none; width: 14px; height: 14px; margin-top: 4px; border: 2px solid var(--dpv); border-radius: 50%; background: var(--flaeche); }
+.a-zeitleiste .ist-heute .a-zeitleiste-punkt { border-color: var(--akzent); background: var(--akzent); }
+/* Vorbei (Vorschau, 27.11.2026): zart grüner Punkt mit dunkelgrünem Haken, die Farben der Marke „Anmeldung offen“. */
+.a-zeitleiste .ist-vorbei .a-zeitleiste-punkt { display: grid; place-items: center; border-color: var(--ok-grund); background: var(--ok-grund); color: var(--ok-text); }
+.a-zeitleiste-punkt .ic { width: 10px; height: 10px; stroke-width: 3.5; }
+.a-zeitleiste li > div { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.a-zeitleiste .a-leise { font-size: inherit; }
 
 /* Zeile „Zustand“ der Leitungsseite (#359, Zielbild Ansicht 6): links Zustandsmarke und Satz, rechts der Schalter
    „Veröffentlicht“; schmal untereinander. */

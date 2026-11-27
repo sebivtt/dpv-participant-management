@@ -11,7 +11,9 @@ erfunden; „Burg Ludwigstein“ ist als Bezeichnung eines Orts aus dem Zielbild
 Die Felder und Prüfungen von Schritt 1 sind die aus #379 (`tests/test_grunddaten.py`); hier steht nur, was der
 Ablauf dazu bringt. Seit #358 liegt zwischen Schritt 1 und der Zusammenfassung Schritt 2 „Einladungstext“
 (`tests/test_einladungstext.py`): „Weiter“ in Schritt 1 führt dorthin, „Zurück“ in der Zusammenfassung ebenso, und
-die Zusammenfassung ist Schritt 3. Nur diese Erwartungen sind hier nachgezogen.
+die Zusammenfassung ist Schritt 3. Seit #360 liegt danach Schritt 3 „Anmeldung“ (`tests/test_fristen.py`): „Zurück“
+in der Zusammenfassung führt dorthin, und die Zusammenfassung ist Schritt 4. Nur diese Erwartungen sind hier
+nachgezogen.
 """
 
 from datetime import date
@@ -94,6 +96,11 @@ def basics_address(entry) -> str:
 def invitation_step_address(entry) -> str:
     """Schritt 2 „Einladungstext“ (#358), wohin „Weiter“ in Schritt 1 führt."""
     return f"{event_address(entry)}anlegen/einladungstext/"
+
+
+def signup_step_address(entry) -> str:
+    """Schritt 3 „Anmeldung“ beim Anlegen (seit #360)."""
+    return f"{event_address(entry)}anlegen/anmeldung/"
 
 
 def summary_address(entry) -> str:
@@ -212,7 +219,7 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     root, _key = open_step_one(org.wanda, client=client)
     assert head(root) == ("Veranstaltung erstellen", "")
     assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Einladungstext", False),
-                              ("Schritt 3 Zusammenfassung", False)]
+                              ("Schritt 3 Anmeldung", False), ("Schritt 4 Zusammenfassung", False)]
     labels = [_visible_text(label) for label in _by_tag(step_form(root), "label") if "sr-nur" not in _classes(label)]
     # Seit #163 folgt unter dem Ort das Adressfeld (tests/test_adressfeld.py); seit der Vorschau dort heißt der Ort
     # „Bezeichnung“ und steht mit der Adresse in einer eigenen Fläche „Ort“.
@@ -236,7 +243,7 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     root = _tree(page)
     assert head(root) == ("Pfingstlager 2028", "Entwurf · Veranstaltung erstellen")
     assert progress(root) == [("Schritt 1 Grunddaten", False), ("Schritt 2 Einladungstext", False),
-                              ("Schritt 3 Zusammenfassung", True)]
+                              ("Schritt 3 Anmeldung", False), ("Schritt 4 Zusammenfassung", True)]
     tile = basics_tile(root)
     assert _visible_text(_one(_by_tag(tile, "h2"))) == "Grunddaten"
     pencil = _one(_all(tile, lambda e: "a-stift" in _classes(e)))
@@ -246,7 +253,7 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
     sheets = [_visible_text(sheet) for sheet in _all(tile, lambda e: "a-kalenderblatt" in _classes(e))]
     assert sheets == ["Fr 02 Jun 2028 18:00", "Mo 05 Jun 2028 12:00"]
     assert place(root) == "Burg Ludwigstein"
-    assert buttons(root) == {"Abbrechen": cancel_address(created), "Zurück": invitation_step_address(created),
+    assert buttons(root) == {"Abbrechen": cancel_address(created), "Zurück": signup_step_address(created),
                              "Veranstaltung speichern": "senden"}
 
     response = client.post(summary_address(created))
@@ -263,8 +270,10 @@ def test_b1_wanda_legt_das_pfingstlager_in_schritten_an(org):
 def test_b2_zurueck_und_der_stift_fuehren_zu_schritt_1_mit_allen_eingaben(org, entwurf):
     client = client_for(org.wanda)
     root = _tree(client.get(summary_address(entwurf)))
-    # Seit #358 führt „Zurück“ zu Schritt 2 „Einladungstext“ und von dort zu Schritt 1.
-    assert buttons(root)["Zurück"] == invitation_step_address(entwurf)
+    # Seit #358 führt „Zurück“ zu Schritt 2 „Einladungstext“ und von dort zu Schritt 1; seit #360 liegt davor
+    # Schritt 3 „Anmeldung“.
+    assert buttons(root)["Zurück"] == signup_step_address(entwurf)
+    assert buttons(_tree(client.get(signup_step_address(entwurf))))["Zurück"] == invitation_step_address(entwurf)
     assert buttons(_tree(client.get(invitation_step_address(entwurf))))["Zurück"] == basics_address(entwurf)
     assert _attr(_one(_all(basics_tile(root), lambda e: "a-stift" in _classes(e))), "href") == basics_address(entwurf)
 
@@ -272,7 +281,7 @@ def test_b2_zurueck_und_der_stift_fuehren_zu_schritt_1_mit_allen_eingaben(org, e
 
     assert head(root) == ("Pfingstlager 2028", "Entwurf · Veranstaltung erstellen")
     assert progress(root) == [("Schritt 1 Grunddaten", True), ("Schritt 2 Einladungstext", False),
-                              ("Schritt 3 Zusammenfassung", False)]
+                              ("Schritt 3 Anmeldung", False), ("Schritt 4 Zusammenfassung", False)]
     assert field_values(step_form(root)) == {key: value for key, value in PFINGSTLAGER.items()}
     assert buttons(root) == {"Abbrechen": LIST, "Weiter": "senden"}
 
@@ -344,7 +353,7 @@ def test_b6_kreuz_schliesst_den_dialog_ohne_aenderung(org, sommerfahrt):
     assert _attr(dialog, "data-schliessen") == summary_address(sommerfahrt)
     root = _tree(client.get(summary_address(sommerfahrt)))
     assert not _by_tag(root, "dialog", aria_labelledby="h-dialog")
-    assert progress(root)[2] == ("Schritt 3 Zusammenfassung", True)
+    assert progress(root)[3] == ("Schritt 4 Zusammenfassung", True)
     # Nichts hat sich geändert: Das Anlegen läuft, und „Entwurf löschen“ geht weiter.
     assert "Entwurf löschen" in dialog_buttons(open_dialog(_tree(client.get(cancel_address(sommerfahrt)))))
 
@@ -618,8 +627,8 @@ def test_der_katalog_zeigt_die_fortschrittsanzeige_und_den_dialog_mit_zwei_knoep
     assert _visible_text(_one(_all(entry, lambda e: "a-baustein-seiten" in _classes(e)))) == (
         "Genutzt auf: Veranstaltungen")
     steps = _one(_all(entry, lambda e: e.name == "ol" and "a-schritte" in _classes(e)))
-    # Seit #358 drei Schritte; im Katalog ist Schritt 2 „Einladungstext“ der aktuelle.
-    assert [_attr(step, "aria-current") for step in _by_tag(steps, "li")] == [None, "step", None]
+    # Seit #358 drei Schritte, seit #360 vier; im Katalog ist Schritt 2 „Einladungstext“ der aktuelle.
+    assert [_attr(step, "aria-current") for step in _by_tag(steps, "li")] == [None, "step", None, None]
 
     dialog = _one(_by_tag(root, "section", aria_labelledby="h-dialog"))
     assert "#380" in _visible_text(_one(_all(dialog, lambda e: "a-baustein-herkunft" in _classes(e))))

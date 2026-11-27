@@ -57,6 +57,7 @@ from access.keys import has_key, is_key
 from accounts.models import AccountSearch, display_name
 from events import invitation
 from events import texts as event_texts
+from events.models import DEADLINE_FIELDS, deadline_problems
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
 from events.models import Event, RegisteredPerson, Registration
 from persons import texts as person_texts
@@ -1198,7 +1199,8 @@ class Rights:
         den der Dialog beim Öffnen gezeigt hat; hat inzwischen jemand gespeichert, auch in einem zweiten Fenster,
         wird nichts überschrieben: Das Ergebnis ist „nicht geklappt“ mit der Veranstaltung, wie sie jetzt ist,
         und dem Satz „… wurde inzwischen geändert. …“ (#379, AG7, wie bei verwalteten Personen). Stimmen die Angaben
-        genau mit dem Gespeicherten überein, ist das „geklappt“, ohne erneut zu speichern (#391).
+        genau mit dem Gespeicherten überein, ist das „geklappt“, ohne erneut zu speichern (#391). Läge der Beginn vor
+        einer Frist der Anmeldung, wie sie unter der Sperre gespeichert ist, wird nichts gespeichert (#360, FG4).
         """
         if self.user is None or not is_key(key):
             raise Http404
@@ -1211,6 +1213,10 @@ class Rights:
                     # Doppelklick oder dieselben Angaben von jemand anderem: schon gespeichert (#391).
                     return True, entry, str(event_texts.SAVED % {"event": entry.name})
                 return False, entry, str(event_texts.CHANGED_MEANWHILE % {"event": entry.name})
+            # Der Beginn liegt nie vor einer Frist (#360, FG4), auch wenn die Fristen gleichzeitig verschoben wurden.
+            latest = entry.latest_deadline()
+            if latest is not None and values.get("start", entry.start) < latest:
+                return False, entry, str(event_texts.START_BEFORE_DEADLINE)
             # Was die Angaben nicht nennen, bleibt, wie es war (etwa die Adresse, #163).
             for name in EVENT_FIELDS:
                 if name in values:
@@ -1246,6 +1252,37 @@ class Rights:
             entry.invitation_version += 1
             entry.save(update_fields=["invitation_text", "invitation_version"])
         return True, entry, str(event_texts.INVITATION_SAVED % names)
+
+    def edit_deadlines(self, key, values: dict, version) -> tuple[bool, Event, str]:
+        """Speichert die Fristen einer eigenen Veranstaltung; gibt zurück, ob es geklappt hat, sie und die Meldung.
+
+        Teil von VA-02 seit #360: jede Veranstaltungsleitung (TEAM-01), auch ohne Zuordnung wie bei den Grunddaten (V4
+        aus #100); alle anderen „nicht gefunden“ (VA-03). `values` sind die geprüften Fristen aus `DeadlinesForm`;
+        gesperrt sind das eigene Konto und die Veranstaltung, wie bei `edit_event()`. `version` ist der Stand der
+        Fristen beim Öffnen; hat inzwischen jemand gespeichert, auch in einem zweiten Fenster, wird nichts
+        überschrieben: „nicht geklappt“ mit der Veranstaltung, wie sie jetzt ist, und dem Satz aus #379 (AG7; FG7).
+        Bringt das ältere Fenster genau die gespeicherten Fristen, gilt das als gespeichert (#391). Unter der Sperre
+        prüft es die Fristen gegen den Beginn, wie er jetzt gespeichert ist: Hat ihn jemand gleichzeitig vorverlegt,
+        wird ebenso nichts gespeichert (FG4).
+        """
+        if self.user is None or not is_key(key):
+            raise Http404
+        with transaction.atomic():
+            me = self._lock_with(self.user.pk)
+            fresh = Rights(me)
+            entry = fresh.entry(fresh.events().select_for_update(), key)
+            names = {"event": entry.name}
+            if str(entry.deadlines_version) != str(version):
+                if _same_as_stored(entry, values, DEADLINE_FIELDS):
+                    return True, entry, str(event_texts.DEADLINES_SAVED % names)
+                return False, entry, str(event_texts.CHANGED_MEANWHILE % names)
+            if deadline_problems(entry.start, values):
+                return False, entry, str(event_texts.CHANGED_MEANWHILE % names)
+            for name in DEADLINE_FIELDS:
+                setattr(entry, name, values.get(name))
+            entry.deadlines_version += 1
+            entry.save(update_fields=[*DEADLINE_FIELDS, "deadlines_version"])
+        return True, entry, str(event_texts.DEADLINES_SAVED % names)
 
     # Veröffentlichen (#359, VA-08, VER-07, VER-08)
     #

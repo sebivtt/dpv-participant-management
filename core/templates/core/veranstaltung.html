@@ -2,7 +2,7 @@
 {% load i18n layout %}
 {% block title %}{{ event.name }} · {% translate "DPV Anmeldetool" %}{% endblock %}
 {% block content %}
-  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Seit #359 unter dem Kopf die Zeile „Zustand“ (Ansicht 6): links die Zustandsmarke mit ihrem Satz, rechts der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“). „Einladung ansehen“ (#362) und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Seit #358 unter den Kacheln die Kachel „Einladungstext“ über die ganze Breite (Zielbild von #356, Ansicht 6; docs/zielbilder/einladungstext.html, Ansicht 5). Darunter der Abschnitt „Anmeldungen“. #}
+  {# Leitungsseite einer Veranstaltung (#379, Zielbild docs/zielbilder/veranstaltung.html, Ansicht 6; Grundgerüst aus #356, Nr. 4): Nur die Veranstaltungsleitung kommt hierher (VA-02); einen Knopf zum Löschen gibt es nicht (VA-04). Oben der Kopf mit Name und Zeitraum ohne Uhrzeit, mit Ort und seit #163 seiner Adresse in einer Zeile. Darunter die Kacheln, bisher nur „Grunddaten“ mit dem Stift (Baustein „Bearbeiten-Symbol“) und den Kalenderblättern. Seit #359 unter dem Kopf die Zeile „Zustand“ (Ansicht 6): links die Zustandsmarke mit ihrem Satz, rechts der Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“). „Einladung ansehen“ (#362) und die übrigen Kacheln bringen ihre Issues (#356, Tabelle). Seit #360 neben „Grunddaten“ die Kachel „Anmeldung“ mit dem Baustein „Zeitleiste“ und unter der Zustandsmarke der Satz zur Anmeldung. Seit #358 unter den Kacheln die Kachel „Einladungstext“ über die ganze Breite (Zielbild von #356, Ansicht 6; docs/zielbilder/einladungstext.html, Ansicht 5). Darunter der Abschnitt „Anmeldungen“. #}
   {% for message in messages %}{% kurzmeldung message.level_tag text=message.message %}{% endfor %}
   <div class="a-kopf"><h1>{{ event.name }}</h1><p>{{ head_line }}</p></div>
   <section class="a-flaeche a-zustand" aria-label="{{ state_label }}">
@@ -14,6 +14,12 @@
       {% include "core/_stift.html" with href=edit_href label=basics_edit %}
       {% include "core/_flaechenkopf.html" with symbol="kalender" title=basics_title heading_id="h-grunddaten" %}
       {% include "core/_kalenderblaetter.html" %}
+    </section>
+    {# Kachel „Anmeldung“ (#360, Zielbild Ansicht 6): die Fristen als Baustein „Zeitleiste“ mit „Heute“, der Stift öffnet den Dialog „Anmeldung bearbeiten“. #}
+    <section class="a-flaeche a-kachel" aria-labelledby="h-anmeldung">
+      {% include "core/_stift.html" with href=signup_href label=signup_edit %}
+      {% include "core/_flaechenkopf.html" with symbol="kalender" title=signup_title heading_id="h-anmeldung" %}
+      {% include "core/_zeitleiste.html" %}
     </section>
   </div>
   {% include "core/_einladungstext.html" %}
@@ -33,6 +39,13 @@
     {% include "core/_dialog_auf.html" %}
     {% if dialog.error %}{% meldung "error" text=dialog.error live=True %}{% endif %}
     <p>{{ dialog.text }}</p>
+    {% if dialog.signup_text %}<p>{{ dialog.signup_text }}</p>{% endif %}
+    {% include "core/_dialog_zu.html" %}
+  {% elif dialog.deadlines_form %}
+    {# Dialog „Anmeldung bearbeiten“ (#360): die drei Fristen wie in Schritt 3 beim Anlegen; hat inzwischen jemand gespeichert, steht der Satz dazu oben (FG7, wie AG7). #}
+    {% include "core/_dialog_auf.html" %}
+    {% if dialog.conflict %}{% meldung "error" text=dialog.conflict live=True %}{% endif %}
+    <div class="a-felder-nebeneinander">{% datumsfeld dialog.deadlines_form.registration_opens %}{% datumsfeld dialog.deadlines_form.registration_closes %}{% datumsfeld dialog.deadlines_form.changes_close %}</div>
     {% include "core/_dialog_zu.html" %}
   {% elif dialog.invitation_form %}
     {# Dialog „Einladungstext bearbeiten“ (#358, Zielbild docs/zielbilder/einladungstext.html, Ansichten 6, 7 und 9): breite Form des Baustein „Dialog“ mit dem Baustein „Editor“; hat inzwischen jemand anderes gespeichert, steht der Hinweis als Warnung darüber (G2). #}

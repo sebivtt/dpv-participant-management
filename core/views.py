@@ -1,7 +1,7 @@
 """Seiten der App „core“."""
 
 import logging
-from datetime import date, time
+from datetime import date, datetime, time
 from functools import wraps
 
 from django.conf import settings
@@ -27,6 +27,7 @@ from core.forms import (
     PLACE_PARTS,
     AccountSearchForm,
     AddressForm,
+    DeadlinesForm,
     EventForm,
     FederationSearchForm,
     InvitationForm,
@@ -43,7 +44,7 @@ from core.sections import to_section
 from events import invitation
 from events import texts as event_texts
 from events.models import EDITABLE_FIELDS as EVENT_FIELDS
-from events.models import Event
+from events.models import Event, day_begins
 from events.models import name_of
 from persons import texts as person_texts
 from persons.models import EDITABLE_FIELDS
@@ -1013,8 +1014,8 @@ def calendar_sheets(entry) -> dict:
 
 
 # Zustandsmarke (#359, Baustein „Marke“): je Zustand das Symbol (#356 N3); die Farbe kommt aus der Art (app.css).
-STATE_SYMBOLS = {Event.Status.DRAFT: "entwurf", Event.Status.ANNOUNCED: "angekuendigt", Event.Status.RUNNING: "laeuft",
-                 Event.Status.ENDED: "beendet"}
+STATE_SYMBOLS = {Event.Status.DRAFT: "entwurf", Event.Status.ANNOUNCED: "angekuendigt", Event.Status.OPEN: "offen",
+                 Event.Status.CLOSED: "schloss", Event.Status.RUNNING: "laeuft", Event.Status.ENDED: "beendet"}
 # Zeilen der Liste (#356 Nr. 1, Ansicht 1): Entwürfe gestrichelt, „noch nicht oder nicht mehr offen“ grau.
 GREY_STATES = (Event.Status.ANNOUNCED, Event.Status.ENDED)
 # Wohin die Rückfragen zurückführen: zum Schalter, der wieder den Fokus bekommt (Muster „Zurück aus einem Dialog“, #117).
@@ -1027,19 +1028,115 @@ def state_mark(state: Event.Status) -> Mark:
 
 
 def event_row(entry, now) -> dict:
-    """Eine Zeile unter „Von mir geleitet“ (Baustein „Veranstaltung in einer Liste“), seit #359 mit Zustandsmarke."""
+    """Eine Zeile unter „Von mir geleitet“ (Baustein „Veranstaltung in einer Liste“), seit #359 mit Zustandsmarke, seit
+    #360 mit der Frist klein darunter."""
     state = entry.status_at(now)
     return {"name": entry.name, "line": with_location(period_with_times(entry), entry),
             "href": reverse("event_page", args=[entry.key]), "mark": state_mark(state),
-            "draft": state == Event.Status.DRAFT, "grey": state in GREY_STATES}
+            "note": row_note(entry, state, now), "draft": state == Event.Status.DRAFT, "grey": state in GREY_STATES}
+
+
+def _date(day) -> str:
+    """Ein Tag wie überall im Tool: „01.02.2028“."""
+    return day.strftime("%d.%m.%Y")
+
+
+def signup_sentence(entry, state: Event.Status, now) -> str:
+    """Der Satz zur Anmeldung nach „Die Veranstaltung ist veröffentlicht.“ (#360), vor dem Beginn; sonst leer."""
+    if state == Event.Status.ANNOUNCED:
+        return str(event_texts.SIGNUP_OPENS_ON % {"day": _date(entry.registration_opens)})
+    if state == Event.Status.OPEN:
+        if entry.registration_closes:
+            return str(event_texts.SIGNUP_RUNS_UNTIL % {"day": _date(entry.registration_closes)})
+        return str(event_texts.SIGNUP_RUNS_UNTIL_START)
+    if state == Event.Status.CLOSED:
+        if entry.changes_closed(now):
+            return str(event_texts.SIGNUP_CLOSED)
+        if entry.changes_close:
+            return str(event_texts.SIGNUP_CLOSED_LATE_UNTIL % {"day": _date(entry.changes_close)})
+        return str(event_texts.SIGNUP_CLOSED_LATE_UNTIL_START)
+    return ""
+
+
+def row_note(entry, state: Event.Status, now) -> str:
+    """Die Frist klein unter der Zustandsmarke in der Liste „Von mir geleitet“ (#360, Ansicht 1); sonst leer."""
+    if state == Event.Status.ANNOUNCED:
+        return str(event_texts.NOTE_FROM % {"day": _date(entry.registration_opens)})
+    if state == Event.Status.OPEN:
+        if entry.registration_closes:
+            return str(event_texts.NOTE_UNTIL % {"day": _date(entry.registration_closes)})
+        return str(event_texts.NOTE_UNTIL_START)
+    if state == Event.Status.CLOSED and not entry.changes_closed(now):
+        if entry.changes_close:
+            return str(event_texts.NOTE_LATE_UNTIL % {"day": _date(entry.changes_close)})
+        return str(event_texts.NOTE_LATE_UNTIL_START)
+    return ""
+
+
+def publish_signup_text(entry, now) -> str:
+    """Der Satz zur Anmeldung in der Rückfrage „… veröffentlichen?“ (#360, Ansicht 6b), zur Zeit der Rückfrage."""
+    if entry.registration_closed(now):
+        return str(event_texts.PUBLISH_ALREADY_CLOSED)
+    closes = {"closes": _date(entry.registration_closes)} if entry.registration_closes else None
+    if entry.registration_opens and now < day_begins(entry.registration_opens):
+        opens = {"opens": _date(entry.registration_opens)}
+        if closes:
+            return str(event_texts.PUBLISH_OPENS_ON % {**opens, **closes})
+        return str(event_texts.PUBLISH_OPENS_ON_UNTIL_START % opens)
+    if closes:
+        return str(event_texts.PUBLISH_OPENS_NOW % closes)
+    return str(event_texts.PUBLISH_OPENS_NOW_UNTIL_START)
+
+
+def _countdown(day, today) -> str:
+    """An der nächsten künftigen Frist: „in 27 Tagen“, „morgen“ oder „heute“ (#360)."""
+    days = (day - today).days
+    if days == 0:
+        return str(event_texts.TODAY_SMALL)
+    if days == 1:
+        return str(event_texts.TOMORROW)
+    return str(event_texts.IN_DAYS % {"count": days})
+
+
+def deadline_timeline(entry, today) -> list[dict]:
+    """Was der Baustein „Zeitleiste“ in der Kachel „Anmeldung“ zeigt (#360, Ansicht 6): die drei Fristen und „Heute“.
+
+    Je Frist der Name und der Tag mit Wochentag („Di, 01.02.2028“), ohne Frist der Satz, was dann gilt. An der nächsten
+    Frist ab heute steht, wann sie ist; am Änderungsschluss „bis dahin Nachmelden“. „Heute“ steht vor der nächsten
+    Frist ab heute, sonst hinter der letzten eingetragenen, ganz ohne Fristen oben. Eine Frist vor heute ist vorbei
+    (Vorschau, Sebastian, 27.11.2026: abgeschlossen und bevorstehend unterscheiden).
+    """
+    specs = ((event_texts.REGISTRATION_OPENS, entry.registration_opens, event_texts.OPENS_NOT_SET, False),
+             (event_texts.REGISTRATION_CLOSES, entry.registration_closes, event_texts.CLOSES_NOT_SET, False),
+             (event_texts.CHANGES_CLOSE, entry.changes_close, event_texts.CHANGES_NOT_SET, True))
+    items, days, counted = [], [], False
+    for title, day, not_set, late in specs:
+        days.append(day)
+        if day is None:
+            items.append({"title": title, "day": not_set, "datetime": "", "notes": []})
+            continue
+        notes = []
+        if not counted and day >= today:
+            counted = True
+            notes.append(_countdown(day, today))
+        if late:
+            notes.append(event_texts.UNTIL_THEN_LATE)
+        items.append({"title": title, "day": f"{dateformat.format(day, 'D')}, {_date(day)}",
+                      "datetime": day.isoformat(), "notes": notes, "past": day < today})
+    dated = [index for index, day in enumerate(days) if day is not None]
+    upcoming = [index for index in dated if days[index] >= today]
+    position = upcoming[0] if upcoming else (dated[-1] + 1 if dated else 0)
+    items.insert(position, {"title": event_texts.TODAY, "day": _date(today), "datetime": today.isoformat(), "notes": [],
+                            "today": True})
+    return items
 
 
 def state_sentence(entry, state: Event.Status, now) -> str:
-    """Der Satz unter der Zustandsmarke auf der Leitungsseite (#359, Frage 5)."""
+    """Der Satz unter der Zustandsmarke auf der Leitungsseite (#359, Frage 5), seit #360 mit dem Satz zur Anmeldung."""
     if state == Event.Status.DRAFT:
         return str(event_texts.START_PASSED if entry.starts_before(now) else event_texts.ONLY_LEADS_SEE)
-    if state == Event.Status.ANNOUNCED:
-        return str(event_texts.IS_PUBLISHED)
+    if state in (Event.Status.ANNOUNCED, Event.Status.OPEN, Event.Status.CLOSED):
+        return f"{event_texts.IS_PUBLISHED} {signup_sentence(entry, state, now)}"
     if state == Event.Status.RUNNING:
         return str(event_texts.RUNS_UNTIL % {"end": _day(entry.end, entry.end_time)})
     return str(event_texts.ENDED_ON % {"end": entry.end.strftime("%d.%m.%Y")})
@@ -1081,7 +1178,8 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
     Uhrzeit, dazwischen die Dauer, darunter den Ort, und oben rechts den Stift. Im Abschnitt je Anmeldung die
     Ansprechperson als Link zur Anmeldung und die Namen der angemeldeten Personen, die älteste zuerst (S1);
     ohne Anmeldungen ein Satz (S2). Seit #358 unter den Kacheln die Kachel „Einladungstext“ über die ganze Breite
-    (Zielbild von #356, Ansicht 6). Auf Wunsch mit offenem Dialog; mit dem Editor im Dialog lädt die Seite Trix.
+    (Zielbild von #356, Ansicht 6). Seit #360 neben „Grunddaten“ die Kachel „Anmeldung“ mit der Zeitleiste der Fristen.
+    Auf Wunsch mit offenem Dialog; mit dem Editor im Dialog lädt die Seite Trix.
     """
     registrations = [{
         "contact": name_of(registration.contact),
@@ -1103,6 +1201,10 @@ def _event_page(request: HttpRequest, entry, dialog: dict | None = None) -> Http
         "edit_href": reverse("event_edit", args=[entry.key]),
         "invitation": invitation_tile(entry, reverse("event_edit_invitation", args=[entry.key]),
                                       event_texts.INVITATION_EDIT),
+        "signup_title": event_texts.SIGNUP,
+        "signup_edit": event_texts.SIGNUP_EDIT,
+        "signup_href": reverse("event_edit_deadlines", args=[entry.key]),
+        "timeline": deadline_timeline(entry, timezone.localtime(now).date()),
         "registrations": registrations,
         "registrations_title": event_texts.REGISTRATIONS,
         "no_registrations": event_texts.NO_REGISTRATIONS,
@@ -1280,6 +1382,55 @@ def event_edit_invitation(request: HttpRequest, event: str) -> HttpResponse:
     return _event_page(request, entry, _invitation_dialog(entry, form, version, conflict))
 
 
+def _deadlines_dialog(entry, form: DeadlinesForm, version, conflict: str = "") -> dict:
+    """Der Dialog „Anmeldung bearbeiten“ (#360): darunter der Name, darin die drei Fristen, unten „Speichern“.
+
+    Hat inzwischen jemand gespeichert, steht der Satz aus #379 (AG7) als Fehler oben, und der Dialog zeigt den neuen
+    Stand (FG7).
+    """
+    return {
+        "title": event_texts.SIGNUP_EDIT,
+        "subtitle": entry.name,
+        "close_href": reverse("event_page", args=[entry.key]),
+        "confirm_action": reverse("event_edit_deadlines", args=[entry.key]),
+        "confirm_label": event_texts.SAVE_BUTTON,
+        "confirm_primary": True,
+        "form_id": "f-dialog",
+        "novalidate": True,
+        "deadlines_form": form,
+        "conflict": conflict,
+        "hidden": [("deadlines_version", version)],
+    }
+
+
+@checks_rights(*EVENT_ROWS)
+def event_edit_deadlines(request: HttpRequest, event: str) -> HttpResponse:
+    """Dialog des Stifts der Kachel „Anmeldung“ zeigen und die Fristen speichern (VA-02 seit #360).
+
+    Jede Veranstaltungsleitung, auch nach dem Veröffentlichen (VER-09); alle anderen bekommen „nicht gefunden“ (VA-03,
+    FV1). Danach geht es zur Leitungsseite mit „Die Fristen von … sind gespeichert.“; bei einem Fehler bleibt der
+    Dialog mit den Eingaben und dem Fehler am Feld offen, und nichts wird gespeichert. Hat inzwischen jemand gespeichert
+    (FG7), zeigt er den neuen Stand mit dem Satz aus #379 (AG7).
+    """
+    rights = request.rights
+    entry = rights.event(event)
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("deadlines_version", "")
+        form = DeadlinesForm(request.POST, start=entry.start, form_id="f-dialog")
+        if form.is_valid():
+            done, entry, text = rights.edit_deadlines(event, form.cleaned_data, version)
+            if done:
+                _saved_once(request, text)
+                return redirect("event_page", event=entry.key)
+            form, version, conflict = DeadlinesForm.of(entry, "f-dialog"), entry.deadlines_version, text
+    elif request.method in READING:
+        form, version = DeadlinesForm.of(entry, "f-dialog"), entry.deadlines_version
+    else:
+        raise Http404
+    return _event_page(request, entry, _deadlines_dialog(entry, form, version, conflict))
+
+
 def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
     """Die Rückfrage des Schalters „Veröffentlicht“ (#359, Ansichten 6b und 6d; Baustein „Dialog“).
 
@@ -1294,6 +1445,8 @@ def _publish_dialog(entry, publish: bool, error: str = "") -> dict:
     return {
         "title": question % names,
         "text": text,
+        # Seit #360 nennt die Rückfrage beim Veröffentlichen, wann die Anmeldung öffnet und bis wann sie läuft.
+        "signup_text": publish_signup_text(entry, timezone.now()) if publish else "",
         "error": error,
         "close_href": f"{reverse('event_page', args=[entry.key])}#{SWITCH_ID}",
         "confirm_action": reverse(target, args=[entry.key]),
@@ -1346,15 +1499,16 @@ def _steps(current: int) -> list[dict]:
     """Die Fortschrittsanzeige beim Anlegen (#380): je Schritt Nummer, Name und ob er erledigt oder der aktuelle ist.
 
     Spätere Issues fügen ihre Schritte zwischen „Grunddaten“ und „Zusammenfassung“ ein (#356, Tabelle); seit #358
-    steht dort „Einladungstext“.
+    steht dort „Einladungstext“, seit #360 danach „Anmeldung“.
     """
-    names = (event_texts.BASICS, event_texts.INVITATION, event_texts.STEP_SUMMARY)
+    names = (event_texts.BASICS, event_texts.INVITATION, event_texts.SIGNUP, event_texts.STEP_SUMMARY)
     return [{"number": event_texts.STEP % {"number": number}, "name": name, "done": number < current,
              "current": number == current} for number, name in enumerate(names, start=1)]
 
 
-# Die Schritte beim Anlegen (#380), seit #358 mit „Einladungstext“ zwischen Grunddaten und Zusammenfassung.
-BASICS_STEP, INVITATION_STEP, SUMMARY_STEP = 1, 2, 3
+# Die Schritte beim Anlegen (#380), seit #358 mit „Einladungstext“ und seit #360 mit „Anmeldung“ zwischen Grunddaten
+# und Zusammenfassung.
+BASICS_STEP, INVITATION_STEP, SIGNUP_STEP, SUMMARY_STEP = 1, 2, 3, 4
 
 
 def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden: tuple = (),
@@ -1364,9 +1518,10 @@ def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden:
     Schritt 1 „Grunddaten“ zeigt die Felder aus #379; ohne `entry` für eine neue Veranstaltung, sonst für den
     gespeicherten Entwurf (Ziel von „Zurück“ und dem Stift). „Abbrechen“ führt dort ohne Rückfrage zur Liste
     (B5). Schritt 2 „Einladungstext“ (#358) zeigt den Editor mit `form` (`InvitationForm`); „Zurück“ führt zu
-    Schritt 1, „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“. Schritt 3 „Zusammenfassung“ zeigt die Grunddaten wie
-    die Kachel der Leitungsseite und darunter den Einladungstext, je mit dem Stift zu ihrem Schritt; „Abbrechen“ öffnet
-    den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 2 (#29, Frage 4).
+    Schritt 1, „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“. Schritt 3 „Anmeldung“ (#360) zeigt die Gruppe
+    „Fristen“ mit `form` (`DeadlinesForm`); „Zurück“ führt zu Schritt 2. Schritt 4 „Zusammenfassung“ zeigt die
+    Grunddaten wie die Kachel der Leitungsseite, daneben die Anmeldung und darunter den Einladungstext, je mit dem
+    Stift zu ihrem Schritt; „Abbrechen“ öffnet den Dialog „Anlegen abbrechen?“, „Zurück“ führt zu Schritt 3 (#29, Frage 4).
     In Schritt 1 steht unter dem Ort das Adressfeld (#163); `found` ist das Ergebnis von „Adresse suchen“. Das Formular
     geht immer an die Adresse des Schritts, auch wenn die Seite von der Suche kommt. `conflict` ist der Satz, wenn
     inzwischen ein zweites Fenster gespeichert hat: in Schritt 1 als Fehler (#379, AG7), in Schritt 2 als Warnung (G2).
@@ -1393,6 +1548,13 @@ def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden:
             "hidden": list(hidden), "conflict": conflict, "cancel_href": reverse("events"), "back_href": None,
             "submit_label": event_texts.NEXT,
         })
+    elif step == SIGNUP_STEP:
+        context.update({
+            "action": reverse("event_create_registration", args=[entry.key]), "deadlines_form": form,
+            "deadlines_title": event_texts.DEADLINES, "hidden": list(hidden), "conflict": conflict,
+            "cancel_href": reverse("event_create_cancel", args=[entry.key]),
+            "back_href": reverse("event_create_invitation", args=[entry.key]), "submit_label": event_texts.NEXT,
+        })
     elif step == INVITATION_STEP:
         context.update({
             "action": reverse("event_create_invitation", args=[entry.key]), "invitation_form": form,
@@ -1403,11 +1565,14 @@ def _create_page(request: HttpRequest, step: int, entry=None, form=None, hidden:
     else:
         basics = reverse("event_create_basics", args=[entry.key])
         step_two = reverse("event_create_invitation", args=[entry.key])
+        step_three = reverse("event_create_registration", args=[entry.key])
         context.update({
             "action": reverse("event_create_summary", args=[entry.key]), "calendar": calendar_sheets(entry),
             "basics_title": event_texts.BASICS, "basics_change": event_texts.BASICS_CHANGE, "basics_href": basics,
             "invitation": invitation_tile(entry, step_two, event_texts.INVITATION_CHANGE),
-            "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": step_two,
+            "signup_title": event_texts.SIGNUP, "signup_change": event_texts.SIGNUP_CHANGE, "signup_href": step_three,
+            "timeline": deadline_timeline(entry, timezone.localdate()),
+            "cancel_href": reverse("event_create_cancel", args=[entry.key]), "back_href": step_three,
             "submit_label": event_texts.SAVE_EVENT,
         })
     return render(request, "core/veranstaltung_anlegen.html", context)
@@ -1481,7 +1646,7 @@ def event_create_basics(request: HttpRequest, event: str) -> HttpResponse:
 @cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
 @with_editor
 def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
-    """Schritt 2 „Einladungstext“ beim Anlegen (#358): „Weiter“ speichert den Text und führt zur Zusammenfassung.
+    """Schritt 2 „Einladungstext“ beim Anlegen (#358): „Weiter“ speichert den Text und führt seit #360 zu Schritt 3.
 
     Freiwillig, auch leer (E2). Nur für die Person, die anlegt (`_draft()`), sonst „nicht gefunden“ (VA-06, #380 BV1);
     ist das Anlegen beendet, zur Leitungsseite (BV2). Gespeichert wird wie im Dialog des Stifts
@@ -1499,7 +1664,7 @@ def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
         if form.is_valid():
             done, entry, text = request.rights.edit_invitation(event, form.cleaned_data["invitation_text"], version)
             if done:
-                return redirect("event_create_summary", event=entry.key)
+                return redirect("event_create_registration", event=entry.key)
             version, conflict = entry.invitation_version, text
     elif request.method in READING:
         form, version = invitation_form_of(entry, STEP_FORM), entry.invitation_version
@@ -1507,6 +1672,36 @@ def event_create_invitation(request: HttpRequest, event: str) -> HttpResponse:
         raise Http404
     return _create_page(request, INVITATION_STEP, entry=entry, form=form,
                         hidden=[("invitation_version", version)], conflict=conflict)
+
+
+@checks_rights(*EVENT_CREATE_ROWS)
+@cache_control(max_age=0, no_cache=True, no_store=True, must_revalidate=True, private=True)
+def event_create_registration(request: HttpRequest, event: str) -> HttpResponse:
+    """Schritt 3 „Anmeldung“ beim Anlegen (#360, Ansicht 4): „Weiter“ speichert die Fristen und führt zur Zusammenfassung.
+
+    Die Fristen sind freiwillig; gespeichert wird wie im Dialog des Stifts (`Rights.edit_deadlines()`), mit denselben
+    Prüfungen und ohne ein zweites Fenster zu überschreiben (FG7). Nur für die Person, die anlegt (`_draft()`), sonst
+    „nicht gefunden“ (VA-06, #380 BV1); ist das Anlegen beendet, zur Leitungsseite (BV2). Bei einem Fehler bleibt der
+    Schritt mit den Eingaben und dem Fehler am Feld stehen. Teilnahme- und Benachrichtigungskreis bringen #361 und #151.
+    """
+    entry, finished = _draft(request, event)
+    if finished:
+        return finished
+    conflict = ""
+    if request.method == "POST":
+        version = request.POST.get("deadlines_version", "")
+        form = DeadlinesForm(request.POST, start=entry.start, form_id=STEP_FORM)
+        if form.is_valid():
+            done, entry, text = request.rights.edit_deadlines(event, form.cleaned_data, version)
+            if done:
+                return redirect("event_create_summary", event=entry.key)
+            form, version, conflict = DeadlinesForm.of(entry, STEP_FORM), entry.deadlines_version, text
+    elif request.method in READING:
+        form, version = DeadlinesForm.of(entry, STEP_FORM), entry.deadlines_version
+    else:
+        raise Http404
+    return _create_page(request, SIGNUP_STEP, entry=entry, form=form, hidden=[("deadlines_version", version)],
+                        conflict=conflict)
 
 
 @checks_rights(*EVENT_CREATE_ROWS)
@@ -2092,11 +2287,11 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation")],
     },
     "kennmarke": {
-        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218, 117, 359],
+        "name": _("Marke"), "template": "core/_kennmarke.html", "issues": [189, 94, 218, 117, 359, 360],
         "purpose": _("Kleine runde Pille mit Wort an einer Organisation oder Person: „Du springst ein“, „nur "
                      "lesen“, „gesperrt“ oder „verwaltet“. An einer Veranstaltung zeigt sie ihren Zustand, je mit "
-                     "eigenem Symbol: „Entwurf“ weiß und gestrichelt, „Angekündigt“ zart blau, „Läuft“ dunkelblau, "
-                     "„Beendet“ grau (zweite Reihe)."),
+                     "eigenem Symbol: „Entwurf“ weiß und gestrichelt, „Angekündigt“ zart blau, „Anmeldung offen“ zart "
+                     "grün, „Geschlossen“ zart gelblich, „Läuft“ dunkelblau, „Beendet“ grau (zweite Reihe)."),
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "leitung": {
@@ -2145,11 +2340,22 @@ BUILDING_BLOCKS = {
         "pages": [_("Organisation"), _("Veranstaltungen")],
     },
     "veranstaltungszeile": {
-        "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379, 359],
+        "name": _("Veranstaltung in einer Liste"), "template": "core/_veranstaltungszeile.html", "issues": [379, 359, 360],
         "purpose": _("Eine Veranstaltung als breite, flache Zeile mit feinem Rand: der Name fett als Link zu ihrer "
                      "Seite, darunter grau Zeitraum, mit Uhrzeiten, wo eingetragen, und Ort. Keine Lilie, solange es "
                      "keine Bilder gibt. Rechts die Zustandsmarke; ein Entwurf ist gestrichelt umrandet, "
-                     "„Angekündigt“ und „Beendet“ stehen grau, die übrigen hell. Die Anmeldezahl kommt später dazu."),
+                     "„Angekündigt“ und „Beendet“ stehen grau, die übrigen hell. Klein unter der Marke die Frist, "
+                     "etwa „bis 09.01.2028“. Die Anmeldezahl kommt später dazu."),
+        "pages": [_("Veranstaltungen")],
+    },
+    "zeitleiste": {
+        "name": _("Zeitleiste"), "template": "core/_zeitleiste.html", "issues": [360],
+        "purpose": _("Tage untereinander, etwa die Fristen der Anmeldung: je ein dunkelblau umrandeter Punkt, ein feiner "
+                     "Strich zum nächsten, daneben fett der Name und darunter der Tag mit Wochentag, grau dahinter, was "
+                     "dazu gilt, etwa „· in 27 Tagen“. „Heute“ hat einen sonnengelben Punkt ohne Text darauf und steht "
+                     "vor der nächsten Frist; ein vergangener Tag hat einen zart grünen Punkt mit "
+                     "dunkelgrünem Haken. Ohne Tag steht grau, "
+                     "was dann gilt (zweites Beispiel)."),
         "pages": [_("Veranstaltungen")],
     },
     "fortschritt": {
@@ -2465,12 +2671,26 @@ def _event_examples() -> dict:
                   second_action="#h-dialog", preview_id="h-dialog-abbrechen",
                   text=event_texts.CANCEL_TEXT % {"event": "Sommerfahrt 2028"})
     status = Event.Status
-    # Zustände wie in Ansicht 1 des Zielbilds (#359): je eine Zeile angekündigt, als Entwurf und laufend.
-    rows = ((thing, status.ANNOUNCED), (camp, status.DRAFT), (long_name, status.RUNNING))
+    # Zustände wie in Ansicht 1 des Zielbilds (#359, seit #360 mit Fristen): je eine Zeile offen, geschlossen, als
+    # Entwurf, angekündigt und laufend, mit der Frist klein unter der Marke.
+    thing.registration_closes = date(2028, 1, 9)
+    falken = Event(name="Sippenaktion Falken", start=date(2028, 1, 21), end=date(2028, 1, 23),
+                   location="Hütte am Beispielsee", registration_closes=date(2028, 1, 4), changes_close=date(2028, 1, 14))
+    meeting = Event(name="Vorbereitungstreffen 2028", start=date(2028, 7, 7), start_time=time(18, 0),
+                    end=date(2028, 7, 9), end_time=time(12, 0), registration_opens=date(2028, 3, 1))
+    shown_at = timezone.make_aware(datetime(2028, 1, 5, 12, 0))
+    rows = ((thing, status.OPEN), (falken, status.CLOSED), (camp, status.DRAFT), (meeting, status.ANNOUNCED),
+            (long_name, status.RUNNING))
+    # Zeitleiste (#360) wie in Ansicht 6 des Zielbilds am 05.01.2028.
+    planned = Event(name=camp.name, start=camp.start, end=camp.end, registration_opens=date(2028, 2, 1),
+                    registration_closes=date(2028, 4, 30), changes_close=date(2028, 5, 7))
     return {
         "event_rows": [{"name": entry.name, "line": with_location(period_with_times(entry), entry),
                         "href": "#h-veranstaltungszeile", "mark": state_mark(shown),
+                        "note": row_note(entry, shown, shown_at),
                         "draft": shown == status.DRAFT, "grey": shown in GREY_STATES} for entry, shown in rows],
+        # Dazu die Sippenaktion mit vergangenem Anmeldeschluss (grün mit Haken) und ohne Anmeldestart.
+        "timelines": [deadline_timeline(planned, shown_at.date()), deadline_timeline(falken, shown_at.date())],
         # Zustandsmarken (#359) im Eintrag „Marke“, nach den Marken an Organisationen und Personen.
         "state_marks": [state_mark(shown) for shown in status],
         # Schalter mit Rückfrage (#359): aus, an, an und gesperrt (ab Beginn), aus und gesperrt (Beginn vorbei).
@@ -2480,7 +2700,8 @@ def _event_examples() -> dict:
             for number, (checked, locked) in enumerate(((False, False), (True, False), (True, True), (False, True)),
                                                         start=1)],
         "calendars": [calendar_sheets(camp), calendar_sheets(thing)],
-        # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, seit #358 „Einladungstext“.
+        # Fortschrittsanzeige (#380): Schritt 1 erledigt, Schritt 2 der aktuelle, seit #358 „Einladungstext“, seit #360
+        # vier Schritte.
         "steps": _steps(2),
         # Editor (#358) mit erfundenem Text wie im Zielbild, Ansicht 1; das Formular schickt nichts ab.
         "invitation_form": InvitationForm(initial={"invitation_text": KATALOG_INVITATION}, form_id="katalog-editor",

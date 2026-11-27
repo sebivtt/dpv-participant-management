@@ -34,6 +34,10 @@ ROOT = Path(__file__).resolve().parent.parent
 DRAFT, ANNOUNCED, RUNNING, ENDED = "Entwurf", "Angekündigt", "Läuft", "Beendet"
 ONLY_LEADS = "Nur die Leitung sieht die Veranstaltung."
 IS_PUBLISHED = "Die Veranstaltung ist veröffentlicht."
+# Seit #360 ist eine veröffentlichte Veranstaltung ohne Fristen vor dem Beginn „Anmeldung offen“ (Frage 3a);
+# „Angekündigt“ braucht einen künftigen Anmeldestart (tests/test_fristen.py).
+OPEN = "Anmeldung offen"
+OPEN_UNTIL_START = f"{IS_PUBLISHED} Die Anmeldung läuft bis zum Beginn."
 PAST = "Der Beginn liegt in der Vergangenheit. Ändere ihn in den Grunddaten, um zu veröffentlichen."
 BEGUN = "Die Veranstaltung hat schon begonnen. Die Veröffentlichung lässt sich nicht mehr zurücknehmen."
 SWITCH = "Veröffentlicht"
@@ -208,9 +212,9 @@ def test_z2_wanda_veroeffentlicht_das_pfingstlager_nach_der_rueckfrage(org, pfin
     assert pfingstlager.published is True
     after = client.get(done.url)
     assert short_notices(after) == ["Pfingstlager 2028 ist veröffentlicht."]
-    assert state_of(_tree(after)) == (ANNOUNCED, IS_PUBLISHED)
+    assert state_of(_tree(after)) == (OPEN, OPEN_UNTIL_START)
     assert switch(org.wanda, pfingstlager)["on"] is True
-    assert list_rows(org.wanda)["Pfingstlager 2028"] == {"mark": ANNOUNCED, "dashed": False, "grey": True}
+    assert list_rows(org.wanda)["Pfingstlager 2028"] == {"mark": OPEN, "dashed": False, "grey": False}
 
 
 def test_z3_abbrechen_in_der_rueckfrage_laesst_den_entwurf(org, pfingstlager):
@@ -270,7 +274,7 @@ def test_z6_ab_beginn_laeuft_die_veranstaltung(org, pfingstlager, monkeypatch):
     published(pfingstlager)
 
     at(monkeypatch, 2028, 6, 2, 17, 59)
-    assert page_state(org.wanda, pfingstlager) == (ANNOUNCED, IS_PUBLISHED)
+    assert page_state(org.wanda, pfingstlager) == (OPEN, OPEN_UNTIL_START)
 
     at(monkeypatch, 2028, 6, 2, 18, 0)
     assert page_state(org.wanda, pfingstlager) == (RUNNING, "Die Veranstaltung läuft bis 05.06.2028, 12:00.")
@@ -292,7 +296,7 @@ def test_z8_ohne_uhrzeit_gilt_der_ganze_tag(org, monkeypatch):
     aktion = published(event_of(org.wanda, "Sippenaktion Falken", date(2028, 1, 21), date(2028, 1, 23)))
 
     at(monkeypatch, 2028, 1, 20, 23, 59)
-    assert page_state(org.wanda, aktion)[0] == ANNOUNCED
+    assert page_state(org.wanda, aktion)[0] == OPEN
     at(monkeypatch, 2028, 1, 21, 0, 0)
     assert page_state(org.wanda, aktion) == (RUNNING, "Die Veranstaltung läuft bis 23.01.2028.")
     at(monkeypatch, 2028, 1, 23, 23, 59)

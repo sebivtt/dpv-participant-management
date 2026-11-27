@@ -7,7 +7,7 @@ Die Uhr bleibt die echte, weil Keycloak die Zeit seiner Anmeldung selbst prüft;
 relativ zu heute in der Zukunft (Befund G5 der unabhängigen Prüfung). Geprüft wird, was nur ein Browser zeigt: Der
 Schalter „Veröffentlicht“ (Baustein „Schalter mit Rückfrage“) öffnet mit Leertaste, Enter, Klick oder Tippen die
 Rückfrage, auch ohne Skript; Escape schließt sie, ohne dass sich etwas ändert (Z3); nach dem Bestätigen steht die
-Marke „Angekündigt“ und der Schalter hat wieder den Fokus; nichts steht seitlich über, der Fokus ist zu sehen, und
+Marke „Anmeldung offen“ (seit #360 ohne Fristen statt „Angekündigt“) und der Schalter hat wieder den Fokus; nichts steht seitlich über, der Fokus ist zu sehen, und
 die Seiten bestehen die Prüfung auf Barrierefreiheit (nur mit Skript: axe läuft selbst als Skript und kommt ohne nie zu
 Ende, wie in den übrigen Rauchtests ohne Skript). Die Regeln selbst prüft tests/test_veroeffentlichen.py. Alle
 Namen sind erfunden; „Burg Ludwigstein“ stammt aus dem Zielbild (#356).
@@ -65,8 +65,10 @@ def _angekuendigt(page: Page, entry: Event, axe: bool = True) -> None:
     page.wait_for_url(f"{LIST}{entry.key}/*")
     # Ohne Skript bleibt die kurze Meldung fest oben stehen (#186); deshalb nach dem Text, nicht nach dem Bereich.
     expect(page.get_by_text("Pfingstlager 2028 ist veröffentlicht.")).to_be_visible()
-    expect(page.locator(MARK)).to_have_text("Angekündigt")
-    expect(page.locator(SENTENCE)).to_have_text("Die Veranstaltung ist veröffentlicht.")
+    # Seit #360 ist sie ohne Fristen gleich „Anmeldung offen“, bis zum Beginn.
+    expect(page.locator(MARK)).to_have_text("Anmeldung offen")
+    expect(page.locator(SENTENCE)).to_have_text(
+        "Die Veranstaltung ist veröffentlicht. Die Anmeldung läuft bis zum Beginn.")
     expect(page.get_by_role("switch", name="Veröffentlicht")).to_have_attribute("aria-checked", "true")
     _no_side_scroll(page)
     if axe:
@@ -137,7 +139,7 @@ def _ohne_skript(page: Page) -> None:
 
     page.goto(LIST)
     row = page.locator(".a-va-zeile", has_text="Pfingstlager 2028")
-    expect(row.locator(".a-kennmarke")).to_have_text("Angekündigt")
+    expect(row.locator(".a-kennmarke")).to_have_text("Anmeldung offen")
     _no_side_scroll(page)
 
 
