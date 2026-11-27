@@ -1961,6 +1961,28 @@ class Rights:
             role.delete(by=me)
         return True
 
+    # Kreise (#381): leeres Gerüst; bis sie gebaut sind, ist alles verboten.
+
+    def create_circle(self, values: dict, creation_key):
+        """Kreis anlegen (Gerüst): verboten."""
+        raise PermissionDenied
+
+    def invite(self, key, person_key) -> tuple[bool, str]:
+        """Person in einen Kreis einladen (Gerüst): verboten."""
+        raise PermissionDenied
+
+    def withdraw(self, key, invitation_key) -> str:
+        """Einladung zurücknehmen (Gerüst): verboten."""
+        raise PermissionDenied
+
+    def invitation(self, invitation_key):
+        """Eigene Einladung (Gerüst): nicht gefunden."""
+        raise Http404
+
+    def answer_invitation(self, invitation_key, accept: bool):
+        """Einladung annehmen oder ablehnen (Gerüst): verboten."""
+        raise PermissionDenied
+
     # Support-Zugang der Admins (#92, BER-02)
 
     @cached_property

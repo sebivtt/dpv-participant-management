@@ -8,6 +8,16 @@ from django.urls import path, register_converter
 
 from access.keys import KEY_CONVERTER, KeyConverter
 from accounts import views as accounts_views
+from circles.views import (
+    circle_accept,
+    circle_create,
+    circle_decline,
+    circle_invite,
+    circle_page,
+    circle_search,
+    circle_withdraw,
+    circles,
+)
 from core.views import (
     building_blocks,
     event_create,
@@ -149,6 +159,16 @@ urlpatterns = [
     # Anmeldungen (#101, Probe in P2): nur die Seite je Anmeldung, ohne Formular (AN-06); die Ansprechperson kommt in P2
     # nur über die Adresse hierher.
     path("anmeldungen/<key:registration>/", registration_page, name="registration_page"),
+    # Kreise (#381): Seite „Kreise“, der Dialog „Kreis anlegen“, die Seite je Kreis mit „Person einladen“ und
+    # „Zurücknehmen“; Annehmen und Ablehnen über die Kennung der eigenen Einladung.
+    path("kreise/", circles, name="circles"),
+    path("kreise/anlegen/", circle_create, name="circle_create"),
+    path("kreise/einladungen/<key:invitation>/annehmen/", circle_accept, name="circle_accept"),
+    path("kreise/einladungen/<key:invitation>/ablehnen/", circle_decline, name="circle_decline"),
+    path("kreise/<key:circle>/", circle_page, name="circle_page"),
+    path("kreise/<key:circle>/einladen/", circle_invite, name="circle_invite"),
+    path("kreise/<key:circle>/einladen/suchen/", circle_search, name="circle_search"),
+    path("kreise/<key:circle>/einladungen/<key:invitation>/zuruecknehmen/", circle_withdraw, name="circle_withdraw"),
     path("bausteine/", building_blocks, name="building_blocks"),
     path("anmelden/", accounts_views.login_page, name="account_login"),
     path("abmelden/", accounts_views.logout, name="account_logout"),
