@@ -619,15 +619,57 @@ def test_ag3_gleichzeitig_abgeschickt_bleibt_es_bei_einem_kreis():
 
 @pytest.mark.rechtematrix("KR-09")
 def test_ag4_nach_dem_zuruecknehmen_wird_anton_nicht_mitglied(org, planungsteam):
+    """Anton hat „Kreise“ offen, Tom nimmt zurück, dann klickt Anton „Annehmen“: der Satz statt „nicht gefunden“.
+
+    Unabhängige Prüfung, M2; Sebastian (27.11.2026): „Satz statt ‚nicht gefunden‘“. Bis dahin prüfte dieser Test
+    „nicht gefunden“, das AG4 nicht entsprach.
+    """
     invitation = invitation_of(planungsteam, org.anton)
-    shown = client_for(org.anton).get(LIST)
-    assert "Annehmen" in shown.content.decode()
+    client = client_for(org.anton)
+    assert "Annehmen" in client.get(LIST).content.decode()
     client_for(org.tom).post(withdraw_address(planungsteam, invitation))
 
-    response = client_for(org.anton).post(accept_address(invitation))
-
-    assert response.status_code == 404
+    for address in (accept_address(invitation), decline_address(invitation)):
+        response = client.post(address)
+        assert (response.status_code, response.url) == (302, LIST), address
+        assert notices(_tree(client.get(LIST))) == ["Diese Einladung gibt es nicht mehr."], address
     assert ("anton.testmann", False) not in members_of(planungsteam)
+
+
+@pytest.mark.rechtematrix("KR-09")
+def test_ag4_doppelt_auf_annehmen_geklickt_fuehrt_zur_seite_des_kreises(org, planungsteam):
+    """Unabhängige Prüfung, M2: Die zweite Antwort zeigt, dass Anton schon Mitglied ist, statt „nicht gefunden“."""
+    invitation = invitation_of(planungsteam, org.anton)
+    client = client_for(org.anton)
+    client.get(LIST)
+
+    first, second = client.post(accept_address(invitation)), client.post(accept_address(invitation))
+
+    assert first.url == second.url == circle_address(planungsteam)
+    assert ("anton.testmann", False) in members_of(planungsteam)
+
+
+def test_m1_zeilenumbrueche_der_beschreibung_zaehlen_einmal(org):
+    """Unabhängige Prüfung, M1: Der Browser schickt Umbrüche als zwei Zeichen; gezählt und gespeichert wird einer."""
+    response = create(org.tom, description="a\r\n" * 249 + "aa")
+
+    assert response.status_code == 302
+    assert Circle.objects.get().description == "a\n" * 249 + "aa"
+
+
+def test_g1_unter_der_sperre_gesperrtes_konto_wird_nicht_eingeladen(org, monkeypatch):
+    """Unabhängige Prüfung, G1: Wird das Konto zwischen Suche und Sperre gesperrt, entsteht keine Einladung."""
+    circle = circle_of(org.tom)
+    original = Rights._lock_with
+
+    def locked_meanwhile(self, other):
+        User.objects.filter(pk=other).update(is_active=False)
+        return original(self, other)
+
+    monkeypatch.setattr(Rights, "_lock_with", locked_meanwhile)
+
+    assert Rights(org.tom).invite(circle.key, org.finn.key) == (False, NO_ACCOUNT)
+    assert invited_to(circle) == set()
 
 
 @pytest.mark.django_db(transaction=True)
