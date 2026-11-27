@@ -154,6 +154,10 @@ def test_am_handy_nur_mit_der_tastatur_annehmen_und_anlegen_mit_autokorrektur(ha
     _no_side_scroll(handy)
     assert _abstaende(handy) == [20]
     assert run_axe(handy) == []
+    # Ohne eigenen Rand links: die Einladung hat ringsum denselben feinen Rand (Vorschau, Sebastian, 27.11.2026).
+    widths = handy.locator(".a-einladung").evaluate(
+        "e => [getComputedStyle(e).borderLeftWidth, getComputedStyle(e).borderRightWidth]")
+    assert widths[0] == widths[1], widths
     stations = _stations_to_element(handy, '.a-einladung button.btn-primary', steps=20)
     _all_visible(stations)
     handy.keyboard.press("Enter")

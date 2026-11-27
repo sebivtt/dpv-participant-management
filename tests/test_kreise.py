@@ -301,6 +301,8 @@ def test_a3_svea_sieht_den_hinweis_nimmt_an_und_ist_mitglied(org):
                      "ein. Zur Einladung"]
     link = _one([a for a in _by_tag(page_tree(org.svea, "/"), "a") if _visible_text(a) == "Zur Einladung"])
     assert _attr(link, "href") == LIST
+    # Ein Knopf statt eines Links im Text (Vorschau, Sebastian, 27.11.2026).
+    assert {"btn", "btn-zart"} <= set(_classes(link))
     assert invitations_shown(org.svea) == [f"Planungsteam Rabe (Tom Probst) lädt dich ein. {DESCRIPTION} Ablehnen Annehmen"]
 
     response = client.post(accept_address(invitation_of(circle, org.svea)))
@@ -470,11 +472,13 @@ def test_av4_svea_nimmt_keine_einladung_zurueck(org, planungsteam):
 def test_av5_anton_sieht_als_eingeladener_nur_die_einladung(org, planungsteam):
     root = page_tree(org.anton, circle_address(planungsteam))
 
-    assert _text(_one(_by_tag(root, "h1"))) == "Einladung"
+    # Seit der Vorschau (Sebastian, 27.11.2026): die Seite des Kreises mit Name und Beschreibung im Kopf und darunter
+    # der Fläche „Einladung“ zum Annehmen oder Ablehnen wie auf der Seite „Kreise“, statt einer Seite „Einladung“.
+    assert _text(_one(_by_tag(root, "h1"))) == "Planungsteam"
     head = _one(_all(root, lambda e: "a-kopf" in _classes(e)))
-    assert " ".join(_visible_text(head).split()) == "Kreise Planungsteam Einladung"
-    assert _visible_text(_one(_by_tag(root, "section", aria_label="Einladung"))) == (
-        f"Planungsteam Rabe (Tom Probst) lädt dich ein. {DESCRIPTION} Ablehnen Annehmen Wer im Kreis ist, siehst du, "
+    assert " ".join(_visible_text(head).split()) == f"Kreise Planungsteam Planungsteam {DESCRIPTION}"
+    assert _visible_text(section(root, "h-einladung")) == (
+        "Einladung Planungsteam Rabe (Tom Probst) lädt dich ein. Ablehnen Annehmen Wer im Kreis ist, siehst du, "
         "sobald du die Einladung annimmst.")
     text = client_for(org.anton).get(circle_address(planungsteam)).content.decode()
     for hidden in ("Möwe", "Svea", "Wilma", "Mitglieder"):
